@@ -116,12 +116,12 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
 
   // Process and filter vessels data
   const processVesselsData = useCallback((data) => {
-    // Get the latest record for each IMO number based on dwh_load_date
+    // Get the latest record for each IMO number based on rds_load_date
     const latestVesselData = {};
     
     data.forEach(vessel => {
       const imoNo = vessel.imo_no;
-      const loadDate = vessel.dwh_load_date ? new Date(vessel.dwh_load_date) : null;
+      const loadDate = vessel.dwh_load_date ? new Date(vessel.rds_load_date) : null;
       
       // Skip records with missing IMO or load date
       if (!imoNo || !loadDate) return;
