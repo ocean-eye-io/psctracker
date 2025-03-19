@@ -115,28 +115,33 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const API_URL = 'https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws/api/vessels';
 
   // Process and filter vessels data
-  
   const processVesselsData = useCallback((data) => {
-    // Group vessels by IMO number
-    const vesselsByImo = {};
+    // Get the latest record for each IMO number based on rds_load_date
+    const latestVesselData = {};
     
-    // First pass: Group and find latest timestamp for each IMO
     data.forEach(vessel => {
       const imoNo = vessel.imo_no;
-      const loadDate = vessel.rds_load_date ? new Date(vessel.rds_load_date) : null;
+      const loadDate = vessel.dwh_load_date ? new Date(vessel.rds_load_date) : null;
       
       // Skip records with missing IMO or load date
       if (!imoNo || !loadDate) return;
       
-      if (!vesselsByImo[imoNo] || 
-          loadDate > new Date(vesselsByImo[imoNo].rds_load_date)) {
-        vesselsByImo[imoNo] = vessel;
+      // If we haven't seen this IMO yet, or this record is newer
+      if (!latestVesselData[imoNo] || 
+          loadDate > new Date(latestVesselData[imoNo].dwh_load_date)) {
+          latestVesselData[imoNo] = vessel;
       }
     });
     
-    // Convert to array and filter for active status
-    const activeVessels = Object.values(vesselsByImo)
-      .filter(vessel => vessel.status === 'Active')
+    // Convert back to array
+    const uniqueVessels = Object.values(latestVesselData);
+    
+    // Filter vessels to only include those in port or arriving today or in the future
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0); // Set to beginning of today
+    
+    // Process and filter data
+    return uniqueVessels
       .map(vessel => {
         // Parse eta as Date object if it's a string
         let etaDate = null;
@@ -148,14 +153,13 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
           }
         }
         
-        // Calculate days to go
-        const currentDate = new Date();
-        currentDate.setHours(0, 0, 0, 0);
+        // Calculate days to go based on current date and ETA
         let days_to_go = 0;
         if (etaDate) {
           const timeDiff = etaDate.getTime() - currentDate.getTime();
           days_to_go = Math.max(0, Math.round(timeDiff / (1000 * 3600 * 24) * 10) / 10);
         } else if (vessel.DISTANCE_TO_GO) {
+          // Fallback: calculate from distance if ETA isn't available
           days_to_go = parseFloat((vessel.DISTANCE_TO_GO / 350).toFixed(1));
         }
         
@@ -165,9 +169,19 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
           days_to_go,
           riskScore: Math.floor(Math.random() * 100)
         };
+      })
+      .filter(vessel => {
+        // Keep if vessel is in port (event_type contains "port" or "Port")
+        const isInPort = vessel.event_type && 
+                        (vessel.event_type.toLowerCase().includes('port') || 
+                        vessel.event_type.toLowerCase().includes('berth'));
+        
+        // Keep if vessel has a future arrival date (today or later)
+        const hasFutureArrival = vessel.etaDate && vessel.etaDate >= currentDate;
+        
+        // Return true if either condition is met
+        return isInPort || hasFutureArrival;
       });
-
-    return activeVessels;
   }, []);
 
   // Sort vessels data
@@ -196,7 +210,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const fetchVessels = useCallback(async () => {
     setLoading(true);
     setError(null);
-  
+
     try {
       const response = await fetch(API_URL);
       
@@ -206,19 +220,20 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       
       let data = await response.json();
       
-      // Process the data to get only latest active vessels
+      // Process the data
       const processedData = processVesselsData(data);
       
       // Sort the data
       const sortedData = sortVesselsData(processedData);
       
-      // Set both vessels and filtered vessels
+      // Initialize with filtered and sorted data
       setVessels(sortedData || []);
       setFilteredVessels(sortedData || []);
       setLastUpdated(new Date());
     } catch (err) {
       console.error('Error fetching vessel data:', err);
       setError('Failed to load vessel data. Please try again later.');
+      // Set empty arrays on error to avoid undefined errors
       setVessels([]);
       setFilteredVessels([]);
     } finally {
@@ -443,7 +458,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
           <h1 className="dashboard-title">Fleet</h1>
           <div className="vessel-counter">
             <Ship size={14} />
-            <span>{vessels.length}</span> {/* This now shows only active vessels with latest timestamp */}
+            <span>{vesselCount}</span>
             {highRiskCount > 0 && (
               <div className="risk-badge">
                 <AlertTriangle size={10} />
