@@ -50,7 +50,7 @@
   --border-radius-lg: 8px;
   
   /* Chart dimensions - Updated */
-  --chart-height: 220px !important;
+  --chart-height: 250px !important;
 }
 
 /* ===== ANIMATIONS ===== */
@@ -2214,7 +2214,7 @@
 
 /* Direct overrides for chartStyles.css */
 :root {
-  --chart-height: 220px !important;
+  --chart-height: 250px !important;
 }
 
 .chart-card {

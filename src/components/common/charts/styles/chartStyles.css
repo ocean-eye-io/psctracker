@@ -14,7 +14,7 @@
   --border-color: rgba(244, 244, 244, 0.05);
   --shadow-primary: rgba(0, 0, 0, 0.3);
   --shadow-glow: rgba(76, 201, 240, 0.3);
-  --chart-height: 220px !important; /* Reduced height for charts */
+  --chart-height: 300px !important; /* Reduced height for charts */
 }
 
 /* Chart Card Container with 3D effects */
@@ -33,7 +33,7 @@
   perspective: 1000px;
   margin-bottom: 6px; /* Reduced from 12px */
   height: var(--chart-height);
-  min-height: 220px !important;
+  min-height: 300px !important;
   height: var(--chart-height) !important;
   max-height: var(--chart-height) !important; /* Reduced from 140px */
 }
@@ -591,8 +591,8 @@
 /* Forced overrides if needed */
 .force-compact .chart-card {
   height: 150px !important;
-  min-height: 150px !important;
-  max-height: 150px !important;
+  min-height: 180px !important;
+  max-height: 180px !important;
 }
 
 .force-compact .chart-wrapper {
