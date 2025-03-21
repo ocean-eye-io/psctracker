@@ -9,6 +9,7 @@ import ArrivalsByPortChart from './charts/ArrivalsByPortChart';
 import ArrivalTimelineChart from './charts/ArrivalTimelineChart';
 import './FleetStyles.css';
 import CommentsModal from './CommentsModal';
+import { v4 as uuidv4 } from 'uuid';
 
 const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   // State variables
@@ -23,6 +24,11 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const [statusFilters, setStatusFilters] = useState([]);
   const [docFilters, setDocFilters] = useState([]);
   const [voyageStatusFilter, setVoyageStatusFilter] = useState('Current Voyages');
+  
+  // Store processed data by status for filter operations
+  const [activeVessels, setActiveVessels] = useState([]);
+  const [inactiveVessels, setInactiveVessels] = useState([]);
+  const [allProcessedVessels, setAllProcessedVessels] = useState([]);
   
   // Dropdown visibility state
   const [showVoyageStatusDropdown, setShowVoyageStatusDropdown] = useState(false);
@@ -44,16 +50,15 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const handleCommentUpdated = (updatedVessel) => {
     // Update the vessels array with the updated vessel
     setVessels(vessels.map(vessel => 
-      vessel.id === updatedVessel.id ? updatedVessel : vessel
+      vessel.uniqueKey === updatedVessel.uniqueKey ? updatedVessel : vessel
     ));
     
     // Also update the filtered vessels array
     setFilteredVessels(filteredVessels.map(vessel => 
-      vessel.id === updatedVessel.id ? updatedVessel : vessel
+      vessel.uniqueKey === updatedVessel.uniqueKey ? updatedVessel : vessel
     ));
   };
   
-
   const handleVesselUpdate = async (updatedVessel) => {
     try {
       console.log('Updating vessel:', updatedVessel.imo_no, 'with checklist value:', updatedVessel.checklist_received);
@@ -82,12 +87,11 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       const responseData = await response.json();
       console.log('Checklist update response:', responseData);
       
-     
       const updatedChecklistValue = responseData.checklist_received === true;
       
       setVessels(prevVessels => 
         prevVessels.map(vessel => 
-          vessel.imo_no === updatedVessel.imo_no ? {
+          vessel.uniqueKey === updatedVessel.uniqueKey ? {
             ...vessel,
             checklist_received: updatedChecklistValue
           } : vessel
@@ -97,7 +101,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       // Also update the filtered vessels array
       setFilteredVessels(prevFiltered => 
         prevFiltered.map(vessel => 
-          vessel.imo_no === updatedVessel.imo_no ? {
+          vessel.uniqueKey === updatedVessel.uniqueKey ? {
             ...vessel,
             checklist_received: updatedChecklistValue
           } : vessel
@@ -114,76 +118,135 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   // API endpoint
   const API_URL = 'https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws/api/vessels';
 
-  // Process and filter vessels data
+  // Generate a unique key for each vessel
+  const generateUniqueKey = (vessel) => {
+    // Create a unique key by combining IMO and status (or other distinguishing fields)
+    const status = vessel.status || 'unknown';
+    const loadDate = vessel.rds_load_date || 'unknown';
+    return `${vessel.imo_no}-${status}-${loadDate}`;
+  };
+
+  // Process vessels data
+  // Updated processVesselsData function that correctly processes active vessels
+
   const processVesselsData = useCallback((data) => {
-    // Get the latest record for each IMO number based on rds_load_date
-    const latestVesselData = {};
+    console.log('Raw data received:', data.length, 'rows');
     
-    data.forEach(vessel => {
-      const imoNo = vessel.imo_no;
-      const loadDate = vessel.dwh_load_date ? new Date(vessel.rds_load_date) : null;
-      
-      // Skip records with missing IMO or load date
-      if (!imoNo || !loadDate) return;
-      
-      // If we haven't seen this IMO yet, or this record is newer
-      if (!latestVesselData[imoNo] || 
-          loadDate > new Date(latestVesselData[imoNo].dwh_load_date)) {
-          latestVesselData[imoNo] = vessel;
-      }
+    // Helper function for date parsing
+    const parseDate = (dateString) => {
+        if (!dateString) return null;
+        try {
+            const date = new Date(dateString);
+            return !isNaN(date.getTime()) ? date : null;
+        } catch (e) {
+            return null;
+        }
+    };
+    
+    // Master filter to remove vessels with invalid IMO numbers and empty vessel names
+    const vesselsWithValidData = data.filter(vessel => {
+        const imoNo = vessel.imo_no;
+        const vesselName = vessel.vessel_name;
+        
+        return imoNo && 
+               imoNo !== "-" && 
+               Number.isInteger(Number(imoNo)) && 
+               !String(imoNo).includes('.') &&
+               vesselName && 
+               vesselName !== "-";
     });
     
-    // Convert back to array
-    const uniqueVessels = Object.values(latestVesselData);
+    console.log('Vessels with valid IMO and vessel names:', vesselsWithValidData.length);
     
-    // Filter vessels to only include those in port or arriving today or in the future
-    const currentDate = new Date();
-    currentDate.setHours(0, 0, 0, 0); // Set to beginning of today
+    // Find the latest rds_load_date
+    const allLoadDates = vesselsWithValidData
+        .map(v => parseDate(v.rds_load_date))
+        .filter(date => date !== null);
     
-    // Process and filter data
-    return uniqueVessels
-      .map(vessel => {
-        // Parse eta as Date object if it's a string
-        let etaDate = null;
-        if (vessel.eta) {
-          try {
-            etaDate = new Date(vessel.eta);
-          } catch (e) {
-            console.warn('Invalid eta date format:', vessel.eta);
-          }
-        }
+    const latestLoadDate = allLoadDates.length ? 
+        new Date(Math.max(...allLoadDates.map(d => d.getTime()))) : null;
+    
+    console.log('Latest load date identified:', latestLoadDate);
+    
+    // Calculate the date 2 months ago for report_date filtering
+    const twoMonthsAgo = new Date();
+    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+    console.log('Filtering out vessels with report_date older than:', twoMonthsAgo);
+    
+    // Active vessels processing
+    const activeVessels = latestLoadDate ?
+        vesselsWithValidData.filter(vessel => {
+            // Check active status and latest load date
+            const isActive = vessel.status === "Active" && 
+                           vessel.rds_load_date &&
+                           new Date(vessel.rds_load_date).getTime() === latestLoadDate.getTime();
+            
+            // Check report date recency
+            let hasRecentReport = false;
+            if (vessel.report_date) {
+                const reportDate = parseDate(vessel.report_date);
+                if (reportDate) {
+                    hasRecentReport = reportDate >= twoMonthsAgo;
+                    if (!hasRecentReport) {
+                        console.debug('Vessel excluded due to old report date:', {
+                            vessel: vessel.vessel_name,
+                            reportDate: reportDate,
+                            twoMonthsAgo: twoMonthsAgo
+                        });
+                    }
+                }
+            }
+            
+            return isActive && hasRecentReport;
+        }) : [];
+    
+    // Inactive vessels: all with status="Inactive"
+    const inactiveVessels = vesselsWithValidData.filter(vessel =>
+        vessel.status === "Inactive"
+    );
+    
+    console.log('Active vessels from latest load date (with recent reports):', activeVessels.length);
+    console.log('Inactive vessels (all dates):', inactiveVessels.length);
+    
+    // Enhance vessel data with calculated fields
+    const enhanceVessel = (vessel, isActive = true) => {
+        const etaDate = parseDate(vessel.eta);
         
-        // Calculate days to go based on current date and ETA
         let days_to_go = 0;
         if (etaDate) {
-          const timeDiff = etaDate.getTime() - currentDate.getTime();
-          days_to_go = Math.max(0, Math.round(timeDiff / (1000 * 3600 * 24) * 10) / 10);
+            const currentDate = new Date();
+            const timeDiff = etaDate.getTime() - currentDate.getTime();
+            days_to_go = Math.max(0, Math.round(timeDiff / (1000 * 3600 * 24) * 10) / 10);
         } else if (vessel.DISTANCE_TO_GO) {
-          // Fallback: calculate from distance if ETA isn't available
-          days_to_go = parseFloat((vessel.DISTANCE_TO_GO / 350).toFixed(1));
+            days_to_go = parseFloat((vessel.DISTANCE_TO_GO / 350).toFixed(1));
         }
         
+        // Generate a unique key using UUID
+        const uniqueKey = `vessel-${uuidv4()}`;
+        
         return {
-          ...vessel,
-          etaDate,
-          days_to_go,
-          riskScore: Math.floor(Math.random() * 100)
+            ...vessel,
+            etaDate,
+            days_to_go,
+            riskScore: Math.floor(Math.random() * 100),
+            uniqueKey,
+            isActiveVessel: isActive,
+            reportDate: parseDate(vessel.report_date) // Add parsed report date
         };
-      })
-      .filter(vessel => {
-        // Keep if vessel is in port (event_type contains "port" or "Port")
-        const isInPort = vessel.event_type && 
-                        (vessel.event_type.toLowerCase().includes('port') || 
-                        vessel.event_type.toLowerCase().includes('berth'));
-        
-        // Keep if vessel has a future arrival date (today or later)
-        const hasFutureArrival = vessel.etaDate && vessel.etaDate >= currentDate;
-        
-        // Return true if either condition is met
-        return isInPort || hasFutureArrival;
-      });
-  }, []);
-
+    };
+    
+    // Process both active and inactive vessels
+    const enhancedActiveVessels = activeVessels.map(v => enhanceVessel(v, true));
+    const enhancedInactiveVessels = inactiveVessels.map(v => enhanceVessel(v, false));
+    
+    // Store processed vessels
+    setActiveVessels(enhancedActiveVessels);
+    setInactiveVessels(enhancedInactiveVessels);
+    setAllProcessedVessels([...enhancedActiveVessels, ...enhancedInactiveVessels]);
+    
+    // Return active vessels for default view
+    return enhancedActiveVessels;
+}, []);
   // Sort vessels data
   const sortVesselsData = useCallback((processedData) => {
     return [...processedData].sort((a, b) => {
@@ -210,7 +273,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const fetchVessels = useCallback(async () => {
     setLoading(true);
     setError(null);
-
+  
     try {
       const response = await fetch(API_URL);
       
@@ -219,21 +282,20 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       }
       
       let data = await response.json();
+      console.log('API Response data:', data.length, 'rows');
       
-      // Process the data
       const processedData = processVesselsData(data);
+      console.log('Processed data for display:', processedData.length);
       
-      // Sort the data
       const sortedData = sortVesselsData(processedData);
+      console.log('Sorted data for display:', sortedData.length);
       
-      // Initialize with filtered and sorted data
       setVessels(sortedData || []);
       setFilteredVessels(sortedData || []);
       setLastUpdated(new Date());
     } catch (err) {
       console.error('Error fetching vessel data:', err);
       setError('Failed to load vessel data. Please try again later.');
-      // Set empty arrays on error to avoid undefined errors
       setVessels([]);
       setFilteredVessels([]);
     } finally {
@@ -246,24 +308,40 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     fetchVessels();
   }, [fetchVessels]);
 
-  // Initialize filter options after data is loaded
+  // Initialize filter options from all vessels
   useEffect(() => {
-    if (vessels.length > 0) {
-      // Initialize port filters
-      const uniquePorts = [...new Set(vessels.map(v => v.arrival_port).filter(Boolean))];
+    if (allProcessedVessels.length > 0) {
+      // Get unique values for all filters from all vessels
+      const uniquePorts = [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))];
+      const uniqueStatuses = [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))];
+      const uniqueDocs = [...new Set(allProcessedVessels.map(v => v.office_doc).filter(Boolean))];
+      
       setPortFilters(uniquePorts);
-      
-      // Initialize status filters
-      const uniqueStatuses = [...new Set(vessels.map(v => v.event_type).filter(Boolean))];
       setStatusFilters(uniqueStatuses);
-      
-      // Initialize DOC filters
-      const uniqueDocs = [...new Set(vessels.map(v => v.office_doc).filter(Boolean))];
       setDocFilters(uniqueDocs);
     }
-  }, [vessels]);
+  }, [allProcessedVessels]);
 
-  // Apply filters when data or filter values change
+  // Apply voyage status filter when it changes
+  useEffect(() => {
+    let baseVessels = [];
+    
+    if (voyageStatusFilter === 'Current Voyages') {
+      console.log('Showing Current Voyages (Active):', activeVessels.length);
+      baseVessels = activeVessels;
+    } else if (voyageStatusFilter === 'Past Voyages') {
+      console.log('Showing Past Voyages (Inactive):', inactiveVessels.length);
+      baseVessels = inactiveVessels;
+    } else { // 'All Voyages'
+      console.log('Showing All Voyages:', allProcessedVessels.length);
+      baseVessels = allProcessedVessels;
+    }
+    
+    const sortedData = sortVesselsData(baseVessels);
+    setVessels(sortedData);
+  }, [voyageStatusFilter, activeVessels, inactiveVessels, allProcessedVessels, sortVesselsData]);
+
+  // Apply other filters when filters or data change
   useEffect(() => {
     if (!vessels.length) {
       setFilteredVessels([]);
@@ -271,17 +349,6 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     }
     
     let results = [...vessels];
-    
-    // Apply voyage status filter
-    if (voyageStatusFilter === 'Current Voyages') {
-      results = results.filter(vessel => 
-        vessel.status === 'Active' || vessel.status === undefined || vessel.status === null
-      );
-    } else if (voyageStatusFilter === 'Past Voyages') {
-      results = results.filter(vessel => 
-        vessel.status === 'Inactive'
-      );
-    }
     
     // Apply port filters if any selected
     if (portFilters.length > 0) {
@@ -315,31 +382,39 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     }
     
     setFilteredVessels(results);
-  }, [vessels, searchTerm, portFilters, statusFilters, docFilters, voyageStatusFilter]);
+  }, [vessels, searchTerm, portFilters, statusFilters, docFilters]);
 
   // Reset all filters
   const resetFilters = useCallback(() => {
     setSearchTerm('');
-    setPortFilters([...new Set(vessels.map(v => v.arrival_port).filter(Boolean))]);
-    setStatusFilters([...new Set(vessels.map(v => v.event_type).filter(Boolean))]);
-    setDocFilters([...new Set(vessels.map(v => v.office_doc).filter(Boolean))]);
+    
+    // Set port, status, and doc filters to include all options
+    const uniquePorts = [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))];
+    const uniqueStatuses = [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))];
+    const uniqueDocs = [...new Set(allProcessedVessels.map(v => v.office_doc).filter(Boolean))];
+    
+    setPortFilters(uniquePorts);
+    setStatusFilters(uniqueStatuses);
+    setDocFilters(uniqueDocs);
     setVoyageStatusFilter('Current Voyages');
-  }, [vessels]);
+  }, [allProcessedVessels]);
 
   // Toggle all items in a filter group
   const toggleAllItems = (type) => {
+    // Get all unique values from all processed vessels
+    const uniquePorts = [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))];
+    const uniqueStatuses = [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))];
+    const uniqueDocs = [...new Set(allProcessedVessels.map(v => v.office_doc).filter(Boolean))];
+    
     switch(type) {
       case 'ports':
-        const allPorts = [...new Set(vessels.map(v => v.arrival_port).filter(Boolean))];
-        setPortFilters(portFilters.length === allPorts.length ? [] : allPorts);
+        setPortFilters(portFilters.length === uniquePorts.length ? [] : uniquePorts);
         break;
       case 'statuses':
-        const allStatuses = [...new Set(vessels.map(v => v.event_type).filter(Boolean))];
-        setStatusFilters(statusFilters.length === allStatuses.length ? [] : allStatuses);
+        setStatusFilters(statusFilters.length === uniqueStatuses.length ? [] : uniqueStatuses);
         break;
       case 'docs':
-        const allDocs = [...new Set(vessels.map(v => v.office_doc).filter(Boolean))];
-        setDocFilters(docFilters.length === allDocs.length ? [] : allDocs);
+        setDocFilters(docFilters.length === uniqueDocs.length ? [] : uniqueDocs);
         break;
       default:
         break;
@@ -375,11 +450,24 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     }
   };
 
-  // Utility memoized values
-  const uniquePorts = useMemo(() => [...new Set(vessels.map(v => v.arrival_port).filter(Boolean))], [vessels]);
-  const uniqueStatuses = useMemo(() => [...new Set(vessels.map(v => v.event_type).filter(Boolean))], [vessels]);
-  const uniqueDocs = useMemo(() => [...new Set(vessels.map(v => v.office_doc).filter(Boolean))], [vessels]);
-  const highRiskCount = useMemo(() => vessels.filter(v => v.riskScore > 70).length, [vessels]);
+  // Memoized values for filter counts and dropdown options
+  const uniquePorts = useMemo(() => 
+    [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))], 
+    [allProcessedVessels]
+  );
+  
+  const uniqueStatuses = useMemo(() => 
+    [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))], 
+    [allProcessedVessels]
+  );
+  
+  const uniqueDocs = useMemo(() => 
+    [...new Set(allProcessedVessels.map(v => v.office_doc).filter(Boolean))], 
+    [allProcessedVessels]
+  );
+  
+  
+  
   const vesselCount = vessels.length;
   const filteredCount = filteredVessels.length;
 
@@ -459,12 +547,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
           <div className="vessel-counter">
             <Ship size={14} />
             <span>{vesselCount}</span>
-            {highRiskCount > 0 && (
-              <div className="risk-badge">
-                <AlertTriangle size={10} />
-                <span>{highRiskCount}</span>
-              </div>
-            )}
+            
           </div>
           
           {/* Search control - Now in the left section */}
@@ -723,6 +806,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
           <button className="control-btn refresh-btn" onClick={fetchVessels} title="Refresh data">
             <RefreshCw size={14} className={loading ? "spinning" : ""} />
           </button>
+          
           <button className="control-btn export-btn" title="Export data">
             <Download size={14} />
           </button>

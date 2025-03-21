@@ -1,3 +1,4 @@
+// src/components/dashboard/fleet/VesselTable.jsx
 import React from 'react';
 import { MessageSquare } from 'lucide-react';
 import {
@@ -12,7 +13,7 @@ const VesselTable = ({
   vessels, 
   onOpenRemarks, 
   fieldMappings,
-  onUpdateVessel // Add this prop to handle vessel updates
+  onUpdateVessel
 }) => {
   // Enhanced format function that can handle both date and date+time
   const formatDateTime = (dateString, includeTime = false) => {
@@ -232,7 +233,7 @@ const VesselTable = ({
       columns={getTableColumns()}
       expandedContent={renderExpandedContent}
       actions={commentsColumn}
-      uniqueIdField="imo_no"
+      uniqueIdField="uniqueKey" // Use the uniqueKey property instead of imo_no
       defaultSortKey="eta"
       defaultSortDirection="desc"
     />
