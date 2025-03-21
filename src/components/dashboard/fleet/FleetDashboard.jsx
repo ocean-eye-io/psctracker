@@ -10,6 +10,7 @@ import ArrivalTimelineChart from './charts/ArrivalTimelineChart';
 import './FleetStyles.css';
 import CommentsModal from './CommentsModal';
 import { v4 as uuidv4 } from 'uuid';
+import MapModal from './MapModal';
 
 const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   // State variables
@@ -40,6 +41,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [selectedVessel, setSelectedVessel] = useState(null);
+  const [mapModalOpen, setMapModalOpen] = useState(false);
   
   const handleOpenComments = (vessel) => {
     setSelectedVessel(vessel);
@@ -810,7 +812,10 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
           <button className="control-btn export-btn" title="Export data">
             <Download size={14} />
           </button>
-          <button className="map-toggle">
+          <button 
+            className="map-toggle"
+            onClick={() => setMapModalOpen(true)}
+          >
             <Map size={14} />
             <span>Map</span>
           </button>
@@ -877,9 +882,14 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       
       <div className="dashboard-footer">
         <div className="data-source">
-          Data sources: AIS, Port Authorities, Weather API
+          Data sources: AIS, Noon Report, Vessel Emails
         </div>
       </div>
+      <MapModal
+        isOpen={mapModalOpen}
+        onClose={() => setMapModalOpen(false)}
+        vessels={vessels} // Use all vessels, not just filtered ones
+      />
       
       <CommentsModal
         isOpen={commentModalOpen}
