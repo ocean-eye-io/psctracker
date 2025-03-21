@@ -75,6 +75,30 @@ export const fleetFieldMappings = {
       dbField: 'comments',
       label: 'Comments',
       priority: 11
+    },
+
+    psc_last_inspection_date: {
+      dbField: 'psc_last_inspection_date',
+      label: 'PSC Last Inspection Date',
+      priority: 12,
+      type: 'date'
+    },
+    psc_last_inspection_port: {
+      dbField: 'psc_last_inspection_port',
+      label: 'PSC Last Inspection Port',
+      priority: 13
+      
+    },
+    amsa_last_inspection_date: {
+      dbField: 'amsa_last_inspection_date',
+      label: 'AMSA Last Inspection Date',
+      priority: 14,
+      type: 'date'
+    },
+    amsa_last_inspection_port: {
+      dbField: 'amsa_last_inspection_port',
+      label: 'AMSA Last Inspection Port',
+      priority: 15
     }
     
   },

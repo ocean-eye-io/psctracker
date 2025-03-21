@@ -5,15 +5,24 @@ import './NavigationStyles.css';
 
 const NavigationHeader = ({ activePage, onNavigate }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
+  
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
-
+  
   const handleNavClick = (id, e) => {
     e.preventDefault();
     
-    // Map 'reports' to 'defects' for the defects dashboard
+    // Special case for 'reports' (Defects Register)
+    if (id === 'reports') {
+      // Open defectslog.netlify.app in a new tab
+      window.open('https://defectslog.netlify.app', '_blank');
+      
+      // Don't navigate away from current page
+      return;
+    }
+    
+    // Map 'reports' to 'defects' for the defects dashboard (keeping this part for other navigation functionality)
     const pageId = id === 'reports' ? 'defects' : id;
     
     if (onNavigate) {
@@ -25,23 +34,23 @@ const NavigationHeader = ({ activePage, onNavigate }) => {
       setSidebarOpen(false);
     }
   };
-
+  
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: <Home size={20} />, path: '/dashboard' },
-    { id: 'fleet', label: 'Fleet', icon: <Ship size={20} />, path: '/fleet' },
-    { id: 'reports', label: 'Reports', icon: <BarChart2 size={20} />, path: '/reports' },
+    //{ id: 'dashboard', label: 'Dashboard', icon: <Home size={20} />, path: '/dashboard' },
+    { id: 'fleet', label: 'Dashboard', icon: <Ship size={20} />, path: '/fleet' },
+    { id: 'reports', label: 'Defects Register', icon: <BarChart2 size={20} />, path: '/reports' },
     { id: 'reporting', label: 'Vessel Reporting', icon: <FileText size={20} />, path: '/reporting' },
     //{ id: 'ports', label: 'Ports', icon: <Anchor size={20} />, path: '/ports' },
     //{ id: 'settings', label: 'Settings', icon: <Settings size={20} />, path: '/settings' }
   ];
-
+  
   return (
     <>
       {/* Mobile menu toggle */}
       <button className="mobile-menu-toggle" onClick={toggleSidebar}>
         {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
-
+      
       {/* Header */}
       <header className="navigation-header">
         <div className="brand-container">
@@ -51,7 +60,7 @@ const NavigationHeader = ({ activePage, onNavigate }) => {
             <div className="animated-wave"></div>
           </div>
         </div>
-
+        
         {/* Desktop Navigation */}
         <nav className="desktop-nav">
           {navItems.map(item => (
@@ -67,7 +76,7 @@ const NavigationHeader = ({ activePage, onNavigate }) => {
             </a>
           ))}
         </nav>
-
+        
         {/* User profile area */}
         <div className="user-profile">
           <div className="user-avatar">JD</div>
@@ -77,7 +86,7 @@ const NavigationHeader = ({ activePage, onNavigate }) => {
           </div>
         </div>
       </header>
-
+      
       {/* Mobile Sidebar */}
       <aside className={`mobile-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
