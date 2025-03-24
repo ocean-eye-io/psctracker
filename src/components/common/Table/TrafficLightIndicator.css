@@ -1,0 +1,302 @@
+/* TrafficLight.css - Complete rewrite */
+
+/* Container for the traffic light indicator */
+.traffic-light-container {
+    display: inline-flex;
+    position: relative;
+    flex-shrink: 0;
+    /* Create larger hit area while maintaining visual size */
+    padding: 5px;
+    margin: -5px;
+    margin-right: 3px;
+    z-index: 100;
+  }
+  
+  /* The traffic light indicator itself */
+  .traffic-light-indicator {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    /* 3D effect with gradient and shadow */
+    background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.4) 0%, transparent 80%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Status-specific styling */
+  .traffic-light-red {
+    background-color: #E74C3C;
+    box-shadow: 0 0 8px rgba(231, 76, 60, 0.7), inset 0 -1px 2px rgba(0, 0, 0, 0.3);
+  }
+  
+  .traffic-light-yellow {
+    background-color: #F1C40F;
+    box-shadow: 0 0 8px rgba(241, 196, 15, 0.7), inset 0 -1px 2px rgba(0, 0, 0, 0.3);
+  }
+  
+  .traffic-light-green {
+    background-color: #2ECC71;
+    box-shadow: 0 0 8px rgba(46, 204, 113, 0.7), inset 0 -1px 2px rgba(0, 0, 0, 0.3);
+  }
+  
+  .traffic-light-grey {
+    background-color: #95a5a6;
+    box-shadow: 0 0 8px rgba(149, 165, 166, 0.7), inset 0 -1px 2px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Hover effect for traffic light */
+  .traffic-light-indicator:hover {
+    transform: scale(1.2) translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.6), inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Active/pressed state */
+  .traffic-light-indicator:active {
+    transform: scale(1.1);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.4), inset 0 -1px 1px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Vessel name with status container */
+  .vessel-name-with-status {
+    display: flex;
+    align-items: center;
+  }
+  
+  /* Invisible bridge to maintain hover when moving to tooltip */
+  .traffic-light-container::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: -20px;
+    width: calc(100% + 40px);
+    height: 20px;
+    background: transparent;
+  }
+  
+  /* Tooltip styling */
+  .traffic-light-tooltip {
+    position: absolute;
+    top: calc(100% + 15px);
+    left: 0;
+    transform: translateY(10px);
+    width: 320px;
+    background: #162d48;
+    border-radius: 8px;
+    padding: 0;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(77, 195, 255, 0.3);
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0s linear 0.3s, transform 0.3s ease;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  
+  /* Show tooltip on hover */
+  .traffic-light-container:hover .traffic-light-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+    transition: opacity 0.3s ease, visibility 0s linear 0s, transform 0.3s ease;
+  }
+  
+  /* Keep tooltip visible when hovering on it */
+  .traffic-light-tooltip:hover {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+  
+  /* Add delay before hiding */
+  .traffic-light-container:not(:hover) .traffic-light-tooltip:not(:hover) {
+    transition-delay: 0.3s;
+  }
+  
+  /* Tooltip arrow */
+  .traffic-light-tooltip::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 15px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 8px solid #1a3652;
+  }
+  
+  /* Tooltip header */
+  .traffic-light-tooltip .tooltip-header {
+    padding: 12px 15px;
+    background: linear-gradient(180deg, #1a3652, #0f2337);
+    border-bottom: 1px solid rgba(77, 195, 255, 0.2);
+  }
+  
+  .traffic-light-tooltip .tooltip-header h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+  }
+  
+  /* Tooltip body */
+  .traffic-light-tooltip .tooltip-body {
+    padding: 10px 0;
+    max-height: 300px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(77, 195, 255, 0.3) rgba(11, 22, 35, 0.5);
+  }
+  
+  .traffic-light-tooltip .tooltip-body::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .traffic-light-tooltip .tooltip-body::-webkit-scrollbar-track {
+    background: rgba(11, 22, 35, 0.5);
+  }
+  
+  .traffic-light-tooltip .tooltip-body::-webkit-scrollbar-thumb {
+    background-color: rgba(77, 195, 255, 0.3);
+    border-radius: 2px;
+  }
+  
+  /* Factor rows */
+  .traffic-light-tooltip .factor-row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    grid-template-rows: auto auto;
+    padding: 8px 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background-color 0.2s ease;
+  }
+  
+  .traffic-light-tooltip .factor-row:last-child {
+    border-bottom: none;
+  }
+  
+  .traffic-light-tooltip .factor-row:hover {
+    background: rgba(77, 195, 255, 0.05);
+  }
+  
+  /* Factor row status-based styling */
+  .traffic-light-tooltip .factor-red {
+    background: rgba(231, 76, 60, 0.05);
+  }
+  
+  .traffic-light-tooltip .factor-yellow {
+    background: rgba(241, 196, 15, 0.05);
+  }
+  
+  .traffic-light-tooltip .factor-green {
+    background: rgba(46, 204, 113, 0.05);
+  }
+  
+  .traffic-light-tooltip .factor-grey {
+    background: rgba(149, 165, 166, 0.05);
+  }
+  
+  /* Factor name */
+  .traffic-light-tooltip .factor-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    grid-column: 1;
+    grid-row: 1;
+  }
+  
+  /* Factor value */
+  .traffic-light-tooltip .factor-value {
+    font-size: 12px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    grid-column: 2;
+    grid-row: 1;
+  }
+  
+  /* Status indicators in tooltip */
+  .traffic-light-tooltip .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    display: inline-block;
+  }
+  
+  .traffic-light-tooltip .status-red {
+    background: #E74C3C;
+    box-shadow: 0 0 4px rgba(231, 76, 60, 0.6);
+  }
+  
+  .traffic-light-tooltip .status-yellow {
+    background: #F1C40F;
+    box-shadow: 0 0 4px rgba(241, 196, 15, 0.6);
+  }
+  
+  .traffic-light-tooltip .status-green {
+    background: #2ECC71;
+    box-shadow: 0 0 4px rgba(46, 204, 113, 0.6);
+  }
+  
+  .traffic-light-tooltip .status-grey {
+    background: #95a5a6;
+    box-shadow: 0 0 4px rgba(149, 165, 166, 0.6);
+  }
+  
+  /* Factor detail */
+  .traffic-light-tooltip .factor-detail {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    font-style: italic;
+    grid-column: 1 / span 2;
+    grid-row: 2;
+    margin-top: 4px;
+  }
+  
+  /* Make sure table cells don't hide the tooltip */
+  .data-row td {
+    overflow: visible !important;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .traffic-light-tooltip {
+      width: 250px;
+    }
+    
+    .traffic-light-tooltip .factor-row {
+      grid-template-columns: 90px 1fr;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .traffic-light-tooltip {
+      width: 220px;
+    }
+    
+    .traffic-light-tooltip .factor-row {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto;
+    }
+    
+    .traffic-light-tooltip .factor-name {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    
+    .traffic-light-tooltip .factor-value {
+      grid-column: 1;
+      grid-row: 2;
+      margin-top: 4px;
+    }
+    
+    .traffic-light-tooltip .factor-detail {
+      grid-column: 1;
+      grid-row: 3;
+    }
+  }

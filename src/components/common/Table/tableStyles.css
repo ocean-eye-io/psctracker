@@ -18,6 +18,12 @@
   --negative-color: #FF5252;
   --warning-color: #FFD426;
   
+  /* Status colors */
+  --status-red: #E74C3C;
+  --status-yellow: #F1C40F;
+  --status-green: #2ECC71;
+  --status-grey: #95a5a6;
+  
   /* Effects */
   --shadow-color: rgba(0, 0, 0, 0.3);
   --highlight-glow: rgba(77, 195, 255, 0.3);
@@ -32,6 +38,14 @@
   --icon-size: 16px;
   --font-size-small: 11px;
   --font-size-normal: 12px;
+  
+  /* Z-index layers */
+  --z-index-base: 1;
+  --z-index-row-hover: 5;
+  --z-index-cell-hover: 50;
+  --z-index-expanded: 15;
+  --z-index-header: 10;
+  --z-index-tooltip: 1000;
 }
 
 /* ===== ANIMATIONS ===== */
@@ -48,6 +62,11 @@
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
+}
+
+@keyframes checkbox-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
@@ -81,7 +100,7 @@
   border-radius: var(--border-radius-md);
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
   pointer-events: none;
-  z-index: 1;
+  z-index: var(--z-index-base);
 }
 
 /* ===== SCROLLABLE WRAPPER ===== */
@@ -185,7 +204,7 @@
   background: var(--table-header-bg);
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: var(--z-index-header);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -273,27 +292,38 @@
   vertical-align: middle;
   white-space: nowrap;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
-  overflow: hidden;
+  overflow: visible; /* Changed from hidden to visible to allow tooltips */
   text-overflow: ellipsis;
   max-width: 0;
+  position: relative;
+  z-index: var(--z-index-base);
 }
 
 .data-row:hover {
   background: var(--table-row-hover-bg);
   transform: translateY(-1px) scale(1.002);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  z-index: 2;
+  z-index: var(--z-index-row-hover);
 }
 
 .data-row:hover td {
   border-bottom-color: rgba(77, 195, 255, 0.2);
+  z-index: var(--z-index-row-hover);
+}
+
+.data-row td:hover {
+  z-index: var(--z-index-cell-hover);
 }
 
 .data-row.expanded {
   background: rgba(77, 195, 255, 0.1);
   transform: translateY(-1px) scale(1.002);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  z-index: 3;
+  z-index: var(--z-index-expanded);
+}
+
+.data-row.expanded td {
+  z-index: var(--z-index-expanded);
 }
 
 .data-row.clickable {
@@ -630,6 +660,482 @@
   font-size: var(--font-size-normal);
 }
 
+/* ===== CHECKBOX FIELD ===== */
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.checkbox-container {
+  display: block;
+  position: relative;
+  padding-left: 25px;
+  cursor: pointer;
+  user-select: none;
+  width: 24px;
+  height: 24px;
+}
+
+.checkbox-container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 18px;
+  width: 18px;
+  background-color: rgba(59, 173, 229, 0.1);
+  border: 1px solid rgba(59, 173, 229, 0.3);
+  border-radius: 3px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.checkbox-container input:checked ~ .checkmark {
+  background-color: rgba(59, 173, 229, 0.8);
+  border-color: rgba(59, 173, 229, 0.9);
+}
+
+.checkbox-container:hover .checkmark {
+  background-color: rgba(59, 173, 229, 0.2);
+  transform: scale(1.05);
+}
+
+.checkbox-container input:checked:hover ~ .checkmark {
+  background-color: rgba(59, 173, 229, 0.9);
+}
+
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+.checkbox-container input:checked ~ .checkmark:after {
+  display: block;
+}
+
+.checkbox-container .checkmark:after {
+  left: 6px;
+  top: 2px;
+  width: 4px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox-spinner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  right: -20px;
+  border: 2px solid rgba(59, 173, 229, 0.2);
+  border-top: 2px solid rgba(59, 173, 229, 0.8);
+  border-radius: 50%;
+  animation: checkbox-spin 0.8s linear infinite;
+}
+
+/* ===== DROPDOWN FIELD ===== */
+.dropdown-field {
+  font-family: 'Nunito', sans-serif;
+  outline: none;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.dropdown-field:hover {
+  box-shadow: 0 0 8px rgba(59, 173, 229, 0.3);
+}
+
+.dropdown-menu {
+  z-index: var(--z-index-tooltip); /* Same as tooltip to ensure visibility */
+}
+
+/* ===== TRAFFIC LIGHT & TOOLTIP STYLES ===== */
+/* Vessel name with status */
+.vessel-name-with-status {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.vessel-name {
+  font-weight: 500;
+}
+
+/* Traffic light styles */
+.traffic-light {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.traffic-light:hover {
+  transform: scale(1.2);
+}
+
+.traffic-light-red {
+  background: var(--status-red);
+  box-shadow: 0 0 8px rgba(231, 76, 60, 0.7);
+}
+
+.traffic-light-yellow {
+  background: var(--status-yellow);
+  box-shadow: 0 0 8px rgba(241, 196, 15, 0.7);
+}
+
+.traffic-light-green {
+  background: var(--status-green);
+  box-shadow: 0 0 8px rgba(46, 204, 113, 0.7);
+}
+
+.traffic-light-grey {
+  background: var(--status-grey);
+  box-shadow: 0 0 8px rgba(149, 165, 166, 0.7);
+}
+
+/* Glowing effect for traffic light */
+.traffic-light-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+  opacity: 0.2;
+}
+
+.traffic-light-red .traffic-light-glow {
+  background: var(--status-red);
+  box-shadow: 0 0 10px 2px rgba(231, 76, 60, 0.7);
+}
+
+.traffic-light-yellow .traffic-light-glow {
+  background: var(--status-yellow);
+  box-shadow: 0 0 10px 2px rgba(241, 196, 15, 0.7);
+}
+
+.traffic-light-green .traffic-light-glow {
+  background: var(--status-green);
+  box-shadow: 0 0 10px 2px rgba(46, 204, 113, 0.7);
+}
+
+/* Make sure the traffic light container respects the table cell constraints */
+.vessel-name-with-status .traffic-light-container {
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+/* Add pulse animation for red status only */
+.vessel-name-with-status .traffic-light-indicator[style*="background-color: rgb(231, 76, 60)"]::after {
+  opacity: 0.7;
+}
+
+/* ===== ENHANCED TOOLTIP STYLES ===== */
+/* Status tooltip container */
+.status-tooltip-container {
+  position: relative;
+  display: inline-flex;
+  margin-right: 10px;
+}
+
+/* Create a bridge to keep tooltip visible */
+.status-tooltip-container::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 15px;
+  background: transparent;
+  z-index: var(--z-index-tooltip);
+}
+
+/* Enhanced tooltip style */
+.enhanced-tooltip {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  background: #162d48;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(59, 173, 229, 0.3);
+  z-index: var(--z-index-tooltip);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+  transform: translateX(-50%) translateY(10px);
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Tooltip appears on hover and stays visible when hovering the tooltip */
+.status-tooltip-container:hover .enhanced-tooltip,
+.enhanced-tooltip:hover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+/* Add a delay before hiding on mouseleave */
+.status-tooltip-container:not(:hover) .enhanced-tooltip:not(:hover) {
+  transition-delay: 0.2s;
+}
+
+/* Tooltip arrow */
+.enhanced-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid #162d48;
+  z-index: 2;
+}
+
+/* Tooltip header */
+.tooltip-header {
+  padding: 10px 15px;
+  background: linear-gradient(180deg, #1a3652, #0f2337);
+  border-bottom: 1px solid rgba(59, 173, 229, 0.2);
+}
+
+.tooltip-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Tooltip body */
+.tooltip-body {
+  padding: 10px 0;
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(77, 195, 255, 0.3) rgba(11, 22, 35, 0.5);
+}
+
+.tooltip-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.tooltip-body::-webkit-scrollbar-track {
+  background: rgba(11, 22, 35, 0.5);
+}
+
+.tooltip-body::-webkit-scrollbar-thumb {
+  background-color: rgba(77, 195, 255, 0.3);
+  border-radius: 2px;
+}
+
+/* Factor row */
+.factor-row {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  grid-template-rows: auto auto;
+  padding: 8px 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background-color 0.2s ease;
+}
+
+.factor-row:last-child {
+  border-bottom: none;
+}
+
+.factor-row:hover {
+  background: rgba(59, 173, 229, 0.05);
+}
+
+/* Factor row colors */
+.factor-red {
+  background: rgba(231, 76, 60, 0.05);
+}
+
+.factor-yellow {
+  background: rgba(241, 196, 15, 0.05);
+}
+
+.factor-green {
+  background: rgba(46, 204, 113, 0.05);
+}
+
+.factor-grey {
+  background: rgba(149, 165, 166, 0.05);
+}
+
+/* Factor name */
+.factor-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  grid-column: 1;
+  grid-row: 1;
+}
+
+/* Factor value */
+.factor-value {
+  font-size: 12px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  grid-column: 2;
+  grid-row: 1;
+}
+
+/* Status dot in factor rows */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  display: inline-block;
+}
+
+.status-red {
+  background: var(--status-red);
+  box-shadow: 0 0 4px rgba(231, 76, 60, 0.6);
+}
+
+.status-yellow {
+  background: var(--status-yellow);
+  box-shadow: 0 0 4px rgba(241, 196, 15, 0.6);
+}
+
+.status-green {
+  background: var(--status-green);
+  box-shadow: 0 0 4px rgba(46, 204, 113, 0.6);
+}
+
+.status-grey {
+  background: var(--status-grey);
+  box-shadow: 0 0 4px rgba(149, 165, 166, 0.6);
+}
+
+/* Factor detail */
+.factor-detail {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  font-style: italic;
+  grid-column: 1 / span 2;
+  grid-row: 2;
+  margin-top: 4px;
+}
+
+/* ===== COMMENT STYLES ===== */
+.comment-cell {
+  position: relative;
+}
+
+.comment-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: var(--border-radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.comment-indicator:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.comment-icon {
+  color: var(--blue-accent);
+  display: flex;
+  align-items: center;
+}
+
+.has-comment .comment-icon {
+  color: var(--positive-color);
+}
+
+.comment-preview-text,
+.comment-add-text {
+  font-size: var(--font-size-small);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comment-add-text {
+  color: var(--table-muted-text-color);
+}
+
+.comment-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 250px;
+  background: #162d48;
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(59, 173, 229, 0.3);
+  z-index: var(--z-index-tooltip);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  pointer-events: none;
+}
+
+.comment-indicator:hover .comment-tooltip {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.tooltip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tooltip-edit-btn {
+  background: rgba(77, 195, 255, 0.2);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--blue-accent);
+  padding: 2px 6px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tooltip-edit-btn:hover {
+  background: rgba(77, 195, 255, 0.3);
+}
+
+.tooltip-body {
+  padding: 8px 12px;
+  font-size: var(--font-size-small);
+  line-height: 1.4;
+}
+
 /* ===== EXTRA COMPACT STYLES ===== */
 .data-table.extra-compact td {
   padding: 4px var(--cell-padding-x);
@@ -680,155 +1186,26 @@
   :root {
     --cell-padding-x: 10px;
   }
+  
+  .enhanced-tooltip {
+    width: 280px;
+  }
 }
 
 @media (max-width: 992px) {
   .expanded-grid {
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   }
-}
-/* Add these styles to your tableStyles.css file */
-
-/* Checkbox Field */
-.checkbox-field {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-/* Custom Checkbox */
-.checkbox-container {
-  display: block;
-  position: relative;
-  padding-left: 25px;
-  cursor: pointer;
-  user-select: none;
-  width: 24px;
-  height: 24px;
+  
+  .enhanced-tooltip {
+    width: 250px;
+  }
+  
+  .factor-row {
+    grid-template-columns: 90px 1fr;
+  }
 }
 
-/* Hide the browser's default checkbox */
-.checkbox-container input {
-  position: absolute;
-  opacity: 0;
-  cursor: pointer;
-  height: 0;
-  width: 0;
-}
-
-/* Create a custom checkbox */
-.checkmark {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 18px;
-  width: 18px;
-  background-color: rgba(59, 173, 229, 0.1);
-  border: 1px solid rgba(59, 173, 229, 0.3);
-  border-radius: 3px;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-/* When the checkbox is checked, add a blue background */
-.checkbox-container input:checked ~ .checkmark {
-  background-color: rgba(59, 173, 229, 0.8);
-  border-color: rgba(59, 173, 229, 0.9);
-}
-
-/* When hovering over the container */
-.checkbox-container:hover .checkmark {
-  background-color: rgba(59, 173, 229, 0.2);
-  transform: scale(1.05);
-}
-
-/* When hovering over a checked container */
-.checkbox-container input:checked:hover ~ .checkmark {
-  background-color: rgba(59, 173, 229, 0.9);
-}
-
-/* Create the checkmark/indicator (hidden when not checked) */
-.checkmark:after {
-  content: "";
-  position: absolute;
-  display: none;
-}
-
-/* Show the checkmark when checked */
-.checkbox-container input:checked ~ .checkmark:after {
-  display: block;
-}
-
-/* Style the checkmark/indicator */
-.checkbox-container .checkmark:after {
-  left: 6px;
-  top: 2px;
-  width: 4px;
-  height: 9px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-/* Add to src/components/common/Table/tableStyles.css */
-
-/* Dropdown Field Styles - Global styles to complement the inline styles */
-.dropdown-field {
-  font-family: 'Nunito', sans-serif;
-  outline: none;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-/* Add a subtle glow effect on hover */
-.dropdown-field:hover {
-  box-shadow: 0 0 8px rgba(59, 173, 229, 0.3);
-}
-
-/* Ensure dropdown menu sits on top */
-.dropdown-menu {
-  z-index: 100;
-}
-
-/* Allow cell to accommodate dropdown */
-.data-row td {
-  overflow: visible;
-}
-/* Add to your tableStyles.css */
-
-.data-row td {
-  position: relative;
-  z-index: 1;
-}
-
-.data-row:hover td {
-  z-index: 5;
-}
-
-.data-row td:hover {
-  z-index: 50;
-}
-
-.data-row.expanded td {
-  z-index: 15;
-}
-/* Spinner for loading state */
-.checkbox-spinner {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  right: -20px;
-  border: 2px solid rgba(59, 173, 229, 0.2);
-  border-top: 2px solid rgba(59, 173, 229, 0.8);
-  border-radius: 50%;
-  animation: checkbox-spin 0.8s linear infinite;
-}
-
-@keyframes checkbox-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
 @media (max-width: 768px) {
   :root {
     --cell-padding-x: 8px;
@@ -849,6 +1226,22 @@
     font-size: 10px;
     padding: 2px 6px;
   }
+  
+  .enhanced-tooltip {
+    width: 220px;
+    left: 0;
+    transform: translateX(0) translateY(10px);
+  }
+  
+  .enhanced-tooltip::before {
+    left: 15px;
+    transform: translateX(0);
+  }
+  
+  .status-tooltip-container:hover .enhanced-tooltip,
+  .enhanced-tooltip:hover {
+    transform: translateX(0) translateY(0);
+  }
 }
 
 @media (max-width: 576px) {
@@ -863,5 +1256,30 @@
   
   .data-table-wrapper {
     max-height: calc(100vh - 180px);
+  }
+  
+  .enhanced-tooltip {
+    max-width: 200px;
+  }
+  
+  .factor-row {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+  
+  .factor-name {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  
+  .factor-value {
+    grid-column: 1;
+    grid-row: 2;
+    margin-top: 4px;
+  }
+  
+  .factor-detail {
+    grid-column: 1;
+    grid-row: 3;
   }
 }

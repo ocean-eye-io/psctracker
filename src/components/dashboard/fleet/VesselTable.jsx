@@ -1,6 +1,7 @@
 // src/components/dashboard/fleet/VesselTable.jsx
 import React from 'react';
 import { MessageSquare } from 'lucide-react';
+import TrafficLightIndicator from '../../common/Table/TrafficLightIndicator';
 import {
   Table,
   StatusIndicator,
@@ -100,7 +101,65 @@ const VesselTable = ({
     // Default fallback
     return "Pending";
   };
-
+  // In your VesselTable.jsx where the getVesselStatus function is defined
+  const getVesselStatus = (vessel) => {
+    // Create an array to store all factors and their statuses
+    const factors = [];
+    let worstStatus = 'green'; // Start with best status and downgrade as needed
+    
+    // Function to update the worst status
+    const updateWorstStatus = (status) => {
+      if (status === 'red' || worstStatus === 'red') {
+        worstStatus = 'red';
+      } else if (status === 'yellow' || worstStatus === 'yellow') {
+        worstStatus = 'yellow';
+      }
+      // If both are green, worst status remains green
+    };
+    
+    // Add your vessel age logic, inspection date logic, etc.
+    // Example of adding a factor:
+    if (vessel.BUILT_DATE) {
+      try {
+        const builtDate = new Date(vessel.BUILT_DATE);
+        if (!isNaN(builtDate.getTime())) {
+          const currentDate = new Date();
+          const ageInMs = currentDate - builtDate;
+          const ageInYears = ageInMs / (1000 * 60 * 60 * 24 * 365.25);
+          const formattedAge = ageInYears.toFixed(1);
+          
+          let ageStatus;
+          if (ageInYears < 5) {
+            ageStatus = 'green';
+          } else if (ageInYears >= 5 && ageInYears < 10) {
+            ageStatus = 'yellow';
+          } else {
+            ageStatus = 'red';
+          }
+          
+          updateWorstStatus(ageStatus);
+          factors.push({
+            name: 'Vessel Age',
+            value: `${formattedAge} years`,
+            status: ageStatus,
+            detail: ageInYears < 5 ? 'Less than 5 years old' : 
+                  ageInYears < 10 ? 'Between 5-10 years old' : 
+                  'More than 10 years old'
+          });
+        }
+      } catch (error) {
+        console.error('Error calculating vessel age:', error);
+      }
+    }
+    
+    // Additional factors would be added similarly
+    
+    return {
+      status: worstStatus,
+      tooltip: 'Multiple factors affect this status',
+      factors: factors
+    };
+  };
   // Convert field mappings to table columns format
   const getTableColumns = () => {
     return Object.entries(fieldMappings.TABLE)
@@ -121,7 +180,23 @@ const VesselTable = ({
               />
             );
           }
-          
+          // Special rendering for vessel_name with traffic light
+          // In the vessel_name render function:
+          // In the vessel_name render function:
+          if (fieldId === 'vessel_name') {
+            const statusInfo = getVesselStatus(rowData);
+            
+            return (
+              <div className="vessel-name-with-status">
+                <TrafficLightIndicator 
+                  status={statusInfo.status} 
+                  tooltipData={statusInfo}
+                />
+                <span>{value || '-'}</span>
+              </div>
+            );
+          }
+
           // Special rendering for risk score
           if (fieldId === 'riskScore') {
             const score = value !== null && value !== undefined ? Math.round(value) : null;
