@@ -63,17 +63,22 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   
   const handleVesselUpdate = async (updatedVessel) => {
     try {
-      console.log('Updating vessel:', updatedVessel.imo_no, 'with checklist value:', updatedVessel.checklist_received);
+      // Get the field and value to update
+      const fieldToUpdate = updatedVessel.field || 'checklist_received';
+      const valueToUpdate = updatedVessel[fieldToUpdate] || updatedVessel.value;
       
-      // Simple payload with only what's needed
+      console.log(`Updating vessel: ${updatedVessel.imo_no} with ${fieldToUpdate} value:`, valueToUpdate);
+      
+      // Prepare the payload
       const payload = {
         id: updatedVessel.id,
         imo_no: updatedVessel.imo_no,
-        checklist_received: updatedVessel.checklist_received
+        field: fieldToUpdate,
+        value: valueToUpdate
       };
       
       // Send the update to your API
-      const response = await fetch(`${API_URL.replace(/\/$/, '')}/checklist`, {
+      const response = await fetch(`${API_URL.replace(/\/$/, '')}/update-fields`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -87,34 +92,31 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       }
       
       const responseData = await response.json();
-      console.log('Checklist update response:', responseData);
+      console.log('Field update response:', responseData);
       
-      // Use the string value from the response
-      const updatedChecklistValue = responseData.checklist_received || 'Pending';
-      
-      // Update vessels state
+      // Update the vessels state
       setVessels(prevVessels => 
         prevVessels.map(vessel => 
           vessel.uniqueKey === updatedVessel.uniqueKey ? {
             ...vessel,
-            checklist_received: updatedChecklistValue
+            [fieldToUpdate]: responseData[fieldToUpdate]
           } : vessel
         )
       );
       
-      // Update filtered vessels state
+      // Also update the filtered vessels array
       setFilteredVessels(prevFiltered => 
         prevFiltered.map(vessel => 
           vessel.uniqueKey === updatedVessel.uniqueKey ? {
             ...vessel,
-            checklist_received: updatedChecklistValue
+            [fieldToUpdate]: responseData[fieldToUpdate]
           } : vessel
         )
       );
       
       return true;
     } catch (error) {
-      console.error('Error updating vessel checklist:', error);
+      console.error(`Error updating vessel ${updatedVessel.field || 'field'}:`, error);
       return false;
     }
   };

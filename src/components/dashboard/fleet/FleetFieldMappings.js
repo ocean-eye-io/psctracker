@@ -71,10 +71,16 @@ export const fleetFieldMappings = {
       priority: 10, 
       width: '150px'
     },
+    sanz: {
+      dbField: 'sanz',
+      label: 'PIC',
+      priority: 11,
+      width: '120px'
+    },
     comments: {
       dbField: 'comments',
       label: 'Comments',
-      priority: 11
+      priority: 12
     }
 
     

@@ -8,7 +8,7 @@ import {
   ExpandedItem,
   DropdownField
 } from '../../common/Table';
-
+import PortalDropdown from '../../common/Table/PortalDropdown';
 const VesselTable = ({ 
   vessels, 
   onOpenRemarks, 
@@ -151,21 +151,35 @@ const VesselTable = ({
           }
           
 
-          // Special rendering for checklist_received
           if (fieldId === 'checklist_received') {
             const normalizedValue = normalizeChecklistValue(value);
             
             return (
-              <div style={{ position: 'relative', zIndex: 10 }}>
-                <DropdownField 
-                  value={normalizedValue}
-                  vessel={rowData}
-                  onUpdate={onUpdateVessel}
-                  options={["Pending", "Acknowledged", "Submitted"]}
-                />
-              </div>
+              <DropdownField 
+                value={normalizedValue}
+                vessel={rowData}
+                onUpdate={onUpdateVessel}
+                field="checklist_received"
+                options={["Pending", "Acknowledged", "Submitted"]}
+              />
             );
           }
+          
+          // Special rendering for SANZ field - reusing the same DropdownField component
+          if (fieldId === 'sanz') {
+            return (
+              <DropdownField 
+                value={value || ""}
+                vessel={rowData}
+                onUpdate={onUpdateVessel}
+                field="sanz"
+                options={["Select...", "Rohit Banta", "John Willis", "Prakash Rebala"]}
+                className="sanz-dropdown"
+              />
+            );
+          }
+          
+          
           // Special rendering for days to go
           if (fieldId === 'daysToGo' && typeof value === 'number') {
             return value.toFixed(1);
