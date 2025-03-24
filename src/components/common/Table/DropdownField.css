@@ -1,0 +1,152 @@
+/* src/components/common/Table/DropdownField.css */
+
+.sleek-dropdown-wrapper {
+    position: relative;
+    width: 130px;
+    font-family: 'Nunito', sans-serif;
+    z-index: 20;
+  }
+  
+  .sleek-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 10px;
+    background: rgba(14, 22, 33, 0.3);
+    border: 1px solid;
+    border-radius: 20px; /* Rounded pill shape */
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    height: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .sleek-dropdown-trigger::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0)
+    );
+    pointer-events: none;
+  }
+  
+  .sleek-dropdown-trigger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 7px rgba(0, 0, 0, 0.15);
+  }
+  
+  .sleek-dropdown-trigger.open {
+    box-shadow: 0 0 0 2px rgba(59, 173, 229, 0.3);
+  }
+  
+  .sleek-dropdown-trigger.updating {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  .sleek-dropdown-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  
+  .sleek-status-indicator {
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    box-shadow: 0 0 8px currentColor;
+  }
+  
+  .sleek-dropdown-arrow {
+    transition: transform 0.2s ease;
+  }
+  
+  .sleek-loading-spinner {
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    margin-top: -6px;
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(59, 173, 229, 0.2);
+    border-radius: 50%;
+    border-top-color: #3BADE5;
+    animation: sleek-spin 0.8s linear infinite;
+  }
+  
+  .sleek-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    width: 100%;
+    background: rgba(14, 22, 33, 0.95);
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    z-index: 100;
+    animation: sleek-fade-in 0.2s ease;
+    backdrop-filter: blur(3px);
+  }
+  
+  .sleek-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    position: relative;
+    overflow: hidden;
+    font-weight: 500;
+  }
+  
+  .sleek-dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .sleek-dropdown-item.active {
+    background: rgba(255, 255, 255, 0.07);
+  }
+  
+  .sleek-dropdown-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 5px;
+    right: 5px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  /* Animations */
+  @keyframes sleek-spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  @keyframes sleek-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(-5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Ensure the dropdown appears on top of other elements */
+  .data-row td {
+    overflow: visible;
+  }

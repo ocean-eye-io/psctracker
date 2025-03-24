@@ -771,6 +771,48 @@
   transform: rotate(45deg);
 }
 
+/* Add to src/components/common/Table/tableStyles.css */
+
+/* Dropdown Field Styles - Global styles to complement the inline styles */
+.dropdown-field {
+  font-family: 'Nunito', sans-serif;
+  outline: none;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Add a subtle glow effect on hover */
+.dropdown-field:hover {
+  box-shadow: 0 0 8px rgba(59, 173, 229, 0.3);
+}
+
+/* Ensure dropdown menu sits on top */
+.dropdown-menu {
+  z-index: 100;
+}
+
+/* Allow cell to accommodate dropdown */
+.data-row td {
+  overflow: visible;
+}
+/* Add to your tableStyles.css */
+
+.data-row td {
+  position: relative;
+  z-index: 1;
+}
+
+.data-row:hover td {
+  z-index: 5;
+}
+
+.data-row td:hover {
+  z-index: 50;
+}
+
+.data-row.expanded td {
+  z-index: 15;
+}
 /* Spinner for loading state */
 .checkbox-spinner {
   position: absolute;

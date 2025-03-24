@@ -5,9 +5,9 @@ import {
   Table,
   StatusIndicator,
   TableBadge,
-  ExpandedItem
+  ExpandedItem,
+  DropdownField
 } from '../../common/Table';
-import CheckboxField from '../../common/Table/CheckboxField';
 
 const VesselTable = ({ 
   vessels, 
@@ -70,6 +70,37 @@ const VesselTable = ({
     return 'danger';
   };
 
+  // Function to normalize checklist value
+  const normalizeChecklistValue = (value) => {
+    if (value === null || value === undefined) {
+      return "Pending";
+    }
+    
+    // Handle boolean values
+    if (typeof value === 'boolean') {
+      return value ? 'Submitted' : 'Pending';
+    }
+    
+    // Handle string values
+    if (typeof value === 'string') {
+      const validValues = ["Pending", "Acknowledged", "Submitted"];
+      if (validValues.includes(value)) {
+        return value;
+      }
+      
+      // Convert older boolean string values
+      if (value.toLowerCase() === 'true') {
+        return 'Submitted';
+      }
+      if (value.toLowerCase() === 'false') {
+        return 'Pending';
+      }
+    }
+    
+    // Default fallback
+    return "Pending";
+  };
+
   // Convert field mappings to table columns format
   const getTableColumns = () => {
     return Object.entries(fieldMappings.TABLE)
@@ -119,6 +150,22 @@ const VesselTable = ({
             return formatDateTime(value, true); // Format as date and time
           }
           
+
+          // Special rendering for checklist_received
+          if (fieldId === 'checklist_received') {
+            const normalizedValue = normalizeChecklistValue(value);
+            
+            return (
+              <div style={{ position: 'relative', zIndex: 10 }}>
+                <DropdownField 
+                  value={normalizedValue}
+                  vessel={rowData}
+                  onUpdate={onUpdateVessel}
+                  options={["Pending", "Acknowledged", "Submitted"]}
+                />
+              </div>
+            );
+          }
           // Special rendering for days to go
           if (fieldId === 'daysToGo' && typeof value === 'number') {
             return value.toFixed(1);
@@ -126,11 +173,14 @@ const VesselTable = ({
           
           // Special rendering for checklist_received
           if (fieldId === 'checklist_received') {
+            const normalizedValue = normalizeChecklistValue(value);
+            
             return (
-              <CheckboxField 
-                value={value}
+              <DropdownField 
+                value={normalizedValue}
                 vessel={rowData}
                 onUpdate={onUpdateVessel}
+                options={["Pending", "Acknowledged", "Submitted"]}
               />
             );
           }

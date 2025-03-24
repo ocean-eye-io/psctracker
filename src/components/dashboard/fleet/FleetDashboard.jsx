@@ -89,8 +89,10 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       const responseData = await response.json();
       console.log('Checklist update response:', responseData);
       
-      const updatedChecklistValue = responseData.checklist_received === true;
+      // Use the string value from the response
+      const updatedChecklistValue = responseData.checklist_received || 'Pending';
       
+      // Update vessels state
       setVessels(prevVessels => 
         prevVessels.map(vessel => 
           vessel.uniqueKey === updatedVessel.uniqueKey ? {
@@ -100,7 +102,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         )
       );
       
-      // Also update the filtered vessels array
+      // Update filtered vessels state
       setFilteredVessels(prevFiltered => 
         prevFiltered.map(vessel => 
           vessel.uniqueKey === updatedVessel.uniqueKey ? {
