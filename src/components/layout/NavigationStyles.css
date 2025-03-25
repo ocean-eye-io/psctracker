@@ -7,7 +7,7 @@
     --text-light: #f4f4f4;
     --text-muted: rgba(244, 244, 244, 0.6);
     --border-subtle: rgba(244, 244, 244, 0.1);
-    --header-height: 70px;
+    --header-height: 55px !important;
   }
   
   /* Header Styles */

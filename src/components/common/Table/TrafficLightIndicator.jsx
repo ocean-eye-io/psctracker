@@ -14,7 +14,7 @@ const TooltipPortal = ({ children, isVisible, triggerRect }) => {
     zIndex: 99999,
     // Prevent tooltip from going off the right edge of the screen
     maxWidth: `calc(100vw - ${triggerRect.left + 20}px)`,
-    width: '260px'
+    width: '220px'
   };
   
   return ReactDOM.createPortal(
@@ -126,7 +126,7 @@ const TrafficLightIndicator = ({ status, tooltipData }) => {
                   <div 
                     key={index} 
                     style={{
-                      padding: '6px 12px',
+                      padding: '4px 10px',
                       borderBottom: index < tooltipData.factors.length - 1 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
                       background: 
                         factorStatus === 'red' ? 'rgba(255, 82, 82, 0.08)' : 
@@ -140,7 +140,7 @@ const TrafficLightIndicator = ({ status, tooltipData }) => {
                       gridGap: '4px'
                     }}>
                       <div style={{
-                        fontSize: '12px',
+                        fontSize: '11px',
                         fontWeight: 600,
                         color: 'rgba(255, 255, 255, 0.9)'
                       }}>
@@ -148,7 +148,7 @@ const TrafficLightIndicator = ({ status, tooltipData }) => {
                       </div>
                       
                       <div style={{
-                        fontSize: '12px',
+                        fontSize: '11px',
                         color: '#fff',
                         display: 'flex',
                         alignItems: 'center'
@@ -176,7 +176,7 @@ const TrafficLightIndicator = ({ status, tooltipData }) => {
                         fontSize: '11px',
                         color: 'rgba(255, 255, 255, 0.6)',
                         fontStyle: 'italic',
-                        marginTop: '4px'
+                        marginTop: '2px'
                       }}>
                         {factor.detail}
                       </div>
