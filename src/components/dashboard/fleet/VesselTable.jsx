@@ -16,6 +16,8 @@ const VesselTable = ({
   fieldMappings,
   onUpdateVessel
 }) => {
+
+  
   // Enhanced format function that can handle both date and date+time
   const formatDateTime = (dateString, includeTime = false) => {
     if (!dateString) return '-';
@@ -117,8 +119,7 @@ const VesselTable = ({
       // If both are green, worst status remains green
     };
     
-    // Add your vessel age logic, inspection date logic, etc.
-    // Example of adding a factor:
+    // Check vessel age
     if (vessel.BUILT_DATE) {
       try {
         const builtDate = new Date(vessel.BUILT_DATE);
@@ -143,8 +144,8 @@ const VesselTable = ({
             value: `${formattedAge} years`,
             status: ageStatus,
             detail: ageInYears < 5 ? 'Less than 5 years old' : 
-                  ageInYears < 10 ? 'Between 5-10 years old' : 
-                  'More than 10 years old'
+                   ageInYears < 10 ? 'Between 5-10 years old' : 
+                   'More than 10 years old'
           });
         }
       } catch (error) {
@@ -152,7 +153,103 @@ const VesselTable = ({
       }
     }
     
-    // Additional factors would be added similarly
+    // Check PSC inspection date
+    if (vessel.psc_last_inspection_date) {
+      try {
+        const inspectionDate = new Date(vessel.psc_last_inspection_date);
+        if (!isNaN(inspectionDate.getTime())) {
+          const currentDate = new Date();
+          const monthsDiff = (currentDate - inspectionDate) / (1000 * 60 * 60 * 24 * 30.4375);
+          const formattedDate = inspectionDate.toLocaleDateString();
+          
+          let inspectionStatus;
+          if (monthsDiff <= 3) {
+            inspectionStatus = 'green';
+          } else if (monthsDiff <= 6) {
+            inspectionStatus = 'yellow';
+          } else {
+            inspectionStatus = 'red';
+          }
+          
+          updateWorstStatus(inspectionStatus);
+          factors.push({
+            name: 'PSC Inspection',
+            value: formattedDate,
+            status: inspectionStatus
+            // detail: monthsDiff <= 3 ? 'Less than 3 months ago' : 
+            //        monthsDiff <= 6 ? 'Between 3-6 months ago' : 
+            //        'More than 6 months ago'
+          });
+        }
+      } catch (error) {
+        console.error('Error checking PSC inspection date:', error);
+      }
+    }
+    
+    // Check AMSA inspection date
+    if (vessel.amsa_last_inspection_date) {
+      try {
+        const inspectionDate = new Date(vessel.amsa_last_inspection_date);
+        if (!isNaN(inspectionDate.getTime())) {
+          const currentDate = new Date();
+          const monthsDiff = (currentDate - inspectionDate) / (1000 * 60 * 60 * 24 * 30.4375);
+          const formattedDate = inspectionDate.toLocaleDateString();
+          
+          let inspectionStatus;
+          if (monthsDiff <= 3) {
+            inspectionStatus = 'green';
+          } else if (monthsDiff <= 6) {
+            inspectionStatus = 'yellow';
+          } else {
+            inspectionStatus = 'red';
+          }
+          
+          updateWorstStatus(inspectionStatus);
+          factors.push({
+            name: 'AMSA Inspection',
+            value: formattedDate,
+            status: inspectionStatus
+            // detail: monthsDiff <= 3 ? 'Less than 3 months ago' : 
+            //        monthsDiff <= 6 ? 'Between 3-6 months ago' : 
+            //        'More than 6 months ago'
+          });
+        }
+      } catch (error) {
+        console.error('Error checking AMSA inspection date:', error);
+      }
+    }
+    
+    // Add checklist status
+    if (vessel.checklist_received) {
+      const checklistStatus = normalizeChecklistValue(vessel.checklist_received);
+      let status;
+      
+      if (checklistStatus === 'Submitted') {
+        status = 'green';
+      } else if (checklistStatus === 'Acknowledged') {
+        status = vessel.days_to_go < 7 ? 'yellow' : 'green';
+      } else { // 'Pending'
+        status = vessel.days_to_go < 3 ? 'red' : 'yellow';
+      }
+      
+      updateWorstStatus(status);
+      factors.push({
+        name: 'Checklist',
+        value: checklistStatus,
+        status: status
+        // detail: status === 'red' ? 'Pending with arrival < 3 days' :
+        //         status === 'yellow' ? 'Needs attention' : 'Completed'
+      });
+    }
+    
+    // If no factors were evaluated, use grey as default
+    if (factors.length === 0) {
+      return {
+        status: 'grey',
+        tooltip: 'Status not determined',
+        factors: []
+      };
+    }
     
     return {
       status: worstStatus,
@@ -181,13 +278,12 @@ const VesselTable = ({
             );
           }
           // Special rendering for vessel_name with traffic light
-          // In the vessel_name render function:
-          // In the vessel_name render function:
+        
           if (fieldId === 'vessel_name') {
             const statusInfo = getVesselStatus(rowData);
             
             return (
-              <div className="vessel-name-with-status">
+              <div style={{ display: 'flex', alignItems: 'center' }}>
                 <TrafficLightIndicator 
                   status={statusInfo.status} 
                   tooltipData={statusInfo}
