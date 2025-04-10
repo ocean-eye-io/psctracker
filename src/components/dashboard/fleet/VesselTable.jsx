@@ -257,6 +257,7 @@ const VesselTable = ({
       factors: factors
     };
   };
+ 
   // Convert field mappings to table columns format
   const getTableColumns = () => {
     return Object.entries(fieldMappings.TABLE)
@@ -277,18 +278,27 @@ const VesselTable = ({
               />
             );
           }
+          
           // Special rendering for vessel_name with traffic light
-        
           if (fieldId === 'vessel_name') {
             const statusInfo = getVesselStatus(rowData);
             
             return (
-              <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div 
+                style={{ display: 'flex', alignItems: 'center' }}
+                title={value || '-'} // Add tooltip with the full vessel name
+              >
                 <TrafficLightIndicator 
                   status={statusInfo.status} 
                   tooltipData={statusInfo}
                 />
-                <span>{value || '-'}</span>
+                <span style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {value || '-'}
+                </span>
               </div>
             );
           }
@@ -307,7 +317,20 @@ const VesselTable = ({
           
           // Special rendering for date fields
           if (field.type === 'date') {
-            return formatDateTime(value, false); // Format as date only
+            const formattedValue = formatDateTime(value, false); // Format as date only
+            return (
+              <div 
+                title={formattedValue}
+                style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  maxWidth: '100%'
+                }}
+              >
+                {formattedValue}
+              </div>
+            );
           }
           
           // Special rendering for date-time fields
@@ -318,9 +341,21 @@ const VesselTable = ({
             fieldId === 'atd' ||
             fieldId === 'psc_last_inspection_date'
           ) {
-            return formatDateTime(value, true); // Format as date and time
+            const formattedValue = formatDateTime(value, true); // Format as date and time
+            return (
+              <div 
+                title={formattedValue}
+                style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  maxWidth: '100%'
+                }}
+              >
+                {formattedValue}
+              </div>
+            );
           }
-          
 
           if (fieldId === 'checklist_received') {
             const normalizedValue = normalizeChecklistValue(value);
@@ -344,38 +379,56 @@ const VesselTable = ({
                 vessel={rowData}
                 onUpdate={onUpdateVessel}
                 field="sanz"
-                options={["Select...", "Rohit Banta", "John Willis", "Prakash Rebala"]}
+                options={["Select...", "Rohit Banta", "John Willis", "Prakash Rebala", "Others"]}
                 className="sanz-dropdown"
+                allowCustomInput={true} // Enable custom input for "Others" option
               />
             );
           }
-          
           
           // Special rendering for days to go
           if (fieldId === 'daysToGo' && typeof value === 'number') {
-            return value.toFixed(1);
-          }
-          
-          // Special rendering for checklist_received
-          if (fieldId === 'checklist_received') {
-            const normalizedValue = normalizeChecklistValue(value);
-            
+            const formattedValue = value.toFixed(1);
             return (
-              <DropdownField 
-                value={normalizedValue}
-                vessel={rowData}
-                onUpdate={onUpdateVessel}
-                options={["Pending", "Acknowledged", "Submitted"]}
-              />
+              <div 
+                title={formattedValue}
+                style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  maxWidth: '100%'
+                }}
+              >
+                {formattedValue}
+              </div>
             );
           }
           
-          // Default rendering
-          return value === null || value === undefined ? '-' : value;
+          // Default rendering for text content
+          if (value !== null && value !== undefined && value !== '-') {
+            const stringValue = String(value);
+            return (
+              <div 
+                title={stringValue}
+                style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  maxWidth: '100%'
+                }}
+              >
+                {stringValue}
+              </div>
+            );
+          }
+          
+          // Fallback for null/undefined values
+          return '-';
         }
       }));
   };
 
+  // Create expanded content renderer
   // Create expanded content renderer
   const renderExpandedContent = (vessel) => {
     const expandedColumns = Object.entries(fieldMappings.EXPANDED)
@@ -396,11 +449,28 @@ const VesselTable = ({
             value = formatDateTime(value, true);
           }
           
+          // If value is a string and not empty, wrap it in a div with title
+          const displayValue = (value !== null && value !== undefined && value !== '-') 
+            ? (
+                <div 
+                  title={String(value)}
+                  style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    maxWidth: '100%'
+                  }}
+                >
+                  {value}
+                </div>
+              ) 
+            : value;
+          
           return (
             <ExpandedItem
               key={fieldId}
               label={field.label}
-              value={value}
+              value={displayValue || '-'}
             />
           );
         })}

@@ -10,12 +10,16 @@ const DropdownField = ({
   onUpdate, 
   options = ["Pending", "Acknowledged", "Submitted"],
   field = "checklist_received", // New parameter to specify which field to update
-  className = ""
+  className = "",
+  allowCustomInput = false // New prop to enable custom input for "Others" option
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [isCustomInput, setIsCustomInput] = useState(false);
+  const [customValue, setCustomValue] = useState('');
   const triggerRef = useRef(null);
+  const customInputRef = useRef(null);
   
   // Default value handling based on field type
   const getDefaultValue = () => {
@@ -23,8 +27,22 @@ const DropdownField = ({
     return ""; // Default for other fields like SANZ
   };
   
+  // Check if current value is a custom value (not in options and not empty)
+  const isCustomValue = allowCustomInput && 
+                        value && 
+                        !options.includes(value) && 
+                        value !== "Others";
+  
   // Use the provided value or default based on field type
-  const currentValue = value || getDefaultValue();
+  const currentValue = isCustomValue ? "Others" : (value || getDefaultValue());
+  
+  // Initialize custom value if needed
+  useEffect(() => {
+    if (isCustomValue) {
+      setCustomValue(value);
+      setIsCustomInput(true);
+    }
+  }, [value, isCustomValue]);
   
   // Update position when dropdown opens or window resizes
   useEffect(() => {
@@ -51,14 +69,27 @@ const DropdownField = ({
     };
   }, [isOpen]);
   
+  // Focus custom input when it appears
+  useEffect(() => {
+    if (isCustomInput && customInputRef.current) {
+      customInputRef.current.focus();
+    }
+  }, [isCustomInput]);
+  
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (isOpen && 
           triggerRef.current && 
           !triggerRef.current.contains(event.target) &&
-          event.target.closest('.sleek-dropdown-menu') === null) {
+          event.target.closest('.sleek-dropdown-menu') === null &&
+          event.target.closest('.custom-input-container') === null) {
         setIsOpen(false);
+        
+        // If custom input is active and has value, submit it
+        if (isCustomInput && customValue.trim()) {
+          handleCustomInputSubmit();
+        }
       }
     }
     
@@ -66,11 +97,17 @@ const DropdownField = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, isCustomInput, customValue]);
   
   const handleSelect = async (option) => {
-    if (option === currentValue) {
+    if (option === currentValue && option !== "Others") {
       setIsOpen(false);
+      return;
+    }
+    
+    // Handle "Others" option
+    if (allowCustomInput && option === "Others") {
+      setIsCustomInput(true);
       return;
     }
     
@@ -96,6 +133,53 @@ const DropdownField = ({
     } finally {
       setIsUpdating(false);
       setIsOpen(false);
+      setIsCustomInput(false);
+    }
+  };
+  
+  const handleCustomInputChange = (e) => {
+    setCustomValue(e.target.value);
+  };
+  
+  const handleCustomInputKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleCustomInputSubmit();
+    } else if (e.key === 'Escape') {
+      setIsCustomInput(false);
+      setIsOpen(false);
+    }
+  };
+  
+  const handleCustomInputSubmit = async () => {
+    if (!customValue.trim()) {
+      setIsCustomInput(false);
+      setIsOpen(false);
+      return;
+    }
+    
+    setIsUpdating(true);
+    
+    try {
+      // Create updated vessel with the custom value
+      const updatedVessel = {
+        ...vessel,
+        [field]: customValue.trim(),
+        field: field,
+        value: customValue.trim()
+      };
+      
+      // Call the update function passed from parent
+      const success = await onUpdate(updatedVessel);
+      
+      if (!success) {
+        console.error(`Failed to update ${field} with custom value`);
+      }
+    } catch (error) {
+      console.error(`Error updating ${field} with custom value:`, error);
+    } finally {
+      setIsUpdating(false);
+      setIsOpen(false);
+      setIsCustomInput(false);
     }
   };
   
@@ -154,6 +238,9 @@ const DropdownField = ({
   // Check if we should show status indicator
   const showStatusIndicator = field === "checklist_received";
 
+  // Get display value (show custom value if it exists)
+  const displayValue = isCustomValue ? value : currentValue;
+
   // Render the menu in a portal
   const renderMenu = () => {
     if (!isOpen) return null;
@@ -188,6 +275,28 @@ const DropdownField = ({
             </div>
           );
         })}
+        
+        {/* Custom input field */}
+        {isCustomInput && (
+          <div className="custom-input-container">
+            <input
+              ref={customInputRef}
+              type="text"
+              className="custom-input"
+              value={customValue}
+              onChange={handleCustomInputChange}
+              onKeyDown={handleCustomInputKeyDown}
+              placeholder="Enter name..."
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button 
+              className="custom-input-submit"
+              onClick={handleCustomInputSubmit}
+            >
+              Save
+            </button>
+          </div>
+        )}
       </div>
     );
     
@@ -218,7 +327,7 @@ const DropdownField = ({
             ></span>
           )}
           <span style={{ color: style.color }}>
-            {currentValue || (field === "sanz" ? "Select..." : getDefaultValue())}
+            {isCustomValue ? value : (displayValue || (field === "sanz" ? "Select..." : getDefaultValue()))}
           </span>
         </div>
         

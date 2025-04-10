@@ -61,7 +61,7 @@ export const fleetFieldMappings = {
     },
     checklist_received: {
       dbField: 'checklist_received',
-      label: '5day Checklist Status',
+      label: 'Pre-Arrival Checklist Status',
       priority: 10, 
       width: '150px'
     },
