@@ -10,6 +10,8 @@ import {
   DropdownField
 } from '../../common/Table';
 import PortalDropdown from '../../common/Table/PortalDropdown';
+import { TextTooltip, VesselDetailsTooltip } from '../../common/Table/Tooltip';
+
 const VesselTable = ({ 
   vessels, 
   onOpenRemarks, 
@@ -261,7 +263,7 @@ const VesselTable = ({
   // Convert field mappings to table columns format
   const getTableColumns = () => {
     return Object.entries(fieldMappings.TABLE)
-      .filter(([fieldId, field]) => !field.isAction && fieldId !== 'comments') // Exclude comments from main columns
+      .filter(([fieldId, field]) => !field.isAction && fieldId !== 'comments')
       .sort((a, b) => a[1].priority - b[1].priority)
       .map(([fieldId, field]) => ({
         field: field.dbField,
@@ -284,25 +286,18 @@ const VesselTable = ({
             const statusInfo = getVesselStatus(rowData);
             
             return (
-              <div 
-                style={{ display: 'flex', alignItems: 'center' }}
-                title={value || '-'} // Add tooltip with the full vessel name
-              >
+              <div style={{ display: 'flex', alignItems: 'center' }}>
                 <TrafficLightIndicator 
                   status={statusInfo.status} 
                   tooltipData={statusInfo}
                 />
-                <span style={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }}>
-                  {value || '-'}
-                </span>
+                <VesselDetailsTooltip vessel={rowData}>
+                  <span>{value || '-'}</span>
+                </VesselDetailsTooltip>
               </div>
             );
           }
-
+  
           // Special rendering for risk score
           if (fieldId === 'riskScore') {
             const score = value !== null && value !== undefined ? Math.round(value) : null;
@@ -317,19 +312,11 @@ const VesselTable = ({
           
           // Special rendering for date fields
           if (field.type === 'date') {
-            const formattedValue = formatDateTime(value, false); // Format as date only
+            const formattedValue = formatDateTime(value, false);
             return (
-              <div 
-                title={formattedValue}
-                style={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  maxWidth: '100%'
-                }}
-              >
+              <TextTooltip text={formattedValue}>
                 {formattedValue}
-              </div>
+              </TextTooltip>
             );
           }
           
@@ -341,22 +328,14 @@ const VesselTable = ({
             fieldId === 'atd' ||
             fieldId === 'psc_last_inspection_date'
           ) {
-            const formattedValue = formatDateTime(value, true); // Format as date and time
+            const formattedValue = formatDateTime(value, true);
             return (
-              <div 
-                title={formattedValue}
-                style={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  maxWidth: '100%'
-                }}
-              >
+              <TextTooltip text={formattedValue}>
                 {formattedValue}
-              </div>
+              </TextTooltip>
             );
           }
-
+  
           if (fieldId === 'checklist_received') {
             const normalizedValue = normalizeChecklistValue(value);
             
@@ -371,7 +350,7 @@ const VesselTable = ({
             );
           }
           
-          // Special rendering for SANZ field - reusing the same DropdownField component
+          // Special rendering for SANZ field
           if (fieldId === 'sanz') {
             return (
               <DropdownField 
@@ -381,7 +360,7 @@ const VesselTable = ({
                 field="sanz"
                 options={["Select...", "Rohit Banta", "John Willis", "Prakash Rebala", "Others"]}
                 className="sanz-dropdown"
-                allowCustomInput={true} // Enable custom input for "Others" option
+                allowCustomInput={true}
               />
             );
           }
@@ -390,17 +369,9 @@ const VesselTable = ({
           if (fieldId === 'daysToGo' && typeof value === 'number') {
             const formattedValue = value.toFixed(1);
             return (
-              <div 
-                title={formattedValue}
-                style={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  maxWidth: '100%'
-                }}
-              >
+              <TextTooltip text={formattedValue}>
                 {formattedValue}
-              </div>
+              </TextTooltip>
             );
           }
           
@@ -408,17 +379,9 @@ const VesselTable = ({
           if (value !== null && value !== undefined && value !== '-') {
             const stringValue = String(value);
             return (
-              <div 
-                title={stringValue}
-                style={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  maxWidth: '100%'
-                }}
-              >
+              <TextTooltip text={stringValue}>
                 {stringValue}
-              </div>
+              </TextTooltip>
             );
           }
           
@@ -429,7 +392,8 @@ const VesselTable = ({
   };
 
   // Create expanded content renderer
-  // Create expanded content renderer
+
+  
   const renderExpandedContent = (vessel) => {
     const expandedColumns = Object.entries(fieldMappings.EXPANDED)
       .sort((a, b) => a[1].priority - b[1].priority);
@@ -449,20 +413,12 @@ const VesselTable = ({
             value = formatDateTime(value, true);
           }
           
-          // If value is a string and not empty, wrap it in a div with title
+          // If value is a string and not empty, wrap it in a tooltip
           const displayValue = (value !== null && value !== undefined && value !== '-') 
             ? (
-                <div 
-                  title={String(value)}
-                  style={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    maxWidth: '100%'
-                  }}
-                >
+                <TextTooltip text={String(value)}>
                   {value}
-                </div>
+                </TextTooltip>
               ) 
             : value;
           
