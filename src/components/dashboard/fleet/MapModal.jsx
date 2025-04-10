@@ -7,32 +7,144 @@ const MapModal = ({ isOpen, onClose, vessels }) => {
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const [markersAdded, setMarkersAdded] = useState(0);
+  const [weatherLayer, setWeatherLayer] = useState('none');
+  const weatherLayersRef = useRef({});
   
-  // Debug log
-  useEffect(() => {
-    if (isOpen) {
-      console.log("MapModal opened with", vessels.length, "vessels");
-      // Log first vessel to check its structure
-      if (vessels.length > 0) {
-        console.log("First vessel sample:", vessels[0]);
+  // This function will be called directly from the JSX onClick
+  const selectWeatherLayer = (layerName) => {
+    console.log("Selecting weather layer:", layerName);
+    
+    if (!mapRef.current) return;
+    
+    // Remove all current weather layers
+    Object.keys(weatherLayersRef.current).forEach(key => {
+      if (key !== 'none' && weatherLayersRef.current[key] && mapRef.current.hasLayer(weatherLayersRef.current[key])) {
+        mapRef.current.removeLayer(weatherLayersRef.current[key]);
       }
+    });
+    
+    // Add the selected layer
+    if (layerName !== 'none' && weatherLayersRef.current[layerName]) {
+      mapRef.current.addLayer(weatherLayersRef.current[layerName]);
     }
-  }, [isOpen, vessels]);
+    
+    // Update state
+    setWeatherLayer(layerName);
+  };
   
   useEffect(() => {
     if (isOpen && !mapRef.current && mapContainerRef.current) {
       // Initialize map
       mapRef.current = L.map(mapContainerRef.current).setView([20, 0], 2);
       
-      // Add tile layer with English labels
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      // Base map layer with English labels
+      const baseLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: 'abcd',
         maxZoom: 19
       }).addTo(mapRef.current);
       
+      // Initialize weather layers object
+      weatherLayersRef.current = {
+        none: null,
+        wind: null,
+        waves: null,
+        currents: null,
+        storms: null
+      };
+      
+      // Create maritime weather layers
+      // Wind layer
+      weatherLayersRef.current.wind = L.tileLayer('https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=9de243494c0b295cca9337e1e96b00e2', {
+        maxZoom: 19,
+        opacity: 0.7,
+        attribution: '&copy; <a href="https://openweathermap.org/">OpenWeatherMap</a>'
+      });
+      
+      // Waves layer (using sea level pressure as proxy)
+      weatherLayersRef.current.waves = L.tileLayer('https://tile.openweathermap.org/map/pressure_new/{z}/{x}/{y}.png?appid=9de243494c0b295cca9337e1e96b00e2', {
+        maxZoom: 19,
+        opacity: 0.6,
+        attribution: '&copy; <a href="https://openweathermap.org/">OpenWeatherMap</a>'
+      });
+      
+      // Currents layer (using precipitation as proxy since true currents are hard to find)
+      weatherLayersRef.current.currents = L.tileLayer('https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=9de243494c0b295cca9337e1e96b00e2', {
+        maxZoom: 19,
+        opacity: 0.6,
+        attribution: '&copy; <a href="https://openweathermap.org/">OpenWeatherMap</a>'
+      });
+      
+      // Add NOAA Storm Tracking
+      weatherLayersRef.current.storms = L.layerGroup();
+      
+      // Fetch active storms from NOAA
+      fetch('https://www.nhc.noaa.gov/cyclones/cyclones.json')
+        .then(response => response.json())
+        .then(data => {
+          try {
+            // Process storm data
+            if (data && data.features) {
+              data.features.forEach(storm => {
+                if (storm.properties && storm.properties.lat && storm.properties.lon) {
+                  const lat = parseFloat(storm.properties.lat);
+                  const lon = parseFloat(storm.properties.lon);
+                  const name = storm.properties.name || 'Unnamed Storm';
+                  const category = storm.properties.maxwind ? `Category ${Math.floor(storm.properties.maxwind / 20)}` : 'Unknown';
+                  
+                  // Create storm icon
+                  const stormIcon = L.divIcon({
+                    className: 'storm-marker',
+                    html: `
+                      <div class="storm-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="red">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                          <circle cx="12" cy="12" r="5" fill="red"/>
+                        </svg>
+                      </div>
+                    `,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                  });
+                  
+                  // Add storm marker with tooltip
+                  const marker = L.marker([lat, lon], { icon: stormIcon })
+                    .bindTooltip(`<div class="storm-tooltip">
+                      <strong>${name}</strong><br>
+                      ${category}<br>
+                      Wind: ${storm.properties.maxwind || 'Unknown'} mph
+                    </div>`, {
+                      direction: 'top',
+                      offset: [0, -12],
+                      opacity: 0.9
+                    });
+                  
+                  weatherLayersRef.current.storms.addLayer(marker);
+                  
+                  // Add storm track if available
+                  if (storm.properties.track) {
+                    const trackPoints = storm.properties.track.map(point => [point.lat, point.lon]);
+                    const track = L.polyline(trackPoints, {
+                      color: 'red',
+                      weight: 2,
+                      opacity: 0.7,
+                      dashArray: '5, 5'
+                    });
+                    weatherLayersRef.current.storms.addLayer(track);
+                  }
+                }
+              });
+            }
+          } catch (error) {
+            console.error("Error processing storm data:", error);
+          }
+        })
+        .catch(error => {
+          console.error("Error fetching storm data:", error);
+        });
+      
       // Add legend to the map
-      const legend = L.control({ position: 'topright' });
+      const legend = L.control({ position: 'bottomright' });
       
       legend.onAdd = function() {
         const div = L.DomUtil.create('div', 'info legend');
@@ -51,15 +163,24 @@ const MapModal = ({ isOpen, onClose, vessels }) => {
               <div class="legend-color" style="background-color: #F1C40F;"></div>
               <div class="legend-label">At Anchor</div>
             </div>
+            ${weatherLayer === 'storms' ? `
+            <div class="legend-divider"></div>
+            <h4>Storm Tracking</h4>
+            <div class="legend-item">
+              <div class="legend-color storm-color"></div>
+              <div class="legend-label">Active Storm</div>
+            </div>
+            <div class="legend-item">
+              <div class="legend-line"></div>
+              <div class="legend-label">Storm Track</div>
+            </div>
+            ` : ''}
           </div>
         `;
         return div;
       };
       
       legend.addTo(mapRef.current);
-      
-      // Debugging code
-      console.log("Map initialized");
       
       // Create vessel markers
       const markers = [];
@@ -88,17 +209,6 @@ const MapModal = ({ isOpen, onClose, vessels }) => {
           lng = parseFloat(vessel.position.longitude);
         }
         
-        // Debugging log for coordinates
-        if (index < 5) {
-          console.log(`Vessel ${index} coordinates:`, { 
-            name: vessel.vessel_name, 
-            lat, 
-            lng, 
-            raw_lat: vessel.latitude || vessel.lat || (vessel.position && vessel.position.latitude),
-            raw_lng: vessel.longitude || vessel.lon || vessel.lng || (vessel.position && vessel.position.longitude)
-          });
-        }
-        
         // Check if vessel has valid coordinates
         if (lat !== null && lng !== null && 
             !isNaN(lat) && !isNaN(lng)) {
@@ -114,7 +224,7 @@ const MapModal = ({ isOpen, onClose, vessels }) => {
           // Create custom icon based on vessel status
           const icon = createVesselIcon(vessel);
           
-          // Add marker with popup and tooltip
+          // Add marker with tooltip
           const marker = L.marker([lat, lng], { icon })
             .addTo(mapRef.current);
           
@@ -140,10 +250,10 @@ const MapModal = ({ isOpen, onClose, vessels }) => {
         mapRef.current.fitBounds(group.getBounds(), { padding: [50, 50] });
       }
       
-      // Add CSS for tooltips and legend
+      // Add CSS for tooltips, legend and weather controls
       const style = document.createElement('style');
       style.textContent = `
-        .vessel-tooltip {
+        .vessel-tooltip, .storm-tooltip {
           background-color: rgba(0, 0, 0, 0.85) !important;
           border: 1px solid rgba(255, 255, 255, 0.2) !important;
           border-radius: 4px !important;
@@ -155,7 +265,8 @@ const MapModal = ({ isOpen, onClose, vessels }) => {
           min-width: 180px !important;
         }
         
-        .vessel-tooltip .leaflet-tooltip-tip {
+        .vessel-tooltip .leaflet-tooltip-tip,
+        .storm-tooltip .leaflet-tooltip-tip {
           display: none !important;
         }
         
@@ -189,6 +300,17 @@ const MapModal = ({ isOpen, onClose, vessels }) => {
           font-size: 12px;
           line-height: 1.4;
           color: #333;
+          margin-bottom: 10px;
+        }
+        
+        .weather-control-container {
+          background-color: rgba(255, 255, 255, 0.9);
+          border-radius: 4px;
+          box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+          font-size: 12px;
+          line-height: 1.4;
+          color: #333;
+          overflow: hidden;
         }
         
         .legend-container h4 {
@@ -211,8 +333,111 @@ const MapModal = ({ isOpen, onClose, vessels }) => {
           border: 1px solid rgba(0, 0, 0, 0.2);
         }
         
+        .legend-divider {
+          height: 1px;
+          background-color: #ddd;
+          margin: 8px 0;
+        }
+        
+        .storm-color {
+          background-color: red;
+        }
+        
+        .legend-line {
+          width: 16px;
+          height: 2px;
+          background-color: red;
+          margin-right: 8px;
+          position: relative;
+        }
+        
+        .legend-line:before, .legend-line:after {
+          content: "";
+          position: absolute;
+          top: 0;
+          width: 2px;
+          height: 2px;
+          background-color: transparent;
+        }
+        
+        .legend-line:before {
+          left: 2px;
+          box-shadow: 0 0 0 1px red;
+        }
+        
+        .legend-line:after {
+          right: 2px;
+          box-shadow: 0 0 0 1px red;
+        }
+        
         .legend-label {
           font-size: 12px;
+        }
+        
+        .weather-button-group {
+          display: flex;
+          background-color: white;
+          border-radius: 4px;
+          overflow: hidden;
+          box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+          margin: 10px;
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          z-index: 1000;
+        }
+        
+        .weather-button {
+          background-color: #f5f5f5;
+          border: none;
+          border-right: 1px solid #ddd;
+          padding: 8px 12px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          text-align: center;
+          transition: all 0.2s ease;
+          color: #333;  /* Dark text color for better visibility */
+        }
+        
+        .weather-button:first-child {
+          border-top-left-radius: 4px;
+          border-bottom-left-radius: 4px;
+        }
+        
+        .weather-button:last-child {
+          border-right: none;
+          border-top-right-radius: 4px;
+          border-bottom-right-radius: 4px;
+        }
+        
+        .weather-button:hover {
+          background-color: #e9e9e9;
+        }
+        
+        .weather-button.active {
+          background-color: #2b6cb0;
+          color: white;
+          font-weight: 600;
+        }
+        
+        .storm-icon {
+          animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+          0% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.2);
+            opacity: 0.8;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
         }
       `;
       document.head.appendChild(style);
@@ -226,6 +451,43 @@ const MapModal = ({ isOpen, onClose, vessels }) => {
       }
     };
   }, [isOpen, vessels]);
+  
+  // Update legend when weather layer changes
+  useEffect(() => {
+    if (mapRef.current) {
+      // Update legend content based on selected weather layer
+      const legendContainer = document.querySelector('.legend-container');
+      if (legendContainer) {
+        legendContainer.innerHTML = `
+          <h4>Vessel Status</h4>
+          <div class="legend-item">
+            <div class="legend-color" style="background-color: #3498DB;"></div>
+            <div class="legend-label">At Sea</div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background-color: #2ECC71;"></div>
+            <div class="legend-label">In Port/Berth</div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background-color: #F1C40F;"></div>
+            <div class="legend-label">At Anchor</div>
+          </div>
+          ${weatherLayer === 'storms' ? `
+          <div class="legend-divider"></div>
+          <h4>Storm Tracking</h4>
+          <div class="legend-item">
+            <div class="legend-color storm-color"></div>
+            <div class="legend-label">Active Storm</div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-line"></div>
+            <div class="legend-label">Storm Track</div>
+          </div>
+          ` : ''}
+        `;
+      }
+    }
+  }, [weatherLayer]);
   
   // Function to create vessel icon based on status
   const createVesselIcon = (vessel) => {
@@ -308,7 +570,46 @@ const MapModal = ({ isOpen, onClose, vessels }) => {
             <p>No vessels with valid coordinates found. Check console for details.</p>
           </div>
         )}
-        <div className="map-container" ref={mapContainerRef}></div>
+        <div className="map-container" ref={mapContainerRef}>
+          {/* Weather control buttons directly in the JSX */}
+          <div className="weather-button-group">
+            <button 
+              className={`weather-button ${weatherLayer === 'none' ? 'active' : ''}`}
+              data-layer="none"
+              onClick={() => selectWeatherLayer('none')}
+            >
+              None
+            </button>
+            <button 
+              className={`weather-button ${weatherLayer === 'wind' ? 'active' : ''}`}
+              data-layer="wind"
+              onClick={() => selectWeatherLayer('wind')}
+            >
+              Wind
+            </button>
+            <button 
+              className={`weather-button ${weatherLayer === 'waves' ? 'active' : ''}`}
+              data-layer="waves"
+              onClick={() => selectWeatherLayer('waves')}
+            >
+              Waves
+            </button>
+            <button 
+              className={`weather-button ${weatherLayer === 'currents' ? 'active' : ''}`}
+              data-layer="currents"
+              onClick={() => selectWeatherLayer('currents')}
+            >
+              Currents
+            </button>
+            <button 
+              className={`weather-button ${weatherLayer === 'storms' ? 'active' : ''}`}
+              data-layer="storms"
+              onClick={() => selectWeatherLayer('storms')}
+            >
+              Storms
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
