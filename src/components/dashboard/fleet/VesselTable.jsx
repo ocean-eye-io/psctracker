@@ -160,7 +160,7 @@ const VesselTable = ({
         if (!isNaN(inspectionDate.getTime())) {
           const currentDate = new Date();
           const monthsDiff = (currentDate - inspectionDate) / (1000 * 60 * 60 * 24 * 30.4375);
-          const formattedDate = inspectionDate.toLocaleDateString();
+          const formattedDate = formatDateTime(vessel.psc_last_inspection_date, false);
           
           let inspectionStatus;
           if (monthsDiff <= 3) {
@@ -193,7 +193,7 @@ const VesselTable = ({
         if (!isNaN(inspectionDate.getTime())) {
           const currentDate = new Date();
           const monthsDiff = (currentDate - inspectionDate) / (1000 * 60 * 60 * 24 * 30.4375);
-          const formattedDate = inspectionDate.toLocaleDateString();
+          const formattedDate = formatDateTime(vessel.psc_last_inspection_date, false);
           
           let inspectionStatus;
           if (monthsDiff <= 3) {

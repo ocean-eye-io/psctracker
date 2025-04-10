@@ -31,13 +31,7 @@ export const fleetFieldMappings = {
       priority: 5,
       width: '150px'
     },
-    departure_date: {
-      dbField: 'departure_date',
-      label: 'Departure Date',
-      priority: 6,
-      width: '120px',
-      type: 'date'
-    },
+    
     arrival_port: {
       dbField: 'arrival_port',
       label: 'Arrival Port',
@@ -94,6 +88,13 @@ export const fleetFieldMappings = {
       dbField: 'departure_country',
       label: 'Departure Country',
       priority: 5
+    },
+    departure_date: {
+      dbField: 'departure_date',
+      label: 'Departure Date',
+      priority: 6,
+      width: '120px',
+      type: 'date'
     },
     etd: {
       dbField: 'etd',
