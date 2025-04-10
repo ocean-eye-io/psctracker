@@ -1,4 +1,3 @@
-/*src/components/dashboard/fleet/charts/ArrivalTimelineChart.jsx*/
 import React, { useState } from 'react';
 import { 
   BarChart, 
@@ -11,11 +10,9 @@ import {
   LabelList, 
   ResponsiveContainer 
 } from 'recharts';
-import { Download, Maximize2, Minimize2 } from 'lucide-react';
 import '../../../common/charts/styles/chartStyles.css';
 
 const ArrivalTimelineChart = ({ data }) => {
-  const [isActive, setIsActive] = useState(false);
   const [hoveredBar, setHoveredBar] = useState(null);
   
   // Ensure data safety
@@ -34,18 +31,6 @@ const ArrivalTimelineChart = ({ data }) => {
       );
     }
     return null;
-  };
-
-  // Event handlers
-  const handleExpandToggle = (e) => {
-    e.stopPropagation();
-    setIsActive(!isActive);
-  };
-
-  const handleDownload = (e) => {
-    e.stopPropagation();
-    // Implement download functionality
-    console.log('Download initiated');
   };
 
   const handleMouseMove = (e) => {
@@ -75,28 +60,12 @@ const ArrivalTimelineChart = ({ data }) => {
   );
 
   return (
-    <div className={`chart-card ${isActive ? 'active' : ''}`}>
+    <div className="chart-card">
       <div className="chart-header">
         <h3 className="chart-title">
           Arrival in (Days)
           <span className="chart-title-highlight"></span>
         </h3>
-        <div className="chart-actions">
-          <button 
-            className="chart-action-btn"
-            onClick={handleDownload}
-            title="Download chart"
-          >
-            <Download size={14} />
-          </button>
-          <button 
-            className="chart-action-btn"
-            onClick={handleExpandToggle}
-            title={isActive ? "Minimize" : "Maximize"}
-          >
-            {isActive ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-          </button>
-        </div>
       </div>
 
       <div className="chart-wrapper timeline-chart">
@@ -133,12 +102,14 @@ const ArrivalTimelineChart = ({ data }) => {
               <Tooltip 
                 cursor={false}
                 content={<CustomTooltip />}
+                isAnimationActive={false}
               />
               <Bar 
                 dataKey="vessels" 
                 barSize={32}
                 className="timeline-bar"
                 fill="url(#defaultBarGradient)"
+                isAnimationActive={false}
               >
                 {safeData.map((_, index) => (
                   <Cell 

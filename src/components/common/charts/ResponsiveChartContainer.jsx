@@ -1,6 +1,5 @@
-// src/components/common/Charts/ResponsiveChartContainer.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Maximize2, Minimize2, Download, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import './styles/chartStyles.css';
 
 const ResponsiveChartContainer = ({ 
@@ -8,11 +7,9 @@ const ResponsiveChartContainer = ({
   children, 
   onRefresh, 
   loading = false,
-  downloadChart = null,
   className = '',
   height = null // Optional custom height override
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [chartWidth, setChartWidth] = useState(0);
   const [chartHeight, setChartHeight] = useState(0);
   const chartCardRef = useRef(null);
@@ -58,20 +55,6 @@ const ResponsiveChartContainer = ({
     </div>
   );
 
-  // Toggle expanded state
-  const toggleExpand = (e) => {
-    if (e) e.stopPropagation();
-    setIsExpanded(!isExpanded);
-  };
-
-  // Handle download
-  const handleDownload = (e) => {
-    if (e) e.stopPropagation();
-    if (downloadChart && typeof downloadChart === 'function') {
-      downloadChart();
-    }
-  };
-
   // Handle refresh
   const handleRefresh = (e) => {
     if (e) e.stopPropagation();
@@ -80,7 +63,7 @@ const ResponsiveChartContainer = ({
     }
   };
 
-  // Update chart dimensions on resize or when expanded changes
+  // Update chart dimensions on resize
   useEffect(() => {
     const updateDimensions = () => {
       if (chartWrapperRef.current) {
@@ -111,41 +94,14 @@ const ResponsiveChartContainer = ({
         resizeObserver.unobserve(chartWrapperRef.current);
       }
     };
-  }, [isExpanded]);
-
-  // Apply escape key to exit expanded mode
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isExpanded) {
-        setIsExpanded(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isExpanded]);
-
-  // Prevent body scrolling when expanded
-  useEffect(() => {
-    if (isExpanded) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'auto';
-    }
-
-    return () => {
-      document.body.style.overflow = 'auto';
-    };
-  }, [isExpanded]);
+  }, []);
 
   // Calculate custom style if height prop is provided
   const customStyle = height ? { height } : { height: 'var(--chart-height)' };
 
   return (
     <div 
-      className={`chart-card ${isExpanded ? 'active' : ''} ${className}`}
+      className={`chart-card ${className}`}
       ref={chartCardRef}
       style={customStyle}
     >
@@ -165,26 +121,6 @@ const ResponsiveChartContainer = ({
               <RefreshCw size={14} />
             </button>
           )}
-          
-          {downloadChart && (
-            <button
-              className="chart-action-btn"
-              onClick={handleDownload}
-              aria-label="Download chart"
-              title="Download chart"
-            >
-              <Download size={14} />
-            </button>
-          )}
-          
-          <button
-            className="chart-action-btn"
-            onClick={toggleExpand}
-            aria-label={isExpanded ? "Minimize chart" : "Maximize chart"}
-            title={isExpanded ? "Minimize" : "Maximize"}
-          >
-            {isExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-          </button>
         </div>
       </div>
       

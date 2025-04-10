@@ -1,4 +1,3 @@
-// src/components/dashboard/fleet/charts/ArrivalByPortChart.jsx
 import React, { useState } from 'react';
 import {
   BarChart,
@@ -30,12 +29,6 @@ const ArrivalsByPortChart = ({ data }) => {
     return null;
   };
   
-  // Event handlers
-  const handleDownload = () => {
-    // Implement download functionality
-    console.log('Download chart');
-  };
-  
   const handleMouseMove = (e) => {
     if (e?.activeTooltipIndex !== undefined) {
       setHoveredBar(e.activeTooltipIndex);
@@ -55,8 +48,8 @@ const ArrivalsByPortChart = ({ data }) => {
   return (
     <ResponsiveChartContainer
       title="Vessels by Port"
-      downloadChart={handleDownload}
       loading={loading}
+      expandable={false} // Add this prop to disable expansion
     >
       <ResponsiveContainer width="100%" height="100%" aspect={null}>
         <BarChart
@@ -87,6 +80,7 @@ const ArrivalsByPortChart = ({ data }) => {
           <Tooltip
             cursor={false}
             content={<CustomTooltip />}
+            isAnimationActive={false}
           />
           <Bar
             dataKey="vessels"
@@ -94,6 +88,7 @@ const ArrivalsByPortChart = ({ data }) => {
             className="chart-bar"
             radius={[6, 6, 0, 0]}
             barSize={20}
+            isAnimationActive={false}
           />
         </BarChart>
       </ResponsiveContainer>

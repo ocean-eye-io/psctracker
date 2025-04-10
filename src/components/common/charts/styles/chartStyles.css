@@ -72,7 +72,34 @@
   box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.8), 0 0 30px var(--shadow-glow);
   transition: all 0.4s cubic-bezier(0.3, 0, 0.2, 1.3);
 }
+/* Add to your chartStyles.css */
+.recharts-wrapper {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
 
+.recharts-surface {
+  overflow: visible;
+}
+
+.recharts-tooltip-wrapper {
+  pointer-events: none !important;
+}
+
+.custom-tooltip {
+  transition: transform 0.1s ease-out;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
 /* Chart Header - styled like table header */
 .chart-header {
   display: flex;
