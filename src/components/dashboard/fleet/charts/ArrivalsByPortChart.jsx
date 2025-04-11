@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BarChart,
   Bar,
@@ -6,14 +6,21 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer
+  ResponsiveContainer,
+  Cell
 } from 'recharts';
-import ResponsiveChartContainer from '../../../common/charts/ResponsiveChartContainer';
 import '../../../common/charts/styles/chartStyles.css';
 
-const ArrivalsByPortChart = ({ data }) => {
+const ArrivalsByPortChart = ({ data, onFilterChange, activeFilter }) => {
   const [hoveredBar, setHoveredBar] = useState(null);
   const [loading, setLoading] = useState(false);
+  
+  // Reset internal state when external activeFilter changes
+  useEffect(() => {
+    if (!activeFilter) {
+      // Reset any internal state if needed
+    }
+  }, [activeFilter]);
   
   // Custom tooltip component
   const CustomTooltip = ({ active, payload, label }) => {
@@ -35,6 +42,16 @@ const ArrivalsByPortChart = ({ data }) => {
     }
   };
   
+  // Handle bar click to trigger filtering
+  const handleBarClick = (entry) => {
+    // If already filtered by this port, clear the filter
+    if (activeFilter === entry.port) {
+      onFilterChange(null);
+    } else {
+      onFilterChange(entry.port);
+    }
+  };
+  
   // Chart gradients definition
   const renderGradients = () => (
     <defs>
@@ -42,57 +59,92 @@ const ArrivalsByPortChart = ({ data }) => {
         <stop offset="0%" stopColor="#4DC3FF" stopOpacity={0.8} />
         <stop offset="100%" stopColor="#3BADE5" stopOpacity={0.6} />
       </linearGradient>
+      <linearGradient id="activePortBarGradient" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#28E0B0" stopOpacity={0.8} />
+        <stop offset="100%" stopColor="#1AB394" stopOpacity={0.6} />
+      </linearGradient>
     </defs>
   );
   
   return (
-    <ResponsiveChartContainer
-      title="Vessels by Port"
-      loading={loading}
-      expandable={false} // Add this prop to disable expansion
-    >
-      <ResponsiveContainer width="100%" height="100%" aspect={null}>
-        <BarChart
-          data={data}
-          margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={() => setHoveredBar(null)}
-          className="chart-transition"
-          style={{ width: '100%', height: '100%' }}
-        >
-          {renderGradients()}
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="rgba(244, 244, 244, 0.05)"
-            vertical={false}
-          />
-          <XAxis
-            dataKey="port"
-            tick={{ fontSize: 11 }}
-            axisLine={{ stroke: 'rgba(244, 244, 244, 0.1)' }}
-            tickLine={false}
-          />
-          <YAxis
-            tick={{ fontSize: 11 }}
-            axisLine={{ stroke: 'rgba(244, 244, 244, 0.1)' }}
-            tickLine={false}
-          />
-          <Tooltip
-            cursor={false}
-            content={<CustomTooltip />}
-            isAnimationActive={false}
-          />
-          <Bar
-            dataKey="vessels"
-            fill="url(#portBarGradient)"
-            className="chart-bar"
-            radius={[6, 6, 0, 0]}
-            barSize={20}
-            isAnimationActive={false}
-          />
-        </BarChart>
-      </ResponsiveContainer>
-    </ResponsiveChartContainer>
+    <div className="chart-card">
+      <div className="chart-header">
+        <h3 className="chart-title">
+          Vessels by Port
+          <span className="chart-title-highlight"></span>
+        </h3>
+        {activeFilter && (
+          <div className="chart-filter-badge">
+            Filtered by: {activeFilter}
+            <button 
+              className="clear-filter-btn" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onFilterChange(null);
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+      </div>
+      
+      <div className="chart-wrapper port-chart">
+        {data.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%" aspect={null}>
+            <BarChart
+              data={data}
+              margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={() => setHoveredBar(null)}
+              className="chart-transition"
+              style={{ width: '100%', height: '100%' }}
+            >
+              {renderGradients()}
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(244, 244, 244, 0.05)"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="port"
+                tick={{ fontSize: 11 }}
+                axisLine={{ stroke: 'rgba(244, 244, 244, 0.1)' }}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                axisLine={{ stroke: 'rgba(244, 244, 244, 0.1)' }}
+                tickLine={false}
+              />
+              <Tooltip
+                cursor={false}
+                content={<CustomTooltip />}
+                isAnimationActive={false}
+              />
+              <Bar
+                dataKey="vessels"
+                className="chart-bar clickable-bar"
+                radius={[6, 6, 0, 0]}
+                barSize={20}
+                isAnimationActive={false}
+                onClick={handleBarClick}
+              >
+                {data.map((entry, index) => (
+                  <Cell 
+                    key={`cell-${index}`}
+                    fill={entry.port === activeFilter ? "url(#activePortBarGradient)" : "url(#portBarGradient)"}
+                    className={`${hoveredBar === index ? 'hovered' : ''} ${entry.port === activeFilter ? 'active' : ''}`}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="chart-no-data">No port data available</div>
+        )}
+      </div>
+    </div>
   );
 };
 

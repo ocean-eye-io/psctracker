@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart, 
   Bar, 
@@ -12,8 +12,15 @@ import {
 } from 'recharts';
 import '../../../common/charts/styles/chartStyles.css';
 
-const ArrivalTimelineChart = ({ data }) => {
+const ArrivalTimelineChart = ({ data, onFilterChange, activeFilter }) => {
   const [hoveredBar, setHoveredBar] = useState(null);
+  
+  // Reset internal state when external activeFilter changes
+  useEffect(() => {
+    if (!activeFilter) {
+      // Reset any internal state if needed
+    }
+  }, [activeFilter]);
   
   // Ensure data safety
   const safeData = Array.isArray(data) ? data : [];
@@ -38,6 +45,16 @@ const ArrivalTimelineChart = ({ data }) => {
       setHoveredBar(e.activeTooltipIndex);
     }
   };
+  
+  // Handle bar click to trigger filtering
+  const handleBarClick = (entry) => {
+    // If already filtered by this range, clear the filter
+    if (activeFilter === entry.range) {
+      onFilterChange(null);
+    } else {
+      onFilterChange(entry.range);
+    }
+  };
 
   // Chart gradients definition
   const renderGradients = () => (
@@ -46,14 +63,28 @@ const ArrivalTimelineChart = ({ data }) => {
         <stop offset="0%" stopColor="#4DC3FF" stopOpacity={0.8} />
         <stop offset="100%" stopColor="#4DC3FF" stopOpacity={1} />
       </linearGradient>
-      {safeData.map((_, index) => (
+      <linearGradient id="activeBarGradient" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stopColor="#28E0B0" stopOpacity={0.8} />
+        <stop offset="100%" stopColor="#28E0B0" stopOpacity={1} />
+      </linearGradient>
+      {safeData.map((entry, index) => (
         <linearGradient
           key={`gradient-${index}`}
           id={`barGradient-${index}`}
           x1="0" y1="0" x2="1" y2="0"
         >
-          <stop offset="0%" stopColor={data[index]?.color || '#4DC3FF'} stopOpacity={0.8} />
-          <stop offset="100%" stopColor={data[index]?.color || '#4DC3FF'} stopOpacity={1} />
+          <stop offset="0%" stopColor={entry.color || '#4DC3FF'} stopOpacity={0.8} />
+          <stop offset="100%" stopColor={entry.color || '#4DC3FF'} stopOpacity={1} />
+        </linearGradient>
+      ))}
+      {safeData.map((entry, index) => (
+        <linearGradient
+          key={`active-gradient-${index}`}
+          id={`activeBarGradient-${index}`}
+          x1="0" y1="0" x2="1" y2="0"
+        >
+          <stop offset="0%" stopColor={entry.activeColor || entry.color || '#28E0B0'} stopOpacity={0.8} />
+          <stop offset="100%" stopColor={entry.activeColor || entry.color || '#28E0B0'} stopOpacity={1} />
         </linearGradient>
       ))}
     </defs>
@@ -66,6 +97,20 @@ const ArrivalTimelineChart = ({ data }) => {
           Arrival in (Days)
           <span className="chart-title-highlight"></span>
         </h3>
+        {activeFilter && (
+          <div className="chart-filter-badge">
+            Filtered by: {activeFilter}
+            <button 
+              className="clear-filter-btn" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onFilterChange(null);
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="chart-wrapper timeline-chart">
@@ -107,15 +152,18 @@ const ArrivalTimelineChart = ({ data }) => {
               <Bar 
                 dataKey="vessels" 
                 barSize={32}
-                className="timeline-bar"
+                className="timeline-bar clickable-bar"
                 fill="url(#defaultBarGradient)"
                 isAnimationActive={false}
+                onClick={handleBarClick}
               >
-                {safeData.map((_, index) => (
+                {safeData.map((entry, index) => (
                   <Cell 
                     key={`cell-${index}`} 
-                    fill={`url(#barGradient-${index})`}
-                    className={`timeline-cell ${hoveredBar === index ? 'hovered' : ''}`}
+                    fill={entry.range === activeFilter 
+                      ? `url(#activeBarGradient-${index})` 
+                      : `url(#barGradient-${index})`}
+                    className={`timeline-cell ${hoveredBar === index ? 'hovered' : ''} ${entry.range === activeFilter ? 'active' : ''}`}
                   />
                 ))}
                 <LabelList 

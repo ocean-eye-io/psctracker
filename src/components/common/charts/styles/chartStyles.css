@@ -100,6 +100,131 @@
   width: 100%;
   height: 100%;
 }
+
+/* Add these to your chartStyles.css file */
+
+/* Timeline specific styles */
+.timeline-bar {
+  cursor: pointer;
+}
+
+.timeline-cell {
+  transition: all 0.3s ease;
+}
+
+.timeline-cell.hovered {
+  filter: brightness(1.2);
+  opacity: 0.9;
+}
+
+.timeline-cell.active {
+  stroke: #ffffff;
+  stroke-width: 1px;
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
+}
+
+/* Enhanced tooltip for timeline */
+.timeline-chart .custom-tooltip {
+  background: rgba(30, 41, 59, 0.95);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Filter indicators */
+.active-filters-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-badge {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(59, 173, 229, 0.15);
+  border: 1px solid rgba(59, 173, 229, 0.3);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #f4f4f4;
+}
+
+.filter-badge-port {
+  background: rgba(59, 173, 229, 0.15);
+  border-color: rgba(59, 173, 229, 0.3);
+}
+
+.filter-badge-timeline {
+  background: rgba(40, 224, 176, 0.15);
+  border-color: rgba(40, 224, 176, 0.3);
+}
+
+.timeline-label {
+  font-weight: 500;
+}
+
+/* Add these to your chartStyles.css file */
+
+/* Chart filter badge */
+.chart-filter-badge {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(59, 173, 229, 0.15);
+  border: 1px solid rgba(59, 173, 229, 0.3);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #f4f4f4;
+  margin-left: 10px;
+}
+
+.clear-filter-btn {
+  background: rgba(244, 244, 244, 0.1);
+  border: none;
+  color: #f4f4f4;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.clear-filter-btn:hover {
+  background: rgba(244, 244, 244, 0.2);
+}
+
+/* Interactive bars */
+.clickable-bar {
+  cursor: pointer;
+}
+
+/* Hover and active states for chart elements */
+.chart-bar rect.hovered {
+  opacity: 0.85;
+  filter: brightness(1.1);
+}
+
+.chart-bar rect.active {
+  stroke: #28E0B0;
+  stroke-width: 2px;
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* Custom tooltips for active state */
+.chart-bar rect.active + .recharts-tooltip {
+  z-index: 10;
+}
+
 /* Chart Header - styled like table header */
 .chart-header {
   display: flex;

@@ -11,6 +11,8 @@ import './FleetStyles.css';
 import CommentsModal from './CommentsModal';
 import { v4 as uuidv4 } from 'uuid';
 import MapModal from './MapModal';
+import ActiveFiltersDisplay from './ActiveFiltersDisplay';
+
 
 const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   // State variables
@@ -42,7 +44,94 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [selectedVessel, setSelectedVessel] = useState(null);
   const [mapModalOpen, setMapModalOpen] = useState(false);
+  const [chartPortFilter, setChartPortFilter] = useState(null);
+
+  const [timelineFilter, setTimelineFilter] = useState(null);
+
+// Add a handler function for timeline filter changes
+  const handleTimelineFilterChange = (timeRange) => {
+    setTimelineFilter(timeRange);
+    
+    // Apply filtering logic based on the time range
+    if (!timeRange) {
+      // If filter is cleared, remove all time-based filtering
+      setFilteredVessels(vessels.filter(v => 
+        // Re-apply only the existing filters (search term, ports, status, doc)
+        (searchTerm.trim() === '' || 
+          (v.vessel_name && v.vessel_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (v.imo_no && v.imo_no.toString().includes(searchTerm)) ||
+          (v.arrival_port && v.arrival_port.toLowerCase().includes(searchTerm.toLowerCase()))
+        ) &&
+        (!portFilters.length || !v.arrival_port || portFilters.includes(v.arrival_port)) &&
+        (!statusFilters.length || !v.event_type || statusFilters.includes(v.event_type)) &&
+        (!docFilters.length || !v.office_doc || docFilters.includes(v.office_doc))
+      ));
+    } else {
+      // Filter based on the selected time range
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      const nextWeek = new Date(today);
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      
+      // Apply the appropriate time-based filter
+      let timeFilteredVessels = [...vessels];
+      
+      if (timeRange === 'In Port') {
+        timeFilteredVessels = vessels.filter(v => 
+          v.event_type && (
+            v.event_type.toLowerCase().includes('port') || 
+            v.event_type.toLowerCase().includes('berth')
+          )
+        );
+      } else if (timeRange === 'Today') {
+        timeFilteredVessels = vessels.filter(v => 
+          v.etaDate && v.etaDate >= today && v.etaDate < tomorrow
+        );
+      } else if (timeRange === 'This Week') {
+        timeFilteredVessels = vessels.filter(v => 
+          v.etaDate && v.etaDate >= tomorrow && v.etaDate < nextWeek
+        );
+      } else if (timeRange === 'Later') {
+        timeFilteredVessels = vessels.filter(v => 
+          v.etaDate && v.etaDate >= nextWeek
+        );
+      }
+      
+      // Now apply the other existing filters
+      setFilteredVessels(timeFilteredVessels.filter(v => 
+        (searchTerm.trim() === '' || 
+          (v.vessel_name && v.vessel_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (v.imo_no && v.imo_no.toString().includes(searchTerm)) ||
+          (v.arrival_port && v.arrival_port.toLowerCase().includes(searchTerm.toLowerCase()))
+        ) &&
+        (!portFilters.length || !v.arrival_port || portFilters.includes(v.arrival_port)) &&
+        (!statusFilters.length || !v.event_type || statusFilters.includes(v.event_type)) &&
+        (!docFilters.length || !v.office_doc || docFilters.includes(v.office_doc))
+      ));
+    }
+  };
+
   
+  
+
+  const handleChartFilterChange = (port) => {
+    setChartPortFilter(port);
+    
+    // If a port is selected, update the port filters
+    if (port) {
+      // Set port filters to only include the selected port
+      setPortFilters([port]);
+    } else {
+      // If filter is cleared, reset to all ports
+      const uniquePorts = [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))];
+      setPortFilters(uniquePorts);
+    }
+  };
+
   const handleOpenComments = (vessel) => {
     setSelectedVessel(vessel);
     setCommentModalOpen(true);
@@ -60,6 +149,8 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       vessel.uniqueKey === updatedVessel.uniqueKey ? updatedVessel : vessel
     ));
   };
+
+
   
   const handleVesselUpdate = async (updatedVessel) => {
     try {
@@ -393,6 +484,8 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   // Reset all filters
   const resetFilters = useCallback(() => {
     setSearchTerm('');
+    setChartPortFilter(null);  // Clear port chart filter
+    setTimelineFilter(null);   // Clear timeline filter
     
     // Set port, status, and doc filters to include all options
     const uniquePorts = [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))];
@@ -404,7 +497,6 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     setDocFilters(uniqueDocs);
     setVoyageStatusFilter('Current Voyages');
   }, [allProcessedVessels]);
-
   // Toggle all items in a filter group
   const toggleAllItems = (type) => {
     // Get all unique values from all processed vessels
@@ -842,7 +934,12 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
                 <span>Loading chart data...</span>
               </div>
             ) : (
-              <ArrivalsByPortChart data={vesselsByPortData}/>
+              <ArrivalsByPortChart 
+                data={vesselsByPortData} 
+                onFilterChange={handleChartFilterChange}
+                activeFilter={chartPortFilter}
+              />
+              
             )}
           </div>
         </div>
@@ -855,7 +952,11 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
                 <span>Loading chart data...</span>
               </div>
             ) : (
-              <ArrivalTimelineChart data={arrivalTimelineData}/>
+              <ArrivalTimelineChart 
+                data={arrivalTimelineData}
+                onFilterChange={handleTimelineFilterChange}
+                activeFilter={timelineFilter}
+              />
             )}
           </div>
         </div>
@@ -875,12 +976,39 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
             </button>
           </div>
         ) : (
-          <VesselTable 
-            vessels={filteredVessels}
-            onOpenRemarks={handleOpenComments}
-            fieldMappings={fieldMappings}
-            onUpdateVessel={handleVesselUpdate}
-          />
+          <div className="vessel-table-wrapper">
+            <ActiveFiltersDisplay 
+              portFilter={chartPortFilter}
+              timelineFilter={timelineFilter}
+              onClearPortFilter={() => handleChartFilterChange(null)}
+              onClearTimelineFilter={() => handleTimelineFilterChange(null)}
+              onClearAllFilters={() => {
+                handleChartFilterChange(null);
+                handleTimelineFilterChange(null);
+              }}
+            />
+            
+            {loading ? (
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Loading fleet data...</p>
+              </div>
+            ) : filteredCount === 0 ? (
+              <div className="no-results">
+                <p>No vessels match your current filters. Try adjusting your search or filters.</p>
+                <button className="reset-filters" onClick={resetFilters}>
+                  Reset Filters
+                </button>
+              </div>
+            ) : (
+              <VesselTable 
+                vessels={filteredVessels}
+                onOpenRemarks={handleOpenComments}
+                fieldMappings={fieldMappings}
+                onUpdateVessel={handleVesselUpdate}
+              />
+            )}
+          </div>
         )}
       </div>
       
