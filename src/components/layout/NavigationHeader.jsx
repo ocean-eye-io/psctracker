@@ -102,7 +102,7 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo }) => {
           </div>
         </div>
         
-        {/* Desktop Navigation */}
+        {/* Desktop Navigation - centered */}
         <nav className="desktop-nav">
           {navItems.map(item => (
             <a 

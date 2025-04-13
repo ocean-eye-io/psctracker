@@ -1,57 +1,197 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { Auth } from 'aws-amplify';
-import crypto from 'crypto-js';
 
 const AuthContext = createContext(null);
+
+// Your deployed API Gateway URL
+const AUTH_API_URL = 'https://c73anpavlg4ezzsye5selr55gm0sagll.lambda-url.ap-south-1.on.aws/prod/auth';
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Calculate SECRET_HASH for Cognito authentication
-  const calculateSecretHash = (username) => {
-    const clientId = '6rae2nmj34vkglmnd2tu380rrm';
-    const clientSecret = 'iort5ud2034ufqrav9ejodb9baa89blt21dqtsmmdtje5p560oo';
-    
-    const message = username + clientId;
-    const hashHmac = crypto.HmacSHA256(message, clientSecret);
-    return crypto.enc.Base64.stringify(hashHmac);
-  };
-
+  
+  // Load user session from localStorage on startup
   useEffect(() => {
     checkAuthStatus();
   }, []);
-
-  // Check if a user is already authenticated
+  
+  // Check if a user is already authenticated by checking localStorage
   const checkAuthStatus = async () => {
     setLoading(true);
     try {
-      const user = await Auth.currentAuthenticatedUser();
-      setCurrentUser(user);
+      const sessionData = localStorage.getItem('auth_session');
+      if (sessionData) {
+        const session = JSON.parse(sessionData);
+        
+        // Check if the token is expired
+        const expiration = session.expiresAt;
+        if (expiration && new Date() < new Date(expiration)) {
+          setCurrentUser(session.user);
+          
+          // If token is about to expire, refresh it
+          if (new Date() > new Date(expiration - 5 * 60 * 1000)) {
+            refreshTokenSilently(session.refreshToken);
+          }
+        } else {
+          // Token is expired, try to refresh
+          await refreshTokenSilently(session.refreshToken);
+        }
+      }
     } catch (err) {
       console.log('No authenticated user');
+      localStorage.removeItem('auth_session');
       setCurrentUser(null);
     } finally {
       setLoading(false);
     }
   };
-
+  
+  // Refresh the token silently in the background
+  const refreshTokenSilently = async (refreshToken) => {
+    try {
+      const response = await fetch(AUTH_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'refreshToken',
+          username: localStorage.getItem('auth_username'),
+          refreshToken: refreshToken
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.AuthenticationResult) {
+        const authResult = data.AuthenticationResult;
+        
+        // Update the session with new tokens
+        const user = JSON.parse(atob(authResult.IdToken.split('.')[1]));
+        
+        // Calculate token expiration (default: 1 hour)
+        const expiresAt = new Date();
+        expiresAt.setSeconds(expiresAt.getSeconds() + authResult.ExpiresIn);
+        
+        // Save to state and localStorage
+        const session = {
+          user,
+          idToken: authResult.IdToken,
+          accessToken: authResult.AccessToken,
+          refreshToken: authResult.RefreshToken || refreshToken,
+          expiresAt: expiresAt.toISOString()
+        };
+        
+        localStorage.setItem('auth_session', JSON.stringify(session));
+        setCurrentUser(user);
+        return user;
+      } else {
+        throw new Error('Failed to refresh token');
+      }
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      localStorage.removeItem('auth_session');
+      setCurrentUser(null);
+      throw error;
+    }
+  };
+  
+  // Handle NEW_PASSWORD_REQUIRED challenge
+  const handleNewPasswordChallenge = async (username, password, session) => {
+    try {
+      const response = await fetch(AUTH_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'respondToAuthChallenge',
+          username,
+          challengeName: 'NEW_PASSWORD_REQUIRED',
+          session,
+          newPassword: password // Using the same password
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      return data;
+    } catch (err) {
+      console.error('New password challenge error:', err);
+      throw err;
+    }
+  };
+  
   // Sign in user
   const handleSignIn = async (username, password) => {
     setLoading(true);
     setError(null);
     try {
-      const secretHash = calculateSecretHash(username);
-      
-      const user = await Auth.signIn({
-        username,
-        password,
-        secretHash
+      // Initial sign-in attempt
+      const response = await fetch(AUTH_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'signIn',
+          username,
+          password
+        })
       });
       
-      setCurrentUser(user);
-      return user;
+      let data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      // Handle NEW_PASSWORD_REQUIRED challenge
+      if (data.ChallengeName === 'NEW_PASSWORD_REQUIRED') {
+        console.log('Received NEW_PASSWORD_REQUIRED challenge, responding automatically');
+        
+        const challengeData = await handleNewPasswordChallenge(username, password, data.Session);
+        
+        // Replace with challenge response data
+        data = challengeData;
+      } else if (data.ChallengeName) {
+        // Other challenges we don't automatically handle
+        console.log('Unhandled challenge type:', data.ChallengeName);
+        throw new Error(`Authentication challenge required: ${data.ChallengeName}`);
+      }
+      
+      if (data.AuthenticationResult) {
+        const authResult = data.AuthenticationResult;
+        
+        // Decode the JWT token to get user info
+        const user = JSON.parse(atob(authResult.IdToken.split('.')[1]));
+        
+        // Calculate token expiration
+        const expiresAt = new Date();
+        expiresAt.setSeconds(expiresAt.getSeconds() + authResult.ExpiresIn);
+        
+        // Save username for token refreshes
+        localStorage.setItem('auth_username', username);
+        
+        // Save to state and localStorage
+        const session = {
+          user,
+          idToken: authResult.IdToken,
+          accessToken: authResult.AccessToken,
+          refreshToken: authResult.RefreshToken,
+          expiresAt: expiresAt.toISOString()
+        };
+        
+        localStorage.setItem('auth_session', JSON.stringify(session));
+        setCurrentUser(user);
+        return user;
+      } else {
+        throw new Error('Authentication failed');
+      }
     } catch (err) {
       console.error('Sign in error:', err);
       setError(err.message || 'Failed to sign in');
@@ -60,24 +200,32 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
-
+  
   // Sign up user
   const handleSignUp = async (username, password, email) => {
     setLoading(true);
     setError(null);
     try {
-      const secretHash = calculateSecretHash(username);
-      
-      const { user } = await Auth.signUp({
-        username,
-        password,
-        attributes: {
-          email
+      const response = await fetch(AUTH_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
         },
-        secretHash
+        body: JSON.stringify({
+          action: 'signUp',
+          username,
+          password,
+          email
+        })
       });
       
-      return user;
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      return data;
     } catch (err) {
       setError(err.message || 'Failed to sign up');
       throw err;
@@ -85,17 +233,31 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
-
-  // Confirm sign up with verification code
+  
+  // Confirm sign up
   const handleConfirmSignUp = async (username, code) => {
     setLoading(true);
     setError(null);
     try {
-      const secretHash = calculateSecretHash(username);
-      
-      await Auth.confirmSignUp(username, code, {
-        secretHash
+      const response = await fetch(AUTH_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'confirmSignUp',
+          username,
+          code
+        })
       });
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      return data;
     } catch (err) {
       setError(err.message || 'Failed to confirm sign up');
       throw err;
@@ -103,13 +265,16 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
-
+  
   // Sign out user
   const handleSignOut = async () => {
     setLoading(true);
     setError(null);
     try {
-      await Auth.signOut();
+      // For global sign-out, you could add a signOut action to your Lambda
+      // For now, we'll just clear local state
+      localStorage.removeItem('auth_session');
+      localStorage.removeItem('auth_username');
       setCurrentUser(null);
     } catch (err) {
       setError(err.message || 'Failed to sign out');
@@ -118,17 +283,30 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
-
+  
   // Forgot password
   const handleForgotPassword = async (username) => {
     setLoading(true);
     setError(null);
     try {
-      const secretHash = calculateSecretHash(username);
-      
-      await Auth.forgotPassword(username, {
-        secretHash
+      const response = await fetch(AUTH_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'forgotPassword',
+          username
+        })
       });
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      return data;
     } catch (err) {
       setError(err.message || 'Failed to send reset code');
       throw err;
@@ -136,22 +314,32 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
-
+  
   // Reset password with confirmation code
   const handleResetPassword = async (username, code, newPassword) => {
     setLoading(true);
     setError(null);
     try {
-      const secretHash = calculateSecretHash(username);
+      const response = await fetch(AUTH_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'confirmForgotPassword',
+          username,
+          code,
+          newPassword
+        })
+      });
       
-      await Auth.forgotPasswordSubmit(
-        username, 
-        code, 
-        newPassword, 
-        {
-          secretHash
-        }
-      );
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      return data;
     } catch (err) {
       setError(err.message || 'Failed to reset password');
       throw err;
@@ -159,58 +347,22 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
-
-  // Change password for authenticated user
-  const handleChangePassword = async (oldPassword, newPassword) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const user = await Auth.currentAuthenticatedUser();
-      await Auth.changePassword(user, oldPassword, newPassword);
-    } catch (err) {
-      setError(err.message || 'Failed to change password');
-      throw err;
-    } finally {
-      setLoading(false);
+  
+  // Get current session tokens
+  const getSession = () => {
+    const sessionData = localStorage.getItem('auth_session');
+    if (sessionData) {
+      return JSON.parse(sessionData);
     }
+    return null;
   };
-
-  // Update user attributes
-  const handleUpdateUserAttributes = async (attributes) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const user = await Auth.currentAuthenticatedUser();
-      await Auth.updateUserAttributes(user, attributes);
-      // Refresh user data
-      const updatedUser = await Auth.currentAuthenticatedUser({ bypassCache: true });
-      setCurrentUser(updatedUser);
-    } catch (err) {
-      setError(err.message || 'Failed to update user attributes');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+  
+  // Helper to get access token for API calls
+  const getAccessToken = () => {
+    const session = getSession();
+    return session ? session.accessToken : null;
   };
-
-  // Resend confirmation code
-  const handleResendConfirmationCode = async (username) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const secretHash = calculateSecretHash(username);
-      
-      await Auth.resendSignUp(username, {
-        secretHash
-      });
-    } catch (err) {
-      setError(err.message || 'Failed to resend confirmation code');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  
   const value = {
     currentUser,
     loading,
@@ -221,12 +373,11 @@ export const AuthProvider = ({ children }) => {
     signOut: handleSignOut,
     forgotPassword: handleForgotPassword,
     resetPassword: handleResetPassword,
-    changePassword: handleChangePassword,
-    updateUserAttributes: handleUpdateUserAttributes,
-    resendConfirmationCode: handleResendConfirmationCode,
-    checkAuthStatus
+    checkAuthStatus,
+    getSession,
+    getAccessToken
   };
-
+  
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 

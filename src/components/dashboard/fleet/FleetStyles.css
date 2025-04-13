@@ -122,7 +122,23 @@
   height: 42px;
   
 }
+.user-info {
+  display: flex;
+  align-items: center;
+  margin-right: 15px;
+  padding: 0 10px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
 
+.user-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #f4f4f4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
 .filter-bar::after {
   content: '';
   position: absolute;
