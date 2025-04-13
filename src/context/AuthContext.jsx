@@ -42,7 +42,14 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const user = await Auth.signIn(username, password);
+      const secretHash = calculateSecretHash(username);
+      
+      const user = await Auth.signIn({
+        username,
+        password,
+        secretHash
+      });
+      
       setCurrentUser(user);
       return user;
     } catch (err) {
@@ -67,9 +74,7 @@ export const AuthProvider = ({ children }) => {
         attributes: {
           email
         },
-        clientMetadata: {
-          SECRET_HASH: secretHash
-        }
+        secretHash
       });
       
       return user;
@@ -89,9 +94,7 @@ export const AuthProvider = ({ children }) => {
       const secretHash = calculateSecretHash(username);
       
       await Auth.confirmSignUp(username, code, {
-        clientMetadata: {
-          SECRET_HASH: secretHash
-        }
+        secretHash
       });
     } catch (err) {
       setError(err.message || 'Failed to confirm sign up');
@@ -124,9 +127,7 @@ export const AuthProvider = ({ children }) => {
       const secretHash = calculateSecretHash(username);
       
       await Auth.forgotPassword(username, {
-        clientMetadata: {
-          SECRET_HASH: secretHash
-        }
+        secretHash
       });
     } catch (err) {
       setError(err.message || 'Failed to send reset code');
@@ -148,13 +149,62 @@ export const AuthProvider = ({ children }) => {
         code, 
         newPassword, 
         {
-          clientMetadata: {
-            SECRET_HASH: secretHash
-          }
+          secretHash
         }
       );
     } catch (err) {
       setError(err.message || 'Failed to reset password');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Change password for authenticated user
+  const handleChangePassword = async (oldPassword, newPassword) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const user = await Auth.currentAuthenticatedUser();
+      await Auth.changePassword(user, oldPassword, newPassword);
+    } catch (err) {
+      setError(err.message || 'Failed to change password');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update user attributes
+  const handleUpdateUserAttributes = async (attributes) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const user = await Auth.currentAuthenticatedUser();
+      await Auth.updateUserAttributes(user, attributes);
+      // Refresh user data
+      const updatedUser = await Auth.currentAuthenticatedUser({ bypassCache: true });
+      setCurrentUser(updatedUser);
+    } catch (err) {
+      setError(err.message || 'Failed to update user attributes');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Resend confirmation code
+  const handleResendConfirmationCode = async (username) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const secretHash = calculateSecretHash(username);
+      
+      await Auth.resendSignUp(username, {
+        secretHash
+      });
+    } catch (err) {
+      setError(err.message || 'Failed to resend confirmation code');
       throw err;
     } finally {
       setLoading(false);
@@ -171,6 +221,9 @@ export const AuthProvider = ({ children }) => {
     signOut: handleSignOut,
     forgotPassword: handleForgotPassword,
     resetPassword: handleResetPassword,
+    changePassword: handleChangePassword,
+    updateUserAttributes: handleUpdateUserAttributes,
+    resendConfirmationCode: handleResendConfirmationCode,
     checkAuthStatus
   };
 

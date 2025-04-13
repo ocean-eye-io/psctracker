@@ -14,7 +14,7 @@ const awsConfig = {
     clientSecret: 'iort5ud2034ufqrav9ejodb9baa89blt21dqtsmmdtje5p560oo',
     
     // Auth flow type
-    authenticationFlowType: 'USER_SRP_AUTH', // Try changing this from USER_PASSWORD_AUTH
+    authenticationFlowType: 'USER_PASSWORD_AUTH', // Try changing this from USER_PASSWORD_AUTH
   }
 };
 
