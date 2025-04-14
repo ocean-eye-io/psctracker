@@ -183,29 +183,26 @@
   /* Animated wave for auth */
   .animated-wave {
     position: relative;
-    width: 60px;
     height: 4px;
-    margin-top: 4px;
-    background: linear-gradient(90deg, #3BADE5, #1e90c0);
+    width: 100%;
     border-radius: 2px;
     overflow: hidden;
+    margin-top: 2px;
   }
   
-  .animated-wave::after {
+  .animated-wave::before {
     content: '';
     position: absolute;
-    top: 0;
     left: 0;
-    width: 200%;
+    top: 0;
+    right: 0;
     height: 100%;
-    background: linear-gradient(90deg, 
-      rgba(255, 255, 255, 0), 
-      rgba(255, 255, 255, 0.4), 
-      rgba(255, 255, 255, 0));
-    animation: wave 2s linear infinite;
+    background: linear-gradient(90deg, transparent, var(--primary-accent), transparent);
+    animation: headerWave 2s infinite linear;
+    /* animation: pulse 2s infinite; */
   }
   
-  @keyframes wave {
+  @keyframes headerWave {
     0% {
       transform: translateX(-100%);
     }
