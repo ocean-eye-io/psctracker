@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Amplify } from 'aws-amplify';
 import awsConfig from './config/aws-config';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import FloatingChatbot from './components/FloatingChatbot';
 
 
 // Components
@@ -97,6 +98,7 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <FloatingChatbot />
         <Routes>
           {/* Auth Routes */}
           <Route path="/login" element={<Login />} />
