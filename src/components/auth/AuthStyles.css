@@ -213,13 +213,14 @@
   
   /* Loading spinner */
   .loading-spinner {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background: linear-gradient(145deg, #0a1725, #112032);
-    color: #f4f4f4;
-    font-size: 18px;
+    width: 30px !important;
+    height: 30px !important;
+    border: 2px solid rgba(77, 195, 255, 0.1) !important;
+    border-radius: 50% !important;
+    border-top-color: var(--primary-accent) !important;
+    animation: spin 1s linear infinite !important;
+    margin-bottom: 10px !important;
+    box-shadow: 0 0 8px rgba(77, 195, 255, 0.3) !important;
   }
   
   /* Responsive adjustments */

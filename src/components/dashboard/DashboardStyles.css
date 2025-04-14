@@ -207,16 +207,24 @@
 
 /* Spinner */
 .spinner-sm {
+  display: inline-block;
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(59, 173, 229, 0.1);
+  border: 2px solid rgba(244, 244, 244, 0.1);
   border-radius: 50%;
-  border-top-color: #3BADE5;
-  animation: spin 1s linear infinite;
+  border-top: 2px solid var(--primary-accent, #3BADE5);
+  border-right: 2px solid var(--primary-accent, #3BADE5);
+  border-bottom: 2px solid transparent;
+  animation: spinAnimation 1s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+@keyframes spinAnimation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive Adjustments */
@@ -662,13 +670,14 @@
 }
 
 .loading-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(59, 173, 229, 0.1);
-  border-radius: 50%;
-  border-top-color: var(--primary-accent);
-  animation: spin 1s ease-in-out infinite;
-  margin-bottom: 12px;
+  width: 30px !important;
+  height: 30px !important;
+  border: 2px solid rgba(77, 195, 255, 0.1) !important;
+  border-radius: 50% !important;
+  border-top-color: var(--primary-accent) !important;
+  animation: spin 1s linear infinite !important;
+  margin-bottom: 10px !important;
+  box-shadow: 0 0 8px rgba(77, 195, 255, 0.3) !important;
 }
 
 /* Chart Layout */
@@ -1707,12 +1716,15 @@
 }
 
 .spinner-sm {
+  display: inline-block;
   width: 16px;
   height: 16px;
   border: 2px solid rgba(244, 244, 244, 0.1);
   border-radius: 50%;
-  border-top-color: #f4f4f4;
-  animation: spin 1s linear infinite;
+  border-top: 2px solid var(--primary-accent, #3BADE5);
+  border-right: 2px solid var(--primary-accent, #3BADE5);
+  border-bottom: 2px solid transparent;
+  animation: spinAnimation 1s linear infinite;
 }
 
 .remarks-preview {
