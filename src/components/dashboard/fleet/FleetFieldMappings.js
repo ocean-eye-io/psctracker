@@ -37,7 +37,7 @@ export const fleetFieldMappings = {
       dbField: 'arrival_country',
       label: 'Arrival Country',
       priority: 8,
-      width: '140px'
+      width: '120px'
     },
     eta: {
       dbField: 'eta',
@@ -51,7 +51,7 @@ export const fleetFieldMappings = {
       dbField: 'etb',
       label: 'ETB',
       priority: 10,
-      width: '120px',
+      width: '100px',
       type: 'date'
     },
     checklist_received: {
@@ -70,7 +70,7 @@ export const fleetFieldMappings = {
       dbField: 'comments',
       label: 'Comments',
       priority: 13,
-      width: '120px'
+      width: '100px'
     }
     
     

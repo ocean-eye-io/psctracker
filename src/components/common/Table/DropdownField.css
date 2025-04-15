@@ -4,7 +4,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 5px 10px;
+    padding: 3px 8px;
     background: rgba(14, 22, 33, 0.3);
     border: 1px solid;
     border-radius: 20px;
@@ -12,7 +12,7 @@
     transition: all 0.2s ease;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     height: 28px;
-    width: 130px;
+    width: 110px;
     position: relative;
     overflow: hidden;
     font-family: 'Nunito', sans-serif;
@@ -149,14 +149,14 @@
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
     overflow: hidden;
     animation: sleek-fade-in 0.2s ease;
-    padding: 4px 0;
+    padding: 2px 0;
   }
   
   .sleek-dropdown-item {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 12px;
+    padding: 4px 8px;
     font-size: 12px;
     cursor: pointer;
     transition: background 0.15s ease;
