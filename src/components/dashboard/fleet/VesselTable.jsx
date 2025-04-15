@@ -363,6 +363,26 @@ const VesselTable = ({
             );
           }
           
+          if (fieldId === 'arrival_country') {
+            let displayValue = value;
+            
+            // Convert country codes to full names
+            if (value === 'AU' || value === 'au') {
+              displayValue = 'AUSTRALIA';
+            } else if (value === 'NZ' || value === 'nz') {
+              displayValue = 'NEW ZEALAND';
+            } else if (displayValue) {
+              // Make everything caps for other countries
+              displayValue = displayValue.toUpperCase();
+            }
+            
+            return (
+              <TextTooltip text={displayValue || '-'}>
+                <span>{displayValue || '-'}</span>
+              </TextTooltip>
+            );
+          }  
+
           // Special rendering for date-time fields
           if (
             fieldId === 'eta' || 

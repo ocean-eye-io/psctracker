@@ -5,7 +5,7 @@ export const fleetFieldMappings = {
       dbField: 'vessel_name',
       label: 'Vessel',
       priority: 1,
-      width: '160px'
+      width: '150px'
     },
     imo: {
       dbField: 'imo_no',
@@ -17,13 +17,13 @@ export const fleetFieldMappings = {
       dbField: 'owner',
       label: 'Owner',
       priority: 3,
-      width: '150px'
+      width: '130px'
     },
     event_type: {
       dbField: 'event_type',
       label: 'Event Type',
       priority: 4,
-      width: '140px'
+      width: '130px'
     },
     
     
@@ -31,19 +31,19 @@ export const fleetFieldMappings = {
       dbField: 'arrival_port',
       label: 'Arrival Port',
       priority: 7,
-      width: '150px'
+      width: '140px'
     },
     arrival_country: {
       dbField: 'arrival_country',
       label: 'Arrival Country',
       priority: 8,
-      width: '150px'
+      width: '140px'
     },
     eta: {
       dbField: 'eta',
       label: 'ETA',
       priority: 9,
-      width: '150px',
+      width: '140px',
       type: 'datetime'
 
     },
