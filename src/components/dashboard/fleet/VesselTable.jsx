@@ -1,5 +1,5 @@
 // src/components/dashboard/fleet/VesselTable.jsx
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { MessageSquare } from 'lucide-react';
 import TrafficLightIndicator from '../../common/Table/TrafficLightIndicator';
 import {
@@ -11,6 +11,7 @@ import {
 } from '../../common/Table';
 import PortalDropdown from '../../common/Table/PortalDropdown';
 import { TextTooltip, VesselDetailsTooltip } from '../../common/Table/Tooltip';
+import CommentTooltip from '../../common/Table/CommentTooltip';
 
 const VesselTable = ({ 
   vessels, 
@@ -18,8 +19,32 @@ const VesselTable = ({
   fieldMappings,
   onUpdateVessel
 }) => {
-
+  const tableRef = useRef(null);
   
+  // Monitor window resize to adjust table layout
+  useEffect(() => {
+    const handleResize = () => {
+      if (tableRef.current) {
+        // Add/remove classes based on viewport width
+        const tableContainer = tableRef.current.querySelector('.data-table-container');
+        if (tableContainer) {
+          if (window.innerWidth < 768) {
+            tableContainer.classList.add('mobile-view');
+          } else {
+            tableContainer.classList.remove('mobile-view');
+          }
+        }
+      }
+    };
+
+    // Initial call
+    handleResize();
+    
+    // Set up resize listener
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Enhanced format function that can handle both date and date+time
   const formatDateTime = (dateString, includeTime = false) => {
     if (!dateString) return '-';
@@ -105,7 +130,8 @@ const VesselTable = ({
     // Default fallback
     return "Pending";
   };
-  // In your VesselTable.jsx where the getVesselStatus function is defined
+
+  // Get vessel status 
   const getVesselStatus = (vessel) => {
     // Create an array to store all factors and their statuses
     const factors = [];
@@ -178,9 +204,6 @@ const VesselTable = ({
             name: 'PSC Inspection',
             value: formattedDate,
             status: inspectionStatus
-            // detail: monthsDiff <= 3 ? 'Less than 3 months ago' : 
-            //        monthsDiff <= 6 ? 'Between 3-6 months ago' : 
-            //        'More than 6 months ago'
           });
         }
       } catch (error) {
@@ -195,7 +218,7 @@ const VesselTable = ({
         if (!isNaN(inspectionDate.getTime())) {
           const currentDate = new Date();
           const monthsDiff = (currentDate - inspectionDate) / (1000 * 60 * 60 * 24 * 30.4375);
-          const formattedDate = formatDateTime(vessel.psc_last_inspection_date, false);
+          const formattedDate = formatDateTime(vessel.amsa_last_inspection_date, false);
           
           let inspectionStatus;
           if (monthsDiff <= 3) {
@@ -211,9 +234,6 @@ const VesselTable = ({
             name: 'AMSA Inspection',
             value: formattedDate,
             status: inspectionStatus
-            // detail: monthsDiff <= 3 ? 'Less than 3 months ago' : 
-            //        monthsDiff <= 6 ? 'Between 3-6 months ago' : 
-            //        'More than 6 months ago'
           });
         }
       } catch (error) {
@@ -222,7 +242,7 @@ const VesselTable = ({
     }
     
     // Add checklist status
-    if (vessel.checklist_received) {
+    if (vessel.checklist_received !== undefined) {
       const checklistStatus = normalizeChecklistValue(vessel.checklist_received);
       let status;
       
@@ -239,8 +259,6 @@ const VesselTable = ({
         name: 'Checklist',
         value: checklistStatus,
         status: status
-        // detail: status === 'red' ? 'Pending with arrival < 3 days' :
-        //         status === 'yellow' ? 'Needs attention' : 'Completed'
       });
     }
     
@@ -260,6 +278,20 @@ const VesselTable = ({
     };
   };
  
+  // Function to determine whether a column should be hidden on mobile
+  const shouldHideColumnOnMobile = (fieldId) => {
+    // Define which columns to hide on mobile
+    const mobileHiddenColumns = [
+      'riskScore', 
+      'amsa_last_inspection_date',
+      'psc_last_inspection_date',
+      'dwt'
+      // Add more fields to hide on mobile as needed
+    ];
+    
+    return mobileHiddenColumns.includes(fieldId);
+  };
+
   // Convert field mappings to table columns format
   const getTableColumns = () => {
     return Object.entries(fieldMappings.TABLE)
@@ -270,6 +302,9 @@ const VesselTable = ({
         label: field.label,
         width: field.width,
         minWidth: field.minWidth,
+        // Add a class to hide columns on mobile
+        cellClassName: shouldHideColumnOnMobile(fieldId) ? 'mobile-hide' : '',
+        headerClassName: shouldHideColumnOnMobile(fieldId) ? 'mobile-hide' : '',
         render: (value, rowData) => {
           // Special rendering for event_type (status)
           if (fieldId === 'event_type') {
@@ -286,13 +321,13 @@ const VesselTable = ({
             const statusInfo = getVesselStatus(rowData);
             
             return (
-              <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div className="vessel-name-with-status">
                 <TrafficLightIndicator 
                   status={statusInfo.status} 
                   tooltipData={statusInfo}
                 />
                 <VesselDetailsTooltip vessel={rowData}>
-                  <span>{(value || '-').toUpperCase()}</span>
+                  <span className="vessel-name">{(value || '-').toUpperCase()}</span>
                 </VesselDetailsTooltip>
               </div>
             );
@@ -306,7 +341,6 @@ const VesselTable = ({
             );
           }
            
-
           // Special rendering for risk score
           if (fieldId === 'riskScore') {
             const score = value !== null && value !== undefined ? Math.round(value) : null;
@@ -355,6 +389,7 @@ const VesselTable = ({
                 onUpdate={onUpdateVessel}
                 field="checklist_received"
                 options={["Pending", "Acknowledged", "Submitted"]}
+                className={shouldHideColumnOnMobile(fieldId) ? 'mobile-hide' : ''}
               />
             );
           }
@@ -401,8 +436,6 @@ const VesselTable = ({
   };
 
   // Create expanded content renderer
-
-  
   const renderExpandedContent = (vessel) => {
     const expandedColumns = Object.entries(fieldMappings.EXPANDED)
       .sort((a, b) => a[1].priority - b[1].priority);
@@ -443,70 +476,56 @@ const VesselTable = ({
     );
   };
 
+  // Improved comments column
   const commentsColumn = {
     label: 'Comments',
     width: '180px',
+    className: 'comments-column',
     content: (vessel) => {
       const hasComments = vessel.comments && vessel.comments.trim().length > 0;
       
       return (
         <div className="comment-cell">
-          <div 
-            className={`comment-indicator ${hasComments ? 'has-comment' : 'no-comment'}`}
-            onClick={() => onOpenRemarks(vessel)}
+          <CommentTooltip 
+            comment={vessel.comments || ""} 
+            onEditClick={() => onOpenRemarks(vessel)}
           >
-            <div className="comment-icon">
-              <MessageSquare size={16} />
-            </div>
-            
-            {hasComments ? (
-              <div className="comment-preview-text">
-                {vessel.comments.length > 38 
-                  ? `${vessel.comments.substring(0, 38)}...` 
-                  : vessel.comments}
+            <div 
+              className={`comment-indicator ${hasComments ? 'has-comment' : 'no-comment'}`}
+            >
+              <div className="comment-icon">
+                <MessageSquare size={16} />
               </div>
-            ) : (
-              <div className="comment-add-text">Add comment</div>
-            )}
-
-            {/* Tooltip moved inside the indicator */}
-            {hasComments && (
-              <div className="comment-tooltip">
-                <div className="comment-tooltip-content">
-                  <div className="tooltip-header">
-                    <span>Comment</span>
-                    <button 
-                      className="tooltip-edit-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenRemarks(vessel);
-                      }}
-                    >
-                      Edit
-                    </button>
-                  </div>
-                  <div className="tooltip-body">
-                    {vessel.comments}
-                  </div>
+              
+              {hasComments ? (
+                <div className="comment-preview-text">
+                  {vessel.comments.length > 28 
+                    ? `${vessel.comments.substring(0, 28)}...` 
+                    : vessel.comments}
                 </div>
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className="comment-add-text">Add comment</div>
+              )}
+            </div>
+          </CommentTooltip>
         </div>
       );
     }
   };
 
   return (
-    <Table
-      data={vessels}
-      columns={getTableColumns()}
-      expandedContent={renderExpandedContent}
-      actions={commentsColumn}
-      uniqueIdField="uniqueKey" // Use the uniqueKey property instead of imo_no
-      defaultSortKey="eta"
-      defaultSortDirection="desc"
-    />
+    <div ref={tableRef} className="responsive-table-container">
+      <Table
+        data={vessels}
+        columns={getTableColumns()}
+        expandedContent={renderExpandedContent}
+        actions={commentsColumn}
+        uniqueIdField="uniqueKey" // Use the uniqueKey property instead of imo_no
+        defaultSortKey="eta"
+        defaultSortDirection="desc"
+        className="vessel-data-table"
+      />
+    </div>
   );
 };
 
