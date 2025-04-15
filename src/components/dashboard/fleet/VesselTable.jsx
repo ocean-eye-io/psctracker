@@ -492,7 +492,7 @@ const VesselTable = ({
     <Table
       data={vessels}
       columns={getTableColumns()}
-      //expandedContent={renderExpandedContent}
+      expandedContent={renderExpandedContent}
       actions={commentsColumn}
       uniqueIdField="uniqueKey" // Use the uniqueKey property instead of imo_no
       defaultSortKey="eta"
