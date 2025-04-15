@@ -62,21 +62,47 @@ export const fleetFieldMappings = {
     checklist_received: {
       dbField: 'checklist_received',
       label: 'Pre-Arrival Checklist Status',
-      priority: 10, 
+      priority: 11, 
       width: '150px'
     },
     sanz: {
       dbField: 'sanz',
       label: 'PIC',
-      priority: 11,
+      priority: 12,
       width: '120px'
     },
     comments: {
       dbField: 'comments',
       label: 'Comments',
-      priority: 12
+      priority: 13,
+      width: '120px'
+    },
+    psc_last_inspection_date: {
+      dbField: 'psc_last_inspection_date',
+      label: 'PSC Last Inspection Date',
+      priority: 14,
+      type: 'date',
+      width: '120px'
+    },
+    psc_last_inspection_port: {
+      dbField: 'psc_last_inspection_port',
+      label: 'PSC Last Inspection Port',
+      priority: 15,
+      width: '120px'
+    },
+    amsa_last_inspection_date: {
+      dbField: 'amsa_last_inspection_date',
+      label: 'AMSA Last Inspection Date',
+      priority: 16,
+      type: 'date',
+      width: '120px'
+    },
+    amsa_last_inspection_port: {
+      dbField: 'amsa_last_inspection_port',
+      label: 'AMSA Last Inspection Port',
+      priority: 17,
+      width: '120px'
     }
-
     
     
   },
@@ -84,18 +110,18 @@ export const fleetFieldMappings = {
     
     
     
-    departure_country: {
-      dbField: 'departure_country',
-      label: 'Departure Country',
-      priority: 5
-    },
-    departure_date: {
-      dbField: 'departure_date',
-      label: 'Departure Date',
-      priority: 6,
-      width: '120px',
-      type: 'date'
-    },
+    // departure_country: {
+    //   dbField: 'departure_country',
+    //   label: 'Departure Country',
+    //   priority: 5
+    // },
+    // departure_date: {
+    //   dbField: 'departure_date',
+    //   label: 'Departure Date',
+    //   priority: 6,
+    //   width: '120px',
+    //   type: 'date'
+    // },
     etd: {
       dbField: 'etd',
       label: 'ETD',
@@ -109,28 +135,6 @@ export const fleetFieldMappings = {
       type: 'datetime'
     },
     
-    psc_last_inspection_date: {
-      dbField: 'psc_last_inspection_date',
-      label: 'PSC Last Inspection Date',
-      priority: 10,
-      type: 'date'
-    },
-    psc_last_inspection_port: {
-      dbField: 'psc_last_inspection_port',
-      label: 'PSC Last Inspection Port',
-      priority: 11
-      
-    },
-    amsa_last_inspection_date: {
-      dbField: 'amsa_last_inspection_date',
-      label: 'AMSA Last Inspection Date',
-      priority: 12,
-      type: 'date'
-    },
-    amsa_last_inspection_port: {
-      dbField: 'amsa_last_inspection_port',
-      label: 'AMSA Last Inspection Port',
-      priority: 13
-    }
+    
   }
 };
