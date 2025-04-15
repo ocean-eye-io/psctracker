@@ -292,12 +292,21 @@ const VesselTable = ({
                   tooltipData={statusInfo}
                 />
                 <VesselDetailsTooltip vessel={rowData}>
-                  <span>{value || '-'}</span>
+                  <span>{(value || '-').toUpperCase()}</span>
                 </VesselDetailsTooltip>
               </div>
             );
           }
-  
+          
+          if (fieldId === 'owner') {
+            return (
+              <TextTooltip text={value || '-'}>
+                <span>{(value || '-').toUpperCase()}</span>
+              </TextTooltip>
+            );
+          }
+           
+
           // Special rendering for risk score
           if (fieldId === 'riskScore') {
             const score = value !== null && value !== undefined ? Math.round(value) : null;
