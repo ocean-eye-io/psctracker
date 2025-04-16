@@ -1,10 +1,9 @@
-// src/components/dashboard/fleet/CommentTooltip.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 
 const CommentTooltip = ({ children, comment, onEditClick }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const [isTooltipHovered, setIsTooltipHovered] = useState(false); // Add this state
+  const [isTooltipHovered, setIsTooltipHovered] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0, right: 'auto', placement: 'right' });
   
   const triggerRef = useRef(null);
@@ -75,10 +74,20 @@ const CommentTooltip = ({ children, comment, onEditClick }) => {
   // Check if there's an actual comment
   const hasComment = comment && comment.trim().length > 0;
   
+  // Handle click on the trigger element
+  const handleTriggerClick = (e) => {
+    e.stopPropagation();
+    if (!hasComment) {
+      // If no comment, directly open the edit modal
+      onEditClick();
+    }
+  };
+  
   return (
     <>
       <div 
         ref={triggerRef}
+        onClick={handleTriggerClick}
         onMouseEnter={() => {
           if (hasComment) {
             showTooltip();
@@ -92,6 +101,7 @@ const CommentTooltip = ({ children, comment, onEditClick }) => {
           }, 200);
         }}
         className="tooltip-trigger"
+        style={{ cursor: 'pointer' }}
       >
         {children}
       </div>
@@ -107,9 +117,9 @@ const CommentTooltip = ({ children, comment, onEditClick }) => {
             right: position.right,
             zIndex: 10000
           }}
-          onMouseEnter={() => setIsTooltipHovered(true)} // Update this
+          onMouseEnter={() => setIsTooltipHovered(true)}
           onMouseLeave={() => {
-            setIsTooltipHovered(false); // Update this
+            setIsTooltipHovered(false);
             setTimeout(() => hideTooltip(), 100);
           }}
         >
