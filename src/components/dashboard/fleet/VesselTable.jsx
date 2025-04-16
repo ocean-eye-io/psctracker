@@ -414,6 +414,7 @@ const VesselTable = ({
             );
           }
           
+          
           // Special rendering for SANZ field
           if (fieldId === 'sanz') {
             return (
@@ -464,7 +465,28 @@ const VesselTable = ({
       <div className="expanded-grid">
         {expandedColumns.map(([fieldId, field]) => {
           let value = vessel[field.dbField];
-          
+          let displayLabel = field.label;
+          if (fieldId === 'departure_port' && field.combineWithCountry) {
+            const port = value || '-';
+            const country = vessel.departure_country || '';
+            
+            // Combine them into a single display value
+            if (country) {
+              // Format country code if needed
+              let formattedCountry = country;
+              if (country === 'AU' || country === 'au') {
+                formattedCountry = 'AUSTRALIA';
+              } else if (country === 'NZ' || country === 'nz') {
+                formattedCountry = 'NEW ZEALAND';
+              } else if (formattedCountry) {
+                formattedCountry = formattedCountry.toUpperCase();
+              }
+              
+              // Combine port and country
+              value = `${port}, ${formattedCountry}`;
+            }
+          }  
+
           // Format date values in expanded panel
           if (field.type === 'date') {
             value = formatDateTime(value, false);

@@ -80,11 +80,11 @@ export const fleetFieldMappings = {
     
     
     
-    departure_country: {
-      dbField: 'departure_country',
-      label: 'Departure Country',
-      priority: 5
-    },
+    // departure_country: {
+    //   dbField: 'departure_country',
+    //   label: 'Departure Country',
+    //   priority: 5
+    // },
     departure_date: {
       dbField: 'departure_date',
       label: 'Departure Date',
@@ -96,7 +96,7 @@ export const fleetFieldMappings = {
       dbField: 'departure_port',
       label: 'Departure Port',
       priority: 5,
-      //width: '150px'
+      combineWithCountry: true // Add this flag
     },
     etd: {
       dbField: 'etd',
