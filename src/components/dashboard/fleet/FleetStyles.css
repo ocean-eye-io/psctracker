@@ -122,7 +122,23 @@
   height: 42px;
   
 }
+.user-info {
+  display: flex;
+  align-items: center;
+  margin-right: 15px;
+  padding: 0 10px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
 
+.user-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #f4f4f4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
 .filter-bar::after {
   content: '';
   position: absolute;
@@ -252,17 +268,20 @@
   font-size: 0.8rem;
   padding: 3px 8px;
   border-radius: var(--border-radius-sm);
-  background: linear-gradient(to bottom, rgba(77, 195, 255, 0.15), rgba(77, 195, 255, 0.1));
-  border: 1px solid rgba(77, 195, 255, 0.2);
-  color: var(--primary-accent);
+  background: linear-gradient(to bottom, rgba(77, 195, 255, 0.25), rgba(77, 195, 255, 0.2));
+  border: 1px solid rgba(77, 195, 255, 0.35);
+  color: white;
   transition: var(--transition-fast);
   font-weight: 600;
   height: 28px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 8px rgba(77, 195, 255, 0.2);
 }
 
 .vessel-counter:hover {
   transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
+  background: linear-gradient(to bottom, rgba(77, 195, 255, 0.3), rgba(77, 195, 255, 0.25));
+  box-shadow: 0 0 12px rgba(77, 195, 255, 0.3);
 }
 
 /* Risk badge in vessel counter */
@@ -771,14 +790,14 @@
 }
 
 .loading-spinner {
-  width: 30px;
-  height: 30px;
-  border: 2px solid rgba(77, 195, 255, 0.1);
-  border-radius: 50%;
-  border-top-color: var(--primary-accent);
-  animation: spin 1s linear infinite;
-  margin-bottom: 10px;
-  box-shadow: 0 0 8px rgba(77, 195, 255, 0.3);
+  width: 30px !important;
+  height: 30px !important;
+  border: 2px solid rgba(77, 195, 255, 0.1) !important;
+  border-radius: 50% !important;
+  border-top-color: var(--primary-accent) !important;
+  animation: spin 1s linear infinite !important;
+  margin-bottom: 10px !important;
+  box-shadow: 0 0 8px rgba(77, 195, 255, 0.3) !important;
 }
 
 /* ===== VESSEL TABLE WRAPPER ===== */

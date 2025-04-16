@@ -5,7 +5,7 @@ export const fleetFieldMappings = {
       dbField: 'vessel_name',
       label: 'Vessel',
       priority: 1,
-      width: '160px'
+      width: '150px'
     },
     imo: {
       dbField: 'imo_no',
@@ -17,38 +17,33 @@ export const fleetFieldMappings = {
       dbField: 'owner',
       label: 'Owner',
       priority: 3,
-      width: '150px'
+      width: '130px'
     },
     event_type: {
       dbField: 'event_type',
       label: 'Event Type',
       priority: 4,
-      width: '140px'
+      width: '130px'
     },
-    departure_port: {
-      dbField: 'departure_port',
-      label: 'Departure Port',
-      priority: 5,
-      width: '150px'
-    },
+    
     
     arrival_port: {
       dbField: 'arrival_port',
       label: 'Arrival Port',
       priority: 7,
-      width: '150px'
+      width: '140px'
     },
     arrival_country: {
       dbField: 'arrival_country',
       label: 'Arrival Country',
       priority: 8,
-      width: '150px'
+      width: '120px'
     },
     eta: {
       dbField: 'eta',
       label: 'ETA',
       priority: 9,
-      width: '150px',
+      width: '140px',
       type: 'datetime'
 
     },
@@ -56,27 +51,28 @@ export const fleetFieldMappings = {
       dbField: 'etb',
       label: 'ETB',
       priority: 10,
-      width: '120px',
+      width: '100px',
       type: 'date'
     },
     checklist_received: {
       dbField: 'checklist_received',
-      label: 'Pre-Arrival Checklist Status',
-      priority: 10, 
-      width: '150px'
+      label: 'Pre-Arrival',
+      priority: 11, 
+      width: '120px'
     },
     sanz: {
       dbField: 'sanz',
       label: 'PIC',
-      priority: 11,
+      priority: 12,
       width: '120px'
     },
     comments: {
       dbField: 'comments',
       label: 'Comments',
-      priority: 12
+      priority: 13,
+      width: '100px'
     }
-
+    
     
     
   },
@@ -84,17 +80,23 @@ export const fleetFieldMappings = {
     
     
     
-    departure_country: {
-      dbField: 'departure_country',
-      label: 'Departure Country',
-      priority: 5
-    },
+    // departure_country: {
+    //   dbField: 'departure_country',
+    //   label: 'Departure Country',
+    //   priority: 5
+    // },
     departure_date: {
       dbField: 'departure_date',
       label: 'Departure Date',
       priority: 6,
-      width: '120px',
+      //width: '120px',
       type: 'date'
+    },
+    departure_port: {
+      dbField: 'departure_port',
+      label: 'Departure Port',
+      priority: 5,
+      combineWithCountry: true // Add this flag
     },
     etd: {
       dbField: 'etd',
@@ -108,29 +110,32 @@ export const fleetFieldMappings = {
       priority: 7,
       type: 'datetime'
     },
-    
     psc_last_inspection_date: {
       dbField: 'psc_last_inspection_date',
       label: 'PSC Last Inspection Date',
-      priority: 10,
-      type: 'date'
+      priority: 14,
+      type: 'date',
+      //width: '120px'
     },
     psc_last_inspection_port: {
       dbField: 'psc_last_inspection_port',
       label: 'PSC Last Inspection Port',
-      priority: 11
-      
+      priority: 15,
+      //width: '120px'
     },
     amsa_last_inspection_date: {
       dbField: 'amsa_last_inspection_date',
       label: 'AMSA Last Inspection Date',
-      priority: 12,
-      type: 'date'
+      priority: 16,
+      type: 'date',
+      //width: '120px'
     },
     amsa_last_inspection_port: {
       dbField: 'amsa_last_inspection_port',
       label: 'AMSA Last Inspection Port',
-      priority: 13
+      priority: 17,
+      //width: '120px'
     }
+    
   }
 };

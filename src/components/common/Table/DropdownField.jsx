@@ -190,12 +190,12 @@ const DropdownField = ({
       switch(currentValue) {
         case 'Submitted':
           return {
-            color: '#2ECC71',
+            color: '#F1C40F',
             background: 'rgba(46, 204, 113, 0.1)'
           };
         case 'Acknowledged':
           return {
-            color: '#F1C40F',
+            color: '#2ECC71',
             background: 'rgba(241, 196, 15, 0.1)'
           };
         case 'Pending':
@@ -220,9 +220,9 @@ const DropdownField = ({
     if (field === "checklist_received") {
       switch(option) {
         case 'Submitted':
-          return { color: '#2ECC71' };
-        case 'Acknowledged':
           return { color: '#F1C40F' };
+        case 'Acknowledged':
+          return { color: '#2ECC71' };
         case 'Pending':
         default:
           return { color: '#E74C3C' };

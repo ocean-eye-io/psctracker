@@ -896,7 +896,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
           
           {/* Reset Button */}
           <button className="reset-button" onClick={resetFilters}>
-            Reset
+          Clear Filters
           </button>
         </div>
         
