@@ -139,7 +139,7 @@ export const VesselDetailsTooltip = ({ vessel, children }) => {
               DOC
             </div>
             <div>
-              {vessel.doc_id || 'Not available'}
+              {vessel.fleet_type || 'Not available'}
             </div>
           </div>
         </>

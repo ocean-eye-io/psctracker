@@ -213,7 +213,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   };
   
   // API endpoint
-  const API_URL = 'https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws/api/vessels';
+  const API_URL = 'https://6mfmavicpuezjic6mtwtbuw56e0pjysg.lambda-url.ap-south-1.on.aws/api/vessels';
 
   // Generate a unique key for each vessel
   const generateUniqueKey = (vessel) => {

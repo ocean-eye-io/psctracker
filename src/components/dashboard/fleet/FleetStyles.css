@@ -464,7 +464,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px;
+  padding: 4px 6px;
   border-bottom: 1px solid var(--border-subtle);
   background: linear-gradient(180deg, #091522, #0a1725);
 }

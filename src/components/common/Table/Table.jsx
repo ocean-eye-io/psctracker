@@ -123,6 +123,7 @@ const Table = ({
         onScroll={handleScroll}
       >
         <table className="data-table">
+        
           <thead>
             <tr>
               {expandedContent && <th style={{ width: '32px' }}></th>}
@@ -133,21 +134,25 @@ const Table = ({
                     width: column.width,
                     minWidth: column.minWidth,
                   }}
-                  onClick={() => column.sortable !== false && handleSort(column.field)}
-                  className={column.sortable !== false ? 'sortable-header' : ''}
+                  onClick={() => column.sortable !== false && !column.headerRenderer && handleSort(column.field)}
+                  className={`${column.sortable !== false ? 'sortable-header' : ''} ${column.headerClassName || ''}`}
                 >
-                  <div className="table-header-content">
-                    {column.label}
-                    {column.sortable !== false && sortConfig.key === column.field && (
-                      <ChevronDown 
-                        size={14} 
-                        className="sort-icon"
-                        style={{ 
-                          transform: sortConfig.direction === 'desc' ? 'rotate(180deg)' : 'none',
-                        }} 
-                      />
-                    )}
-                  </div>
+                  {column.headerRenderer ? (
+                    column.headerRenderer()
+                  ) : (
+                    <div className="table-header-content">
+                      {column.label}
+                      {column.sortable !== false && sortConfig.key === column.field && (
+                        <ChevronDown 
+                          size={14} 
+                          className="sort-icon"
+                          style={{ 
+                            transform: sortConfig.direction === 'desc' ? 'rotate(180deg)' : 'none',
+                          }} 
+                        />
+                      )}
+                    </div>
+                  )}
                 </th>
               ))}
               {actions && <th style={{ width: actions.width || '100px' }}>{actions.label || 'Actions'}</th>}
