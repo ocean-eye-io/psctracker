@@ -1038,7 +1038,7 @@ const VesselTable = ({
   return (
     <div ref={tableRef} className="responsive-table-container">
       {/* Floating filter indicator and clear button */}
-      {filterActive && (
+      {/* {filterActive && (
         <div className="floating-filter-controls">
           <div className="active-filter-count">
             <Filter size={14} />
@@ -1065,7 +1065,7 @@ const VesselTable = ({
             Clear All
           </button>
         </div>
-      )}
+      )} */}
       
       <Table
         data={filterActive ? filteredData : dateFilteredVessels}
