@@ -811,7 +811,28 @@ const VesselTable = ({
               </div>
             );
           }
+
+          if (fieldId === 'etb') {
+            const etbDate = value ? new Date(value) : null;
+            const etaDate = rowData.eta ? new Date(rowData.eta) : null;
           
+            // Check if etb is less than eta
+            if (etbDate && etaDate && etbDate.getTime() < etaDate.getTime()) {
+              return (
+                <TextTooltip text="-">
+                  -
+                </TextTooltip>
+              );
+            }
+          
+            const formattedValue = formatDateTime(value, true);
+            return (
+              <TextTooltip text={formattedValue}>
+                {formattedValue}
+              </TextTooltip>
+            );
+          }
+
           if (fieldId === 'owner') {
             return (
               <TextTooltip text={value || '-'}>

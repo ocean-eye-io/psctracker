@@ -41,17 +41,17 @@ export const fleetFieldMappings = {
     },
     eta: {
       dbField: 'eta',
-      label: 'ETA',
+      label: 'ETA (LT)',
       priority: 9,
-      width: '140px',
+      width: '120px',
       type: 'datetime'
 
     },
     etb: {
       dbField: 'etb',
-      label: 'ETB',
+      label: 'ETB (LT)',
       priority: 10,
-      width: '100px',
+      width: '120px',
       type: 'date'
     },
     checklist_received: {
