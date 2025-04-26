@@ -50,7 +50,7 @@
   --border-radius-lg: 8px;
   
   /* Chart dimensions - Updated */
-  --chart-height: 220px !important;
+  /* --chart-height: 220px; */
 }
 
 /* ===== ANIMATIONS ===== */
@@ -1755,7 +1755,7 @@
 }
 
 /* ===== CHART CONTAINER FIXES ===== */
-.chart-card {
+/* .chart-card {
   height: var(--chart-height) !important;
   min-height: var(--chart-height) !important;
   max-height: var(--chart-height) !important;
@@ -1783,7 +1783,7 @@
 .recharts-surface {
   width: 100% !important;
   height: 100% !important;
-}
+} */
 /* Dashboard component strict sizes */
 .dashboard-container {
   display: flex !important;
@@ -1870,7 +1870,7 @@
 /* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 1366px) {
   :root {
-    --chart-height: 120px !important;
+    --chart-height: 150px;
   }
   
   .dashboard-charts {
@@ -1900,9 +1900,9 @@
     grid-template-columns: 1fr;
   }
   
-  :root {
-    --chart-height: 130px !important;
-  }
+  /* :root {
+    --chart-height: 130px;
+  } */
 }
 
 @media (max-width: 992px) {
@@ -2149,7 +2149,7 @@
 /* Ultra compact mode for very small screens */
 @media (max-height: 650px) {
   :root {
-    --chart-height: 100px !important;
+    --chart-height: 250px !important;
   }
   
   .dashboard-charts {
@@ -2157,7 +2157,7 @@
     gap: 6px !important;
   }
   
-  .chart-card {
+  /* .chart-card {
     padding: 6px !important;
   }
   
@@ -2174,7 +2174,7 @@
   .chart-action-btn {
     padding: 2px 4px !important;
   }
-  
+   */
   .data-table th {
     padding: 4px 8px !important;
     height: 28px !important;
@@ -2299,11 +2299,11 @@
     overflow: visible !important;
   }
   
-  .chart-card,
+  /* .chart-card,
   .dashboard-card {
     box-shadow: none !important;
     border: 1px solid #ddd !important;
-  }
+  } */
   
   .data-table {
     font-size: 8pt !important;
@@ -2319,7 +2319,7 @@
   }
 }
 
-/* Direct overrides for chartStyles.css */
+/* Direct overrides for chartStyles.css
 :root {
   --chart-height: 260px !important;
 }
@@ -2332,4 +2332,4 @@
 
 .chart-card, .dashboard-card {
   min-height: 220px !important;
-}
+} */

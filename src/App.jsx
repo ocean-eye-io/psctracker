@@ -74,7 +74,7 @@ function AppContent() {
       <NavigationHeader 
         activePage={activePage}
         onNavigate={handleNavigation}
-        userInfo={currentUser.attributes}
+        userInfo={currentUser}
       />
       
       <main className="app-content">

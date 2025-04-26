@@ -467,15 +467,15 @@ const VesselTable = ({
   const getStatusColor = (status) => {
     if (!status) return '#f4f4f4';
     
-    const statusLower = status.toLowerCase();
-    if (statusLower.includes('at sea') || statusLower.includes('transit')) {
+    // Now we can directly check the categorized status values
+    if (status === "At Sea") {
       return '#3498DB'; // Blue for at sea
-    } else if (statusLower.includes('port') || statusLower.includes('berth')) {
+    } else if (status === "At Port") {
       return '#2ECC71'; // Green for at port
-    } else if (statusLower.includes('anchor')) {
+    } else if (status === "At Anchor") {
       return '#F1C40F'; // Yellow for at anchor
     } else {
-      return '#f4f4f4'; // Default
+      return '#f4f4f4'; // Default for Others
     }
   };
 

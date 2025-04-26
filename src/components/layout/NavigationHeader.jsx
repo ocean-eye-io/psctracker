@@ -173,7 +173,7 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo }) => {
           <div className="user-avatar">{getUserInitials()}</div>
           <div>
             <div className="user-name">{getUserName()}</div>
-            <div className="user-role">{getUserRole()}</div>
+            {/* <div className="user-role">{getUserRole()}</div> */}
           </div>
         </div>
       </aside>
