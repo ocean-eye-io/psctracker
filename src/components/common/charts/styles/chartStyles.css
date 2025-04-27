@@ -1,6 +1,6 @@
 /* src/components/common/charts/styles/chartStyles.css */
 
-/* Base styles */
+/* Base variables */
 :root {
   --text-primary: #f4f4f4;
   --text-secondary: rgba(244, 244, 244, 0.7);
@@ -14,15 +14,20 @@
   --border-color: rgba(244, 244, 244, 0.05);
   --shadow-primary: rgba(0, 0, 0, 0.3);
   --shadow-glow: rgba(76, 201, 240, 0.3);
-  --chart-height: 300px !important; /* Reduced height for charts */
+  --chart-height: 300px;
+  
+  /* Color variables for different statuses */
+  --positive-color: #2ECC71;
+  --warning-color: #F1C40F;
+  --negative-color: #E74C3C;
 }
 
-/* Chart Card Container with 3D effects */
+/* Chart Card Styling */
 .chart-card {
   font-family: 'Nunito', sans-serif;
   background: var(--bg-gradient);
-  padding: 8px; /* Reduced padding */
-  border-radius: 8px; /* Reduced from 12px */
+  padding: 4px;
+  border-radius: 8px;
   box-shadow: 0 6px 15px var(--shadow-primary);
   border: 1px solid var(--border-color);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -31,14 +36,11 @@
   color: var(--text-primary);
   transform-style: preserve-3d;
   perspective: 1000px;
-  margin-bottom: 6px; /* Reduced from 12px */
+  margin-bottom: 3px;
   height: var(--chart-height);
-  min-height: 300px !important;
-  height: var(--chart-height) !important;
-  max-height: var(--chart-height) !important; /* Reduced from 140px */
+  min-height: 250px;
 }
 
-/* Add subtle 3D effect to card */
 .chart-card::before {
   content: '';
   position: absolute;
@@ -55,7 +57,7 @@
 }
 
 .chart-card:hover {
-  transform: translateY(-2px) scale(1.002); /* Reduced effect */
+  transform: translateY(-2px) scale(1.002);
   box-shadow: 0 8px 18px var(--shadow-primary), 0 0 8px var(--shadow-glow);
 }
 
@@ -72,174 +74,21 @@
   box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.8), 0 0 30px var(--shadow-glow);
   transition: all 0.4s cubic-bezier(0.3, 0, 0.2, 1.3);
 }
-/* Add to your chartStyles.css */
-.recharts-wrapper {
-  position: absolute !important;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
 
-.recharts-surface {
-  overflow: visible;
-}
-
-.recharts-tooltip-wrapper {
-  pointer-events: none !important;
-}
-
-.custom-tooltip {
-  transition: transform 0.1s ease-out;
-  pointer-events: none;
-  z-index: 1000;
-}
-
-.chart-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-/* Add these to your chartStyles.css file */
-
-/* Timeline specific styles */
-.timeline-bar {
-  cursor: pointer;
-}
-
-.timeline-cell {
-  transition: all 0.3s ease;
-}
-
-.timeline-cell.hovered {
-  filter: brightness(1.2);
-  opacity: 0.9;
-}
-
-.timeline-cell.active {
-  stroke: #ffffff;
-  stroke-width: 1px;
-  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
-}
-
-/* Enhanced tooltip for timeline */
-.timeline-chart .custom-tooltip {
-  background: rgba(30, 41, 59, 0.95);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-/* Filter indicators */
-.active-filters-container {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-
-.filter-badge {
-  display: inline-flex;
-  align-items: center;
-  background: rgba(59, 173, 229, 0.15);
-  border: 1px solid rgba(59, 173, 229, 0.3);
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 12px;
-  color: #f4f4f4;
-}
-
-.filter-badge-port {
-  background: rgba(59, 173, 229, 0.15);
-  border-color: rgba(59, 173, 229, 0.3);
-}
-
-.filter-badge-timeline {
-  background: rgba(40, 224, 176, 0.15);
-  border-color: rgba(40, 224, 176, 0.3);
-}
-
-.timeline-label {
-  font-weight: 500;
-}
-
-/* Add these to your chartStyles.css file */
-
-/* Chart filter badge */
-.chart-filter-badge {
-  display: inline-flex;
-  align-items: center;
-  background: rgba(59, 173, 229, 0.15);
-  border: 1px solid rgba(59, 173, 229, 0.3);
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 12px;
-  color: #f4f4f4;
-  margin-left: 10px;
-}
-
-.clear-filter-btn {
-  background: rgba(244, 244, 244, 0.1);
-  border: none;
-  color: #f4f4f4;
-  border-radius: 50%;
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: 8px;
-  font-size: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 0;
-}
-
-.clear-filter-btn:hover {
-  background: rgba(244, 244, 244, 0.2);
-}
-
-/* Interactive bars */
-.clickable-bar {
-  cursor: pointer;
-}
-
-/* Hover and active states for chart elements */
-.chart-bar rect.hovered {
-  opacity: 0.85;
-  filter: brightness(1.1);
-}
-
-.chart-bar rect.active {
-  stroke: #28E0B0;
-  stroke-width: 2px;
-}
-
-.chart-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-/* Custom tooltips for active state */
-.chart-bar rect.active + .recharts-tooltip {
-  z-index: 10;
-}
-
-/* Chart Header - styled like table header */
+/* Chart Header Styling */
 .chart-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px; /* Reduced from 12px */
-  padding: 6px 10px; /* Reduced padding */
+  margin-bottom: 8px;
+  padding: 6px 10px;
   background: var(--bg-header);
-  border-radius: 6px; /* Reduced from 8px */
+  border-radius: 6px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   position: relative;
-  height: 30px; /* Reduced from 36px */
+  height: 30px;
 }
 
-/* Add subtle 3D effect to header */
 .chart-header::after {
   content: '';
   position: absolute;
@@ -257,7 +106,7 @@
 .chart-title {
   color: var(--text-primary);
   font-family: 'Nunito', sans-serif;
-  font-size: 11px; /* Reduced from 12px */
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.5px;
   position: relative;
@@ -284,10 +133,40 @@
   opacity: 1;
 }
 
-/* Chart Actions */
+/* Chart Toggle Buttons */
+.chart-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.chart-toggle button {
+  background: rgba(244, 244, 244, 0.05);
+  border: 1px solid rgba(244, 244, 244, 0.1);
+  border-radius: 4px;
+  color: rgba(244, 244, 244, 0.6);
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chart-toggle button:hover {
+  background: rgba(244, 244, 244, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.chart-toggle button.active {
+  background: rgba(59, 173, 229, 0.15);
+  border-color: rgba(59, 173, 229, 0.4);
+  color: #3BADE5;
+  font-weight: 500;
+}
+
+/* Chart Action Buttons */
 .chart-actions {
   display: flex;
-  gap: 6px; /* Reduced from 8px */
+  gap: 6px;
 }
 
 .chart-action-btn {
@@ -295,11 +174,11 @@
   background: rgba(59, 173, 229, 0.1);
   border: 1px solid rgba(59, 173, 229, 0.2);
   border-radius: 4px;
-  padding: 4px 6px; /* Reduced padding */
+  padding: 4px 6px;
   color: var(--accent-secondary);
   cursor: pointer;
   transition: all 0.25s ease;
-  font-size: 11px; /* Reduced from 12px */
+  font-size: 11px;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -324,7 +203,7 @@
 
 .chart-action-btn:hover {
   background: rgba(59, 173, 229, 0.2);
-  transform: translateY(-1px); /* Reduced from -2px */
+  transform: translateY(-1px);
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
 }
 
@@ -335,10 +214,10 @@
 
 /* Chart Wrapper */
 .chart-wrapper {
-  height: calc(100% - 38px); /* Adjusted for smaller header */
+  height: calc(100% - 38px);
   filter: drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.2));
   transform: translateZ(0);
-  border-radius: 6px; /* Reduced from 8px */
+  border-radius: 6px;
   overflow: hidden;
   perspective: 1000px;
   position: relative;
@@ -346,24 +225,14 @@
   align-items: center;
   justify-content: center;
   background: rgba(11, 22, 35, 0.5);
-  padding: 4px; /* Reduced from 6px */
+  padding: 4px;
 }
 
 .chart-wrapper:hover {
   filter: drop-shadow(0px 5px 10px rgba(0, 0, 0, 0.3));
 }
 
-/* Responsive chart size */
-.recharts-responsive-container {
-  width: 100% !important;
-  height: 100% !important;
-}
-
-/* Chart Elements with 3D effects and interactive states */
-.chart-transition {
-  transition: all 0.3s ease;
-}
-
+/* Chart Elements */
 .chart-bar {
   fill: url(#barGradient);
   transition: all 0.3s ease;
@@ -374,7 +243,7 @@
 .chart-bar:hover {
   fill: url(#barGradientHover);
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
-  transform: translateY(-2px) scale(1.01); /* Reduced effect */
+  transform: translateY(-2px) scale(1.01);
 }
 
 .chart-area {
@@ -404,7 +273,7 @@
 }
 
 .chart-dot:hover {
-  transform: scale(1.3); /* Reduced from 1.5 */
+  transform: scale(1.3);
   stroke-width: 2;
   filter: drop-shadow(0 0 4px var(--accent-primary));
 }
@@ -416,24 +285,41 @@
 }
 
 .chart-pie:hover {
-  transform: translateY(-2px) scale(1.02); /* Reduced effect */
+  transform: translateY(-2px) scale(1.02);
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
 }
 
-/* Enhanced Tooltip matching table style */
+/* Tooltip Styling */
+
+.tooltip-list {
+  margin: 0;
+  padding: 0 0 0 12px; /* Add left padding to accommodate the bullets/dots */
+  list-style-position: inside; /* Keep bullets inside the container */
+}
+
+.tooltip-list li {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 2px 0;
+  text-indent: -12px; /* Negative text indent to align text properly */
+  margin-left: 12px; /* Offset the negative text indent */
+}
+
 .custom-tooltip {
   font-family: 'Nunito', sans-serif;
   background: rgba(11, 22, 35, 0.95);
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  padding: 8px 10px; /* Reduced padding */
+  padding: 8px 10px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 6px var(--shadow-glow);
   backdrop-filter: blur(4px);
   position: relative;
   animation: tooltipFade 0.2s ease-in-out;
-  font-size: 11px; /* Reduced from 12px */
+  font-size: 11px;
   z-index: 10;
   transform-style: preserve-3d;
+  pointer-events: none;
+  max-width: 250px;
 }
 
 .custom-tooltip::before {
@@ -453,15 +339,15 @@
 .tooltip-label {
   color: var(--accent-primary);
   font-family: 'Nunito', sans-serif;
-  font-size: 11px; /* Reduced from 12px */
-  margin: 0 0 4px 0; /* Reduced from 6px */
+  font-size: 11px;
+  margin: 0 0 4px 0;
   font-weight: 500;
 }
 
 .tooltip-value {
   color: var(--text-primary);
   font-family: 'Nunito', sans-serif;
-  font-size: 11px; /* Reduced from 12px */
+  font-size: 11px;
   font-weight: 600;
   margin: 0;
 }
@@ -478,22 +364,22 @@
   border-top: 6px solid rgba(11, 22, 35, 0.95);
 }
 
-/* Chart Axis and Grid - match table styling */
+/* Chart Axis and Grid Styling */
 .recharts-cartesian-axis-tick-value {
   font-family: 'Nunito', sans-serif;
-  font-size: 10px; /* Reduced from 12px */
+  font-size: 10px;
   fill: var(--text-secondary) !important;
 }
 
 .recharts-text {
   font-family: 'Nunito', sans-serif;
-  font-size: 10px; /* Reduced from 12px */
+  font-size: 10px;
   fill: var(--text-secondary) !important;
 }
 
 .recharts-legend-item-text {
   font-family: 'Nunito', sans-serif;
-  font-size: 10px; /* Reduced from 12px */
+  font-size: 10px;
   color: var(--text-secondary) !important;
 }
 
@@ -506,7 +392,6 @@
   stroke: rgba(244, 244, 244, 0.1);
 }
 
-/* Reference Lines */
 .recharts-reference-line line {
   stroke: var(--accent-secondary);
   stroke-dasharray: 3 3;
@@ -516,10 +401,10 @@
 .recharts-reference-line-label {
   fill: var(--accent-secondary) !important;
   font-family: 'Nunito', sans-serif;
-  font-size: 10px; /* Reduced from 12px */
+  font-size: 10px;
 }
 
-/* Enhanced Loading State */
+/* Loading State */
 .chart-loading {
   position: absolute;
   top: 0;
@@ -532,13 +417,13 @@
   align-items: center;
   z-index: 10;
   backdrop-filter: blur(3px);
-  border-radius: 6px; /* Reduced from 8px */
+  border-radius: 6px;
 }
 
 .loading-spinner {
   position: relative;
-  width: 30px; /* Reduced from 40px */
-  height: 30px; /* Reduced from 40px */
+  width: 30px;
+  height: 30px;
 }
 
 .loading-spinner::before,
@@ -564,29 +449,7 @@
   border-radius: 50%;
 }
 
-/* Chart-specific gradient definitions for various chart types */
-.recharts-gradient-definition {
-  opacity: 0; /* Hide this element but keep it for use in the chart */
-}
-
-/* Legend styles */
-.recharts-default-legend {
-  margin-top: 6px !important; /* Reduced from 10px */
-  padding: 0 !important;
-}
-
-.recharts-legend-wrapper {
-  background: rgba(11, 22, 35, 0.5);
-  border-radius: 4px; /* Reduced from 6px */
-  padding: 3px 6px !important; /* Reduced padding */
-  border: 1px solid var(--border-color);
-}
-
-.recharts-legend-item {
-  padding: 2px !important;
-}
-
-/* No data message */
+/* No Data State */
 .chart-no-data {
   position: absolute;
   top: 0;
@@ -600,7 +463,229 @@
   font-size: 12px;
   text-align: center;
   background: rgba(11, 22, 35, 0.5);
-  border-radius: 6px; /* Reduced from 8px */
+  border-radius: 6px;
+}
+
+/* Recharts specific overrides */
+.recharts-wrapper {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.recharts-surface {
+  overflow: visible;
+  transition: opacity 0.3s ease;
+}
+
+.recharts-tooltip-wrapper {
+  pointer-events: none !important;
+}
+
+.recharts-responsive-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.recharts-default-legend {
+  margin-top: 6px !important;
+  padding: 0 !important;
+}
+
+.recharts-legend-wrapper {
+  background: rgba(11, 22, 35, 0.5);
+  border-radius: 4px;
+  padding: 3px 6px !important;
+  border: 1px solid var(--border-color);
+}
+
+.recharts-legend-item {
+  padding: 2px !important;
+}
+
+.recharts-bar-rectangle:hover {
+  filter: brightness(1.1);
+}
+
+.recharts-label-list text {
+  fill: var(--text-primary) !important;
+  font-weight: 600;
+}
+
+/* Hover and Active States */
+.hovered-bar {
+  opacity: 1 !important;
+}
+
+.chart-bar rect.hovered {
+  opacity: 0.85;
+  filter: brightness(1.1);
+}
+
+.chart-bar rect.active {
+  stroke: #28E0B0;
+  stroke-width: 2px;
+}
+
+/* Timeline specific styles */
+.timeline-chart {
+  overflow: visible !important;
+}
+
+.timeline-bar {
+  cursor: pointer;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
+  transition: all 0.3s ease;
+}
+
+.timeline-cell {
+  transition: all 0.25s ease;
+}
+
+.timeline-cell.hovered {
+  opacity: 1;
+  transform: scaleX(1.02);
+  filter: drop-shadow(0 0 6px rgba(76, 201, 240, 0.4));
+}
+
+.timeline-cell.active {
+  stroke: #ffffff;
+  stroke-width: 1px;
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
+}
+
+.timeline-label {
+  font-family: 'Nunito', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+}
+
+/* Filter badges and indicators */
+.chart-filter-badge, 
+.filter-badge {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(59, 173, 229, 0.15);
+  border: 1px solid rgba(59, 173, 229, 0.3);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #f4f4f4;
+  margin-left: 10px;
+}
+
+.filter-badge-port {
+  background: rgba(59, 173, 229, 0.15);
+  border-color: rgba(59, 173, 229, 0.3);
+}
+
+.filter-badge-timeline {
+  background: rgba(40, 224, 176, 0.15);
+  border-color: rgba(40, 224, 176, 0.3);
+}
+
+.clear-filter-btn {
+  background: rgba(244, 244, 244, 0.1);
+  border: none;
+  color: #f4f4f4;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.clear-filter-btn:hover {
+  background: rgba(244, 244, 244, 0.2);
+}
+
+.active-filters-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+/* Utility classes */
+.chart-spacer {
+  margin-bottom: 6px;
+}
+
+.chart-card-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.chart-full-width {
+  grid-column: 1 / -1;
+}
+
+.clickable-bar {
+  cursor: pointer;
+}
+
+.chart-transition {
+  transition: all 0.3s ease;
+}
+
+/* Responsive styles */
+@media (max-width: 1200px) {
+  .chart-card.active {
+    width: 90vw;
+  }
+  
+  :root {
+    --chart-height: 150px;
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-card {
+    padding: 8px;
+    min-height: 100px;
+  }
+  
+  .chart-title {
+    font-size: 11px;
+  }
+  
+  .chart-card.active {
+    width: 95vw;
+    height: 80vh;
+    padding: 10px;
+  }
+  
+  .chart-header {
+    padding: 5px 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    height: auto;
+  }
+  
+  .chart-toggle {
+    width: 100%;
+  }
+  
+  .chart-toggle button {
+    flex: 1;
+    text-align: center;
+  }
+  
+  .chart-action-btn {
+    padding: 3px 5px;
+  }
 }
 
 /* Animations */
@@ -626,121 +711,7 @@
   100% { box-shadow: 0 0 0 0 rgba(76, 201, 240, 0); }
 }
 
-/* Responsive Design */
-@media (max-width: 1200px) {
-  .chart-card.active {
-    width: 90vw;
-  }
-  
-  :root {
-    --chart-height: 150px; /* Fixed height instead of viewport percentage */
-  }
-}
-
-@media (max-width: 768px) {
-  .chart-card {
-    padding: 8px;
-    min-height: 100px; /* Reduced from 160px */
-  }
-  
-  .chart-title {
-    font-size: 11px;
-  }
-  
-  .chart-card.active {
-    width: 95vw;
-    height: 80vh;
-    padding: 10px;
-  }
-  
-  .chart-header {
-    padding: 5px 8px;
-  }
-  
-  .chart-action-btn {
-    padding: 3px 5px;
-  }
-  
-  :root {
-    --chart-height: 150px; /* Fixed height instead of viewport percentage */
-  }
-}
-
-/* Custom SVG Definitions for effects */
-.defs-container {
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-}
-
-/* Utility classes */
-.chart-spacer {
-  margin-bottom: 10px; /* Reduced from 20px */
-}
-
-.chart-card-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Reduced from 300px */
-  gap: 10px; /* Reduced from 20px */
-  margin-bottom: 10px; /* Reduced from 20px */
-}
-
-.chart-full-width {
-  grid-column: 1 / -1;
-}
-
-.timeline-chart {
-  overflow: visible !important;
-}
-
-.timeline-bar {
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
-  transition: all 0.3s ease;
-}
-
-.timeline-cell {
-  transition: all 0.25s ease;
-}
-
-.timeline-cell.hovered {
-  opacity: 1;
-  transform: scaleX(1.02); /* Reduced from 1.03 */
-  filter: drop-shadow(0 0 6px rgba(76, 201, 240, 0.4));
-}
-
-.timeline-label {
-  font-family: 'Nunito', sans-serif;
-  font-size: 10px; /* Reduced from 12px */
-  font-weight: 600;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
-}
-
-/* Add this to ensure proper cell coloring with the hover effect */
-.recharts-bar-rectangle:hover {
-  filter: brightness(1.1);
-}
-
-/* To ensure labels stand out properly in the timeline */
-.recharts-label-list text {
-  fill: var(--text-primary) !important;
-  font-weight: 600;
-}
-
-/* Chart no data message */
-.chart-no-data {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  width: 100%;
-  color: rgba(244, 244, 244, 0.6);
-  font-family: 'Nunito', sans-serif;
-  font-size: 11px; /* Reduced from 12px */
-  text-align: center;
-}
-
-/* Forced overrides if needed */
+/* Force compact mode if needed */
 .force-compact .chart-card {
   height: 150px !important;
   min-height: 180px !important;

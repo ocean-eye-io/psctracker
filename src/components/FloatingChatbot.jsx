@@ -3,6 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Book, ChevronRight } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const FloatingChatbot = () => {
   const location = useLocation();
@@ -16,28 +18,25 @@ const FloatingChatbot = () => {
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [showDetailedExamples, setShowDetailedExamples] = useState(false);
   const [showPulse, setShowPulse] = useState(true);
-  
+
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const chatContainerRef = useRef(null);
-  const isAuthPage = location.pathname.includes('/login') || 
-                    location.pathname.includes('/signup') || 
-                    location.pathname.includes('/forgot-password') ||
-                    location.pathname.includes('/reset-password') ||
-                    location.pathname.includes('/confirm-signup');
-  
+  const isAuthPage = location.pathname.includes('/login') ||
+    location.pathname.includes('/signup') ||
+    location.pathname.includes('/forgot-password') ||
+    location.pathname.includes('/reset-password') ||
+    location.pathname.includes('/confirm-signup');
+
   const shouldRender = !isAuthPage && currentUser;
-  // Lambda function URL for the vessel chatbot
-  const LAMBDA_URL = "https://yvxpfwg5aybgzcsao7pvofbave0ikqlq.lambda-url.ap-south-1.on.aws/";
-  
-  // Quick action suggestions - more concise list
+  const LAMBDA_URL = "https://z2knkxpjffymu254qmwpms6kia0kjacj.lambda-url.ap-south-1.on.aws/";
+
   const quickSuggestions = [
     "Vessels at sea",
-    "Australia arrivals", 
+    "Australia arrivals",
     "Upcoming ETAs"
   ];
-  
-  // More detailed examples that show when requested
+
   const detailedExamples = [
     "How many vessels are currently at sea?",
     "Which vessels are scheduled to arrive in Australia this week?",
@@ -45,100 +44,69 @@ const FloatingChatbot = () => {
     "How many vessels are at anchor right now?"
   ];
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isTyping]);
-  
-  // Focus input when chat opens
+
   useEffect(() => {
     if (isOpen && inputRef.current) {
       inputRef.current.focus();
     }
-    
-    // Hide suggestions after user starts chatting
     if (messages.length > 2) {
       setShowSuggestions(false);
     } else {
       setShowSuggestions(true);
     }
-
-    // Stop pulsing animation once opened
     if (isOpen) {
       setShowPulse(false);
     }
   }, [isOpen, messages]);
 
-  // Add animation class when chat opens
   useEffect(() => {
     if (isOpen && chatContainerRef.current) {
-      // Force a reflow to ensure animation happens
       void chatContainerRef.current.offsetWidth;
       chatContainerRef.current.classList.add('chat-visible');
     }
   }, [isOpen]);
 
-  const handleOpenChat = () => {
-    setIsOpen(true);
-  };
+  const handleOpenChat = () => setIsOpen(true);
 
   const handleCloseChat = () => {
     setIsOpen(false);
-    // Reset states when closing
     setShowDetailedExamples(false);
   };
-  
-  const handleInputChange = (e) => {
-    setInputValue(e.target.value);
-  };
-  
+
+  const handleInputChange = (e) => setInputValue(e.target.value);
+
   const handleSuggestionClick = (suggestion) => {
     setInputValue(suggestion);
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
+    if (inputRef.current) inputRef.current.focus();
   };
 
-  const toggleDetailedExamples = () => {
-    setShowDetailedExamples(!showDetailedExamples);
-  };
-  
+  const toggleDetailedExamples = () => setShowDetailedExamples(!showDetailedExamples);
+
   const sendMessage = async () => {
     if (inputValue.trim() === '') return;
-    
-    // Add user message
     const userMessage = {
       id: Date.now(),
       text: inputValue,
       sender: 'user',
       timestamp: new Date()
     };
-    
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
     setIsTyping(true);
-    
+
     try {
-      // Call Lambda function with query
       const response = await fetch(LAMBDA_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          query: userMessage.text
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: userMessage.text }),
       });
-      
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
-      
+      if (!response.ok) throw new Error(`Error: ${response.status}`);
       const data = await response.json();
-      
-      // Add bot response with delay for natural feel
       setTimeout(() => {
         const botMessage = {
           id: Date.now(),
@@ -146,15 +114,10 @@ const FloatingChatbot = () => {
           sender: 'bot',
           timestamp: new Date()
         };
-        
         setMessages(prev => [...prev, botMessage]);
         setIsTyping(false);
       }, 800);
-      
     } catch (error) {
-      console.error('Error sending message:', error);
-      
-      // Add error message
       setTimeout(() => {
         const errorMessage = {
           id: Date.now(),
@@ -162,32 +125,27 @@ const FloatingChatbot = () => {
           sender: 'bot',
           timestamp: new Date()
         };
-        
         setMessages(prev => [...prev, errorMessage]);
         setIsTyping(false);
       }, 800);
     }
   };
-  
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
   };
-  
-  const formatTime = (date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-  if (!shouldRender) {
-    return null;
-  }
+
+  const formatTime = (date) => date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  if (!shouldRender) return null;
+
   return (
     <div className="fleet-ai-chatbot">
-      {/* Custom CSS */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap');
-        
         .fleet-ai-chatbot {
           --primary-color: #FF7A30;
           --primary-dark: #E86014;
@@ -212,8 +170,6 @@ const FloatingChatbot = () => {
           --transition-normal: 0.25s ease;
           font-family: var(--font-sans);
         }
-
-        /* 3D Button Icon with Enhanced Glow */
         .ask-ai-button {
           position: fixed;
           bottom: 24px;
@@ -239,31 +195,23 @@ const FloatingChatbot = () => {
           transform: translateY(0);
           overflow: hidden;
         }
-        
         .ask-ai-button::before {
           content: '';
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
+          top: 0; left: 0; right: 0; bottom: 0;
           background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.05));
           pointer-events: none;
           border-radius: var(--radius-full);
         }
-        
         .ask-ai-button::after {
           content: '';
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
+          top: 0; left: 0; right: 0;
           height: 55%;
           border-radius: var(--radius-full) var(--radius-full) 10px 10px;
           background: linear-gradient(to bottom, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.05));
           pointer-events: none;
         }
-        
         .ask-ai-button:hover {
           transform: translateY(-3px);
           box-shadow: 
@@ -273,7 +221,6 @@ const FloatingChatbot = () => {
             0 6px 16px var(--primary-glow),
             0 0 20px var(--primary-glow);
         }
-        
         .button-icon-container {
           display: flex;
           align-items: center;
@@ -282,13 +229,11 @@ const FloatingChatbot = () => {
           width: 20px;
           height: 20px;
         }
-        
         .button-icon {
           position: relative;
           z-index: 2;
           filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
         }
-        
         .icon-glow {
           position: absolute;
           width: 100%;
@@ -300,18 +245,15 @@ const FloatingChatbot = () => {
           z-index: 1;
           animation: pulse-icon 3s infinite ease-in-out;
         }
-        
         @keyframes pulse-icon {
           0%, 100% { opacity: 0.3; transform: scale(1); }
           50% { opacity: 0.5; transform: scale(1.15); }
         }
-        
         .ask-ai-button-text {
           text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
           position: relative;
           z-index: 2;
         }
-        
         .pulse-ring {
           position: absolute;
           top: -3px;
@@ -323,21 +265,18 @@ const FloatingChatbot = () => {
           opacity: 0;
           animation: pulse 2s infinite ease-out;
         }
-        
         @keyframes pulse {
           0% { transform: scale(0.95); opacity: 0.5; }
           70% { transform: scale(1.1); opacity: 0; }
           100% { transform: scale(0.95); opacity: 0; }
         }
-        
-        /* Glassy Chat Container */
         .chat-container {
           position: fixed;
           bottom: 24px;
           right: 24px;
-          width: 360px;
-          height: 550px;
-          max-height: calc(100vh - 80px);
+          width: 480px;
+          height: 700px;
+          max-height: calc(100vh - 40px);
           background: var(--bg-dark);
           border-radius: var(--radius-md);
           z-index: 10000;
@@ -352,14 +291,10 @@ const FloatingChatbot = () => {
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
         }
-        
         .chat-container::before {
           content: '';
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
+          top: 0; left: 0; right: 0; bottom: 0;
           background: 
             radial-gradient(circle at top right, rgba(59, 173, 229, 0.08) 0%, transparent 60%),
             radial-gradient(circle at bottom left, rgba(255, 122, 48, 0.05) 0%, transparent 50%);
@@ -367,13 +302,10 @@ const FloatingChatbot = () => {
           z-index: -1;
           opacity: 0.8;
         }
-        
         .chat-visible {
           opacity: 1;
           transform: translateY(0);
         }
-        
-        /* Glassy Header */
         .chat-header {
           padding: 16px;
           display: flex;
@@ -385,7 +317,6 @@ const FloatingChatbot = () => {
           backdrop-filter: blur(5px);
           -webkit-backdrop-filter: blur(5px);
         }
-        
         .chat-header::after {
           content: '';
           position: absolute;
@@ -401,13 +332,11 @@ const FloatingChatbot = () => {
           );
           z-index: 1;
         }
-        
         .header-content {
           display: flex;
           align-items: center;
           gap: 12px;
         }
-        
         .header-icon {
           width: 36px;
           height: 36px;
@@ -420,7 +349,6 @@ const FloatingChatbot = () => {
           box-shadow: 0 2px 8px rgba(255, 122, 48, 0.3);
           overflow: hidden;
         }
-        
         .header-icon::before {
           content: '';
           position: absolute;
@@ -428,7 +356,6 @@ const FloatingChatbot = () => {
           background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.25), transparent 70%);
           z-index: 0;
         }
-        
         .header-icon::after {
           content: '';
           position: absolute;
@@ -439,13 +366,11 @@ const FloatingChatbot = () => {
           background: linear-gradient(to bottom, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0));
           pointer-events: none;
         }
-        
         .header-icon-inner {
           position: relative;
           z-index: 1;
           filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
         }
-
         .header-text h3 {
           margin: 0;
           padding: 0;
@@ -454,7 +379,6 @@ const FloatingChatbot = () => {
           font-weight: 700;
           text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
-        
         .header-text p {
           margin: 2px 0 0;
           padding: 0;
@@ -462,7 +386,6 @@ const FloatingChatbot = () => {
           font-size: 12px;
           font-weight: 400;
         }
-        
         .close-btn {
           width: 28px;
           height: 28px;
@@ -478,12 +401,9 @@ const FloatingChatbot = () => {
           backdrop-filter: blur(5px);
           -webkit-backdrop-filter: blur(5px);
         }
-        
         .close-btn:hover {
           background: rgba(255, 255, 255, 0.15);
         }
-        
-        /* Messages Area with Glass Effect */
         .messages-area {
           display: flex;
           flex-direction: column;
@@ -495,28 +415,21 @@ const FloatingChatbot = () => {
           position: relative;
           z-index: 1;
         }
-        
         .messages-area::before {
           content: '';
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
+          top: 0; left: 0; right: 0; bottom: 0;
           background-color: var(--bg-dark);
           z-index: -1;
         }
-        
         .message {
           max-width: 85%;
           animation: fade-in 0.2s ease forwards;
         }
-        
         @keyframes fade-in {
           from { opacity: 0; transform: translateY(5px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        
         .message-content {
           padding: 12px 16px;
           border-radius: var(--radius-md);
@@ -528,34 +441,27 @@ const FloatingChatbot = () => {
           backdrop-filter: blur(5px);
           -webkit-backdrop-filter: blur(5px);
         }
-        
         .bot-message {
           align-self: flex-start;
         }
-        
         .bot-message .message-content {
           background-color: rgba(30, 50, 75, 0.6);
           border-radius: 12px;
           border: 1px solid rgba(59, 173, 229, 0.15);
           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
         }
-        
         .bot-message .message-content::after {
           content: '';
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
+          top: 0; left: 0; right: 0;
           height: 50%;
           border-radius: 12px 12px 0 0;
           background: linear-gradient(to bottom, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0));
           pointer-events: none;
         }
-        
         .user-message {
           align-self: flex-end;
         }
-        
         .user-message .message-content {
           background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
           color: white;
@@ -565,25 +471,19 @@ const FloatingChatbot = () => {
           position: relative;
           overflow: hidden;
         }
-        
         .user-message .message-content::after {
           content: '';
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
+          top: 0; left: 0; right: 0;
           height: 50%;
           background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0));
           pointer-events: none;
         }
-        
         .message-time {
           font-size: 11px;
           color: var(--text-faint);
           margin-top: 4px;
         }
-        
-        /* Typing Indicator */
         .typing {
           align-self: flex-start;
           padding: 12px 16px;
@@ -596,7 +496,6 @@ const FloatingChatbot = () => {
           backdrop-filter: blur(5px);
           -webkit-backdrop-filter: blur(5px);
         }
-        
         .typing-dot {
           width: 6px;
           height: 6px;
@@ -606,17 +505,13 @@ const FloatingChatbot = () => {
           opacity: 0.7;
           box-shadow: 0 0 5px rgba(59, 173, 229, 0.3);
         }
-        
         .typing-dot:nth-child(1) { animation-delay: 0s; }
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-        
         @keyframes typing-dot {
           0%, 100% { transform: translateY(0); opacity: 0.5; }
           50% { transform: translateY(-4px); opacity: 1; }
         }
-        
-        /* Glassy Suggestion Chips */
         .suggestion-chips {
           display: flex;
           gap: 8px;
@@ -624,7 +519,6 @@ const FloatingChatbot = () => {
           margin-bottom: 8px;
           flex-wrap: wrap;
         }
-        
         .suggestion-chip {
           background-color: rgba(255, 122, 48, 0.15);
           border: 1px solid rgba(255, 122, 48, 0.2);
@@ -640,25 +534,19 @@ const FloatingChatbot = () => {
           backdrop-filter: blur(5px);
           -webkit-backdrop-filter: blur(5px);
         }
-        
         .suggestion-chip::after {
           content: '';
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
+          top: 0; left: 0; right: 0;
           height: 50%;
           background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
           pointer-events: none;
         }
-        
         .suggestion-chip:hover {
           background-color: rgba(255, 122, 48, 0.25);
           transform: translateY(-1px);
           box-shadow: 0 2px 5px rgba(255, 122, 48, 0.2);
         }
-        
-        /* Examples Toggle */
         .examples-toggle {
           display: flex;
           align-items: center;
@@ -672,12 +560,9 @@ const FloatingChatbot = () => {
           transition: all var(--transition-fast);
           text-shadow: 0 0 8px rgba(255, 122, 48, 0.3);
         }
-        
         .examples-toggle:hover {
           color: var(--primary-dark);
         }
-        
-        /* Examples List */
         .examples-list {
           margin-top: 10px;
           background-color: rgba(255, 122, 48, 0.08);
@@ -688,7 +573,6 @@ const FloatingChatbot = () => {
           backdrop-filter: blur(5px);
           -webkit-backdrop-filter: blur(5px);
         }
-        
         .example-item {
           display: flex;
           align-items: center;
@@ -698,25 +582,19 @@ const FloatingChatbot = () => {
           transition: all var(--transition-fast);
           border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
-        
         .example-item:last-child {
           border-bottom: none;
         }
-        
         .example-item:hover {
           background-color: rgba(255, 122, 48, 0.15);
         }
-        
         .example-icon {
           color: var(--primary-color);
         }
-        
         .example-text {
           font-size: 13px;
           color: var(--text-color);
         }
-        
-        /* Glassy Input Area */
         .input-area {
           padding: 14px 16px;
           border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -728,7 +606,6 @@ const FloatingChatbot = () => {
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
         }
-        
         .input-area::before {
           content: '';
           position: absolute;
@@ -743,12 +620,10 @@ const FloatingChatbot = () => {
             transparent
           );
         }
-        
         .input-wrapper {
           flex: 1;
           position: relative;
         }
-        
         .chat-input {
           width: 100%;
           padding: 10px 14px;
@@ -763,17 +638,14 @@ const FloatingChatbot = () => {
           backdrop-filter: blur(5px);
           -webkit-backdrop-filter: blur(5px);
         }
-        
         .chat-input:focus {
           border-color: var(--primary-color);
           background-color: rgba(255, 255, 255, 0.1);
           box-shadow: 0 0 0 1px rgba(255, 122, 48, 0.2);
         }
-        
         .chat-input::placeholder {
           color: var(--text-faint);
         }
-        
         .send-button {
           width: 36px;
           height: 36px;
@@ -790,53 +662,81 @@ const FloatingChatbot = () => {
           overflow: hidden;
           box-shadow: 0 2px 8px rgba(255, 122, 48, 0.25);
         }
-        
         .send-button::after {
           content: '';
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
+          top: 0; left: 0; right: 0;
           height: 50%;
           background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0));
           pointer-events: none;
         }
-        
         .send-button:hover {
           background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
           transform: translateY(-1px);
           box-shadow: 0 4px 12px rgba(255, 122, 48, 0.3);
         }
-        
         .send-button:disabled {
           opacity: 0.5;
           cursor: not-allowed;
           transform: none;
           box-shadow: none;
         }
-        
-        /* Ensure responsiveness */
-        @media (max-width: 480px) {
+        /* Markdown/ReactMarkdown styles */
+        .formatted-message h1, .formatted-message h2, .formatted-message h3 {
+          color: var(--primary-color);
+          margin: 12px 0 6px 0;
+          font-weight: 700;
+        }
+        .formatted-message ul, .formatted-message ol {
+          margin: 8px 0 8px 18px;
+          padding-left: 18px;
+        }
+        .formatted-message li {
+          margin-bottom: 4px;
+        }
+        .formatted-message table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 10px 0;
+          font-size: 13px;
+        }
+        .formatted-message th, .formatted-message td {
+          border: 1px solid #3BADE5;
+          padding: 4px 8px;
+          text-align: left;
+          background: rgba(59,173,229,0.05);
+        }
+        .formatted-message th {
+          background: rgba(59,173,229,0.15);
+          color: var(--primary-color);
+        }
+        .formatted-message strong {
+          color: white;
+          font-weight: 600;
+        }
+        .formatted-message em {
+          font-style: italic;
+          opacity: 0.9;
+        }
+        .formatted-message p {
+          margin: 0 0 8px 0;
+          text-align: left;
+        }
+        .formatted-message p:last-child {
+          margin-bottom: 0;
+        }
+        @media (max-width: 600px) {
           .chat-container {
-            width: calc(100% - 32px);
-            right: 16px;
-            bottom: 16px;
-            height: calc(100vh - 120px);
-          }
-          
-          .ask-ai-button {
-            right: 16px;
-            bottom: 16px;
+            width: calc(100% - 16px);
+            right: 8px;
+            bottom: 8px;
+            height: calc(100vh - 32px);
           }
         }
       `}</style>
 
-      {/* Button */}
       {!isOpen && (
-        <button 
-          className="ask-ai-button"
-          onClick={handleOpenChat}
-        >
+        <button className="ask-ai-button" onClick={handleOpenChat}>
           <div className="button-icon-container">
             <div className="icon-glow"></div>
             <MessageCircle className="button-icon" size={18} />
@@ -846,10 +746,8 @@ const FloatingChatbot = () => {
         </button>
       )}
 
-      {/* Chat Container */}
       {isOpen && (
         <div className="chat-container" ref={chatContainerRef}>
-          {/* Header */}
           <div className="chat-header">
             <div className="header-content">
               <div className="header-icon">
@@ -859,32 +757,39 @@ const FloatingChatbot = () => {
                 <h3>ASK AI</h3>
                 <p>Your maritime intelligence assistant</p>
               </div>
+              <div class="watermark">
+                  Powered by Perplexity AI
+              </div>
             </div>
             <button className="close-btn" onClick={handleCloseChat} aria-label="Close chat">
               <X size={16} />
             </button>
           </div>
-          
-          {/* Messages */}
           <div className="messages-area">
-          {messages.map(message => (
-              <div 
-                key={message.id} 
+            {messages.map(message => (
+              <div
+                key={message.id}
                 className={`message ${message.sender === 'bot' ? 'bot-message' : 'user-message'}`}
               >
                 <div className="message-content">
-                  {message.text}
+                  {message.sender === 'bot' ? (
+                    <div className="formatted-message">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {message.text}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    message.text
+                  )}
                   <div className="message-time">{formatTime(message.timestamp)}</div>
                 </div>
               </div>
             ))}
-            
-            {/* Suggestions after first bot message - compact chips */}
             {showSuggestions && messages.length === 1 && (
               <>
                 <div className="suggestion-chips">
                   {quickSuggestions.map((suggestion, index) => (
-                    <button 
+                    <button
                       key={index}
                       className="suggestion-chip"
                       onClick={() => handleSuggestionClick(suggestion)}
@@ -893,16 +798,14 @@ const FloatingChatbot = () => {
                     </button>
                   ))}
                 </div>
-                
                 <button className="examples-toggle" onClick={toggleDetailedExamples}>
                   <Book size={12} />
                   <span>{showDetailedExamples ? 'Hide examples' : 'Show more examples'}</span>
                 </button>
-                
                 {showDetailedExamples && (
                   <div className="examples-list">
                     {detailedExamples.map((example, index) => (
-                      <div 
+                      <div
                         key={index}
                         className="example-item"
                         onClick={() => handleSuggestionClick(example)}
@@ -915,7 +818,6 @@ const FloatingChatbot = () => {
                 )}
               </>
             )}
-            
             {isTyping && (
               <div className="typing">
                 <div className="typing-dot"></div>
@@ -923,11 +825,8 @@ const FloatingChatbot = () => {
                 <div className="typing-dot"></div>
               </div>
             )}
-            
             <div ref={messagesEndRef} />
           </div>
-          
-          {/* Input Area */}
           <div className="input-area">
             <div className="input-wrapper">
               <input
@@ -948,6 +847,7 @@ const FloatingChatbot = () => {
             >
               <Send size={16} />
             </button>
+            
           </div>
         </div>
       )}

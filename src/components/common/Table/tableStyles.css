@@ -42,10 +42,11 @@
   /* Z-index layers */
   --z-index-base: 1;
   --z-index-row-hover: 5;
+  --z-index-header: 10;
   --z-index-cell-hover: 50;
   --z-index-expanded: 15;
-  --z-index-header: 10;
-  --z-index-tooltip: 1000;
+  --z-index-dropdown: 1000;
+  --z-index-tooltip: 1100;
 }
 
 /* ===== ANIMATIONS ===== */
@@ -67,6 +68,28 @@
 @keyframes checkbox-spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
@@ -95,6 +118,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  z-index: 1;
 }
 
 .data-table-container::before {
@@ -112,7 +136,7 @@
 
 /* ===== SCROLLABLE WRAPPER ===== */
 .data-table-wrapper {
-  overflow: auto;
+  overflow: visible;
   border-radius: var(--border-radius-md);
   position: relative;
   flex: 1;
@@ -124,21 +148,24 @@
 /* Custom scrollbars - shared styles */
 .data-table-wrapper::-webkit-scrollbar,
 .tooltip-body::-webkit-scrollbar,
-.dialog-scroll::-webkit-scrollbar {
+.dialog-scroll::-webkit-scrollbar,
+.column-filter-items::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 .data-table-wrapper::-webkit-scrollbar-track,
 .tooltip-body::-webkit-scrollbar-track,
-.dialog-scroll::-webkit-scrollbar-track {
+.dialog-scroll::-webkit-scrollbar-track,
+.column-filter-items::-webkit-scrollbar-track {
   background: rgba(11, 22, 35, 0.5);
   border-radius: 3px;
 }
 
 .data-table-wrapper::-webkit-scrollbar-thumb,
 .tooltip-body::-webkit-scrollbar-thumb,
-.dialog-scroll::-webkit-scrollbar-thumb {
+.dialog-scroll::-webkit-scrollbar-thumb,
+.column-filter-items::-webkit-scrollbar-thumb {
   background-color: rgba(77, 195, 255, 0.3);
   border-radius: 3px;
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
@@ -146,7 +173,8 @@
 
 .data-table-wrapper::-webkit-scrollbar-thumb:hover,
 .tooltip-body::-webkit-scrollbar-thumb:hover,
-.dialog-scroll::-webkit-scrollbar-thumb:hover {
+.dialog-scroll::-webkit-scrollbar-thumb:hover,
+.column-filter-items::-webkit-scrollbar-thumb:hover {
   background-color: rgba(77, 195, 255, 0.5);
 }
 
@@ -165,43 +193,35 @@
 }
 
 .table-shadow-top {
-  top: 0;
+  top: 38px;
   left: 0;
   right: 0;
-  height: 8px;
+  height: 10px;
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2), transparent);
-  border-top-left-radius: var(--border-radius-md);
-  border-top-right-radius: var(--border-radius-md);
 }
 
 .table-shadow-right {
   top: 0;
   right: 0;
   bottom: 0;
-  width: 8px;
+  width: 10px;
   background: linear-gradient(to left, rgba(0, 0, 0, 0.2), transparent);
-  border-top-right-radius: var(--border-radius-md);
-  border-bottom-right-radius: var(--border-radius-md);
 }
 
 .table-shadow-bottom {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 8px;
+  height: 10px;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.2), transparent);
-  border-bottom-left-radius: var(--border-radius-md);
-  border-bottom-right-radius: var(--border-radius-md);
 }
 
 .table-shadow-left {
   top: 0;
   left: 0;
   bottom: 0;
-  width: 8px;
+  width: 10px;
   background: linear-gradient(to right, rgba(0, 0, 0, 0.2), transparent);
-  border-top-left-radius: var(--border-radius-md);
-  border-bottom-left-radius: var(--border-radius-md);
 }
 
 /* ===== TABLE BASICS ===== */
@@ -312,7 +332,7 @@
   vertical-align: middle;
   white-space: nowrap;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
-  overflow: visible; /* Changed from hidden to visible to allow tooltips */
+  overflow: visible;
   text-overflow: ellipsis;
   max-width: 0;
   position: relative;
@@ -639,6 +659,449 @@
   gap: 12px;
 }
 
+/* ===== COLUMN FILTER COMPONENTS ===== */
+/* Vessel name header with integrated filters */
+.vessel-name-header {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  z-index: var(--z-index-header);
+  background: var(--table-header-bg) !important;
+}
+
+.header-label {
+  font-weight: 600;
+  margin-left: 14px;
+}
+
+.integrated-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: var(--z-index-dropdown);
+  margin-left: -8px;
+  gap: 6px;
+}
+
+/* Integrated filter button */
+.integrated-filter-button {
+  background: rgba(11, 22, 35, 0.3);
+  border: 1px solid rgba(77, 195, 255, 0.15);
+  color: var(--table-text-color);
+  height: 24px;
+  min-width: 24px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.integrated-filter-button.active {
+  background: rgba(77, 195, 255, 0.2);
+  border-color: rgba(77, 195, 255, 0.3);
+  box-shadow: 0 0 8px rgba(77, 195, 255, 0.2);
+}
+
+.integrated-filter-button.has-filters {
+  background: rgba(77, 195, 255, 0.15);
+  border-color: rgba(77, 195, 255, 0.25);
+}
+
+.integrated-filter-button:hover {
+  background: rgba(77, 195, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.integrated-filter-button:active {
+  transform: translateY(0);
+}
+
+.integrated-filter-button svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* Column filter dropdown */
+.column-filter-dropdown {
+  position: fixed;
+  background: #1a2236;
+  border: 1px solid rgba(77, 195, 255, 0.3);
+  border-radius: 8px;
+  padding: 0;
+  min-width: 180px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+  color: #f4f4f4;
+  z-index: var(--z-index-dropdown);
+  animation: fadeIn 0.2s ease-out;
+  overflow: hidden;
+}
+
+/* Column filter dropdown arrow */
+.column-filter-dropdown::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 12px;
+  width: 10px;
+  height: 10px;
+  background: #1a2236;
+  transform: rotate(45deg);
+  border-left: 1px solid rgba(77, 195, 255, 0.3);
+  border-top: 1px solid rgba(77, 195, 255, 0.3);
+}
+
+/* Filter dropdown header */
+.column-filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, #1a3652, #0f2337);
+  border-bottom: 1px solid rgba(77, 195, 255, 0.2);
+}
+
+.column-filter-header h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.column-filter-all-btn {
+  background: none;
+  border: none;
+  color: var(--blue-accent);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+}
+
+.column-filter-all-btn:hover {
+  text-decoration: underline;
+}
+
+/* Filter items container */
+.column-filter-items {
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+/* Checkbox items */
+.column-filter-item {
+  padding: 6px 12px;
+  transition: background-color 0.2s ease;
+}
+
+.column-filter-item:hover {
+  background: rgba(77, 195, 255, 0.08);
+}
+
+.column-filter-item label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  width: 100%;
+  font-size: 12px;
+}
+
+.column-filter-item input[type="checkbox"] {
+  margin: 0;
+}
+
+/* Filter footer */
+.column-filter-footer {
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid rgba(77, 195, 255, 0.1);
+  background: rgba(11, 22, 35, 0.3);
+}
+
+.column-filter-apply {
+  background: var(--blue-accent);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.column-filter-apply:hover {
+  background: rgba(77, 195, 255, 0.8);
+  transform: translateY(-1px);
+}
+
+.column-filter-clear {
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.2);
+  color: #E74C3C;
+  border-radius: var(--border-radius-sm);
+  padding: 3px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.column-filter-clear:hover {
+  background: rgba(231, 76, 60, 0.2);
+  transform: translateY(-1px);
+}
+
+/* Status mini indicator for filter button */
+.status-indicator-mini {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0 1px;
+  height: 100%;
+}
+
+.status-indicator-mini .status-dot {
+  width: 4px;
+  height: 4px;
+  min-width: 4px;
+  min-height: 4px;
+  border-radius: 50%;
+  display: inline-block;
+  margin: 1;
+  flex-shrink: 0;
+}
+
+.status-indicator-mini.filtered {
+  animation: pulse 2s infinite;
+}
+
+/* Filter count badge */
+.filter-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--blue-accent);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Status dot colors */
+.status-dot.status-green {
+  background-color: var(--status-green);
+}
+
+.status-dot.status-yellow {
+  background-color: var(--status-yellow);
+}
+
+.status-dot.status-red {
+  background-color: var(--status-red);
+}
+
+.status-dot.status-grey {
+  background-color: var(--status-grey);
+}
+
+/* Floating filter controls */
+.floating-filter-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(145deg, rgba(19, 35, 55, 0.85), rgba(26, 44, 68, 0.85));
+  border-radius: var(--border-radius-md);
+  padding: 8px 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(77, 195, 255, 0.3);
+  color: var(--table-text-color);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.active-filter-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--blue-accent);
+  font-weight: 500;
+}
+
+.clear-all-filters {
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.2);
+  color: #E74C3C;
+  border-radius: var(--border-radius-sm);
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clear-all-filters:hover {
+  background: rgba(231, 76, 60, 0.2);
+  transform: translateY(-1px);
+}
+
+/* Highlighted table when filters are active */
+.filtered-table::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  border: 2px solid rgba(77, 195, 255, 0.3);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 0 12px rgba(77, 195, 255, 0.15);
+}
+
+/* ===== VESSEL NAME CELL & STATUS INDICATORS ===== */
+/* Make vessel name cell more flexible */
+.vessel-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: visible;
+}
+
+/* Vessel name with status */
+.vessel-name-with-status {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.vessel-name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Traffic light styles */
+.traffic-light {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.traffic-light:hover {
+  transform: scale(1.2);
+}
+
+/* Traffic light variants */
+.traffic-light-red {
+  background: var(--status-red);
+  box-shadow: 0 0 8px rgba(231, 76, 60, 0.7);
+}
+
+.traffic-light-yellow {
+  background: var(--status-yellow);
+  box-shadow: 0 0 8px rgba(241, 196, 15, 0.7);
+}
+
+.traffic-light-green {
+  background: var(--status-green);
+  box-shadow: 0 0 8px rgba(46, 204, 113, 0.7);
+}
+
+.traffic-light-grey {
+  background: var(--status-grey);
+  box-shadow: 0 0 8px rgba(149, 165, 166, 0.7);
+}
+
+/* Glowing effect for traffic light */
+.traffic-light-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+  opacity: 0.2;
+}
+
+/* Traffic light glow variants */
+.traffic-light-red .traffic-light-glow {
+  background: var(--status-red);
+  box-shadow: 0 0 10px 2px rgba(231, 76, 60, 0.7);
+}
+
+.traffic-light-yellow .traffic-light-glow {
+  background: var(--status-yellow);
+  box-shadow: 0 0 10px 2px rgba(241, 196, 15, 0.7);
+}
+
+.traffic-light-green .traffic-light-glow {
+  background: var(--status-green);
+  box-shadow: 0 0 10px 2px rgba(46, 204, 113, 0.7);
+}
+
+/* Vessel flag container */
+.vessel-flag-container {
+  position: relative;
+  display: inline-block;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.vessel-flag-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  opacity: 0.7;
+}
+
+.vessel-flag-button:hover {
+  background: rgba(244, 244, 244, 0.1);
+  transform: translateY(-1px) scale(1.1);
+  opacity: 1;
+}
+
+.vessel-flag-button.green {
+  background: rgba(46, 224, 134, 0.1);
+  opacity: 1;
+}
+
+.vessel-flag-button.yellow {
+  background: rgba(255, 212, 38, 0.1);
+  opacity: 1;
+}
+
+.vessel-flag-button.red {
+  background: rgba(255, 82, 82, 0.1);
+  opacity: 1;
+}
+
 /* ===== EXPANDED ITEMS ===== */
 .expanded-item {
   background: rgba(11, 22, 35, 0.3);
@@ -684,6 +1147,66 @@
   color: var(--table-text-color);
   font-weight: 500;
   font-size: var(--font-size-normal);
+}
+
+/* ===== COMMENT STYLES ===== */
+.comment-cell {
+  position: relative;
+}
+
+.comment-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: var(--border-radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.comment-indicator:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.comment-icon {
+  color: var(--blue-accent);
+  display: flex;
+  align-items: center;
+}
+
+.has-comment .comment-icon {
+  color: var(--positive-color);
+}
+
+.comment-preview-text,
+.comment-add-text {
+  font-size: var(--font-size-small);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comment-add-text {
+  color: var(--table-muted-text-color);
+}
+
+/* ===== DROPDOWN FIELD ===== */
+.dropdown-field {
+  font-family: 'Nunito', sans-serif;
+  outline: none;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.dropdown-field:hover {
+  box-shadow: 0 0 8px rgba(59, 173, 229, 0.3);
+}
+
+.dropdown-menu {
+  z-index: var(--z-index-tooltip);
 }
 
 /* ===== CHECKBOX FIELD ===== */
@@ -770,417 +1293,14 @@
   animation: checkbox-spin 0.8s linear infinite;
 }
 
-/* ===== DROPDOWN FIELD ===== */
-.dropdown-field {
-  font-family: 'Nunito', sans-serif;
-  outline: none;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.dropdown-field:hover {
-  box-shadow: 0 0 8px rgba(59, 173, 229, 0.3);
-}
-
-.dropdown-menu {
-  z-index: var(--z-index-tooltip); /* Same as tooltip to ensure visibility */
-}
-
-/* ===== TRAFFIC LIGHT & TOOLTIP STYLES ===== */
-/* Vessel name with status */
-.vessel-name-with-status {
-  display: flex;
-  align-items: center;
-  position: relative;
-}
-
-.vessel-name {
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Traffic light styles */
-.traffic-light {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  position: relative;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.traffic-light:hover {
-  transform: scale(1.2);
-}
-
-/* Traffic light variants */
-.traffic-light-red {
-  background: var(--status-red);
-  box-shadow: 0 0 8px rgba(231, 76, 60, 0.7);
-}
-
-.traffic-light-yellow {
-  background: var(--status-yellow);
-  box-shadow: 0 0 8px rgba(241, 196, 15, 0.7);
-}
-
-.traffic-light-green {
-  background: var(--status-green);
-  box-shadow: 0 0 8px rgba(46, 204, 113, 0.7);
-}
-
-.traffic-light-grey {
-  background: var(--status-grey);
-  box-shadow: 0 0 8px rgba(149, 165, 166, 0.7);
-}
-
-/* Glowing effect for traffic light */
-.traffic-light-glow {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-  opacity: 0.2;
-}
-
-/* Traffic light glow variants */
-.traffic-light-red .traffic-light-glow {
-  background: var(--status-red);
-  box-shadow: 0 0 10px 2px rgba(231, 76, 60, 0.7);
-}
-
-.traffic-light-yellow .traffic-light-glow {
-  background: var(--status-yellow);
-  box-shadow: 0 0 10px 2px rgba(241, 196, 15, 0.7);
-}
-
-.traffic-light-green .traffic-light-glow {
-  background: var(--status-green);
-  box-shadow: 0 0 10px 2px rgba(46, 204, 113, 0.7);
-}
-
-/* Make sure the traffic light container respects the table cell constraints */
-.vessel-name-with-status .traffic-light-container {
-  margin-right: 8px;
-  flex-shrink: 0;
-}
-
-/* Add pulse animation for red status only */
-.vessel-name-with-status .traffic-light-indicator[style*="background-color: rgb(231, 76, 60)"]::after {
-  opacity: 0.7;
-}
-
-/* ===== ENHANCED TOOLTIP STYLES ===== */
-/* Status tooltip container */
-.status-tooltip-container {
-  position: relative;
-  display: inline-flex;
-  margin-right: 10px;
-}
-
-/* Create a bridge to keep tooltip visible */
-.status-tooltip-container::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 20px;
-  height: 15px;
-  background: transparent;
-  z-index: var(--z-index-tooltip);
-}
-
-/* Enhanced tooltip style */
-.enhanced-tooltip {
-  position: absolute;
-  top: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: 320px;
-  background: #162d48;
-  border-radius: 8px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(59, 173, 229, 0.3);
-  z-index: var(--z-index-tooltip);
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
-  transform: translateX(-50%) translateY(10px);
-  pointer-events: none;
-  overflow: hidden;
-}
-
-/* Tooltip appears on hover and stays visible when hovering the tooltip */
-.status-tooltip-container:hover .enhanced-tooltip,
-.enhanced-tooltip:hover {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-50%) translateY(0);
-  pointer-events: auto;
-}
-
-/* Add a delay before hiding on mouseleave */
-.status-tooltip-container:not(:hover) .enhanced-tooltip:not(:hover) {
-  transition-delay: 0.2s;
-}
-
-/* Tooltip arrow */
-.enhanced-tooltip::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-bottom: 8px solid #162d48;
-  z-index: 2;
-}
-
-/* Tooltip header */
-.tooltip-header {
-  padding: 10px 15px;
-  background: linear-gradient(180deg, #1a3652, #0f2337);
-  border-bottom: 1px solid rgba(59, 173, 229, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.tooltip-header h3 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #fff;
-}
-
-/* Tooltip edit button */
-.tooltip-edit-btn {
-  background: rgba(77, 195, 255, 0.2);
-  border: none;
-  border-radius: var(--border-radius-sm);
-  color: var(--blue-accent);
-  padding: 2px 6px;
-  font-size: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.tooltip-edit-btn:hover {
-  background: rgba(77, 195, 255, 0.3);
-}
-
-/* Tooltip body */
-.tooltip-body {
-  padding: 10px 0;
-  max-height: 300px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(77, 195, 255, 0.3) rgba(11, 22, 35, 0.5);
-  font-size: var(--font-size-small);
-  line-height: 1.4;
-}
-
-.tooltip-body::-webkit-scrollbar {
-  width: 4px;
-}
-
-/* Factor row */
-.factor-row {
-  display: grid;
-  grid-template-columns: 110px 1fr;
-  grid-template-rows: auto auto;
-  padding: 8px 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  transition: background-color 0.2s ease;
-}
-
-.factor-row:last-child {
-  border-bottom: none;
-}
-
-.factor-row:hover {
-  background: rgba(59, 173, 229, 0.05);
-}
-
-/* Factor row colors */
-.factor-red {
-  background: rgba(231, 76, 60, 0.05);
-}
-
-.factor-yellow {
-  background: rgba(241, 196, 15, 0.05);
-}
-
-.factor-green {
-  background: rgba(46, 204, 113, 0.05);
-}
-
-.factor-grey {
-  background: rgba(149, 165, 166, 0.05);
-}
-
-/* Factor name */
-.factor-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  grid-column: 1;
-  grid-row: 1;
-}
-
-/* Factor value */
-.factor-value {
-  font-size: 12px;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  grid-column: 2;
-  grid-row: 1;
-}
-
-/* Status dot in factor rows */
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 6px;
-  display: inline-block;
-}
-
-/* Status variants */
-.status-red {
-  background: var(--status-red);
-  box-shadow: 0 0 4px rgba(231, 76, 60, 0.6);
-}
-
-.status-yellow {
-  background: var(--status-yellow);
-  box-shadow: 0 0 4px rgba(241, 196, 15, 0.6);
-}
-
-.status-green {
-  background: var(--status-green);
-  box-shadow: 0 0 4px rgba(46, 204, 113, 0.6);
-}
-
-.status-grey {
-  background: var(--status-grey);
-  box-shadow: 0 0 4px rgba(149, 165, 166, 0.6);
-}
-
-/* Factor detail */
-.factor-detail {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.6);
-  font-style: italic;
-  grid-column: 1 / span 2;
-  grid-row: 2;
-  margin-top: 4px;
-}
-
-/* ===== COMMENT STYLES ===== */
-.comment-cell {
-  position: relative;
-}
-
-.comment-indicator {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  border-radius: var(--border-radius-sm);
-  background: rgba(255, 255, 255, 0.05);
-  transition: all 0.3s ease;
-  cursor: pointer;
-  position: relative;
-}
-
-.comment-indicator:hover {
-  background: rgba(255, 255, 255, 0.08);
-  transform: translateY(-1px);
-}
-
-.comment-icon {
-  color: var(--blue-accent);
-  display: flex;
-  align-items: center;
-}
-
-.has-comment .comment-icon {
-  color: var(--positive-color);
-}
-
-.comment-preview-text,
-.comment-add-text {
-  font-size: var(--font-size-small);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.comment-add-text {
-  color: var(--table-muted-text-color);
-}
-
-/* Comment tooltip */
-.comment-tooltip {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  width: 250px;
-  background: #162d48;
-  border-radius: var(--border-radius-sm);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(59, 173, 229, 0.3);
-  z-index: var(--z-index-tooltip);
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  pointer-events: none;
-}
-
-.comment-indicator:hover .comment-tooltip {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-}
-/* Comment tooltip trigger */
+/* ===== TOOLTIP STYLES ===== */
 .tooltip-trigger {
   cursor: pointer;
   display: inline-block;
   width: 100%;
   position: relative;
 }
-/* Comment tooltip portal - specific fixes */
-.comment-tooltip-portal {
-  position: fixed !important;
-  z-index: 10000 !important;
-}
 
-/* ===== COMMENT TOOLTIP PORTAL ===== */
-.comment-tooltip-portal {
-  transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-
-.comment-tooltip-portal::before {
-  content: '';
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  background: #162d48;
-  transform: rotate(45deg);
-  border: 1px solid rgba(77, 195, 255, 0.3);
-  z-index: -1;
-}
 .tooltip-trigger::after {
   content: '';
   position: absolute;
@@ -1190,26 +1310,15 @@
   bottom: -20px;
   background: transparent;
 }
-/* Arrow positioning */
-.tooltip-right::before {
-  top: 15px;
-  left: -6px;
-  border-right: none;
-  border-top: none;
-  box-shadow: -1px -1px 1px rgba(0, 0, 0, 0.1);
-}
 
-.tooltip-left::before {
-  top: 15px;
-  right: -6px;
-  border-left: none;
-  border-bottom: none;
-  box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
-}
-
-.comment-tooltip-content {
-  overflow: hidden;
-  border-radius: 6px;
+.tooltip-body {
+  padding: 10px 0;
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(77, 195, 255, 0.3) rgba(11, 22, 35, 0.5);
+  font-size: var(--font-size-small);
+  line-height: 1.4;
 }
 
 /* ===== EXTRA COMPACT STYLES ===== */
@@ -1230,36 +1339,16 @@
   font-size: 10px;
 }
 
-/* ===== DIALOG SCROLLABLE CONTENT ===== */
-.dialog-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(77, 195, 255, 0.3) rgba(11, 22, 35, 0.5);
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
 /* ===== RESPONSIVE ADJUSTMENTS ===== */
 @media (max-width: 1200px) {
   :root {
     --cell-padding-x: 10px;
-  }
-  
-  .enhanced-tooltip {
-    width: 280px;
   }
 }
 
 @media (max-width: 992px) {
   .expanded-grid {
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  }
-  
-  .enhanced-tooltip {
-    width: 250px;
-  }
-  
-  .factor-row {
-    grid-template-columns: 90px 1fr;
   }
 }
 
@@ -1284,24 +1373,18 @@
     padding: 2px 6px;
   }
   
-  .enhanced-tooltip {
-    width: 220px;
-    left: 0;
-    transform: translateX(0) translateY(10px);
-  }
-  
-  .enhanced-tooltip::before {
-    left: 15px;
-    transform: translateX(0);
-  }
-  
-  .status-tooltip-container:hover .enhanced-tooltip,
-  .enhanced-tooltip:hover {
-    transform: translateX(0) translateY(0);
-  }
-  
   .comments-column {
     text-align: left;
+  }
+  
+  .integrated-filters {
+    margin-left: 6px;
+    gap: 4px;
+  }
+
+  .column-filter-dropdown {
+    right: -50px;
+    min-width: 200px;
   }
 }
 
@@ -1319,29 +1402,8 @@
     max-height: calc(100vh - 180px);
   }
   
-  .enhanced-tooltip {
-    max-width: 200px;
-  }
-  
-  .factor-row {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-  }
-  
-  .factor-name {
-    grid-column: 1;
-    grid-row: 1;
-  }
-  
-  .factor-value {
-    grid-column: 1;
-    grid-row: 2;
-    margin-top: 4px;
-  }
-  
-  .factor-detail {
-    grid-column: 1;
-    grid-row: 3;
+  .data-table-wrapper table {
+    overflow: auto;
   }
   
   .comment-preview-text {

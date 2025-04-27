@@ -7,11 +7,13 @@ import {
 import VesselTable from './VesselTable';
 import ArrivalsByPortChart from './charts/ArrivalsByPortChart';
 import ArrivalTimelineChart from './charts/ArrivalTimelineChart';
+import PSCDeficienciesChart from './charts/PSCDeficienciesChart';
 import './FleetStyles.css';
 import CommentsModal from './CommentsModal';
 import { v4 as uuidv4 } from 'uuid';
 import MapModal from './MapModal';
 import ActiveFiltersDisplay from './ActiveFiltersDisplay';
+import PortVesselRiskChart from './charts/PortVesselRiskChart';
 
 
 const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
@@ -40,6 +42,9 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const [showDocDropdown, setShowDocDropdown] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   
+  const [portVesselRiskData, setPortVesselRiskData] = useState([]);
+  const [loadingPortVesselRisk, setLoadingPortVesselRisk] = useState(true);
+
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [selectedVessel, setSelectedVessel] = useState(null);
@@ -47,7 +52,8 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const [chartPortFilter, setChartPortFilter] = useState(null);
 
   const [timelineFilter, setTimelineFilter] = useState(null);
-
+  const [pscDeficiencyData, setPscDeficiencyData] = useState([]);
+  const [loadingPscData, setLoadingPscData] = useState(true);
 // Add a handler function for timeline filter changes
   const handleTimelineFilterChange = (timeRange) => {
     setTimelineFilter(timeRange);
@@ -115,7 +121,47 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     }
   };
 
-  
+  // Add authentication handling in your API calls
+  const fetchPortVesselRiskData = useCallback(async () => {
+    setLoadingPortVesselRisk(true);
+    try {
+      const response = await fetch('https://6mfmavicpuezjic6mtwtbuw56e0pjysg.lambda-url.ap-south-1.on.aws/api/port-vessel-risk', {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch port vessel risk data (Status: ${response.status})`);
+      }
+      
+      const data = await response.json();
+      console.log('Port Vessel Risk Data received:', data);
+      setPortVesselRiskData(data);
+    } catch (error) {
+      console.error('Error fetching port vessel risk data:', error);
+      setPortVesselRiskData([]); // Set empty data on error
+    } finally {
+      setLoadingPortVesselRisk(false);
+    }
+  }, []);
+
+  const fetchPscDeficiencyData = useCallback(async () => {
+    try {
+      setLoadingPscData(true);
+      const response = await fetch(PSC_API_URL);
+      if (!response.ok) {
+        throw new Error('Failed to fetch PSC data');
+      }
+      const data = await response.json();
+      console.log('PSC Data received:', data); // Add this log
+      setPscDeficiencyData(data);
+    } catch (error) {
+      console.error('Error fetching PSC data:', error);
+    } finally {
+      setLoadingPscData(false);
+    }
+  }, []);
   
 
   const handleChartFilterChange = (port) => {
@@ -213,9 +259,11 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   };
   
   // API endpoint
-  const API_URL = 'https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws/api/vessels';
-
-  // Generate a unique key for each vessel
+  const API_URL = 'https://6mfmavicpuezjic6mtwtbuw56e0pjysg.lambda-url.ap-south-1.on.aws/api/vessels';
+  // API endpoints
+  //const VESSELS_API_URL = 'https://6mfmavicpuezjic6mtwtbuw56e0pjysg.lambda-url.ap-south-1.on.aws/api/vessels';
+  const PSC_API_URL = 'https://6mfmavicpuezjic6mtwtbuw56e0pjysg.lambda-url.ap-south-1.on.aws/api/psc-deficiencies';
+    // Generate a unique key for each vessel
   const generateUniqueKey = (vessel) => {
     // Create a unique key by combining IMO and status (or other distinguishing fields)
     const status = vessel.status || 'unknown';
@@ -225,6 +273,46 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
 
   // Process vessels data
   // Updated processVesselsData function that correctly processes active vessels
+
+  // Function to categorize and format vessel status
+  const categorizeStatus = (status) => {
+    if (!status) {
+      return "Others";
+    }
+    
+    const statusLower = status.toLowerCase();
+    
+    // At Sea category
+    if (statusLower.includes("at sea") || 
+        statusLower.includes("noon at sea") || 
+        statusLower.includes("noon sea") || 
+        statusLower === "sea" || 
+        statusLower === "noon") {
+      return "At Sea";
+    }
+    
+    // At Port category
+    if (statusLower.includes("at port") || 
+        statusLower.includes("noon at port") || 
+        statusLower.includes("at berth") || 
+        statusLower.includes("berth") || 
+        statusLower.includes("arrival") || 
+        statusLower.includes("departure port") || 
+        statusLower.includes("departure") || 
+        statusLower.includes("port")) {
+      return "At Port";
+    }
+    
+    // At Anchor category
+    if (statusLower.includes("at anchor") || 
+        statusLower.includes("noon at anchor") || 
+        statusLower.includes("anchor")) {
+      return "At Anchor";
+    }
+    
+    // Everything else goes to Others
+    return "Others";
+  };
 
   const processVesselsData = useCallback((data) => {
     console.log('Raw data received:', data.length, 'rows');
@@ -306,30 +394,35 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     console.log('Inactive vessels (all dates):', inactiveVessels.length);
     
     // Enhance vessel data with calculated fields
+    // Enhance vessel data with calculated fields
     const enhanceVessel = (vessel, isActive = true) => {
-        const etaDate = parseDate(vessel.eta);
-        
-        let days_to_go = 0;
-        if (etaDate) {
-            const currentDate = new Date();
-            const timeDiff = etaDate.getTime() - currentDate.getTime();
-            days_to_go = Math.max(0, Math.round(timeDiff / (1000 * 3600 * 24) * 10) / 10);
-        } else if (vessel.DISTANCE_TO_GO) {
-            days_to_go = parseFloat((vessel.DISTANCE_TO_GO / 350).toFixed(1));
-        }
-        
-        // Generate a unique key using UUID
-        const uniqueKey = `vessel-${uuidv4()}`;
-        
-        return {
-            ...vessel,
-            etaDate,
-            days_to_go,
-            riskScore: Math.floor(Math.random() * 100),
-            uniqueKey,
-            isActiveVessel: isActive,
-            reportDate: parseDate(vessel.report_date) // Add parsed report date
-        };
+      const etaDate = parseDate(vessel.eta);
+      
+      let days_to_go = 0;
+      if (etaDate) {
+          const currentDate = new Date();
+          const timeDiff = etaDate.getTime() - currentDate.getTime();
+          days_to_go = Math.max(0, Math.round(timeDiff / (1000 * 3600 * 24) * 10) / 10);
+      } else if (vessel.DISTANCE_TO_GO) {
+          days_to_go = parseFloat((vessel.DISTANCE_TO_GO / 350).toFixed(1));
+      }
+      
+      // Generate a unique key using UUID
+      const uniqueKey = `vessel-${uuidv4()}`;
+      
+      // Categorize and format the event_type (status)
+      const formattedStatus = categorizeStatus(vessel.event_type);
+      
+      return {
+          ...vessel,
+          etaDate,
+          days_to_go,
+          riskScore: Math.floor(Math.random() * 100),
+          uniqueKey,
+          isActiveVessel: isActive,
+          reportDate: parseDate(vessel.report_date), // Add parsed report date
+          event_type: formattedStatus // Apply the formatted status
+      };
     };
     
     // Process both active and inactive vessels
@@ -404,6 +497,14 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   useEffect(() => {
     fetchVessels();
   }, [fetchVessels]);
+  useEffect(() => {
+      fetchPscDeficiencyData();
+  }, [fetchPscDeficiencyData]);
+
+  useEffect(() => {
+    fetchPortVesselRiskData();
+  }, [fetchPortVesselRiskData]);
+
 
   // Initialize filter options from all vessels
   useEffect(() => {
@@ -568,6 +669,67 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   
   const vesselCount = vessels.length;
   const filteredCount = filteredVessels.length;
+
+  const vesselPscData = useMemo(() => {
+    if (!vessels.length) return [];
+    
+    const deficiencyCounts = {};
+    vessels.forEach(vessel => {
+      // Group by PSC_CATEGORY for better categorization
+      const category = vessel.PSC_CATEGORY || 'Unknown';
+      if (!deficiencyCounts[category]) {
+        deficiencyCounts[category] = {
+          category: category,
+          count: 0,
+          details: []
+        };
+      }
+      
+      // Add to count
+      deficiencyCounts[category].count += Number(vessel.DEFICIENCY_COUNT) || 0;
+      
+      // Add details if available
+      if (vessel.PSC_SUB_CATEGORY) {
+        deficiencyCounts[category].details.push({
+          code: vessel.PSC_CODE,
+          subCategory: vessel.PSC_SUB_CATEGORY
+        });
+      }
+    });
+    
+    // Convert to array and sort by count
+    return Object.values(deficiencyCounts)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10); // Top 10 categories
+  }, [vessels]);
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload?.[0]) {
+      const data = payload[0].payload;
+      return (
+        <div className="custom-tooltip">
+          <p className="tooltip-label">{label}</p>
+          <p className="tooltip-value">{payload[0].value} deficiencies</p>
+          {data.details && data.details.length > 0 && (
+            <div className="tooltip-details">
+              {data.details.slice(0, 3).map((detail, idx) => (
+                <p key={idx} className="tooltip-sub">
+                  {detail.code}: {detail.subCategory}
+                </p>
+              ))}
+              {data.details.length > 3 && (
+                <p className="tooltip-more">
+                  +{data.details.length - 3} more...
+                </p>
+              )}
+            </div>
+          )}
+          <div className="tooltip-arrow"></div>
+        </div>
+      );
+    }
+    return null;
+  };
 
   // Chart data
   const vesselsByPortData = useMemo(() => {
@@ -934,10 +1096,16 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
                 <span>Loading chart data...</span>
               </div>
             ) : (
-              <ArrivalsByPortChart 
-                data={vesselsByPortData} 
-                onFilterChange={handleChartFilterChange}
-                activeFilter={chartPortFilter}
+              // <ArrivalsByPortChart 
+              //   data={vesselsByPortData} 
+              //   onFilterChange={handleChartFilterChange}
+              //   activeFilter={chartPortFilter}
+              // />
+
+              <PSCDeficienciesChart 
+                data={pscDeficiencyData}
+                onFilterChange={() => {}}
+                activeFilter={null}
               />
               
             )}
@@ -952,11 +1120,22 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
                 <span>Loading chart data...</span>
               </div>
             ) : (
-              <ArrivalTimelineChart 
-                data={arrivalTimelineData}
-                onFilterChange={handleTimelineFilterChange}
-                activeFilter={timelineFilter}
-              />
+              // <ArrivalTimelineChart 
+              //   data={arrivalTimelineData}
+              //   onFilterChange={handleTimelineFilterChange}
+              //   activeFilter={timelineFilter}
+              // />
+
+              <PortVesselRiskChart 
+                data={portVesselRiskData}
+                onFilterChange={(filter) => {
+                  // Handle filter changes if needed
+                  console.log('Risk chart filter changed:', filter);
+                  // You can add filter handling logic here
+                }}
+                activeFilter={null}
+              />  
+
             )}
           </div>
         </div>
