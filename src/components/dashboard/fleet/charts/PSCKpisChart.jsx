@@ -624,9 +624,9 @@ const PSCKpisChart = ({ data = [], onFilterChange, activeFilter }) => {
                     borderRadius: '8px',
                     padding: '12px 15px',
                     flex: '1 1 calc(33.333% - 20px)', // Flexible width with min size
-                    minWidth: '200px', // Minimum width to prevent squishing
+                    minWidth: '100px', // Minimum width to prevent squishing
                     maxWidth: '350px', // Maximum width to maintain design
-                    minHeight: '100px', // Minimum height
+                    minHeight: '60px', // Minimum height
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'flex-start',
