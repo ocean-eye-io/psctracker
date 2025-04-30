@@ -320,6 +320,8 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
   };
 
   // Improved tooltip for port view - shows ALL categories
+  // Replace your existing PortTooltip component with this improved version
+
   const PortTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       // Get the pre-calculated totalCount and all categories
@@ -336,38 +338,107 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
         <div
           className="custom-tooltip"
           style={{
-            minWidth: 200,
+            minWidth: 240,
             maxWidth: 350,
+            maxHeight: 400, // Maximum height for the tooltip
+            overflowY: 'auto', // Enable vertical scrolling
             whiteSpace: 'normal',
             wordBreak: 'break-word',
+            position: 'fixed', // Use fixed positioning to prevent cutoff
+            zIndex: 9999, // Ensure tooltip appears on top
+            backgroundColor: 'rgba(11, 22, 35, 0.95)', // Semi-transparent dark background
+            color: '#f4f4f4',
+            border: '1px solid rgba(59, 173, 229, 0.3)',
+            borderRadius: '6px',
+            padding: '12px',
+            boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.4)',
           }}
         >
-          <p className="tooltip-label">{label}</p>
-          <p className="tooltip-value">{total} total deficiencies</p>
-          <div className="tooltip-categories">
+          <p className="tooltip-label" style={{ 
+            fontSize: '14px', 
+            fontWeight: 'bold', 
+            margin: '0 0 8px 0',
+            color: '#4DC3FF'
+          }}>
+            {label}
+          </p>
+          <p className="tooltip-value" style={{ 
+            fontSize: '13px', 
+            fontWeight: 'bold', 
+            margin: '0 0 12px 0' 
+          }}>
+            {total} total deficiencies
+          </p>
+          <div 
+            className="tooltip-categories"
+            style={{
+              maxHeight: 240,
+              overflowY: 'auto',  // Enable scrolling for this section
+              padding: '0 4px',
+              marginRight: '-4px', // Compensate for scrollbar width
+            }}
+          >
             {sortedCategories.map(([category, count], index) => {
               // Get color from the color map or use a default
               const color = colorMap[category] || categoryColors[index % categoryColors.length];
               
               return (
-                <div key={index} className="tooltip-category-item">
+                <div 
+                  key={index} 
+                  className="tooltip-category-item"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    marginBottom: '6px',
+                    fontSize: '12px',
+                    lineHeight: 1.4
+                  }}
+                >
                   <span
                     className="tooltip-color-dot"
-                    style={{ backgroundColor: color }}
+                    style={{ 
+                      backgroundColor: color,
+                      display: 'inline-block',
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      marginRight: '6px',
+                      marginTop: '4px',
+                      flexShrink: 0
+                    }}
                   ></span>
-                  <span className="tooltip-category-name">{category}: </span>
-                  <span className="tooltip-category-value">{count}</span>
+                  <span 
+                    className="tooltip-category-name"
+                    style={{
+                      flex: 1,
+                      paddingRight: '6px'
+                    }}
+                  >
+                    {category}: 
+                  </span>
+                  <span 
+                    className="tooltip-category-value"
+                    style={{
+                      fontWeight: 'bold',
+                      flexShrink: 0
+                    }}
+                  >
+                    {count}
+                  </span>
                 </div>
               );
             })}
           </div>
-          <div className="tooltip-arrow"></div>
         </div>
       );
     }
     return null;
   };
 
+// Also, update the CSS for tooltips (you can add this to your CSS file):
+/*
+
+*/
   const handleMouseMove = (e) => {
     if (e?.activeTooltipIndex !== undefined) {
       setHoveredBar(e.activeTooltipIndex);
