@@ -195,13 +195,33 @@ const PSCKpisChart = ({ data = [], onFilterChange, activeFilter }) => {
         }
       });
       
-      // Sort and select ports EXACTLY like PSCDeficienciesChart
+      // MODIFIED SELECTION LOGIC: Prioritize ports with detentions
       let portArray = Array.from(portCountMap.values());
-      portArray.sort((a, b) => b.actionCodeCount - a.actionCodeCount);
-      portArray = portArray.slice(0, 10);  // Take top 10 ports by action code count
+      
+      // First, separate ports with detentions from those without
+      const portsWithDetentions = portArray.filter(port => port.detentions > 0);
+      const portsWithoutDetentions = portArray.filter(port => port.detentions === 0);
+      
+      // Sort ports with detentions by detention count (highest first)
+      portsWithDetentions.sort((a, b) => b.detentions - a.detentions);
+      
+      // Sort ports without detentions by action code count (highest first)
+      portsWithoutDetentions.sort((a, b) => b.actionCodeCount - a.actionCodeCount);
+      
+      // Combine the arrays - detention ports first, then fill remaining slots with non-detention ports
+      let finalPortArray = [...portsWithDetentions];
+      
+      // Add ports without detentions until we reach 10 ports total, or run out of ports
+      if (finalPortArray.length < 10) {
+        const remainingSlots = 10 - finalPortArray.length;
+        finalPortArray = finalPortArray.concat(portsWithoutDetentions.slice(0, remainingSlots));
+      } else {
+        // If we have more than 10 ports with detentions, take only the top 10
+        finalPortArray = finalPortArray.slice(0, 10);
+      }
       
       // Calculate KPIs for selected ports
-      const finalPortArray = portArray.map(port => {
+      const processedPortArray = finalPortArray.map(port => {
         // Count the TOTAL RECORDS IN CATEGORIES - this is what PSCDeficienciesChart displays!
         let categoryTotal = 0;
         port.categories.forEach((count) => {
@@ -222,12 +242,12 @@ const PSCKpisChart = ({ data = [], onFilterChange, activeFilter }) => {
       
       // Set port data when appropriate
       if (activeView === 'port') {
-        setProcessedData(finalPortArray);
+        setProcessedData(processedPortArray);
       }
       
       // Calculate overall KPIs using only the records with valid categories
       // This ensures we're using exactly the same dataset as PSCDeficienciesChart
-      const displayedPortNames = new Set(portArray.map(port => port.name));
+      const displayedPortNames = new Set(finalPortArray.map(port => port.name));
       
       // Count total unique inspections and sum of categorized deficiencies
       const uniqueInspections = new Set();
@@ -236,7 +256,7 @@ const PSCKpisChart = ({ data = [], onFilterChange, activeFilter }) => {
       let totalCategorizedDeficiencies = 0;
       
       // Sum all the categorized deficiencies from all ports
-      portArray.forEach(port => {
+      finalPortArray.forEach(port => {
         port.categories.forEach((count) => {
           totalCategorizedDeficiencies += count;
         });
