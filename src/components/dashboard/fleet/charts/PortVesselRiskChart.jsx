@@ -375,7 +375,7 @@ const PortRiskAnalysisChart = ({ data = [], onFilterChange, activeFilter }) => {
                 tickLine={false}
                 angle={-45}
                 textAnchor="end"
-                height={70}
+                height={10}
               />
               <YAxis
                 yAxisId="left"
