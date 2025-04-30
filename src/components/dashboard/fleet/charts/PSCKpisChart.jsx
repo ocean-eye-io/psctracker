@@ -481,7 +481,7 @@ const PSCKpisChart = ({ data = [], onFilterChange, activeFilter }) => {
                 angle: -90, 
                 position: 'insideLeft',
                 style: { fill: '#28E0B0', fontSize: 12 },
-                offset: 10
+                offset: -20
               }}
             />
             <YAxis
@@ -497,7 +497,7 @@ const PSCKpisChart = ({ data = [], onFilterChange, activeFilter }) => {
                 angle: 90, 
                 position: 'insideRight',
                 style: { fill: '#f4f4f4', fontSize: 12 },
-                offset: 10
+                offset: -20
               }}
             />
             <Tooltip 
@@ -589,71 +589,111 @@ const PSCKpisChart = ({ data = [], onFilterChange, activeFilter }) => {
         </ResponsiveContainer>
       );
     } else if (activeView === 'overall') {
-      return (
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={overallData}
-            layout="vertical"
-            margin={{ top: 20, right: 20, left: getChartDimensions().yAxisWidth, bottom: 20 }}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
-            barGap={8}
-          >
-            <CartesianGrid 
-              strokeDasharray="3 3" 
-              stroke="rgba(244,244,244,0.05)" 
-              horizontal={false}
-            />
-            <XAxis
-              type="number"
-              tick={{ fill: '#f4f4f4', fontSize: 11 }}
-              axisLine={{ stroke: 'rgba(244,244,244,0.1)' }}
-              tickLine={false}
-              domain={[0, 'dataMax']}
-              tickFormatter={(value) => overallData[0]?.name.includes('DPI') ? value : `${value}%`}
-            />
-            <YAxis
-              type="category"
-              dataKey="name"
-              tick={{ fill: '#f4f4f4', fontSize: 12 }}
-              axisLine={{ stroke: 'rgba(244,244,244,0.1)' }}
-              tickLine={false}
-              width={getChartDimensions().yAxisWidth}
-              tickFormatter={(value) => {
-                // Acronym mapping for better space usage
-                const acronyms = {
-                  'Deficiency per Inspection (DPI)': 'DPI',
-                  'Detention Rate (DPR)': 'DPR',
-                  'Deficiency Inspection Rate (DIR)': 'DIR'
-                };
-                return acronyms[value] || value;
-              }}
-            />
-            <Tooltip 
-              content={<OverallTooltip />} 
-              cursor={{ fill: 'rgba(244, 244, 244, 0.05)' }} 
-            />
-            <Bar 
-              dataKey="value" 
-              name="Value"
-              barSize={getChartDimensions().barSize * 2}
-              radius={[0, 3, 3, 0]}
-            >
-              {overallData.map((entry, index) => (
-                <Cell
-                  key={`cell-overall-${index}`}
-                  fill={entry.color}
+        return (
+          <div className="kpi-cards-container" style={{
+            display: 'flex',
+            flexDirection: 'row',
+            flexWrap: 'wrap', // Allow wrapping on small screens
+            justifyContent: 'center',
+            alignItems: 'stretch',
+            gap: '10px', // Consistent spacing
+            height: '100%',
+            width: '100%',
+            padding: '5px',
+            overflow: 'auto' // Allow scrolling if needed
+          }}>
+            {overallData.map((item, index) => {
+              const value = parseFloat(item.value);
+              const isPercentage = item.name.includes('Rate');
+              const displayValue = isPercentage ? `${value}%` : value;
+              const acronym = item.name.includes('DPI') ? 'DPI' : 
+                              item.name.includes('DPR') ? 'DPR' : 'DIR';
+              
+              // Extract the calculation details
+              const details = item.details || 
+                (item.name.includes('DPI') ? '150 deficiencies / 27 inspections' : 
+                 item.name.includes('DPR') ? '4 detentions / 27 inspections' : 
+                 '27 inspections with deficiencies / 27 inspections');
+              
+              return (
+                <div 
+                  key={`kpi-card-${index}`}
+                  className="kpi-card"
                   style={{
-                    opacity: hoveredBar === null || hoveredBar === index ? 1 : 0.7,
-                    transition: 'opacity 0.3s'
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    borderRadius: '8px',
+                    padding: '12px 15px',
+                    flex: '1 1 calc(33.333% - 20px)', // Flexible width with min size
+                    minWidth: '200px', // Minimum width to prevent squishing
+                    maxWidth: '350px', // Maximum width to maintain design
+                    minHeight: '100px', // Minimum height
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'flex-start',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                    border: `1px solid ${item.color}20`
                   }}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      );
-    }
+                >
+                  {/* Color indicator at top */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '4px',
+                    backgroundColor: item.color
+                  }} />
+                  
+                  {/* Acronym */}
+                  <div style={{
+                    fontSize: 'clamp(14px, 3vw, 16px)', // Responsive font size
+                    fontWeight: 'bold',
+                    color: item.color,
+                    marginBottom: '4px',
+                    marginTop: '4px'
+                  }}>
+                    {acronym}
+                  </div>
+                  
+                  {/* Value */}
+                  <div style={{
+                    fontSize: 'clamp(20px, 5vw, 28px)', // Responsive font size
+                    fontWeight: 'bold',
+                    color: '#f4f4f4',
+                    marginBottom: '6px'
+                  }}>
+                    {displayValue}
+                  </div>
+                  
+                  {/* Description - shortened for small screens */}
+                  <div style={{
+                    fontSize: 'clamp(10px, 2vw, 12px)', // Responsive font size
+                    color: '#a0a0a0',
+                    marginBottom: '6px',
+                    lineHeight: '1.2'
+                  }}>
+                    {acronym === 'DPI' ? 'Deficiency per Inspection' : 
+                     acronym === 'DPR' ? 'Detention Rate' : 
+                     'Deficiency Inspection Rate'}
+                  </div>
+                  
+                  {/* Details in smaller text */}
+                  <div style={{
+                    fontSize: 'clamp(9px, 1.8vw, 11px)', // Responsive font size
+                    color: '#808080',
+                    lineHeight: '1.2',
+                    wordBreak: 'break-word' // Prevent overflow
+                  }}>
+                    {details}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      }
     
     return null;
   };
