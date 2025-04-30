@@ -231,7 +231,33 @@
 .chart-wrapper:hover {
   filter: drop-shadow(0px 5px 10px rgba(0, 0, 0, 0.3));
 }
+.recharts-tooltip-wrapper {
+  pointer-events: auto !important;
+  z-index: 9999 !important;
+}
 
+.custom-tooltip {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 173, 229, 0.4) rgba(11, 22, 35, 0.5);
+}
+
+.custom-tooltip::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-tooltip::-webkit-scrollbar-track {
+  background: rgba(11, 22, 35, 0.5);
+  border-radius: 4px;
+}
+
+.custom-tooltip::-webkit-scrollbar-thumb {
+  background-color: rgba(59, 173, 229, 0.4);
+  border-radius: 4px;
+}
+
+.tooltip-categories::-webkit-scrollbar {
+  width: 4px;
+}
 /* Chart Elements */
 .chart-bar {
   fill: url(#barGradient);
@@ -480,9 +506,9 @@
   transition: opacity 0.3s ease;
 }
 
-.recharts-tooltip-wrapper {
+/* .recharts-tooltip-wrapper {
   pointer-events: none !important;
-}
+} */
 
 .recharts-responsive-container {
   width: 100% !important;
