@@ -23,11 +23,14 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [colorMap, setColorMap] = useState({});
+  const [maxDeficiencyCount, setMaxDeficiencyCount] = useState(0); // Track max count for Y-axis
 
   // Color palette for categories
   const categoryColors = [
     '#4DC3FF', '#28E0B0', '#FF5252', '#F1C40F', '#9B59B6', 
-    '#3498DB', '#2ECC71', '#E67E22', '#1ABC9C', '#E74C3C'
+    '#3498DB', '#2ECC71', '#E67E22', '#1ABC9C', '#E74C3C',
+    '#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD',
+    '#8C564B', '#E377C2', '#7F7F7F', '#BCBD22', '#17BECF'
   ];
 
   // Process the data based on filters
@@ -153,6 +156,12 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
         });
         setColorMap(newColorMap);
         
+        // Find maximum count for Y-axis scaling
+        const maxCount = categoryArray.length > 0 
+          ? Math.max(...categoryArray.map(c => c.count))
+          : 0;
+        setMaxDeficiencyCount(maxCount);
+        
         setProcessedData({ 
           type: 'category',
           data: categoryArray 
@@ -169,12 +178,14 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
               name: portName,
               totalCount: 0,
               actionCodeCount: 0,
-              categories: new Map()
+              categories: new Map(),
+              rawRecords: 0, // Add a counter for total records
+              allCategories: {} // Keep track of all categories for this port
             });
           }
           
           const portData = portCountMap.get(portName);
-          portData.totalCount += 1;
+          portData.rawRecords += 1; // Count every record for this port, regardless of category
           
           // Count action codes
           if (item.actioncode || item.reference_code_1) {
@@ -188,6 +199,11 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
               portData.categories.set(category, 0);
             }
             portData.categories.set(category, portData.categories.get(category) + 1);
+            
+            // Also store in the allCategories object for complete tooltips
+            portData.allCategories[category] = (portData.allCategories[category] || 0) + 1;
+            
+            portData.totalCount += 1; // Only increment totalCount for valid categorized deficiencies
           }
         });
         
@@ -206,7 +222,7 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
           });
         });
         
-        // Limit to top 6 categories for cleaner visualization
+        // Limit to top 12 categories for visualization (increased from 6)
         const categoryCountMap = new Map();
         portArray.forEach(port => {
           port.categories.forEach((count, category) => {
@@ -219,14 +235,22 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
         
         const topCategories = Array.from(categoryCountMap.entries())
           .sort((a, b) => b[1] - a[1])
-          .slice(0, 6)
+          .slice(0, 12) // Increased from 6 to 12 to show more categories
           .map(([category]) => category);
         
         // Format data for stacked bar chart
         const stackedData = portArray.map(port => {
+            // Calculate the sum of all categorized deficiencies
+            let totalCategorizedDeficiencies = 0;
+            port.categories.forEach((count) => {
+                totalCategorizedDeficiencies += count;
+            });
+            
             const formattedPort = {
                 name: port.name,
-                totalCount: port.totalCount
+                totalCount: totalCategorizedDeficiencies, // This should match the sum of all categories
+                rawRecords: port.rawRecords, // Keep track of the total record count for reference
+                allCategories: port.allCategories // Store all categories for complete tooltips
             };
             
             // Add each category as a property with explicit number conversion
@@ -243,6 +267,12 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
           newColorMap[category] = categoryColors[index % categoryColors.length];
         });
         setColorMap(newColorMap);
+        
+        // Find maximum total count for Y-axis scaling
+        const maxCount = stackedData.length > 0 
+          ? Math.max(...stackedData.map(port => port.totalCount))
+          : 0;
+        setMaxDeficiencyCount(maxCount);
         
         // Store top categories in processedData for legend/rendering
         setProcessedData({
@@ -289,15 +319,19 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
     return null;
   };
 
-  // Custom tooltip for port view
+  // Improved tooltip for port view - shows ALL categories
   const PortTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
-      // Filter out categories with 0 value
-      const nonZeroPayload = payload.filter(entry => entry.value > 0);
-  
-      // Calculate total from all stacks
-      const total = nonZeroPayload.reduce((sum, entry) => sum + (entry.value || 0), 0);
-  
+      // Get the pre-calculated totalCount and all categories
+      const item = payload[0].payload;
+      const total = item.totalCount;
+      const allCategories = item.allCategories || {};
+      
+      // Create a sorted array of all categories for this port
+      const sortedCategories = Object.entries(allCategories)
+        .sort((a, b) => b[1] - a[1])  // Sort by count descending
+        .filter(([_, count]) => count > 0);  // Filter out zero counts
+      
       return (
         <div
           className="custom-tooltip"
@@ -311,18 +345,18 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
           <p className="tooltip-label">{label}</p>
           <p className="tooltip-value">{total} total deficiencies</p>
           <div className="tooltip-categories">
-            {nonZeroPayload.map((entry, index) => {
-              // Get the full category name from the dataKey
-              const fullCategoryName = entry.dataKey;
+            {sortedCategories.map(([category, count], index) => {
+              // Get color from the color map or use a default
+              const color = colorMap[category] || categoryColors[index % categoryColors.length];
               
               return (
                 <div key={index} className="tooltip-category-item">
                   <span
                     className="tooltip-color-dot"
-                    style={{ backgroundColor: entry.color }}
+                    style={{ backgroundColor: color }}
                   ></span>
-                  <span className="tooltip-category-name">{fullCategoryName}: </span>
-                  <span className="tooltip-category-value">{entry.value}</span>
+                  <span className="tooltip-category-name">{category}: </span>
+                  <span className="tooltip-category-value">{count}</span>
                 </div>
               );
             })}
@@ -345,6 +379,57 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
   const handleMouseLeave = () => {
     setHoveredBar(null);
   };
+
+  // Improved Y-axis domain calculation for tighter fit
+  // Replace the getYAxisDomain function with this ultra-simple solution:
+
+  const getYAxisDomain = useMemo(() => {
+    // If no data or max count is 0, use a small default range
+    if (maxDeficiencyCount <= 0) return [0, 5];
+    
+    // Simply use max value + small constant (2)
+    return [0, maxDeficiencyCount + 2];
+  }, [maxDeficiencyCount]);
+
+// Use this function to set a fixed number of ticks based on max value
+const getYAxisTicks = useMemo(() => {
+  if (maxDeficiencyCount <= 0) return [0, 1, 2, 3, 4, 5];
+  
+  // Create an array from 0 to max+2 with reasonable step size
+  const max = maxDeficiencyCount + 2;
+  const step = max <= 10 ? 5 : 
+               max <= 20 ? 5 : 
+               max <= 50 ? 10 : 
+               Math.ceil(max / 5); // Aim for 5-6 ticks
+               
+  const ticks = [];
+  for (let i = 0; i <= max; i += step) {
+    ticks.push(i);
+  }
+  
+  // Always include 0 and max
+  if (!ticks.includes(0)) ticks.unshift(0);
+  if (!ticks.includes(max)) ticks.push(max);
+  
+  return ticks;
+}, [maxDeficiencyCount]);
+
+// Then in your YAxis component:
+<YAxis
+  tick={{ fill: '#f4f4f4', fontSize: 11 }}
+  axisLine={{ stroke: 'rgba(244, 244, 244, 0.1)' }}
+  tickLine={false}
+  domain={getYAxisDomain}
+  allowDataOverflow={true} // This prevents auto-adjustment
+  label={{ 
+    value: 'Deficiency Count', 
+    angle: -90, 
+    position: 'insideLeft',
+    style: { fill: '#4DC3FF', fontSize: 12 },
+    offset: 25,
+    dy: 50
+  }}
+/>
 
   const renderChart = () => {
     if (loading) {
@@ -413,6 +498,7 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
               tick={{ fill: '#f4f4f4', fontSize: 11 }}
               axisLine={{ stroke: 'rgba(244, 244, 244, 0.1)' }}
               tickLine={false}
+              domain={getYAxisDomain} // Use the improved calculation
               label={{ 
                 value: 'Deficiency Count', 
                 angle: -90, 
@@ -466,18 +552,18 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
               tickFormatter={(value) => value.length > 10 ? `${value.substring(0, 10)}...` : value}
             />
             <YAxis
-                tick={{ fill: '#f4f4f4', fontSize: 11 }}
-                axisLine={{ stroke: 'rgba(244, 244, 244, 0.1)' }}
-                tickLine={false}
-                domain={[0, 'auto']} // Explicitly set the domain
-                label={{ 
-                    value: 'Deficiency Count', 
-                    angle: -90, 
-                    position: 'insideLeft',
-                    style: { fill: '#4DC3FF', fontSize: 12 },
-                    offset: 25,
-                    dy: 50
-                }}
+              tick={{ fill: '#f4f4f4', fontSize: 11 }}
+              axisLine={{ stroke: 'rgba(244, 244, 244, 0.1)' }}
+              tickLine={false}
+              domain={getYAxisDomain} // Use the improved calculation
+              label={{ 
+                value: 'Deficiency Count', 
+                angle: -90, 
+                position: 'insideLeft',
+                style: { fill: '#4DC3FF', fontSize: 12 },
+                offset: 25,
+                dy: 50
+              }}
             />
             <Tooltip content={<PortTooltip />} cursor={{ fill: 'rgba(244, 244, 244, 0.05)' }} />
             {/* <Legend 
@@ -485,36 +571,30 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
               verticalAlign="top"
               align="center"
               wrapperStyle={{
-                paddingBottom: 10
+                paddingBottom: 10,
+                fontSize: 10
               }}
               iconType="circle"
               iconSize={8}
             /> */}
-            // Replace your Bar components with this
             {processedData.categories && processedData.categories.map((category, index) => {
-            console.log(`Adding Bar for category: ${category}, value for first item:`, 
-                processedData.data[0] ? processedData.data[0][category] : 'no data');
-            
-            return (
+              return (
                 <Bar
-                key={category}
-                dataKey={category}
-                stackId="a"  // Keep this the same
-                fill={colorMap[category] || '#FFFFFF'}  // Keep this the same
-                // Don't add any other properties yet
-                name={category.length > 12 ? `${category.substring(0, 12)}...` : category}
-                barSize={16}
-                //radius={[6, 6, 0, 0]}
-                radius={index === processedData.categories.length - 1 ? [6, 6, 0, 0] : 0}
+                  key={category}
+                  dataKey={category}
+                  stackId="a"
+                  fill={colorMap[category] || '#FFFFFF'}
+                  name={category.length > 18 ? `${category.substring(0, 18)}...` : category}
+                  barSize={16}
+                  radius={index === processedData.categories.length - 1 ? [6, 6, 0, 0] : 0}
                 />
-            );
+              );
             })}
           </BarChart>
         </ResponsiveContainer>
       );
     }
-    console.log('BarChart data:', processedData.data);
-    console.log('BarChart categories:', processedData.categories);
+    
     return null;
   };
 

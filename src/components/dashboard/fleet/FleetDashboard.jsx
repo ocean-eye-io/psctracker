@@ -14,6 +14,7 @@ import { v4 as uuidv4 } from 'uuid';
 import MapModal from './MapModal';
 import ActiveFiltersDisplay from './ActiveFiltersDisplay';
 import PortVesselRiskChart from './charts/PortVesselRiskChart';
+import PSCKpisChart from './charts/PSCKpisChart';
 
 
 const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
@@ -1126,15 +1127,25 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
               //   activeFilter={timelineFilter}
               // />
 
-              <PortVesselRiskChart 
-                data={portVesselRiskData}
+              // <PortVesselRiskChart 
+              //   data={portVesselRiskData}
+              //   onFilterChange={(filter) => {
+              //     // Handle filter changes if needed
+              //     console.log('Risk chart filter changed:', filter);
+              //     // You can add filter handling logic here
+              //   }}
+              //   activeFilter={null}
+              // />
+              
+              <PSCKpisChart 
+                data={pscDeficiencyData}
                 onFilterChange={(filter) => {
                   // Handle filter changes if needed
-                  console.log('Risk chart filter changed:', filter);
+                  console.log('PSC KPI chart filter changed:', filter);
                   // You can add filter handling logic here
                 }}
                 activeFilter={null}
-              />  
+              />
 
             )}
           </div>
