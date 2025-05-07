@@ -48,6 +48,75 @@ const VesselTable = ({
   // State for vessel flags
   const [vesselFlags, setVesselFlags] = useState({});
   const [flagsLoading, setFlagsLoading] = useState(true);
+
+  // Enhanced filter to ensure only one active entry per IMO (with highest ID)
+  const filteredVessels = useMemo(() => {
+    // Separate active and inactive vessels
+    const activeVessels = [];
+    const inactiveVessels = [];
+    
+    // First separate vessels by active status
+    vessels.forEach(vessel => {
+      // Normalize status check to handle different case formats
+      const status = vessel.status?.toLowerCase?.();
+      const isActive = status === 'active';
+      
+      if (isActive) {
+        activeVessels.push(vessel);
+      } else {
+        inactiveVessels.push(vessel);
+      }
+    });
+    
+    // For active vessels, keep only the entry with highest ID for each IMO
+    const activeVesselsByImo = new Map();
+    
+    activeVessels.forEach(vessel => {
+      // Make sure IMO numbers and IDs are properly handled
+      const imo = vessel.imo_no?.toString()?.trim();
+      
+      // Skip vessels without a valid IMO
+      if (!imo) return;
+      
+      // Convert ID to number, with fallback to ensure we always have a numeric value
+      let id;
+      try {
+        id = parseInt(vessel.id, 10);
+        if (isNaN(id)) id = 0;
+      } catch (e) {
+        id = 0;
+      }
+      
+      // Check if we've already seen this IMO
+      if (!activeVesselsByImo.has(imo)) {
+        // First time seeing this IMO, add it directly
+        activeVesselsByImo.set(imo, vessel);
+      } else {
+        // We've seen this IMO before, check if this vessel has a higher ID
+        const existingVessel = activeVesselsByImo.get(imo);
+        const existingId = parseInt(existingVessel.id, 10) || 0;
+        
+        if (id > existingId) {
+          // This vessel has a higher ID, replace the existing one
+          activeVesselsByImo.set(imo, vessel);
+        }
+      }
+    });
+    
+    // Combine unique active vessels with all inactive vessels
+    const result = [...activeVesselsByImo.values(), ...inactiveVessels];
+    
+    // Add debug info
+    console.log(`IMO Filtering: Source vessels: ${vessels.length}`);
+    console.log(`IMO Filtering: Active vessels before filtering: ${activeVessels.length}`);
+    console.log(`IMO Filtering: Unique active vessels after filtering: ${activeVesselsByImo.size}`);
+    console.log(`IMO Filtering: Inactive vessels (all kept): ${inactiveVessels.length}`);
+    console.log(`IMO Filtering: Final vessel count: ${result.length}`);
+    console.log(`IMO Filtering: Removed ${activeVessels.length - activeVesselsByImo.size} duplicate active IMOs`);
+    
+    return result;
+  }, [vessels]);
+
   const ColumnFilterDropdown = ({ isOpen, dropdownName, children }) => {
     if (!isOpen) return null;
     
@@ -75,7 +144,7 @@ const VesselTable = ({
     }, 10);
   };
   // State for tracking filtered data
-  const [filteredData, setFilteredData] = useState([]);
+  const [filterActiveData, setFilterActiveData] = useState([]);
   const [filterActive, setFilterActive] = useState(false);
   
   // Function to handle traffic light filter changes
@@ -220,7 +289,7 @@ const VesselTable = ({
 
   // Basic filter for handover date
   const dateFilteredVessels = useMemo(() => {
-    return vessels.filter(vessel => {
+    return filteredVessels.filter(vessel => {
       // Keep the row if hand_over_date_mod is null, undefined, empty string, or invalid
       if (!vessel.hand_over_date_mod || vessel.hand_over_date_mod === '') {
         return true;
@@ -248,7 +317,7 @@ const VesselTable = ({
         return true;
       }
     });
-  }, [vessels]);
+  }, [filteredVessels]);
 
   // Get vessel status - memoized to avoid dependency array issues
   const getVesselStatus = useCallback((vessel) => {
@@ -365,12 +434,20 @@ const VesselTable = ({
       const checklistStatus = normalizeChecklistValue(vessel.checklist_received);
       let status;
       
-      if (checklistStatus === 'Submitted') {
+      // if (checklistStatus === 'Submitted') {
+      //   status = 'green';
+      // } else if (checklistStatus === 'Acknowledged') {
+      //   status = vessel.days_to_go < 7 ? 'yellow' : 'green';
+      // } else { // 'Pending'
+      //   status = vessel.days_to_go < 3 ? 'red' : 'yellow';
+      // }
+
+      if (checklistStatus === 'Acknowledged') {
         status = 'green';
-      } else if (checklistStatus === 'Acknowledged') {
-        status = vessel.days_to_go < 7 ? 'yellow' : 'green';
+      } else if (checklistStatus === 'Submitted') {
+        status = 'yellow';
       } else { // 'Pending'
-        status = vessel.days_to_go < 3 ? 'red' : 'yellow';
+        status = 'red';
       }
       
       updateWorstStatus(status);
@@ -405,7 +482,7 @@ const VesselTable = ({
     
     if (!trafficFiltersActive && !flagFiltersActive) {
       // No filters active, use the date-filtered data
-      setFilteredData(dateFilteredVessels);
+      setFilterActiveData(dateFilteredVessels);
       setFilterActive(false);
       return;
     }
@@ -428,7 +505,7 @@ const VesselTable = ({
       return passesTrafficFilter && passesFlagFilter;
     });
     
-    setFilteredData(filtered);
+    setFilterActiveData(filtered);
     setFilterActive(true);
   }, [dateFilteredVessels, statusFilters, flagFilters, getVesselFlag, getVesselStatus]);
 
@@ -804,7 +881,6 @@ const VesselTable = ({
                 </div>
                 
                 {/* Vessel name with tooltip */}
-                {/* Vessel name with tooltip */}
                 <VesselDetailsTooltip vessel={rowData}>
                   <span className="vessel-name">{(value || '-').toUpperCase()}</span>
                 </VesselDetailsTooltip>
@@ -1089,7 +1165,7 @@ const VesselTable = ({
       )} */}
       
       <Table
-        data={filterActive ? filteredData : dateFilteredVessels}
+        data={filterActive ? filterActiveData : dateFilteredVessels}
         columns={getTableColumns()}
         expandedContent={renderExpandedContent}
         actions={commentsColumn}

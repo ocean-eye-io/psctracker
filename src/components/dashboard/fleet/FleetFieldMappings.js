@@ -54,22 +54,28 @@ export const fleetFieldMappings = {
       width: '120px',
       type: 'date'
     },
+    etd: {
+      dbField: 'etd',
+      label: 'ETD',
+      priority: 11,
+      type: 'datetime'
+    },
     checklist_received: {
       dbField: 'checklist_received',
       label: 'Pre-Arrival',
-      priority: 11, 
+      priority: 12, 
       width: '120px'
     },
     sanz: {
       dbField: 'sanz',
       label: 'PIC',
-      priority: 12,
+      priority: 13,
       width: '120px'
     },
     comments: {
       dbField: 'comments',
       label: 'Comments',
-      priority: 13,
+      priority: 14,
       width: '100px'
     }
     
@@ -98,12 +104,7 @@ export const fleetFieldMappings = {
       priority: 5,
       combineWithCountry: true // Add this flag
     },
-    etd: {
-      dbField: 'etd',
-      label: 'ETD',
-      priority: 6,
-      type: 'datetime'
-    },
+    
     atd: {
       dbField: 'atd',
       label: 'ATD',
