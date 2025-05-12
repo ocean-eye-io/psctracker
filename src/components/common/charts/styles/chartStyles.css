@@ -235,7 +235,7 @@
 }
 .recharts-tooltip-wrapper {
   pointer-events: auto !important;
-  z-index: 9999 !important;
+  z-index: 1200 !important;
 }
 
 .custom-tooltip {
@@ -344,7 +344,7 @@
   position: relative;
   animation: tooltipFade 0.2s ease-in-out;
   font-size: 11px;
-  z-index: 10;
+  z-index: 1000;
   transform-style: preserve-3d;
   pointer-events: none;
   max-width: 250px;
@@ -353,7 +353,7 @@
 .custom-tooltip::before {
   content: '';
   position: absolute;
-  top: 0;
+  top: -15;
   left: 0;
   right: 0;
   height: 1px;
@@ -499,7 +499,7 @@
   position: absolute !important;
   width: 100% !important;
   height: 100% !important;
-  top: 0;
+  top: -20;
   left: 0;
   right: 0;
   bottom: 0;
