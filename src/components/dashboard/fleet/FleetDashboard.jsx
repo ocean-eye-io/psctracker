@@ -15,6 +15,8 @@ import MapModal from './MapModal';
 import ActiveFiltersDisplay from './ActiveFiltersDisplay';
 import PortVesselRiskChart from './charts/PortVesselRiskChart';
 import PSCKpisChart from './charts/PSCKpisChart';
+import DeficiencyCodeChart from './charts/DeficiencyCodeChart';
+
 
 
 const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
@@ -1136,16 +1138,24 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
               //   }}
               //   activeFilter={null}
               // />
-              
-              <PSCKpisChart 
-                data={pscDeficiencyData}
+              // In your dashboard component:
+              <DeficiencyCodeChart 
+                data={pscDeficiencyData} 
                 onFilterChange={(filter) => {
-                  // Handle filter changes if needed
-                  console.log('PSC KPI chart filter changed:', filter);
-                  // You can add filter handling logic here
+                  
+                  console.log('Risk chart filter changed:', filter);
                 }}
                 activeFilter={null}
               />
+              // <PSCKpisChart 
+              //   data={pscDeficiencyData}
+              //   onFilterChange={(filter) => {
+              //     // Handle filter changes if needed
+              //     console.log('PSC KPI chart filter changed:', filter);
+              //     // You can add filter handling logic here
+              //   }}
+              //   activeFilter={null}
+              // />
 
             )}
           </div>
