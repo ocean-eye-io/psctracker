@@ -291,7 +291,7 @@ const DeficiencyCodeChart = ({ data = [] }) => {
             className={activeView === 'overall' ? 'active' : ''}
             onClick={() => setActiveView('overall')}
           >
-            Overall
+            By Code
           </button>
           
           {/* Time filter buttons */}
@@ -351,7 +351,7 @@ const DeficiencyCodeChart = ({ data = [] }) => {
                   tickLine={false}
                   angle={-45}
                   textAnchor="end"
-                  height={10}
+                  height={20}
                 />
                 <YAxis
                   tick={{ fill: '#f4f4f4', fontSize: 11 }}
@@ -437,7 +437,7 @@ const DeficiencyCodeChart = ({ data = [] }) => {
                   tickLine={false}
                   angle={-45}
                   textAnchor="end"
-                  height={10}
+                  height={20}
                 />
                 <YAxis
                   tick={{ fill: '#f4f4f4', fontSize: 11 }}
