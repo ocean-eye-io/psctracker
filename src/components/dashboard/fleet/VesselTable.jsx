@@ -15,7 +15,6 @@ import VesselFlagService from '../../../services/VesselFlagService';
 import { useAuth } from '../../../context/AuthContext';
 import ReactDOM from 'react-dom';
 
-
 const VesselTable = ({ 
   vessels, 
   onOpenRemarks, 
@@ -48,6 +47,9 @@ const VesselTable = ({
   // State for vessel flags
   const [vesselFlags, setVesselFlags] = useState({});
   const [flagsLoading, setFlagsLoading] = useState(true);
+
+  // State to track window size
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
   // Enhanced filter to ensure only one active entry per IMO (with highest ID)
   const filteredVessels = useMemo(() => {
@@ -106,14 +108,6 @@ const VesselTable = ({
     // Combine unique active vessels with all inactive vessels
     const result = [...activeVesselsByImo.values(), ...inactiveVessels];
     
-    // Add debug info
-    console.log(`IMO Filtering: Source vessels: ${vessels.length}`);
-    console.log(`IMO Filtering: Active vessels before filtering: ${activeVessels.length}`);
-    console.log(`IMO Filtering: Unique active vessels after filtering: ${activeVesselsByImo.size}`);
-    console.log(`IMO Filtering: Inactive vessels (all kept): ${inactiveVessels.length}`);
-    console.log(`IMO Filtering: Final vessel count: ${result.length}`);
-    console.log(`IMO Filtering: Removed ${activeVessels.length - activeVesselsByImo.size} duplicate active IMOs`);
-    
     return result;
   }, [vessels]);
 
@@ -143,6 +137,7 @@ const VesselTable = ({
       }
     }, 10);
   };
+  
   // State for tracking filtered data
   const [filterActiveData, setFilterActiveData] = useState([]);
   const [filterActive, setFilterActive] = useState(false);
@@ -245,11 +240,14 @@ const VesselTable = ({
   // Monitor window resize to adjust table layout
   useEffect(() => {
     const handleResize = () => {
+      const width = window.innerWidth;
+      setWindowWidth(width);
+      
       if (tableRef.current) {
         // Add/remove classes based on viewport width
         const tableContainer = tableRef.current.querySelector('.data-table-container');
         if (tableContainer) {
-          if (window.innerWidth < 768) {
+          if (width < 768) {
             tableContainer.classList.add('mobile-view');
           } else {
             tableContainer.classList.remove('mobile-view');
@@ -434,14 +432,6 @@ const VesselTable = ({
       const checklistStatus = normalizeChecklistValue(vessel.checklist_received);
       let status;
       
-      // if (checklistStatus === 'Submitted') {
-      //   status = 'green';
-      // } else if (checklistStatus === 'Acknowledged') {
-      //   status = vessel.days_to_go < 7 ? 'yellow' : 'green';
-      // } else { // 'Pending'
-      //   status = vessel.days_to_go < 3 ? 'red' : 'yellow';
-      // }
-
       if (checklistStatus === 'Acknowledged') {
         status = 'green';
       } else if (checklistStatus === 'Submitted') {
@@ -595,16 +585,30 @@ const VesselTable = ({
     return "Pending";
   };
 
-  // Function to determine whether a column should be hidden on mobile
-  const shouldHideColumnOnMobile = (fieldId) => {
-    const mobileHiddenColumns = [
-      'riskScore', 
-      'amsa_last_inspection_date',
-      'psc_last_inspection_date',
-      'dwt'
-    ];
+  // Function to determine whether a column should be hidden based on screen width
+  const shouldHideColumn = (fieldId) => {
+    // Define breakpoints for different screen sizes
+    const isMobile = windowWidth < 768;
+    const isTablet = windowWidth >= 768 && windowWidth < 1024;
+    const isSmallDesktop = windowWidth >= 1024 && windowWidth < 1280;
     
-    return mobileHiddenColumns.includes(fieldId);
+    // Columns to hide on mobile
+    if (isMobile) {
+      return ['riskScore', 'amsa_last_inspection_date', 'psc_last_inspection_date', 'dwt', 'arrival_country'].includes(fieldId);
+    }
+    
+    // Columns to hide on tablets
+    if (isTablet) {
+      return ['amsa_last_inspection_date', 'psc_last_inspection_date'].includes(fieldId);
+    }
+    
+    // Columns to hide on small desktops
+    if (isSmallDesktop) {
+      return ['psc_last_inspection_date'].includes(fieldId);
+    }
+    
+    // Show all columns on large desktops
+    return false;
   };
 
   // Count active filters for badges
@@ -613,7 +617,6 @@ const VesselTable = ({
   const totalFilterCount = trafficFilterCount + flagFilterCount;
 
   // Custom header renderer for vessel name column to include integrated filters
-  
   const renderVesselNameHeader = () => {
     return (
       <div className="vessel-name-header" ref={headerRef}>
@@ -798,251 +801,379 @@ const VesselTable = ({
 
   // Convert field mappings to table columns format
   const getTableColumns = () => {
-    return Object.entries(fieldMappings.TABLE)
-      .filter(([fieldId, field]) => !field.isAction && fieldId !== 'comments')
-      .sort((a, b) => a[1].priority - b[1].priority)
-      .map(([fieldId, field]) => {
-        // Create a basic column config
-        const column = {
-          field: field.dbField,
-          label: field.label,
-          width: field.width,
-          minWidth: field.minWidth,
-          // Add a class to hide columns on mobile
-          cellClassName: shouldHideColumnOnMobile(fieldId) ? 'mobile-hide' : '',
-          headerClassName: shouldHideColumnOnMobile(fieldId) ? 'mobile-hide' : '',
-        };
+    // Create a new columns array with vessel_type and doc_type instead of imo and owner
+    const columnsData = Object.entries(fieldMappings.TABLE)
+      .filter(([fieldId, field]) => !field.isAction && fieldId !== 'comments' && fieldId !== 'imo' && fieldId !== 'owner')
+      .sort((a, b) => a[1].priority - b[1].priority);
+    
+    // // Add vessel_type after vessel_name
+    // const vesselTypeIndex = columnsData.findIndex(([fieldId]) => fieldId === 'vessel_name') + 1;
+    // columnsData.splice(vesselTypeIndex, 0, ['vessel_type', {
+    //   dbField: 'vessel_type',
+    //   label: 'Vessel Type',
+    //   priority: 2,
+    //   width: '100px'
+    // }]);
+    
+    // // Add doc_type after vessel_type
+    // const docTypeIndex = columnsData.findIndex(([fieldId]) => fieldId === 'vessel_type') + 1;
+    // columnsData.splice(docTypeIndex, 0, ['doc_type', {
+    //   dbField: 'doc_type',
+    //   label: 'DOC',
+    //   priority: 3,
+    //   width: '80px'
+    // }]);
+    
+    return columnsData.map(([fieldId, field]) => {
+      // Get responsive width based on screen size
+      let columnWidth = field.width;
+      
+      // Adjust column widths based on screen size
+      if (windowWidth < 768) { // Mobile
+        // Use percentage-based widths on mobile to ensure better scaling
+        switch (fieldId) {
+          case 'vessel_name':
+            columnWidth = '140px';
+            break;
+          case 'vessel_type':
+          case 'doc_type':
+          case 'event_type':
+            columnWidth = '80px';
+            break;
+          case 'arrival_port':
+          case 'eta':
+          case 'etb':
+            columnWidth = '100px';
+            break;
+          case 'checklist_received':
+          case 'sanz':
+            columnWidth = '90px';
+            break;
+        }
+      } else if (windowWidth >= 768 && windowWidth < 1024) { // Tablet
+        switch (fieldId) {
+          case 'vessel_name':
+            columnWidth = '160px';
+            break;
+          case 'vessel_type':
+            columnWidth = '120px';
+            break;
+          case 'doc_type':
+            columnWidth = '80px';
+            break;
+          case 'event_type':
+            columnWidth = '110px';
+            break;
+          case 'arrival_port':
+            columnWidth = '120px';
+            break;
+          case 'arrival_country':
+            columnWidth = '100px';
+            break;
+          case 'eta':
+          case 'etb':
+            columnWidth = '110px';
+            break;
+        }
+      } else if (windowWidth >= 1024 && windowWidth < 1280) { // Small desktop
+        // Keep most original widths but adjust a few
+        switch (fieldId) {
+          case 'vessel_name':
+            columnWidth = '180px';
+            break;
+        }
+      }
+      
+      // Create a basic column config
+      const column = {
+        field: field.dbField,
+        label: field.label,
+        width: columnWidth,
+        minWidth: field.minWidth || (windowWidth < 768 ? '60px' : '80px'),
+        // Add a class to hide columns on mobile
+        cellClassName: shouldHideColumn(fieldId) ? 'hidden-column' : '',
+        headerClassName: shouldHideColumn(fieldId) ? 'hidden-column' : '',
+      };
 
-        // Special handling for vessel_name column to add custom header
+      // Special handling for vessel_name column to add custom header
+      if (fieldId === 'vessel_name') {
+        column.headerRenderer = renderVesselNameHeader;
+        column.sortable = false;
+      }
+
+      // Define cell renderer
+      column.render = (value, rowData) => {
+        // Special rendering for event_type (status)
+        if (fieldId === 'event_type') {
+          return (
+            <StatusIndicator 
+              status={value}
+              color={getStatusColor(value)}
+            />
+          );
+        }
+        
+        // Special rendering for vessel_name with traffic light, flag, and owner/IMO tooltip
         if (fieldId === 'vessel_name') {
-          column.headerRenderer = renderVesselNameHeader;
-          column.sortable = false;
+          const statusInfo = getVesselStatus(rowData);
+          const flagValue = getVesselFlag(rowData);
+          
+          // Create enhanced vessel details for tooltip
+          const vesselDetails = {
+            ...rowData,
+            // Add a formatted display for tooltip that includes IMO and Owner
+            tooltipDetails: [
+              { label: 'IMO', value: rowData.imo_no || '-' },
+              { label: 'Owner', value: rowData.owner || '-' },
+              { label: 'Built', value: rowData.BUILT_DATE ? formatDateTime(rowData.BUILT_DATE, false) : '-' },
+              { label: 'Flag', value: rowData.flag || '-' }
+            ]
+          };
+          
+          return (
+            <div className="vessel-name-cell">
+              {/* Traffic light indicator */}
+              <TrafficLightIndicator 
+                status={statusInfo.status} 
+                tooltipData={statusInfo}
+              />
+              
+              {/* Vessel flag indicator */}
+              <div className="vessel-flag-container">
+                <button 
+                  className={`vessel-flag-button ${flagValue !== 'none' ? flagValue : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    
+                    // Toggle through flag states: none -> green -> yellow -> red -> none
+                    const flagSequence = ['green', 'yellow', 'red', 'none'];
+                    const currentIndex = flagSequence.indexOf(flagValue);
+                    const nextIndex = (currentIndex + 1) % flagSequence.length;
+                    const nextFlag = flagSequence[nextIndex];
+                    
+                    handleFlagChange(rowData.id, nextFlag);
+                  }}
+                  aria-label="Set vessel flag"
+                >
+                  <Flag 
+                    size={14} 
+                    style={{ 
+                      color: flagValue === 'green' ? '#2EE086' : 
+                            flagValue === 'yellow' ? '#FFD426' :
+                            flagValue === 'red' ? '#FF5252' : 
+                            '#A0A0A0',
+                      filter: flagValue !== 'none' ? `drop-shadow(0 0 3px ${
+                        flagValue === 'green' ? 'rgba(46, 224, 134, 0.6)' : 
+                        flagValue === 'yellow' ? 'rgba(255, 212, 38, 0.6)' :
+                        flagValue === 'red' ? 'rgba(255, 82, 82, 0.6)' : 
+                        'rgba(160, 160, 160, 0.3)'
+                      })` : 'none'
+                    }} 
+                  />
+                </button>
+              </div>
+              
+              {/* Vessel name with enhanced tooltip including IMO and Owner */}
+              <VesselDetailsTooltip vessel={vesselDetails}>
+                <span className="vessel-name">{(value || '-').toUpperCase()}</span>
+              </VesselDetailsTooltip>
+            </div>
+          );
+        }
+        
+        // New column: vessel_type
+        if (fieldId === 'vessel_type') {
+          return (
+            <TextTooltip text={value || '-'}>
+              <span>{(value || '-').toUpperCase()}</span>
+            </TextTooltip>
+          );
+        }
+        
+        // New column: doc_type
+        if (fieldId === 'doc_type') {
+          return (
+            <TextTooltip text={value || '-'}>
+              <span>{(value || '-').toUpperCase()}</span>
+            </TextTooltip>
+          );
         }
 
-        // Define cell renderer
-        column.render = (value, rowData) => {
-          // Special rendering for event_type (status)
-          if (fieldId === 'event_type') {
-            return (
-              <StatusIndicator 
-                status={value}
-                color={getStatusColor(value)}
-              />
-            );
-          }
-          
-          // Special rendering for vessel_name with traffic light and flag
-          if (fieldId === 'vessel_name') {
-            const statusInfo = getVesselStatus(rowData);
-            const flagValue = getVesselFlag(rowData);
-            
-            return (
-              <div className="vessel-name-cell">
-                {/* Traffic light indicator */}
-                <TrafficLightIndicator 
-                  status={statusInfo.status} 
-                  tooltipData={statusInfo}
-                />
-                
-                {/* Vessel flag indicator */}
-                <div className="vessel-flag-container">
-                  <button 
-                    className={`vessel-flag-button ${flagValue !== 'none' ? flagValue : ''}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      
-                      // Toggle through flag states: none -> green -> yellow -> red -> none
-                      const flagSequence = ['green', 'yellow', 'red', 'none'];
-                      const currentIndex = flagSequence.indexOf(flagValue);
-                      const nextIndex = (currentIndex + 1) % flagSequence.length;
-                      const nextFlag = flagSequence[nextIndex];
-                      
-                      handleFlagChange(rowData.id, nextFlag);
-                    }}
-                    aria-label="Set vessel flag"
-                  >
-                    <Flag 
-                      size={14} 
-                      style={{ 
-                        color: flagValue === 'green' ? '#2EE086' : 
-                              flagValue === 'yellow' ? '#FFD426' :
-                              flagValue === 'red' ? '#FF5252' : 
-                              '#A0A0A0',
-                        filter: flagValue !== 'none' ? `drop-shadow(0 0 3px ${
-                          flagValue === 'green' ? 'rgba(46, 224, 134, 0.6)' : 
-                          flagValue === 'yellow' ? 'rgba(255, 212, 38, 0.6)' :
-                          flagValue === 'red' ? 'rgba(255, 82, 82, 0.6)' : 
-                          'rgba(160, 160, 160, 0.3)'
-                        })` : 'none'
-                      }} 
-                    />
-                  </button>
-                </div>
-                
-                {/* Vessel name with tooltip */}
-                <VesselDetailsTooltip vessel={rowData}>
-                  <span className="vessel-name">{(value || '-').toUpperCase()}</span>
-                </VesselDetailsTooltip>
-              </div>
-            );
-          }
-
-          if (fieldId === 'etb') {
-            const etbDate = value ? new Date(value) : null;
-            const etaDate = rowData.eta ? new Date(rowData.eta) : null;
-          
-            // Check if etb is less than eta
-            if (etbDate && etaDate && etbDate.getTime() < etaDate.getTime()) {
-              return (
-                <TextTooltip text="-">
-                  -
-                </TextTooltip>
-              );
-            }
-          
-            const formattedValue = formatDateTime(value, true);
-            return (
-              <TextTooltip text={formattedValue}>
-                {formattedValue}
-              </TextTooltip>
-            );
-          }
-
-          if (fieldId === 'owner') {
-            return (
-              <TextTooltip text={value || '-'}>
-                <span>{(value || '-').toUpperCase()}</span>
-              </TextTooltip>
-            );
-          }
-           
-          // Special rendering for risk score
-          if (fieldId === 'riskScore') {
-            const score = value !== null && value !== undefined ? Math.round(value) : null;
-            return (
-              <TableBadge 
-                variant={getRiskScoreVariant(score)}
-              >
-                {score !== null ? score : '-'}
-              </TableBadge>
-            );
-          }
-          
-          // Special rendering for date fields
-          if (field.type === 'date') {
-            const formattedValue = formatDateTime(value, false);
-            return (
-              <TextTooltip text={formattedValue}>
-                {formattedValue}
-              </TextTooltip>
-            );
-          }
-          
-          if (fieldId === 'arrival_country') {
-            let displayValue = value;
-            
-            // Convert country codes to full names
-            if (value === 'AU' || value === 'au') {
-              displayValue = 'AUSTRALIA';
-            } else if (value === 'NZ' || value === 'nz') {
-              displayValue = 'NEW ZEALAND';
-            } else if (displayValue) {
-              // Make everything caps for other countries
-              displayValue = displayValue.toUpperCase();
-            }
-            
-            return (
-              <TextTooltip text={displayValue || '-'}>
-                <span>{displayValue || '-'}</span>
-              </TextTooltip>
-            );
-          }  
-
-          // Special rendering for date-time fields
-          if (
-            fieldId === 'eta' || 
-            fieldId === 'etb' || 
-            fieldId === 'etd' || 
-            fieldId === 'atd' ||
-            fieldId === 'psc_last_inspection_date'
-          ) {
-            const formattedValue = formatDateTime(value, true);
-            return (
-              <TextTooltip text={formattedValue}>
-                {formattedValue}
-              </TextTooltip>
-            );
-          }
-  
-          if (fieldId === 'checklist_received') {
-            const normalizedValue = normalizeChecklistValue(value);
-            
-            return (
-              <DropdownField 
-                value={normalizedValue}
-                vessel={rowData}
-                onUpdate={onUpdateVessel}
-                field="checklist_received"
-                options={["Pending", "Acknowledged", "Submitted"]}
-                className={shouldHideColumnOnMobile(fieldId) ? 'mobile-hide' : ''}
-              />
-            );
-          }
-          
-          // Special rendering for SANZ field
-          if (fieldId === 'sanz') {
-            return (
-              <DropdownField 
-                value={value || ""}
-                vessel={rowData}
-                onUpdate={onUpdateVessel}
-                field="sanz"
-                options={["Select...", "Rohit Banta", "John Willis", "Prakash Rebala", "Others"]}
-                className="sanz-dropdown"
-                allowCustomInput={true}
-              />
-            );
-          }
-          
-          // Special rendering for days to go
-          if (fieldId === 'daysToGo' && typeof value === 'number') {
-            const formattedValue = value.toFixed(1);
-            return (
-              <TextTooltip text={formattedValue}>
-                {formattedValue}
-              </TextTooltip>
-            );
-          }
-          
-          // Default rendering for text content
-          if (value !== null && value !== undefined && value !== '-') {
-            const stringValue = String(value);
-            return (
-              <TextTooltip text={stringValue}>
-                {stringValue}
-              </TextTooltip>
-            );
-          }
-          
-          // Fallback for null/undefined values
-          return '-';
-        };
+        if (fieldId === 'etb') {
+          const etbDate = value ? new Date(value) : null;
+          const etaDate = rowData.eta ? new Date(rowData.eta) : null;
         
-        return column;
-      });
+          // Check if etb is less than eta
+          if (etbDate && etaDate && etbDate.getTime() < etaDate.getTime()) {
+            return (
+              <TextTooltip text="-">
+                -
+              </TextTooltip>
+            );
+          }
+        
+          const formattedValue = formatDateTime(value, true);
+          return (
+            <TextTooltip text={formattedValue}>
+              {formattedValue}
+            </TextTooltip>
+          );
+        }
+
+        if (fieldId === 'arrival_port') {
+          return (
+            <TextTooltip text={value || '-'}>
+              <span className="arrival-port">{value || '-'}</span>
+            </TextTooltip>
+          );
+        }
+
+        if (fieldId === 'arrival_country') {
+          let displayValue = value;
+          
+          // Convert country codes to full names
+          if (value === 'AU' || value === 'au') {
+            displayValue = 'AUSTRALIA';
+          } else if (value === 'NZ' || value === 'nz') {
+            displayValue = 'NEW ZEALAND';
+          } else if (displayValue) {
+            // Make everything caps for other countries
+            displayValue = displayValue.toUpperCase();
+          }
+          
+          return (
+            <TextTooltip text={displayValue || '-'}>
+              <span>{displayValue || '-'}</span>
+            </TextTooltip>
+          );
+        }
+         
+        // Special rendering for risk score
+        if (fieldId === 'riskScore') {
+          const score = value !== null && value !== undefined ? Math.round(value) : null;
+          return (
+            <TableBadge 
+              variant={getRiskScoreVariant(score)}
+            >
+              {score !== null ? score : '-'}
+            </TableBadge>
+          );
+        }
+        
+        // Special rendering for date fields
+        if (field.type === 'date') {
+          const formattedValue = formatDateTime(value, false);
+          return (
+            <TextTooltip text={formattedValue}>
+              {formattedValue}
+            </TextTooltip>
+          );
+        }
+
+        // Special rendering for date-time fields
+        if (
+          fieldId === 'eta' || 
+          fieldId === 'etd' || 
+          fieldId === 'atd' ||
+          fieldId === 'psc_last_inspection_date'
+        ) {
+          const formattedValue = formatDateTime(value, true);
+          return (
+            <TextTooltip text={formattedValue}>
+              {formattedValue}
+            </TextTooltip>
+          );
+        }
+
+        if (fieldId === 'checklist_received') {
+          const normalizedValue = normalizeChecklistValue(value);
+          
+          return (
+            <DropdownField 
+              value={normalizedValue}
+              vessel={rowData}
+              onUpdate={onUpdateVessel}
+              field="checklist_received"
+              options={["Pending", "Acknowledged", "Submitted"]}
+              className={shouldHideColumn(fieldId) ? 'hidden-column' : ''}
+            />
+          );
+        }
+        
+        // Special rendering for SANZ field
+        if (fieldId === 'sanz') {
+          return (
+            <DropdownField 
+              value={value || ""}
+              vessel={rowData}
+              onUpdate={onUpdateVessel}
+              field="sanz"
+              options={["Select...", "Rohit Banta", "John Willis", "Prakash Rebala", "Others"]}
+              className="sanz-dropdown"
+              allowCustomInput={true}
+            />
+          );
+        }
+        
+        // Special rendering for days to go
+        if (fieldId === 'daysToGo' && typeof value === 'number') {
+          const formattedValue = value.toFixed(1);
+          return (
+            <TextTooltip text={formattedValue}>
+              {formattedValue}
+            </TextTooltip>
+          );
+        }
+        
+        // Default rendering for text content
+        if (value !== null && value !== undefined && value !== '-') {
+          const stringValue = String(value);
+          return (
+            <TextTooltip text={stringValue}>
+              {stringValue}
+            </TextTooltip>
+          );
+        }
+        
+        // Fallback for null/undefined values
+        return '-';
+      };
+      
+      return column;
+    });
   };
 
-  // Create expanded content renderer
+  // Create expanded content renderer with responsive grid
   const renderExpandedContent = (vessel) => {
     const expandedColumns = Object.entries(fieldMappings.EXPANDED)
       .sort((a, b) => a[1].priority - b[1].priority);
+    
+    // Add IMO and Owner to expanded content if on mobile
+    if (windowWidth < 768) {
+      if (vessel.imo_no) {
+        expandedColumns.unshift(['imo', {
+          dbField: 'imo_no',
+          label: 'IMO No',
+          priority: -2
+        }]);
+      }
       
+      if (vessel.owner) {
+        expandedColumns.unshift(['owner', {
+          dbField: 'owner',
+          label: 'Owner',
+          priority: -1
+        }]);
+      }
+    }
+    
     return (
-      <div className="expanded-grid">
+      <div className={`expanded-grid ${windowWidth < 768 ? 'mobile-grid' : ''}`}>
         {expandedColumns.map(([fieldId, field]) => {
           let value = vessel[field.dbField];
           let displayLabel = field.label;
+          
           if (fieldId === 'departure_port' && field.combineWithCountry) {
             const port = value || '-';
             const country = vessel.departure_country || '';
@@ -1088,6 +1219,7 @@ const VesselTable = ({
               key={fieldId}
               label={field.label}
               value={displayValue || '-'}
+              className={windowWidth < 768 ? 'mobile-expanded-item' : ''}
             />
           );
         })}
@@ -1098,7 +1230,7 @@ const VesselTable = ({
   // Improved comments column
   const commentsColumn = {
     label: 'Comments',
-    width: '180px',
+    width: windowWidth < 768 ? '80px' : '160px',
     className: 'comments-column',
     content: (vessel) => {
       const hasComments = vessel.comments && vessel.comments.trim().length > 0;
@@ -1116,15 +1248,15 @@ const VesselTable = ({
                 <MessageSquare size={16} />
               </div>
               
-              {hasComments ? (
+              {hasComments && windowWidth >= 768 ? (
                 <div className="comment-preview-text">
                   {vessel.comments.length > 28 
                     ? `${vessel.comments.substring(0, 28)}...` 
                     : vessel.comments}
                 </div>
-              ) : (
+              ) : windowWidth >= 768 ? (
                 <div className="comment-add-text">Add comment</div>
-              )}
+              ) : null}
             </div>
           </CommentTooltip>
         </div>
@@ -1134,35 +1266,122 @@ const VesselTable = ({
 
   return (
     <div ref={tableRef} className="responsive-table-container">
-      {/* Floating filter indicator and clear button */}
-      {/* {filterActive && (
-        <div className="floating-filter-controls">
-          <div className="active-filter-count">
-            <Filter size={14} />
-            <span>{totalFilterCount} active {totalFilterCount === 1 ? 'filter' : 'filters'}</span>
-          </div>
-          <button
-            className="clear-all-filters"
-            onClick={() => {
-              setStatusFilters({
-                green: false,
-                yellow: false,
-                red: false,
-                grey: false
-              });
-              setFlagFilters({
-                green: false,
-                yellow: false,
-                red: false,
-                none: false
-              });
-              setFilterActive(false);
-            }}
-          >
-            Clear All
-          </button>
-        </div>
-      )} */}
+      {/* Custom CSS for responsive design */}
+      <style>
+        {`
+          /* Responsive Table Styles */
+          .responsive-table-container {
+            max-width: 100%;
+            overflow-x: hidden;
+          }
+          
+          /* Mobile Styles */
+          @media (max-width: 767px) {
+            .data-table th, .data-table td {
+              padding: 6px 8px;
+              font-size: 13px;
+            }
+            
+            .hidden-column {
+              display: none !important;
+            }
+            
+            .vessel-name-cell {
+              max-width: 120px;
+            }
+            
+            .vessel-name {
+              max-width: 80px;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              display: inline-block;
+            }
+            
+            .comment-indicator {
+              width: 24px;
+              height: 24px;
+              padding: 0;
+              justify-content: center;
+            }
+            
+            .comment-preview-text, .comment-add-text {
+              display: none;
+            }
+            
+            .mobile-grid {
+              grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+            }
+            
+            .mobile-expanded-item {
+              padding: 8px !important;
+            }
+          }
+          
+          /* Tablet Styles */
+          @media (min-width: 768px) and (max-width: 1023px) {
+            .data-table th, .data-table td {
+              padding: 8px 12px;
+              font-size: 13px;
+            }
+            
+            .hidden-column {
+              display: none !important;
+            }
+            
+            .vessel-name {
+              max-width: 120px;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              display: inline-block;
+            }
+          }
+          
+          /* Small Desktop Styles */
+          @media (min-width: 1024px) and (max-width: 1279px) {
+            .data-table th, .data-table td {
+              padding: 8px 14px;
+            }
+            
+            .hidden-column {
+              display: none !important;
+            }
+          }
+          
+          /* Reset default table styles for better app-wide consistency */
+          .data-table-wrapper {
+            max-width: 100%;
+            overflow-x: auto;
+          }
+          
+          /* Make sure text tooltips don't overflow */
+          .text-tooltip-trigger {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          
+          /* Enhance vessel name display */
+          .vessel-name-cell {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+          }
+          
+          /* Improve flag button responsiveness */
+          .vessel-flag-button {
+            width: 20px;
+            height: 20px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+        `}
+      </style>
       
       <Table
         data={filterActive ? filterActiveData : dateFilteredVessels}

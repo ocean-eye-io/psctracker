@@ -103,45 +103,79 @@ export const Tooltip = ({ title, content, children }) => {
 
 // Special case for vessel details tooltip
 export const VesselDetailsTooltip = ({ vessel, children }) => {
+  // Check if we have tooltipDetails from the enhanced vessel object
+  const hasTooltipDetails = vessel.tooltipDetails && vessel.tooltipDetails.length > 0;
+  
   return (
     <Tooltip
-      title={vessel.vessel_name || 'Unknown Vessel'}
+      title={(vessel.vessel_name || 'Unknown Vessel').toUpperCase()}
       content={
         <>
-          <div style={{ 
-            display: 'grid',
-            gridTemplateColumns: '90px 1fr',
-            gridGap: '4px',
-            marginBottom: '6px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-            paddingBottom: '6px'
-          }}>
-            <div style={{
-              fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.9)'
-            }}>
-              Vessel Type
-            </div>
+          {hasTooltipDetails ? (
+            // Render the enhanced tooltip details if available
             <div>
-              {vessel.vessel_type || 'Unknown'}
+              {vessel.tooltipDetails.map((detail, index) => (
+                <div key={index} style={{ 
+                  display: 'grid',
+                  gridTemplateColumns: '90px 1fr',
+                  gridGap: '4px',
+                  marginBottom: index < vessel.tooltipDetails.length - 1 ? '6px' : 0,
+                  borderBottom: index < vessel.tooltipDetails.length - 1 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
+                  paddingBottom: index < vessel.tooltipDetails.length - 1 ? '6px' : 0
+                }}>
+                  <div style={{
+                    fontWeight: 600,
+                    color: 'rgba(255, 255, 255, 0.9)'
+                  }}>
+                    {detail.label.toUpperCase()}
+                  </div>
+                  <div>
+                    {detail.label.toLowerCase() === 'owner' 
+                      ? (detail.value || 'Not available').toUpperCase() 
+                      : detail.value || 'Not available'}
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-          
-          <div style={{ 
-            display: 'grid',
-            gridTemplateColumns: '90px 1fr',
-            gridGap: '4px'
-          }}>
-            <div style={{
-              fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.9)'
-            }}>
-              DOC
-            </div>
-            <div>
-              {vessel.fleet_type || 'Not available'}
-            </div>
-          </div>
+          ) : (
+            // Fallback to the original display
+            <>
+              <div style={{ 
+                display: 'grid',
+                gridTemplateColumns: '90px 1fr',
+                gridGap: '4px',
+                marginBottom: '6px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                paddingBottom: '6px'
+              }}>
+                <div style={{
+                  fontWeight: 600,
+                  color: 'rgba(255, 255, 255, 0.9)'
+                }}>
+                  IMO
+                </div>
+                <div>
+                  {vessel.imo_no || 'Unknown'}
+                </div>
+              </div>
+              
+              <div style={{ 
+                display: 'grid',
+                gridTemplateColumns: '90px 1fr',
+                gridGap: '4px'
+              }}>
+                <div style={{
+                  fontWeight: 600,
+                  color: 'rgba(255, 255, 255, 0.9)'
+                }}>
+                  OWNER
+                </div>
+                <div>
+                  {(vessel.owner || 'Not available').toUpperCase()}
+                </div>
+              </div>
+            </>
+          )}
         </>
       }
     >

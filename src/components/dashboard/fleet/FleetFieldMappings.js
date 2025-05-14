@@ -7,18 +7,30 @@ export const fleetFieldMappings = {
       priority: 1,
       width: '150px'
     },
-    imo: {
-      dbField: 'imo_no',
-      label: 'IMO No',
-      priority: 2,
-      width: '80px'
-    },
-    owner: {
-      dbField: 'owner',
-      label: 'Owner',
-      priority: 3,
+    vessel_type: {
+      dbField: 'vessel_type',
+      label: 'Vessel Type',
+      priority: 2, // After vessel_name
       width: '130px'
     },
+    doc_type: {
+      dbField: 'fleet_type',
+      label: 'DOC',
+      priority: 3, // After vessel_type
+      width: '80px'
+    },
+    // imo: {
+    //   dbField: 'imo_no',
+    //   label: 'IMO No',
+    //   priority: 2,
+    //   width: '80px'
+    // },
+    // owner: {
+    //   dbField: 'owner',
+    //   label: 'Owner',
+    //   priority: 3,
+    //   width: '130px'
+    // },
     event_type: {
       dbField: 'event_type',
       label: 'Event Type',
