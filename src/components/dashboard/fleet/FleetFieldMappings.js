@@ -103,26 +103,26 @@ export const fleetFieldMappings = {
     //   label: 'Departure Country',
     //   priority: 5
     // },
-    departure_date: {
-      dbField: 'departure_date',
-      label: 'Departure Date',
-      priority: 6,
-      //width: '120px',
-      type: 'date'
-    },
-    departure_port: {
-      dbField: 'departure_port',
-      label: 'Departure Port',
-      priority: 5,
-      combineWithCountry: true // Add this flag
-    },
+    // departure_date: {
+    //   dbField: 'departure_date',
+    //   label: 'Departure Date',
+    //   priority: 6,
+    //   //width: '120px',
+    //   type: 'date'
+    // },
+    // departure_port: {
+    //   dbField: 'departure_port',
+    //   label: 'Departure Port',
+    //   priority: 5,
+    //   combineWithCountry: true // Add this flag
+    // },
     
-    atd: {
-      dbField: 'atd',
-      label: 'ATD',
-      priority: 7,
-      type: 'datetime'
-    },
+    // atd: {
+    //   dbField: 'atd',
+    //   label: 'ATD',
+    //   priority: 7,
+    //   type: 'datetime'
+    // },
     psc_last_inspection_date: {
       dbField: 'psc_last_inspection_date',
       label: 'PSC Last Inspection Date',
