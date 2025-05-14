@@ -411,7 +411,7 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
               tickLine={false}
               angle={-45}
               textAnchor="end"
-              height={70}
+              height={55}
               interval="auto"
               tickFormatter={(value) => (value && value.length > 15 ? `${value.substring(0, 13)}...` : value)}
             />
@@ -469,7 +469,7 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
               tickLine={false}
               angle={-45}
               textAnchor="end"
-              height={70}
+              height={55}
               interval="auto"
               tickFormatter={(value) => (value && value.length > 15 ? `${value.substring(0, 13)}...` : value)}
             />
