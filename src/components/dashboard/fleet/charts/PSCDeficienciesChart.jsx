@@ -7,8 +7,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell,
-  Legend
+  Cell
 } from 'recharts';
 import { FilterIcon, AlertTriangle } from 'lucide-react';
 
@@ -180,7 +179,8 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
               actionCodeCount: 0,
               categories: new Map(),
               rawRecords: 0, // Add a counter for total records
-              allCategories: {} // Keep track of all categories for this port
+              allCategories: {}, // Keep track of all categories for this port
+              vesselSet: new Set() // Track unique vessels
             });
           }
           
@@ -204,6 +204,11 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
             portData.allCategories[category] = (portData.allCategories[category] || 0) + 1;
             
             portData.totalCount += 1; // Only increment totalCount for valid categorized deficiencies
+          }
+          
+          // Track unique vessels
+          if (item.vessel_name) {
+            portData.vesselSet.add(item.vessel_name);
           }
         });
         
@@ -250,7 +255,8 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
                 name: port.name,
                 totalCount: totalCategorizedDeficiencies, // This should match the sum of all categories
                 rawRecords: port.rawRecords, // Keep track of the total record count for reference
-                allCategories: port.allCategories // Store all categories for complete tooltips
+                allCategories: port.allCategories, // Store all categories for complete tooltips
+                vesselCount: port.vesselSet.size // Add the vessel count
             };
             
             // Add each category as a property with explicit number conversion
@@ -278,7 +284,8 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
         setProcessedData({
           type: 'port',
           data: stackedData,
-          categories: topCategories
+          categories: topCategories,
+          colorMap: newColorMap
         });
       }
     } catch (err) {
@@ -290,248 +297,97 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
     }
   }, [data, activeView, timeFilter]);
 
-  // Custom tooltip for category view
-  const CategoryTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      const item = payload[0].payload;
-      
-      return (
-        <div className="custom-tooltip">
-          <p className="tooltip-label">{item.name}</p>
-          <p className="tooltip-value">{item.count} deficiencies</p>
-          {item.subCategories && item.subCategories.length > 0 && (
-            <div className="tooltip-subcategories">
-              <p className="tooltip-subtitle">Sub-categories:</p>
-              <ul className="tooltip-list">
-                {item.subCategories.slice(0, 5).map((sub, idx) => (
-                  <li key={idx}>{sub}</li>
-                ))}
-                {item.subCategories.length > 5 && (
-                  <li>+{item.subCategories.length - 5} more...</li>
-                )}
-              </ul>
-            </div>
-          )}
-          <div className="tooltip-arrow"></div>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  // Improved tooltip for port view - shows ALL categories
-  // Replace your existing PortTooltip component with this improved version
-
-  const PortTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      // Get the pre-calculated totalCount and all categories
-      const item = payload[0].payload;
-      const total = item.totalCount;
-      const allCategories = item.allCategories || {};
-      
-      // Create a sorted array of all categories for this port
-      const sortedCategories = Object.entries(allCategories)
-        .sort((a, b) => b[1] - a[1])  // Sort by count descending
-        .filter(([_, count]) => count > 0);  // Filter out zero counts
-      
-      return (
-        <div
-          className="custom-tooltip"
-          style={{
-            minWidth: 240,
-            maxWidth: 350,
-            maxHeight: 400, // Maximum height for the tooltip
-            overflowY: 'auto', // Enable vertical scrolling
-            whiteSpace: 'normal',
-            wordBreak: 'break-word',
-            position: 'fixed', // Use fixed positioning to prevent cutoff
-            zIndex: 9999, // Ensure tooltip appears on top
-            backgroundColor: 'rgba(11, 22, 35, 0.95)', // Semi-transparent dark background
-            color: '#f4f4f4',
-            border: '1px solid rgba(59, 173, 229, 0.3)',
-            borderRadius: '6px',
-            padding: '12px',
-            boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.4)',
-          }}
-        >
-          <p className="tooltip-label" style={{ 
-            fontSize: '14px', 
-            fontWeight: 'bold', 
-            margin: '0 0 8px 0',
-            color: '#4DC3FF'
-          }}>
-            {label}
-          </p>
-          <p className="tooltip-value" style={{ 
-            fontSize: '13px', 
-            fontWeight: 'bold', 
-            margin: '0 0 12px 0' 
-          }}>
-            {total} total deficiencies
-          </p>
-          <div 
-            className="tooltip-categories"
-            style={{
-              maxHeight: 240,
-              overflowY: 'auto',  // Enable scrolling for this section
-              padding: '0 4px',
-              marginRight: '-4px', // Compensate for scrollbar width
-            }}
-          >
-            {sortedCategories.map(([category, count], index) => {
-              // Get color from the color map or use a default
-              const color = colorMap[category] || categoryColors[index % categoryColors.length];
-              
-              return (
-                <div 
-                  key={index} 
-                  className="tooltip-category-item"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    marginBottom: '6px',
-                    fontSize: '12px',
-                    lineHeight: 1.4
-                  }}
-                >
-                  <span
-                    className="tooltip-color-dot"
-                    style={{ 
-                      backgroundColor: color,
-                      display: 'inline-block',
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      marginRight: '6px',
-                      marginTop: '4px',
-                      flexShrink: 0
-                    }}
-                  ></span>
-                  <span 
-                    className="tooltip-category-name"
-                    style={{
-                      flex: 1,
-                      paddingRight: '6px'
-                    }}
-                  >
-                    {category}: 
-                  </span>
-                  <span 
-                    className="tooltip-category-value"
-                    style={{
-                      fontWeight: 'bold',
-                      flexShrink: 0
-                    }}
-                  >
-                    {count}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
-// Also, update the CSS for tooltips (you can add this to your CSS file):
-/*
-
-*/
-  const handleMouseMove = (e) => {
-    if (e?.activeTooltipIndex !== undefined) {
-      setHoveredBar(e.activeTooltipIndex);
-    } else {
-      setHoveredBar(null);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    setHoveredBar(null);
-  };
-
-  // Improved Y-axis domain calculation for tighter fit
-  // Replace the getYAxisDomain function with this ultra-simple solution:
-
+  // Get Y-axis domain calculation for tighter fit
   const getYAxisDomain = useMemo(() => {
-    // If no data or max count is 0, use a small default range
     if (maxDeficiencyCount <= 0) return [0, 5];
-    
-    // Simply use max value + small constant (2)
-    return [0, maxDeficiencyCount + 2];
+    return [0, Math.ceil((maxDeficiencyCount * 1.1) / 5) * 5];
   }, [maxDeficiencyCount]);
 
-// Use this function to set a fixed number of ticks based on max value
-const getYAxisTicks = useMemo(() => {
-  if (maxDeficiencyCount <= 0) return [0, 1, 2, 3, 4, 5];
-  
-  // Create an array from 0 to max+2 with reasonable step size
-  const max = maxDeficiencyCount + 2;
-  const step = max <= 10 ? 5 : 
-               max <= 20 ? 5 : 
-               max <= 50 ? 10 : 
-               Math.ceil(max / 5); // Aim for 5-6 ticks
-               
-  const ticks = [];
-  for (let i = 0; i <= max; i += step) {
-    ticks.push(i);
-  }
-  
-  // Always include 0 and max
-  if (!ticks.includes(0)) ticks.unshift(0);
-  if (!ticks.includes(max)) ticks.push(max);
-  
-  return ticks;
-}, [maxDeficiencyCount]);
+  // Enhanced custom tooltip component
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      const dataItem = payload[0].payload;
 
-// Then in your YAxis component:
-<YAxis
-  tick={{ fill: '#f4f4f4', fontSize: 11 }}
-  axisLine={{ stroke: 'rgba(244, 244, 244, 0.1)' }}
-  tickLine={false}
-  domain={getYAxisDomain}
-  allowDataOverflow={true} // This prevents auto-adjustment
-  label={{ 
-    value: 'Deficiency Count', 
-    angle: -90, 
-    position: 'insideLeft',
-    style: { fill: '#4DC3FF', fontSize: 12 },
-    offset: 25,
-    dy: 50
-  }}
-/>
+      if (activeView === 'category') {
+        return (
+          <div className="custom-tooltip">
+            <p className="tooltip-label">{label}</p>
+            <p className="tooltip-value">{dataItem.count} deficiencies</p>
+            {dataItem.subCategories && dataItem.subCategories.length > 0 && (
+              <div className="tooltip-subcategories">
+                <p className="tooltip-subtitle">Sub-categories:</p>
+                <div className="tooltip-code-list">
+                  {dataItem.subCategories.slice(0, 10).map((sub, idx) => (
+                    <div key={idx} className="tooltip-code-item">
+                      <span style={{
+                        display: 'inline-block',
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: colorMap[dataItem.name] || '#4DC3FF',
+                        marginRight: '5px',
+                        borderRadius: '50%'
+                      }}></span>
+                      {sub}
+                    </div>
+                  ))}
+                  {dataItem.subCategories.length > 10 && (
+                    <div className="tooltip-code-item">+{dataItem.subCategories.length - 10} more...</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      } else if (activeView === 'port') {
+        // Get all categories for this port
+        const allCategories = dataItem.allCategories || {};
+        
+        // Create a sorted array of all categories for this port
+        const sortedCategories = Object.entries(allCategories)
+          .sort((a, b) => b[1] - a[1])  // Sort by count descending
+          .filter(([_, count]) => count > 0);  // Filter out zero counts
+        
+        return (
+          <div className="custom-tooltip">
+            <p className="tooltip-label">{label}</p>
+            <p className="tooltip-value">Total Records: {dataItem.totalCount}</p>
+            <p className="tooltip-value" style={{marginBottom: '5px'}}>Vessels: {dataItem.vesselCount}</p>
+            <div className="tooltip-code-list">
+              {sortedCategories.map(([category, count], index) => {
+                const color = processedData.colorMap?.[category] || categoryColors[index % categoryColors.length];
+                return (
+                  <div key={index} className="tooltip-code-item">
+                    <span style={{ 
+                      display: 'inline-block', 
+                      width: '10px', 
+                      height: '10px', 
+                      backgroundColor: color,
+                      marginRight: '5px',
+                      borderRadius: '2px'
+                    }}></span>
+                    {category}: {count}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      }
+    }
+    return null;
+  };
 
   const renderChart = () => {
     if (loading) {
-      return (
-        <div className="chart-loading">
-          <div className="loading-spinner"></div>
-          <span>Loading deficiency data...</span>
-        </div>
-      );
+      return <div className="chart-loading"><span>Loading deficiency data...</span></div>;
     }
     
     if (error) {
-      return (
-        <div className="chart-no-data">
-          <AlertTriangle size={16} color="#FF5252" style={{ marginBottom: '8px' }} />
-          <p>Error loading deficiency data</p>
-          <p style={{ fontSize: '10px', marginTop: '6px' }}>{error}</p>
-        </div>
-      );
+      return <div className="chart-no-data"><AlertTriangle size={16} /> <p>Error: {error}</p></div>;
     }
     
     if (!processedData || !processedData.data || processedData.data.length === 0) {
-      return (
-        <div className="chart-no-data">
-          <p>No deficiency data available for the selected time period</p>
-          <p style={{ fontSize: '10px', marginTop: '6px' }}>
-            <FilterIcon size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-            Try adjusting your time filter
-          </p>
-        </div>
-      );
+      return <div className="chart-no-data"><FilterIcon size={14} /> <p>No data for selected filters.</p></div>;
     }
     
     if (processedData.type === 'category') {
@@ -539,16 +395,10 @@ const getYAxisTicks = useMemo(() => {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={processedData.data}
-            margin={{ top: 20, right: 0, left: 0, bottom: 0 }}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
+            margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
+            onMouseMove={(e) => e.activeTooltipIndex !== undefined && setHoveredBar(e.activeTooltipIndex)}
+            onMouseLeave={() => setHoveredBar(null)}
           >
-            <defs>
-              <linearGradient id="pscBarGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#4DC3FF" stopOpacity={0.8} />
-                <stop offset="100%" stopColor="#3BADE5" stopOpacity={0.6} />
-              </linearGradient>
-            </defs>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke="rgba(244, 244, 244, 0.05)"
@@ -561,35 +411,36 @@ const getYAxisTicks = useMemo(() => {
               tickLine={false}
               angle={-45}
               textAnchor="end"
-              height={60}
-              interval={0}
-              tickFormatter={(value) => value.length > 10 ? `${value.substring(0, 10)}...` : value}
+              height={70}
+              interval="auto"
+              tickFormatter={(value) => (value && value.length > 15 ? `${value.substring(0, 13)}...` : value)}
             />
             <YAxis
               tick={{ fill: '#f4f4f4', fontSize: 11 }}
               axisLine={{ stroke: 'rgba(244, 244, 244, 0.1)' }}
               tickLine={false}
-              domain={getYAxisDomain} // Use the improved calculation
+              domain={getYAxisDomain}
+              allowDataOverflow={false}
               label={{ 
                 value: 'Deficiency Count', 
                 angle: -90, 
                 position: 'insideLeft',
                 style: { fill: '#4DC3FF', fontSize: 12 },
-                offset: 25,
-                dy: 50
+                offset: 10,
+                dy: 40
               }}
+              allowDecimals={false}
             />
-            <Tooltip content={<CategoryTooltip />} cursor={{ fill: 'rgba(244, 244, 244, 0.05)' }} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(244, 244, 244, 0.05)' }} />
             <Bar
               dataKey="count"
               radius={[6, 6, 0, 0]}
-              className="chart-bar"
               barSize={16}
             >
               {processedData.data.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={colorMap[entry.name] || '#4DC3FF'}
+                  fill={colorMap[entry.name] || categoryColors[index % categoryColors.length]}
                   className={hoveredBar === index ? 'hovered-bar' : ''}
                 />
               ))}
@@ -602,9 +453,9 @@ const getYAxisTicks = useMemo(() => {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={processedData.data}
-            margin={{ top: 20, right: 0, left: 0, bottom: 0 }}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
+            margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
+            onMouseMove={(e) => e.activeTooltipIndex !== undefined && setHoveredBar(e.activeTooltipIndex)}
+            onMouseLeave={() => setHoveredBar(null)}
           >
             <CartesianGrid
               strokeDasharray="3 3"
@@ -618,55 +469,50 @@ const getYAxisTicks = useMemo(() => {
               tickLine={false}
               angle={-45}
               textAnchor="end"
-              height={60}
-              interval={0}
-              tickFormatter={(value) => value.length > 10 ? `${value.substring(0, 10)}...` : value}
+              height={70}
+              interval="auto"
+              tickFormatter={(value) => (value && value.length > 15 ? `${value.substring(0, 13)}...` : value)}
             />
             <YAxis
               tick={{ fill: '#f4f4f4', fontSize: 11 }}
               axisLine={{ stroke: 'rgba(244, 244, 244, 0.1)' }}
               tickLine={false}
-              domain={getYAxisDomain} // Use the improved calculation
+              domain={getYAxisDomain}
+              allowDataOverflow={false}
               label={{ 
                 value: 'Deficiency Count', 
                 angle: -90, 
                 position: 'insideLeft',
                 style: { fill: '#4DC3FF', fontSize: 12 },
-                offset: 25,
-                dy: 50
+                offset: 10,
+                dy: 40
               }}
+              allowDecimals={false}
             />
-            <Tooltip content={<PortTooltip />} cursor={{ fill: 'rgba(244, 244, 244, 0.05)' }} />
-            {/* <Legend 
-              layout="horizontal"
-              verticalAlign="top"
-              align="center"
-              wrapperStyle={{
-                paddingBottom: 10,
-                fontSize: 10
-              }}
-              iconType="circle"
-              iconSize={8}
-            /> */}
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(244, 244, 244, 0.05)' }} />
             {processedData.categories && processedData.categories.map((category, index) => {
               return (
                 <Bar
                   key={category}
                   dataKey={category}
                   stackId="a"
-                  fill={colorMap[category] || '#FFFFFF'}
-                  name={category.length > 18 ? `${category.substring(0, 18)}...` : category}
+                  fill={processedData.colorMap[category] || categoryColors[index % categoryColors.length]}
                   barSize={16}
-                  radius={index === processedData.categories.length - 1 ? [6, 6, 0, 0] : 0}
-                />
+                  radius={index === processedData.categories.length - 1 ? [6, 6, 0, 0] : [0, 0, 0, 0]}
+                >
+                  {processedData.data.map((_entry, entryIndex) => (
+                    <Cell
+                      key={`cell-${category}-${entryIndex}`}
+                      className={hoveredBar === entryIndex ? 'hovered-bar' : ''}
+                    />
+                  ))}
+                </Bar>
               );
             })}
           </BarChart>
         </ResponsiveContainer>
       );
     }
-    
-    return null;
   };
 
   return (
@@ -677,43 +523,21 @@ const getYAxisTicks = useMemo(() => {
           <span className="chart-title-highlight"></span>
         </h3>
         <div className="chart-toggle">
-            <button 
-                className={activeView === 'port' ? 'active' : ''}
-                onClick={() => setActiveView('port')}
-            >
-                By Port
-            </button>
-            <button 
-                className={activeView === 'category' ? 'active' : ''}
-                onClick={() => setActiveView('category')}
-            >
-                By Category
-            </button>
-          
-          {/* Time filter buttons */}
+          <button className={activeView === 'port' ? 'active' : ''} onClick={() => setActiveView('port')}>By Port</button>
+          <button className={activeView === 'category' ? 'active' : ''} onClick={() => setActiveView('category')}>By Category</button>
           <div className="chart-filter" style={{ marginLeft: '10px', display: 'flex', gap: '4px' }}>
-            <button 
-              className={`chart-action-btn ${timeFilter === '3m' ? 'active' : ''}`}
-              onClick={() => setTimeFilter('3m')}
-            >
-              3M
-            </button>
-            <button 
-              className={`chart-action-btn ${timeFilter === '6m' ? 'active' : ''}`}
-              onClick={() => setTimeFilter('6m')}
-            >
-              6M
-            </button>
-            <button 
-              className={`chart-action-btn ${timeFilter === '1y' ? 'active' : ''}`}
-              onClick={() => setTimeFilter('1y')}
-            >
-              1Y
-            </button>
+            {['3m', '6m', '1y'].map(period => (
+              <button
+                key={period}
+                className={`chart-action-btn ${timeFilter === period ? 'active' : ''}`}
+                onClick={() => setTimeFilter(period)}
+              >
+                {period.toUpperCase()}
+              </button>
+            ))}
           </div>
         </div>
       </div>
-      
       <div className="chart-wrapper">
         {renderChart()}
       </div>

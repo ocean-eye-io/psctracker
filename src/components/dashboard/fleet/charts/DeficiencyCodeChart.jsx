@@ -11,477 +11,343 @@ import {
   Cell
 } from 'recharts';
 import { FilterIcon, AlertTriangle } from 'lucide-react';
+// Assuming you have a similar CSS file or will add relevant styles
+import '../../../common/charts/styles/chartStyles.css'; // Or your specific path
+
+// Consistent color palette
+const ACTION_CODE_COLORS = [
+  '#FF6B6B', '#4ECDC4', '#45B7D1', '#FED766', '#2AB7CA',
+  '#F0B67F', '#FE5F55', '#00A8E8', '#007EA7', '#95E06C',
+  '#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD',
+  '#8C564B', '#E377C2', '#7F7F7F', '#BCBD22', '#17BECF'
+];
+const CODE_30_COLOR = '#D32F2F'; // A distinct, alarming color
 
 const DeficiencyCodeChart = ({ data = [] }) => {
-  const [activeView, setActiveView] = useState('port');
-  const [timeFilter, setTimeFilter] = useState('1y'); // Default to 1 year
-  const [processedData, setProcessedData] = useState([]);
+  const [activeView, setActiveView] = useState('port'); // 'port' or 'overall'
+  const [timeFilter, setTimeFilter] = useState('1y');
+  const [processedData, setProcessedData] = useState({ type: 'port', data: [], keys: [], colorMap: {} });
   const [hoveredBar, setHoveredBar] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [maxRowCount, setMaxRowCount] = useState(0); // Changed from maxDeficiencyCount
 
-  // Process the data based on filters
   useEffect(() => {
     setLoading(true);
     setError(null);
 
     try {
-      console.log('Processing deficiency code data, total records:', data.length);
-      
-      if (!data || (Array.isArray(data) && data.length === 0)) {
-        console.log('No deficiency data available');
-        setProcessedData([]);
-        setLoading(false);
-        return;
-      }
-
-      // Normalize data to array format
-      let dataArray = Array.isArray(data) ? data : [];
-      if (!Array.isArray(data) && data.results && Array.isArray(data.results)) {
+      let dataArray = [];
+      if (Array.isArray(data)) {
+        dataArray = data;
+      } else if (data && data.results && Array.isArray(data.results)) {
         dataArray = data.results;
+      } else if (typeof data === 'object' && data !== null) {
+        const possibleArrays = Object.values(data).filter(val => Array.isArray(val));
+        if (possibleArrays.length > 0) {
+          dataArray = possibleArrays.flat();
+        } else {
+           dataArray = [data].filter(item => typeof item === 'object' && item !== null);
+        }
       }
-      
+
       if (dataArray.length === 0) {
-        setProcessedData([]);
+        setProcessedData({ type: activeView, data: [], keys: [], colorMap: {} });
+        setMaxRowCount(0);
         setLoading(false);
         return;
       }
 
-      // Apply time filter
       const currentDate = new Date();
       let filterDate = new Date();
-      
-      if (timeFilter === '3m') {
-        filterDate.setMonth(currentDate.getMonth() - 3);
-      } else if (timeFilter === '6m') {
-        filterDate.setMonth(currentDate.getMonth() - 6);
-      } else {
-        filterDate.setFullYear(currentDate.getFullYear() - 1);
-      }
-      
+      if (timeFilter === '3m') filterDate.setMonth(currentDate.getMonth() - 3);
+      else if (timeFilter === '6m') filterDate.setMonth(currentDate.getMonth() - 6);
+      else filterDate.setFullYear(currentDate.getFullYear() - 1);
       filterDate.setHours(0, 0, 0, 0);
 
       const filteredByTime = dataArray.filter(item => {
-        if (!item.inspection_from_date) return true;
-        
+        if (!item || !item.inspection_from_date) return true;
         try {
           const inspectionDate = new Date(item.inspection_from_date);
           return !isNaN(inspectionDate.getTime()) && inspectionDate >= filterDate;
         } catch (err) {
-          console.error('Error parsing date:', item.inspection_from_date, err);
+          console.warn('Error parsing date for filtering:', item.inspection_from_date, err);
           return true;
         }
       });
 
-      // Filter for Australia/New Zealand vessels
+      // Kept country filter based on previous context. Remove if not needed.
       const filteredByCountry = filteredByTime.filter(item => {
-        const country = ((item.country || '') + '').toLowerCase();
-        return country.includes('australia') || country.includes('new zealand') || 
+        if(!item || typeof item.country !== 'string') return false;
+        const country = item.country.toLowerCase();
+        return country.includes('australia') || country.includes('new zealand') ||
                country.includes('aus') || country.includes('nz');
       });
 
+      let newMaxCount = 0; // This will now be max row count
+      const newColorMap = {};
+
       if (activeView === 'port') {
-        // Group by port and reference code
         const portCodeMap = new Map();
-        
         filteredByCountry.forEach(item => {
-          const portName = item.port_name || 'Unknown';
-          const actionCode = item.actioncode || item.reference_code_1 || 'Unknown';
-          const deficiencyCount = parseInt(item.deficiencycount || item.deficiency_count || item.count || 1, 10);
-          
+          if (!item) return;
+          const portName = item.port_name || 'Unknown Port';
+          const actionCode = String(item.actioncode || item.reference_code_1 || 'N/A').trim();
+
+          if (actionCode === 'N/A') return; // Skip items with no identifiable action code
+
           if (!portCodeMap.has(portName)) {
             portCodeMap.set(portName, {
               portName,
-              totalDeficiencies: 0,
-              code30Count: 0,
-              codeCounts: {},
-              vesselCount: new Set()
+              code30RowCount: 0,
+              otherCodeRowCounts: {},
+              vesselSet: new Set() // For unique vessel names
             });
           }
-          
+
           const portData = portCodeMap.get(portName);
-          portData.totalDeficiencies += deficiencyCount;
-          
-          if (actionCode === 30 || actionCode === '30') {
-            portData.code30Count += deficiencyCount;
+
+          if (actionCode === '30') {
+            portData.code30RowCount += 1; // Increment row count
+          } else {
+            portData.otherCodeRowCounts[actionCode] = (portData.otherCodeRowCounts[actionCode] || 0) + 1; // Increment row count
           }
-          
-          // Track counts by code
-          if (!portData.codeCounts[actionCode]) {
-            portData.codeCounts[actionCode] = 0;
-          }
-          portData.codeCounts[actionCode] += deficiencyCount;
-          
-          // Track unique vessels
-          if (item.vessel_name) {
-            portData.vesselCount.add(item.vessel_name);
+
+          if (item.vessel_name) { // Track unique vessels if name is present
+            portData.vesselSet.add(item.vessel_name);
           }
         });
-        
-        // Convert to array format for chart
+
         let portArray = Array.from(portCodeMap.values()).map(port => {
-          // Convert code counts to format needed for stacked bars
-          const codeData = {};
-          Object.entries(port.codeCounts).forEach(([code, count]) => {
-            if (code !== '30' && code !== 30) { // Exclude code 30 as it's shown separately
-              codeData[`code_${code}`] = count;
-            }
-          });
-          
+          const totalRecordsInPortForStack = Object.values(port.otherCodeRowCounts).reduce((sum, count) => sum + count, 0) + port.code30RowCount;
+          newMaxCount = Math.max(newMaxCount, totalRecordsInPortForStack);
           return {
             name: port.portName,
-            code30Count: port.code30Count,
-            totalDeficiencies: port.totalDeficiencies,
-            vesselCount: port.vesselCount.size,
-            ...codeData
+            code30: port.code30RowCount, // Row count for Code 30
+            ...port.otherCodeRowCounts, // Spread other action code row counts
+            totalRecordsInPort: totalRecordsInPortForStack, // Total records for this port in the bar
+            vesselCount: port.vesselSet.size,
+            _stackedTotal: totalRecordsInPortForStack // Used for sorting and Y-axis
           };
         });
         
-        // First prioritize ports with code 30 (detentions)
-        portArray.sort((a, b) => {
-          // First sort by code 30 count (descending)
-          if (b.code30Count !== a.code30Count) {
-            return b.code30Count - a.code30Count;
-          }
-          // Then by total deficiencies (descending)
-          return b.totalDeficiencies - a.totalDeficiencies;
+        portArray.sort((a, b) => (b.code30 - a.code30) || (b._stackedTotal - a._stackedTotal));
+        const topPorts = portArray.slice(0, 10);
+
+        const codeKeysForStacking = new Set();
+        topPorts.forEach(port => {
+          Object.keys(port).forEach(key => {
+            if (!['name', 'code30', 'totalRecordsInPort', 'vesselCount', '_stackedTotal'].includes(key)) {
+              codeKeysForStacking.add(key);
+            }
+          });
         });
         
-        // Take top 10 ports
-        setProcessedData(portArray.slice(0, 10));
-      } else {
-        // Overall view - group by code regardless of port
+        newColorMap['code30'] = CODE_30_COLOR;
+        Array.from(codeKeysForStacking).forEach((key, index) => {
+          newColorMap[key] = ACTION_CODE_COLORS[index % ACTION_CODE_COLORS.length];
+        });
+
+        setProcessedData({
+          type: 'port',
+          data: topPorts,
+          keys: ['code30', ...Array.from(codeKeysForStacking)],
+          colorMap: newColorMap
+        });
+
+      } else { // 'overall' view
         const codeMap = new Map();
-        
-        filteredByCountry.forEach(item => {
-          const actionCode = item.actioncode || item.reference_code_1 || 'Unknown';
-          const deficiencyCount = parseInt(item.deficiencycount || item.deficiency_count || item.count || 1, 10);
+        filteredByCountry.forEach(item => { // Or use filteredByTime if country filter is removed
+          if (!item) return;
+          const actionCode = String(item.actioncode || item.reference_code_1 || 'N/A').trim();
           
-          if (!codeMap.has(actionCode)) {
-            codeMap.set(actionCode, {
-              code: actionCode,
-              count: 0
-            });
-          }
-          
-          codeMap.get(actionCode).count += deficiencyCount;
+          if (actionCode === 'N/A') return; // Skip items with no identifiable action code
+
+          codeMap.set(actionCode, (codeMap.get(actionCode) || 0) + 1); // Increment row count
+        });
+
+        let codeArray = Array.from(codeMap.entries()).map(([code, rowCount]) => {
+          newMaxCount = Math.max(newMaxCount, rowCount);
+          return {
+            name: `Code ${code}`,
+            count: rowCount, // This is a row count
+            code: code
+          };
+        });
+
+        codeArray.sort((a, b) => b.count - a.count);
+        const topCodes = codeArray.slice(0, 10);
+
+        topCodes.forEach((item, index) => {
+            newColorMap[item.name] = item.code === '30' ? CODE_30_COLOR : ACTION_CODE_COLORS[index % ACTION_CODE_COLORS.length];
         });
         
-        // Convert to array and sort by count
-        let codeArray = Array.from(codeMap.values()).map(item => ({
-          name: `Code ${item.code}`,
-          count: item.count,
-          isCode30: item.code === 30 || item.code === '30'
-        }));
-        
-        // Sort by count (descending)
-        codeArray.sort((a, b) => b.count - a.count);
-        
-        // Take top 10 codes
-        setProcessedData(codeArray.slice(0, 10));
+        setProcessedData({
+          type: 'overall',
+          data: topCodes,
+          keys: ['count'],
+          colorMap: newColorMap
+        });
       }
+      setMaxRowCount(newMaxCount);
+
     } catch (err) {
       console.error('Error processing deficiency code chart data:', err);
       setError(`Failed to process chart data: ${err.message}`);
-      setProcessedData([]);
+      setProcessedData({ type: activeView, data: [], keys: [], colorMap: {} });
+      setMaxRowCount(0);
     } finally {
       setLoading(false);
     }
   }, [data, activeView, timeFilter]);
 
-  // Get all unique code keys for stacked bars (port view)
-  const codeKeys = useMemo(() => {
-    if (activeView !== 'port' || !processedData.length) return [];
-    
-    const keys = new Set();
-    processedData.forEach(item => {
-      Object.keys(item).forEach(key => {
-        if (key.startsWith('code_') && key !== 'code_30') {
-          keys.add(key);
-        }
-      });
-    });
-    
-    return Array.from(keys);
-  }, [processedData, activeView]);
+  const getYAxisDomain = useMemo(() => {
+    if (maxRowCount <= 0) return [0, 5];
+    return [0, Math.ceil((maxRowCount * 1.1) / 5) * 5];
+  }, [maxRowCount]);
 
-  // Custom tooltip
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
-      if (activeView === 'port') {
-        // Port view tooltip
-        const portData = payload[0].payload;
-        
-        return (
-          <div className="custom-tooltip">
-            <p className="tooltip-label">{portData.name}</p>
-            <p className="tooltip-value">Detentions (Code 30): {portData.code30Count}</p>
-            <p className="tooltip-value">Total Deficiencies: {portData.totalDeficiencies}</p>
-            <p className="tooltip-value">Vessel Count: {portData.vesselCount}</p>
-            <div className="tooltip-divider"></div>
-            <p className="tooltip-subtitle">Deficiency Codes:</p>
-            {payload.map((entry, index) => {
-              if (entry.dataKey.startsWith('code_')) {
-                const code = entry.dataKey.replace('code_', '');
-                return (
-                  <p key={index} className="tooltip-value" style={{ color: entry.color }}>
-                    Code {code}: {entry.value}
-                  </p>
-                );
-              }
-              return null;
-            })}
-          </div>
-        );
-      } else {
-        // Overall view tooltip
-        const item = payload[0].payload;
-        return (
-          <div className="custom-tooltip">
-            <p className="tooltip-label">{item.name}</p>
-            <p className="tooltip-value">Count: {item.count}</p>
-            {item.isCode30 && (
-              <p className="tooltip-value" style={{ color: '#FF5252' }}>
-                (Detention Code)
-              </p>
-            )}
-          </div>
-        );
-      }
+      const dataItem = payload[0].payload;
+
+      return (
+        <div className="custom-tooltip">
+          <p className="tooltip-label">{label}</p>
+          {activeView === 'port' && (
+            <>
+              {/* totalRecordsInPort now represents the sum of row counts for the displayed codes */}
+              <p className="tooltip-value">Total Records: {dataItem.totalRecordsInPort}</p>
+              <p className="tooltip-value" style={{marginBottom: '5px'}}>Vessels: {dataItem.vesselCount}</p>
+              {payload.map(p => (
+                 <div key={p.dataKey} style={{ color: processedData.colorMap[p.dataKey] || p.fill }}>
+                   {p.dataKey === 'code30' ? 'Code 30 (Detention)' : `Code ${p.dataKey}`}: {p.value} {/* p.value is a row count */}
+                 </div>
+              ))}
+            </>
+          )}
+          {activeView === 'overall' && (
+            <p className="tooltip-value">Records: {dataItem.count}</p> // dataItem.count is a row count
+          )}
+        </div>
+      );
     }
     return null;
   };
 
-  const handleMouseMove = (e) => {
-    if (e?.activeTooltipIndex !== undefined) {
-      setHoveredBar(e.activeTooltipIndex);
-    } else {
-      setHoveredBar(null);
+  const renderChart = () => {
+    if (loading) return <div className="chart-loading"><span>Loading deficiency code data...</span></div>;
+    if (error) return <div className="chart-no-data"><AlertTriangle size={16} /> <p>Error: {error}</p></div>;
+    if (!processedData.data || processedData.data.length === 0) {
+      return <div className="chart-no-data"><FilterIcon size={14} /> <p>No data for selected filters.</p></div>;
     }
-  };
 
-  const handleMouseLeave = () => {
-    setHoveredBar(null);
-  };
+    const {type, data: chartData, keys, colorMap} = processedData;
 
-  // Generate colors for stacked bars
-  const getBarColor = (index) => {
-    const colors = [
-      '#4ECDC4', '#FF6B6B', '#FFD166', '#06D6A0', '#118AB2', 
-      '#073B4C', '#7B68EE', '#9370DB', '#BA55D3', '#C71585'
-    ];
-    return colors[index % colors.length];
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart 
+            data={chartData} 
+            margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
+            onMouseMove={(e) => e.activeTooltipIndex !== undefined && setHoveredBar(e.activeTooltipIndex)}
+            onMouseLeave={() => setHoveredBar(null)}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(244, 244, 244, 0.05)" vertical={false} />
+          <XAxis
+            dataKey="name"
+            tick={{ fill: '#f4f4f4', fontSize: 11 }}
+            axisLine={{ stroke: 'rgba(244, 244, 244, 0.1)' }}
+            tickLine={false}
+            angle={-45}
+            textAnchor="end"
+            height={70}
+            interval="auto"
+            tickFormatter={(value) => (value && value.length > 15 ? `${value.substring(0, 13)}...` : value)}
+          />
+          <YAxis
+            tick={{ fill: '#f4f4f4', fontSize: 11 }}
+            axisLine={{ stroke: 'rgba(244, 244, 244, 0.1)' }}
+            tickLine={false}
+            domain={getYAxisDomain} // Uses maxRowCount now
+            allowDataOverflow={false}
+            label={{
+              // Y-axis label "Record Count" or "Deficiency Record Count" might be more precise
+              value: 'Record Count', angle: -90, position: 'insideLeft',
+              style: { fill: '#4DC3FF', fontSize: 12 }, offset: 10, dy: 40
+            }}
+            allowDecimals={false} // Counts should be whole numbers
+          />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(244, 244, 244, 0.05)' }} />
+          
+          {/* {type === 'port' && keys && (
+            <Legend
+                wrapperStyle={{ paddingTop: '10px', fontSize: '10px' }}
+                formatter={(value) => {
+                    const name = value === 'code30' ? 'Code 30 (Detention)' : `Code ${value}`;
+                    return <span style={{ color: '#f4f4f4' }}>{name}</span>;
+                }}
+            />
+          )} */}
+
+          {type === 'port' && keys && keys.map((key, index) => (
+            <Bar
+              key={key}
+              dataKey={key}
+              stackId="a"
+              fill={colorMap[key] || ACTION_CODE_COLORS[index % ACTION_CODE_COLORS.length]}
+              name={key === 'code30' ? 'Code 30 (Detention)' : `Code ${key}`}
+              barSize={16}
+              radius={index === keys.length - 1 ? [6, 6, 0, 0] : [0,0,0,0]}
+            >
+              {chartData.map((_entry, entryIndex) => ( // _entry not directly used for cell fill here
+                 <Cell 
+                    key={`cell-${key}-${entryIndex}`} 
+                    className={hoveredBar === entryIndex ? 'hovered-bar' : ''} 
+                 />
+              ))}
+            </Bar>
+          ))}
+
+          {type === 'overall' && (
+            <Bar dataKey="count" barSize={16} radius={[6, 6, 0, 0]}>
+              {chartData.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={colorMap[entry.name] || ACTION_CODE_COLORS[index % ACTION_CODE_COLORS.length]}
+                  className={hoveredBar === index ? 'hovered-bar' : ''}
+                />
+              ))}
+            </Bar>
+          )}
+        </BarChart>
+      </ResponsiveContainer>
+    );
   };
 
   return (
     <div className="chart-card">
       <div className="chart-header">
         <h3 className="chart-title">
-          {activeView === 'port' ? 'Port Deficiency Analysis' : 'Overall Deficiency Codes'}
+          Deficiency Records {activeView === 'port' ? 'by Port' : 'Overall'}
           <span className="chart-title-highlight"></span>
         </h3>
         <div className="chart-toggle">
-          <button 
-            className={activeView === 'port' ? 'active' : ''}
-            onClick={() => setActiveView('port')}
-          >
-            By Port
-          </button>
-          <button 
-            className={activeView === 'overall' ? 'active' : ''}
-            onClick={() => setActiveView('overall')}
-          >
-            By Code
-          </button>
-          
-          {/* Time filter buttons */}
+          <button className={activeView === 'port' ? 'active' : ''} onClick={() => setActiveView('port')}>By Port</button>
+          <button className={activeView === 'overall' ? 'active' : ''} onClick={() => setActiveView('overall')}>Overall</button>
           <div className="chart-filter" style={{ marginLeft: '10px', display: 'flex', gap: '4px' }}>
-            <button 
-              className={`chart-action-btn ${timeFilter === '3m' ? 'active' : ''}`}
-              onClick={() => setTimeFilter('3m')}
-              style={{ padding: '2px 8px' }}
-            >
-              3M
-            </button>
-            <button 
-              className={`chart-action-btn ${timeFilter === '6m' ? 'active' : ''}`}
-              onClick={() => setTimeFilter('6m')}
-              style={{ padding: '2px 8px' }}
-            >
-              6M
-            </button>
-            <button 
-              className={`chart-action-btn ${timeFilter === '1y' ? 'active' : ''}`}
-              onClick={() => setTimeFilter('1y')}
-              style={{ padding: '2px 8px' }}
-            >
-              1Y
-            </button>
+            {['3m', '6m', '1y'].map(period => (
+              <button
+                key={period}
+                className={`chart-action-btn ${timeFilter === period ? 'active' : ''}`}
+                onClick={() => setTimeFilter(period)}
+              >
+                {period.toUpperCase()}
+              </button>
+            ))}
           </div>
         </div>
       </div>
-      
-      <div className="chart-wrapper" style={{ position: 'relative', height: '300px' }}>
-        {loading ? (
-          <div className="chart-loading">
-            <div className="loading-spinner"></div>
-            <span>Loading deficiency data...</span>
-          </div>
-        ) : error ? (
-          <div className="chart-no-data">
-            <AlertTriangle size={16} color="#FF5252" style={{ marginBottom: '8px' }} />
-            <p>Error loading deficiency data</p>
-            <p style={{ fontSize: '10px', marginTop: '6px' }}>{error}</p>
-          </div>
-        ) : processedData.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            {activeView === 'port' ? (
-              <BarChart
-                data={processedData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-                barGap={8}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(244,244,244,0.05)" vertical={false} />
-                <XAxis 
-                  dataKey="name"
-                  tick={{ fill: '#f4f4f4', fontSize: 11 }}
-                  axisLine={{ stroke: 'rgba(244,244,244,0.1)' }}
-                  tickLine={false}
-                  angle={-45}
-                  textAnchor="end"
-                  height={20}
-                />
-                <YAxis
-                  tick={{ fill: '#f4f4f4', fontSize: 11 }}
-                  axisLine={{ stroke: 'rgba(244,244,244,0.1)' }}
-                  tickLine={false}
-                  label={{ 
-                    value: 'Number of Deficiencies', 
-                    angle: -90, 
-                    position: 'insideLeft',
-                    style: { fill: '#f4f4f4', fontSize: 12 },
-                    offset: 15,
-                    dy: 50
-                  }}
-                />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(244, 244, 244, 0.05)' }} />
-                <Legend 
-                  verticalAlign="top"
-                  align="center"
-                  height={36}
-                  iconSize={10}
-                  iconType="circle"
-                  wrapperStyle={{
-                    paddingTop: 0,
-                    fontSize: 11,
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    gap: '20px',
-                    width: '100%',
-                    position: 'absolute',
-                    top: 1,
-                    left: 0,
-                    right: 0,
-                    zIndex: 10,
-                    background: 'transparent',
-                    border: 'none'
-                  }}
-                />
-                {/* Detention bar (Code 30) */}
-                <Bar 
-                  dataKey="code30Count" 
-                  name="Detentions (Code 30)"
-                  fill="#FF5252" 
-                  barSize={16}
-                  radius={[3, 3, 0, 0]}
-                >
-                  {processedData.map((entry, index) => (
-                    <Cell
-                      key={`cell-detention-${index}`}
-                      fill="#FF5252"
-                      style={{
-                        opacity: hoveredBar === null || hoveredBar === index ? 1 : 0.7,
-                        transition: 'opacity 0.3s'
-                      }}
-                    />
-                  ))}
-                </Bar>
-                {/* Other code bars (stacked) */}
-                {codeKeys.map((key, index) => (
-                  <Bar 
-                    key={key}
-                    dataKey={key} 
-                    name={`Code ${key.replace('code_', '')}`}
-                    stackId="codes"
-                    fill={getBarColor(index)}
-                    barSize={16}
-                    radius={index === codeKeys.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
-                  />
-                ))}
-              </BarChart>
-            ) : (
-              <BarChart
-                data={processedData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(244,244,244,0.05)" vertical={false} />
-                <XAxis 
-                  dataKey="name"
-                  tick={{ fill: '#f4f4f4', fontSize: 11 }}
-                  axisLine={{ stroke: 'rgba(244,244,244,0.1)' }}
-                  tickLine={false}
-                  angle={-45}
-                  textAnchor="end"
-                  height={20}
-                />
-                <YAxis
-                  tick={{ fill: '#f4f4f4', fontSize: 11 }}
-                  axisLine={{ stroke: 'rgba(244,244,244,0.1)' }}
-                  tickLine={false}
-                  label={{ 
-                    value: 'Number of Deficiencies', 
-                    angle: -90, 
-                    position: 'insideLeft',
-                    style: { fill: '#f4f4f4', fontSize: 12 },
-                    offset: 15,
-                    dy: 60
-                  }}
-                />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(244, 244, 244, 0.05)' }} />
-                <Bar 
-                  dataKey="count" 
-                  name="Deficiency Count"
-                  barSize={20}
-                  radius={[3, 3, 0, 0]}
-                >
-                  {processedData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry.isCode30 ? '#FF5252' : '#28E0B0'}
-                      style={{
-                        opacity: hoveredBar === null || hoveredBar === index ? 1 : 0.7,
-                        transition: 'opacity 0.3s'
-                      }}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            )}
-          </ResponsiveContainer>
-        ) : (
-          <div className="chart-no-data">
-            <p>No deficiency data available for the selected filters</p>
-            <p style={{ fontSize: '10px', marginTop: '6px' }}>
-              <FilterIcon size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-              Try adjusting your filters or check data availability
-            </p>
-          </div>
-        )}
+      <div className="chart-wrapper">
+        {renderChart()}
       </div>
     </div>
   );
