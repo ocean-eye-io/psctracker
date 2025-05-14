@@ -515,6 +515,47 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
     }
   };
 
+  // Custom styles for the filters
+  const filterStyles = {
+    filterContainer: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+    },
+    viewButton: {
+      backgroundColor: 'rgba(59, 173, 229, 0.15)',
+      color: '#f4f4f4',
+      border: '1px solid rgba(59, 173, 229, 0.2)',
+      padding: '4px 10px',
+      fontSize: '11px',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+    },
+    activeViewButton: {
+      backgroundColor: 'rgba(59, 173, 229, 0.7)',
+      color: 'white',
+      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+    },
+    timeButton: {
+      backgroundColor: 'rgba(59, 173, 229, 0.15)',
+      color: '#f4f4f4',
+      border: '1px solid rgba(59, 173, 229, 0.2)',
+      padding: '4px 7px',
+      fontSize: '11px',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      minWidth: '26px',
+      textAlign: 'center',
+    },
+    activeTimeButton: {
+      backgroundColor: 'rgba(59, 173, 229, 0.7)',
+      color: 'white',
+      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+    }
+  };
+
   return (
     <div className="chart-card">
       <div className="chart-header">
@@ -522,14 +563,34 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
           PSC Deficiencies {activeView === 'category' ? 'by Category' : 'by Port'}
           <span className="chart-title-highlight"></span>
         </h3>
-        <div className="chart-toggle">
-          <button className={activeView === 'port' ? 'active' : ''} onClick={() => setActiveView('port')}>By Port</button>
-          <button className={activeView === 'category' ? 'active' : ''} onClick={() => setActiveView('category')}>By Category</button>
-          <div className="chart-filter" style={{ marginLeft: '10px', display: 'flex', gap: '4px' }}>
+        <div style={filterStyles.filterContainer}>
+          <button 
+            style={{
+              ...filterStyles.viewButton,
+              ...(activeView === 'port' ? filterStyles.activeViewButton : {})
+            }} 
+            onClick={() => setActiveView('port')}
+          >
+            By Port
+          </button>
+          <button 
+            style={{
+              ...filterStyles.viewButton,
+              ...(activeView === 'category' ? filterStyles.activeViewButton : {})
+            }} 
+            onClick={() => setActiveView('category')}
+          >
+            By Category
+          </button>
+          
+          <div style={{ marginLeft: '8px', display: 'flex', gap: '6px' }}>
             {['3m', '6m', '1y'].map(period => (
               <button
                 key={period}
-                className={`chart-action-btn ${timeFilter === period ? 'active' : ''}`}
+                style={{
+                  ...filterStyles.timeButton,
+                  ...(timeFilter === period ? filterStyles.activeTimeButton : {})
+                }}
                 onClick={() => setTimeFilter(period)}
               >
                 {period.toUpperCase()}

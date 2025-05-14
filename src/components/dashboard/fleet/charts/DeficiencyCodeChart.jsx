@@ -7,7 +7,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
   Cell
 } from 'recharts';
 import { FilterIcon, AlertTriangle } from 'lucide-react';
@@ -31,6 +30,47 @@ const DeficiencyCodeChart = ({ data = [] }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [maxRowCount, setMaxRowCount] = useState(0); // Changed from maxDeficiencyCount
+
+  // Custom styles for the filters
+  const filterStyles = {
+    filterContainer: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+    },
+    viewButton: {
+      backgroundColor: 'rgba(59, 173, 229, 0.15)',
+      color: '#f4f4f4',
+      border: '1px solid rgba(59, 173, 229, 0.2)',
+      padding: '4px 10px',
+      fontSize: '11px',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+    },
+    activeViewButton: {
+      backgroundColor: 'rgba(59, 173, 229, 0.7)',
+      color: 'white',
+      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+    },
+    timeButton: {
+      backgroundColor: 'rgba(59, 173, 229, 0.15)',
+      color: '#f4f4f4',
+      border: '1px solid rgba(59, 173, 229, 0.2)',
+      padding: '4px 7px',
+      fontSize: '11px',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      minWidth: '26px',
+      textAlign: 'center',
+    },
+    activeTimeButton: {
+      backgroundColor: 'rgba(59, 173, 229, 0.7)',
+      color: 'white',
+      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -215,18 +255,30 @@ const DeficiencyCodeChart = ({ data = [] }) => {
           <p className="tooltip-label">{label}</p>
           {activeView === 'port' && (
             <>
-              {/* totalRecordsInPort now represents the sum of row counts for the displayed codes */}
               <p className="tooltip-value">Total Records: {dataItem.totalRecordsInPort}</p>
               <p className="tooltip-value" style={{marginBottom: '5px'}}>Vessels: {dataItem.vesselCount}</p>
-              {payload.map(p => (
-                 <div key={p.dataKey} style={{ color: processedData.colorMap[p.dataKey] || p.fill }}>
-                   {p.dataKey === 'code30' ? 'Code 30 (Detention)' : `Code ${p.dataKey}`}: {p.value} {/* p.value is a row count */}
-                 </div>
-              ))}
+              <div className="tooltip-code-list">
+                {payload
+                  .sort((a, b) => b.value - a.value) // Sort by value (highest to lowest)
+                  .map(p => (
+                    <div key={p.dataKey} className="tooltip-code-item">
+                      <span style={{ 
+                        display: 'inline-block', 
+                        width: '10px', 
+                        height: '10px', 
+                        backgroundColor: processedData.colorMap[p.dataKey] || p.fill,
+                        marginRight: '5px',
+                        borderRadius: '2px'
+                      }}></span>
+                      {p.dataKey === 'code30' ? 'Code 30 (Detention)' : `Code ${p.dataKey}`}: {p.value}
+                    </div>
+                  ))
+                }
+              </div>
             </>
           )}
           {activeView === 'overall' && (
-            <p className="tooltip-value">Records: {dataItem.count}</p> // dataItem.count is a row count
+            <p className="tooltip-value">Records: {dataItem.count}</p>
           )}
         </div>
       );
@@ -277,16 +329,6 @@ const DeficiencyCodeChart = ({ data = [] }) => {
             allowDecimals={false} // Counts should be whole numbers
           />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(244, 244, 244, 0.05)' }} />
-          
-          {/* {type === 'port' && keys && (
-            <Legend
-                wrapperStyle={{ paddingTop: '10px', fontSize: '10px' }}
-                formatter={(value) => {
-                    const name = value === 'code30' ? 'Code 30 (Detention)' : `Code ${value}`;
-                    return <span style={{ color: '#f4f4f4' }}>{name}</span>;
-                }}
-            />
-          )} */}
 
           {type === 'port' && keys && keys.map((key, index) => (
             <Bar
@@ -298,7 +340,7 @@ const DeficiencyCodeChart = ({ data = [] }) => {
               barSize={16}
               radius={index === keys.length - 1 ? [6, 6, 0, 0] : [0,0,0,0]}
             >
-              {chartData.map((_entry, entryIndex) => ( // _entry not directly used for cell fill here
+              {chartData.map((_entry, entryIndex) => (
                  <Cell 
                     key={`cell-${key}-${entryIndex}`} 
                     className={hoveredBar === entryIndex ? 'hovered-bar' : ''} 
@@ -330,14 +372,34 @@ const DeficiencyCodeChart = ({ data = [] }) => {
           Deficiency Records {activeView === 'port' ? 'by Port' : 'Overall'}
           <span className="chart-title-highlight"></span>
         </h3>
-        <div className="chart-toggle">
-          <button className={activeView === 'port' ? 'active' : ''} onClick={() => setActiveView('port')}>By Port</button>
-          <button className={activeView === 'overall' ? 'active' : ''} onClick={() => setActiveView('overall')}>Overall</button>
-          <div className="chart-filter" style={{ marginLeft: '10px', display: 'flex', gap: '4px' }}>
+        <div style={filterStyles.filterContainer}>
+          <button 
+            style={{
+              ...filterStyles.viewButton,
+              ...(activeView === 'port' ? filterStyles.activeViewButton : {})
+            }} 
+            onClick={() => setActiveView('port')}
+          >
+            By Port
+          </button>
+          <button 
+            style={{
+              ...filterStyles.viewButton,
+              ...(activeView === 'overall' ? filterStyles.activeViewButton : {})
+            }} 
+            onClick={() => setActiveView('overall')}
+          >
+            Overall
+          </button>
+          
+          <div style={{ marginLeft: '6px', display: 'flex', gap: '4px' }}>
             {['3m', '6m', '1y'].map(period => (
               <button
                 key={period}
-                className={`chart-action-btn ${timeFilter === period ? 'active' : ''}`}
+                style={{
+                  ...filterStyles.timeButton,
+                  ...(timeFilter === period ? filterStyles.activeTimeButton : {})
+                }}
                 onClick={() => setTimeFilter(period)}
               >
                 {period.toUpperCase()}
