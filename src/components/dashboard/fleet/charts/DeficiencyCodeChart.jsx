@@ -21,6 +21,8 @@ const ACTION_CODE_COLORS = [
   '#8C564B', '#E377C2', '#7F7F7F', '#BCBD22', '#17BECF'
 ];
 const CODE_30_COLOR = '#D32F2F'; // A distinct, alarming color
+const NIL_DEFICIENCY_COLOR = '#7986CB'; // Distinct color for Nil Deficiency
+const CODE_17_COLOR = '#FFC107'; // Distinct color for Code 17
 
 const DeficiencyCodeChart = ({ data = [] }) => {
   const [activeView, setActiveView] = useState('port'); // 'port' or 'overall'
@@ -29,7 +31,7 @@ const DeficiencyCodeChart = ({ data = [] }) => {
   const [hoveredBar, setHoveredBar] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [maxRowCount, setMaxRowCount] = useState(0); // Changed from maxDeficiencyCount
+  const [maxRowCount, setMaxRowCount] = useState(0);
 
   // Custom styles for the filters
   const filterStyles = {
@@ -124,93 +126,148 @@ const DeficiencyCodeChart = ({ data = [] }) => {
                country.includes('aus') || country.includes('nz');
       });
 
-      let newMaxCount = 0; // This will now be max row count
+      let newMaxCount = 0;
       const newColorMap = {};
 
+      // Add more detailed logging to troubleshoot nil deficiency detection
+      console.log('Data sample for nil deficiency checking:');
+      const sampleItems = filteredByCountry.slice(0, 5);
+      sampleItems.forEach((item, index) => {
+        const actionCode = item.actioncode || item.reference_code_1;
+        console.log(`Sample item ${index}:`, {
+          actioncode: item.actioncode,
+          reference_code_1: item.reference_code_1,
+          actionCode: actionCode,
+          typeofActionCode: typeof actionCode,
+          valueCheck: {
+            isNull: actionCode === null,
+            isUndefined: actionCode === undefined,
+            isEmpty: actionCode === "",
+            isEmptyTrimmed: String(actionCode || "").trim() === "",
+            isNilString: String(actionCode || "").toLowerCase().trim() === "nil",
+            isNaN: isNaN(actionCode)
+          }
+        });
+      });
+      
       if (activeView === 'port') {
         const portCodeMap = new Map();
+        // Process all data, treating null/empty action codes as "Nil Deficiency"
         filteredByCountry.forEach(item => {
           if (!item) return;
           const portName = item.port_name || 'Unknown Port';
-          const actionCode = String(item.actioncode || item.reference_code_1 || 'N/A').trim();
-
-          if (actionCode === 'N/A') return; // Skip items with no identifiable action code
-
+          
           if (!portCodeMap.has(portName)) {
             portCodeMap.set(portName, {
               portName,
-              code30RowCount: 0,
+              code30: 0,
+              code17: 0,
+              nilDeficiency: 0,
               otherCodeRowCounts: {},
-              vesselSet: new Set() // For unique vessel names
+              totalDeficiencies: 0,
+              vesselSet: new Set(), // For unique vessel names (all vessels)
             });
           }
 
           const portData = portCodeMap.get(portName);
-
-          if (actionCode === '30') {
-            portData.code30RowCount += 1; // Increment row count
-          } else {
-            portData.otherCodeRowCounts[actionCode] = (portData.otherCodeRowCounts[actionCode] || 0) + 1; // Increment row count
-          }
-
-          if (item.vessel_name) { // Track unique vessels if name is present
+          
+          // Determine action code - check if it's null, undefined, or empty string
+          const actionCode = item.actioncode || item.reference_code_1;
+          
+          // Always count the vessel if it exists
+          if (item.vessel_name) {
             portData.vesselSet.add(item.vessel_name);
+          }
+          
+          // Check for nil deficiency (null, undefined, or empty action code)
+          if (!actionCode || actionCode.trim() === '') {
+            portData.nilDeficiency += 1;
+          } else {
+            // Not nil deficiency, process the code
+            const processedActionCode = String(actionCode).trim();
+            
+            if (processedActionCode === '30') {
+              portData.code30 += 1;
+              portData.totalDeficiencies += 1;
+            } else if (processedActionCode === '17') {
+              portData.code17 += 1;
+              portData.totalDeficiencies += 1;
+            } else {
+              portData.otherCodeRowCounts[processedActionCode] = (portData.otherCodeRowCounts[processedActionCode] || 0) + 1;
+              portData.totalDeficiencies += 1;
+            }
           }
         });
 
         let portArray = Array.from(portCodeMap.values()).map(port => {
-          const totalRecordsInPortForStack = Object.values(port.otherCodeRowCounts).reduce((sum, count) => sum + count, 0) + port.code30RowCount;
-          newMaxCount = Math.max(newMaxCount, totalRecordsInPortForStack);
+          const totalStacked = Object.values(port.otherCodeRowCounts).reduce((sum, count) => sum + count, 0) + 
+                              port.code30 + port.code17 + port.nilDeficiency;
+          
+          newMaxCount = Math.max(newMaxCount, totalStacked);
+          
           return {
             name: port.portName,
-            code30: port.code30RowCount, // Row count for Code 30
-            ...port.otherCodeRowCounts, // Spread other action code row counts
-            totalRecordsInPort: totalRecordsInPortForStack, // Total records for this port in the bar
+            code30: port.code30,
+            code17: port.code17,
+            nilDeficiency: port.nilDeficiency,
+            ...port.otherCodeRowCounts,
+            totalDeficiencies: port.totalDeficiencies,
+                          inspectionCount: port.vesselSet.size,
             vesselCount: port.vesselSet.size,
-            _stackedTotal: totalRecordsInPortForStack // Used for sorting and Y-axis
+            _stackedTotal: totalStacked // Used for sorting and Y-axis
           };
         });
         
-        portArray.sort((a, b) => (b.code30 - a.code30) || (b._stackedTotal - a._stackedTotal));
+        // Sort by code30 (detentions) first, then by total deficiencies
+        portArray.sort((a, b) => (b.code30 - a.code30) || (b.totalDeficiencies - a.totalDeficiencies));
         const topPorts = portArray.slice(0, 10);
 
         const codeKeysForStacking = new Set();
         topPorts.forEach(port => {
           Object.keys(port).forEach(key => {
-            if (!['name', 'code30', 'totalRecordsInPort', 'vesselCount', '_stackedTotal'].includes(key)) {
+            if (!['name', 'code30', 'code17', 'nilDeficiency', 'totalDeficiencies', 'inspectionCount', 'vesselCount', '_stackedTotal'].includes(key)) {
               codeKeysForStacking.add(key);
             }
           });
         });
         
+        // Special colors for key categories
         newColorMap['code30'] = CODE_30_COLOR;
+        newColorMap['code17'] = CODE_17_COLOR;
+        newColorMap['nilDeficiency'] = NIL_DEFICIENCY_COLOR;
+        
+        // Colors for other codes
         Array.from(codeKeysForStacking).forEach((key, index) => {
           newColorMap[key] = ACTION_CODE_COLORS[index % ACTION_CODE_COLORS.length];
         });
 
+        // Order keys for stacking: code30, code17, nilDeficiency, then others
+        const orderedKeys = ['code30', 'code17', 'nilDeficiency', ...Array.from(codeKeysForStacking)];
+
         setProcessedData({
           type: 'port',
           data: topPorts,
-          keys: ['code30', ...Array.from(codeKeysForStacking)],
+          keys: orderedKeys,
           colorMap: newColorMap
         });
 
       } else { // 'overall' view
         const codeMap = new Map();
-        filteredByCountry.forEach(item => { // Or use filteredByTime if country filter is removed
+        filteredByCountry.forEach(item => {
           if (!item) return;
-          const actionCode = String(item.actioncode || item.reference_code_1 || 'N/A').trim();
           
-          if (actionCode === 'N/A') return; // Skip items with no identifiable action code
-
-          codeMap.set(actionCode, (codeMap.get(actionCode) || 0) + 1); // Increment row count
+          // Handle action code, treating null/undefined as "Nil Deficiency"
+          const actionCode = item.actioncode || item.reference_code_1;
+          const processedActionCode = actionCode ? String(actionCode).trim() : 'nilDeficiency';
+          
+          codeMap.set(processedActionCode, (codeMap.get(processedActionCode) || 0) + 1);
         });
 
         let codeArray = Array.from(codeMap.entries()).map(([code, rowCount]) => {
           newMaxCount = Math.max(newMaxCount, rowCount);
           return {
-            name: `Code ${code}`,
-            count: rowCount, // This is a row count
+            name: code === 'nilDeficiency' ? 'Nil Deficiency' : `Code ${code}`,
+            count: rowCount,
             code: code
           };
         });
@@ -219,7 +276,15 @@ const DeficiencyCodeChart = ({ data = [] }) => {
         const topCodes = codeArray.slice(0, 10);
 
         topCodes.forEach((item, index) => {
-            newColorMap[item.name] = item.code === '30' ? CODE_30_COLOR : ACTION_CODE_COLORS[index % ACTION_CODE_COLORS.length];
+          if (item.code === '30') {
+            newColorMap[item.name] = CODE_30_COLOR;
+          } else if (item.code === '17') {
+            newColorMap[item.name] = CODE_17_COLOR;
+          } else if (item.code === 'nilDeficiency') {
+            newColorMap[item.name] = NIL_DEFICIENCY_COLOR;
+          } else {
+            newColorMap[item.name] = ACTION_CODE_COLORS[index % ACTION_CODE_COLORS.length];
+          }
         });
         
         setProcessedData({
@@ -229,6 +294,7 @@ const DeficiencyCodeChart = ({ data = [] }) => {
           colorMap: newColorMap
         });
       }
+      
       setMaxRowCount(newMaxCount);
 
     } catch (err) {
@@ -246,34 +312,65 @@ const DeficiencyCodeChart = ({ data = [] }) => {
     return [0, Math.ceil((maxRowCount * 1.1) / 5) * 5];
   }, [maxRowCount]);
 
+  // Sort tooltip items in specified order: Total deficiencies, No. of Inspection, detentions, code 17, Nil Deficiency, Other codes
+  const sortTooltipItems = (payload) => {
+    if (!payload || payload.length === 0) return [];
+    
+    // Create a map of tooltip items by dataKey for easy access
+    const tooltipMap = {};
+    payload.forEach(p => {
+      tooltipMap[p.dataKey] = p;
+    });
+    
+    // Group items
+    const detentions = tooltipMap['code30'];
+    const code17 = tooltipMap['code17'];
+    const nilDeficiency = tooltipMap['nilDeficiency'];
+    
+    // Find other codes
+    const otherCodes = payload.filter(p => 
+      p.dataKey !== 'code30' && p.dataKey !== 'code17' && p.dataKey !== 'nilDeficiency'
+    ).sort((a, b) => b.value - a.value); // Sort other codes by value
+    
+    // Combine in order
+    const result = [];
+    if (detentions) result.push(detentions);
+    if (code17) result.push(code17);
+    if (nilDeficiency) result.push(nilDeficiency);
+    result.push(...otherCodes);
+    
+    return result;
+  };
+
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       const dataItem = payload[0].payload;
+      const sortedPayload = sortTooltipItems(payload);
 
       return (
         <div className="custom-tooltip">
           <p className="tooltip-label">{label}</p>
           {activeView === 'port' && (
             <>
-              <p className="tooltip-value">Total Records: {dataItem.totalRecordsInPort}</p>
-              <p className="tooltip-value" style={{marginBottom: '5px'}}>Vessels: {dataItem.vesselCount}</p>
+              <p className="tooltip-value">Total Deficiencies: {dataItem.totalDeficiencies}</p>
+              <p className="tooltip-value" style={{marginBottom: '5px'}}>No. of Inspection: {dataItem.inspectionCount}</p>
               <div className="tooltip-code-list">
-                {payload
-                  .sort((a, b) => b.value - a.value) // Sort by value (highest to lowest)
-                  .map(p => (
-                    <div key={p.dataKey} className="tooltip-code-item">
-                      <span style={{ 
-                        display: 'inline-block', 
-                        width: '10px', 
-                        height: '10px', 
-                        backgroundColor: processedData.colorMap[p.dataKey] || p.fill,
-                        marginRight: '5px',
-                        borderRadius: '2px'
-                      }}></span>
-                      {p.dataKey === 'code30' ? 'Code 30 (Detention)' : `Code ${p.dataKey}`}: {p.value}
-                    </div>
-                  ))
-                }
+                {sortedPayload.map(p => (
+                  <div key={p.dataKey} className="tooltip-code-item">
+                    <span style={{ 
+                      display: 'inline-block', 
+                      width: '10px', 
+                      height: '10px', 
+                      backgroundColor: processedData.colorMap[p.dataKey] || p.fill,
+                      marginRight: '5px',
+                      borderRadius: '2px'
+                    }}></span>
+                    {p.dataKey === 'code30' ? 'Detentions' : 
+                     p.dataKey === 'code17' ? 'Code 17' :
+                     p.dataKey === 'nilDeficiency' ? 'Nil Deficiency' :
+                     `Code ${p.dataKey}`}: {p.value}
+                  </div>
+                ))}
               </div>
             </>
           )}
@@ -294,6 +391,12 @@ const DeficiencyCodeChart = ({ data = [] }) => {
     }
 
     const {type, data: chartData, keys, colorMap} = processedData;
+    
+    // Log nil deficiency data for debugging
+    if (chartData && chartData.length > 0) {
+      console.log('Chart data sample:', chartData[0]);
+      console.log('Nil deficiency count in first item:', chartData[0].nilDeficiency);
+    }
 
     return (
       <ResponsiveContainer width="100%" height="100%">
@@ -319,14 +422,13 @@ const DeficiencyCodeChart = ({ data = [] }) => {
             tick={{ fill: '#f4f4f4', fontSize: 11 }}
             axisLine={{ stroke: 'rgba(244, 244, 244, 0.1)' }}
             tickLine={false}
-            domain={getYAxisDomain} // Uses maxRowCount now
+            domain={getYAxisDomain}
             allowDataOverflow={false}
             label={{
-              // Y-axis label "Record Count" or "Deficiency Record Count" might be more precise
               value: 'Record Count', angle: -90, position: 'insideLeft',
               style: { fill: '#4DC3FF', fontSize: 12 }, offset: 10, dy: 40
             }}
-            allowDecimals={false} // Counts should be whole numbers
+            allowDecimals={false}
           />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(244, 244, 244, 0.05)' }} />
 
@@ -336,7 +438,12 @@ const DeficiencyCodeChart = ({ data = [] }) => {
               dataKey={key}
               stackId="a"
               fill={colorMap[key] || ACTION_CODE_COLORS[index % ACTION_CODE_COLORS.length]}
-              name={key === 'code30' ? 'Code 30 (Detention)' : `Code ${key}`}
+              name={
+                key === 'code30' ? 'Detentions' : 
+                key === 'code17' ? 'Code 17' :
+                key === 'nilDeficiency' ? 'Nil Deficiency' :
+                `Code ${key}`
+              }
               barSize={16}
               radius={index === keys.length - 1 ? [6, 6, 0, 0] : [0,0,0,0]}
             >

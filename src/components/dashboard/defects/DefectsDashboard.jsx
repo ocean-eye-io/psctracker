@@ -1,185 +1,204 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
-import { 
-  PieChart, 
-  BarChart, 
-  Pie, 
-  Cell, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Bar
-} from 'recharts'; 
-import TableRow from '../../common/Table/TableRow';
+// src/components/dashboard/defects/DefectsDashboard.jsx
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, Download, Filter, RefreshCw } from 'lucide-react';
 import '../DashboardStyles.css';
 import '../../common/Table/tableStyles.css';
-import { DEFECT_FIELDS, mapApiToDbFields } from './DefectFieldMappings';
-import Table from '../../common/Table/Table';
+import DefectTable from './DefectTable';
+import defectService from './services/defectService';
 
-const API_BASE_URL = 'https://msnvxmo3ezbbkd2pbmlsojhf440fxmpf.lambda-url.ap-south-1.on.aws'; // Replace with your API URL
-
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
-const STATUS_COLORS = {
-  'OPEN': '#FF8042',
-  'IN PROGRESS': '#FFBB28',
-  'CLOSED': '#00C49F'
-};
-const CRITICALITY_COLORS = {
-  'High': '#FF0000',
-  'Medium': '#FFBB28',
-  'Low': '#00C49F'
-};
-
+/**
+ * DefectsDashboard component for displaying and managing defects
+ */
 const DefectsDashboard = () => {
   const [defects, setDefects] = useState([]);
   const [filteredDefects, setFilteredDefects] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterCriticality, setFilterCriticality] = useState('all');
+  
+  // Current user mock (in a real app, this would come from auth context)
+  const currentUser = {
+    id: 123,
+    name: 'John Doe',
+    role: 'admin' // or 'user'
+  };
 
-  // Define columns based on field mappings
-  const columns = useMemo(() => {
-    return Object.values(DEFECT_FIELDS.TABLE)
-      .filter(field => !field.isAction) // Filter out action columns
-      .map(field => ({
-        id: field.id,
-        label: field.label,
-        dbField: field.dbField,
-        width: field.width
-      }));
-  }, []);
-
-  useEffect(() => {
-    fetchDefects();
-  }, []);
-
-  const fetchDefects = async () => {
+  // Fetch defects data from API
+  const fetchDefects = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await axios.get(`${API_BASE_URL}/api/defects`);
-      console.log('Raw API Response:', response.data);
+      const data = await defectService.getAllDefects();
+      console.log('Fetched defects:', data.length);
       
-      if (!response.data || !Array.isArray(response.data)) {
-        throw new Error('Invalid data format received from API');
-      }
-
-      // Log the first item to inspect its structure
-      if (response.data.length > 0) {
-        console.log('First item in response:', response.data[0]);
-      }
-
-      // Map API fields to DB fields
-      const mappedDefects = response.data.map(defect => {
-        // Create a new object with mapped fields
-        const mappedDefect = {};
-        
-        // Map each field from the API response to the corresponding DB field
-        Object.entries(DEFECT_FIELDS.TABLE).forEach(([key, fieldConfig]) => {
-          if (fieldConfig.dbField && defect[fieldConfig.dbField] !== undefined) {
-            mappedDefect[fieldConfig.dbField] = defect[fieldConfig.dbField];
-          }
-        });
-        
-        return mappedDefect;
-      });
-      
-      console.log('Mapped Defects:', mappedDefects);
-      
-      setDefects(mappedDefects);
-      setFilteredDefects(mappedDefects);
+      setDefects(data);
+      setFilteredDefects(data);
     } catch (error) {
       console.error('Error fetching defects:', error);
       setError('Failed to fetch data. Please check the API connection.');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleSearch = (e) => {
-    const query = e.target.value.toLowerCase();
-    setSearchQuery(query);
+  // Initial data fetch
+  useEffect(() => {
+    fetchDefects();
+  }, [fetchDefects]);
+
+  // Apply filters and search whenever the source data or filter criteria change
+  useEffect(() => {
+    if (!defects.length) return;
     
-    if (!query.trim()) {
-      setFilteredDefects(defects);
-      return;
+    let result = [...defects];
+    
+    // Apply status filter
+    if (filterStatus !== 'all') {
+      result = result.filter(defect => 
+        defect['Status (Vessel)']?.toLowerCase() === filterStatus.toLowerCase()
+      );
     }
     
-    const filtered = defects.filter(defect => 
-      Object.entries(defect).some(([key, value]) => 
-        value && String(value).toLowerCase().includes(query)
-      )
-    );
+    // Apply criticality filter
+    if (filterCriticality !== 'all') {
+      result = result.filter(defect => 
+        defect['Criticality']?.toLowerCase() === filterCriticality.toLowerCase()
+      );
+    }
     
-    setFilteredDefects(filtered);
+    // Apply search query
+    if (searchQuery.trim()) {
+      result = result.filter(defect => 
+        Object.values(defect).some(value => 
+          value && String(value).toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      );
+    }
+    
+    setFilteredDefects(result);
+  }, [defects, filterStatus, filterCriticality, searchQuery]);
+
+  // Handle search input changes
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value);
   };
 
-  // Process data for Status Distribution chart
-  const getStatusDistribution = useMemo(() => {
-    if (!defects.length) return [];
-    
-    const statusField = DEFECT_FIELDS.TABLE.status.dbField;
-    console.log('Status field:', statusField);
-    
-    // Count occurrences of each status
-    const statusCounts = defects.reduce((acc, defect) => {
-      const status = defect[statusField] || 'Unknown';
-      acc[status] = (acc[status] || 0) + 1;
-      return acc;
-    }, {});
-    
-    console.log('Status counts:', statusCounts);
-    
-    // Convert to array format for chart
-    return Object.entries(statusCounts).map(([name, value]) => ({ 
-      name, 
-      value 
-    }));
-  }, [defects]);
+  // Reset all filters
+  const resetFilters = () => {
+    setSearchQuery('');
+    setFilterStatus('all');
+    setFilterCriticality('all');
+  };
 
-  // Process data for Criticality Distribution chart
-  const getCriticalityDistribution = useMemo(() => {
-    if (!defects.length) return [];
+  // Export data to CSV
+  const handleExport = () => {
+    // Get visible columns
+    const visibleColumns = [
+      'id', 'vessel_name', 'Status (Vessel)', 'Criticality', 'Equipments', 
+      'Description', 'Action Planned', 'Date Reported', 'target_date'
+    ];
     
-    const criticalityField = DEFECT_FIELDS.TABLE.criticality.dbField;
-    console.log('Criticality field:', criticalityField);
+    // Create CSV header
+    const header = visibleColumns.join(',');
     
-    // Count occurrences of each criticality level
-    const criticalityCounts = defects.reduce((acc, defect) => {
-      const criticality = defect[criticalityField] || 'Unknown';
-      acc[criticality] = (acc[criticality] || 0) + 1;
-      return acc;
-    }, {});
+    // Create CSV rows
+    const rows = filteredDefects.map(defect => {
+      return visibleColumns.map(field => {
+        const value = defect[field];
+        // Handle null values and escape commas for CSV
+        return value !== null && value !== undefined 
+          ? `"${String(value).replace(/"/g, '""')}"` 
+          : '';
+      }).join(',');
+    });
     
-    console.log('Criticality counts:', criticalityCounts);
+    // Combine header and rows
+    const csv = [header, ...rows].join('\n');
     
-    // Convert to array format for chart
-    return Object.entries(criticalityCounts).map(([name, value]) => ({ 
-      name, 
-      value 
-    }));
-  }, [defects]);
+    // Create and download the file
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `defects_export_${new Date().toISOString().slice(0,10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
-  if (loading) {
+  // Handlers for table actions
+  const handleView = (defect) => {
+    console.log('View defect:', defect);
+    // Implement view logic here - e.g., open a modal or navigate to details page
+  };
+
+  const handleEdit = (defect) => {
+    console.log('Edit defect:', defect);
+    // Implement edit logic here
+  };
+
+  const handleDelete = async (defect) => {
+    if (window.confirm(`Are you sure you want to delete this defect?`)) {
+      try {
+        await defectService.deleteDefect(defect.id);
+        // Refresh the data
+        fetchDefects();
+      } catch (error) {
+        console.error('Error deleting defect:', error);
+        alert('Failed to delete defect. Please try again.');
+      }
+    }
+  };
+
+  const handleOpenInstructions = (defect) => {
+    console.log('Open instructions for defect:', defect);
+    // Implement instructions dialog here
+  };
+
+  // Calculate counts for the stats display
+  const totalDefects = defects.length;
+  const openDefects = defects.filter(d => d['Status (Vessel)']?.toLowerCase() === 'open').length;
+  const inProgressDefects = defects.filter(d => d['Status (Vessel)']?.toLowerCase() === 'in progress').length;
+  const closedDefects = defects.filter(d => d['Status (Vessel)']?.toLowerCase() === 'closed').length;
+  
+  // Calculate overdue defects
+  const overdueDefects = defects.filter(defect => {
+    if (defect['Status (Vessel)']?.toLowerCase() === 'closed') return false;
+    
+    const targetDate = defect.target_date ? new Date(defect.target_date) : null;
+    if (!targetDate) return false;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    targetDate.setHours(0, 0, 0, 0);
+    
+    return targetDate < today;
+  }).length;
+
+  // Loading state
+  if (loading && defects.length === 0) {
     return (
       <div className="dashboard-container loading">
-        <div className="loading-spinner">Loading...</div>
+        <div className="loading-spinner">Loading defects data...</div>
       </div>
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className="dashboard-container error">
         <div className="error-message">
           <h2>Error</h2>
           <p>{error}</p>
-          <button onClick={fetchDefects}>Retry</button>
+          <button onClick={fetchDefects} className="retry-button">
+            <RefreshCw size={16} className="mr-2" />
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -187,12 +206,14 @@ const DefectsDashboard = () => {
 
   return (
     <div className="dashboard-container">
+      {/* Dashboard Header */}
       <header className="dashboard-header">
         <div className="dashboard-title">
           <h1>FleetWatch Dashboard</h1>
         </div>
         <div className="dashboard-controls">
           <div className="search-container">
+            <Search size={16} className="search-icon" />
             <input
               type="text"
               className="search-input"
@@ -201,99 +222,103 @@ const DefectsDashboard = () => {
               onChange={handleSearch}
             />
           </div>
-          <button className="control-btn export-btn">Export</button>
+          
+          <div className="filter-container">
+            <select 
+              className="filter-select"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="all">All Statuses</option>
+              <option value="open">Open</option>
+              <option value="in progress">In Progress</option>
+              <option value="closed">Closed</option>
+            </select>
+            
+            <select 
+              className="filter-select"
+              value={filterCriticality}
+              onChange={(e) => setFilterCriticality(e.target.value)}
+            >
+              <option value="all">All Criticality</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+            
+            <button 
+              className="reset-button"
+              onClick={resetFilters}
+              title="Reset all filters"
+            >
+              Reset
+            </button>
+          </div>
+          
+          <button 
+            className="control-btn export-btn"
+            onClick={handleExport}
+            disabled={filteredDefects.length === 0}
+          >
+            <Download size={16} className="mr-1" />
+            Export
+          </button>
         </div>
       </header>
 
-      <div className="dashboard-charts">
-        {/* Status Distribution Chart */}
-        <div className="dashboard-card">
-          <div className="dashboard-card-body">
-            <h3>Status Distribution</h3>
-            {getStatusDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={getStatusDistribution}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    nameKey="name"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {getStatusDistribution.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={STATUS_COLORS[entry.name] || COLORS[index % COLORS.length]} 
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => [`${value} defects`, 'Count']} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="no-data">No data available</div>
-            )}
-          </div>
+      {/* Stats Container - commented out but the values are calculated */}
+      {/* 
+      <div className="stats-container">
+        <div className="stat-card">
+          <div className="stat-card-title">Total Defects</div>
+          <div className="stat-card-value">{totalDefects}</div>
         </div>
-
-        {/* Criticality Distribution Chart */}
-        <div className="dashboard-card">
-          <div className="dashboard-card-body">
-            <h3>Criticality Distribution</h3>
-            {getCriticalityDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart
-                  data={getCriticalityDistribution}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => [`${value} defects`, 'Count']} />
-                  <Legend />
-                  <Bar dataKey="value" name="Count">
-                    {getCriticalityDistribution.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={CRITICALITY_COLORS[entry.name] || COLORS[index % COLORS.length]} 
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="no-data">No data available</div>
-            )}
-          </div>
+        <div className="stat-card">
+          <div className="stat-card-title">Open</div>
+          <div className="stat-card-value status-open">{openDefects}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card-title">In Progress</div>
+          <div className="stat-card-value status-progress">{inProgressDefects}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card-title">Closed</div>
+          <div className="stat-card-value status-closed">{closedDefects}</div>
+        </div>
+        <div className="stat-card overdue-card">
+          <div className="stat-card-title">Overdue</div>
+          <div className="stat-card-value overdue-value">{overdueDefects}</div>
         </div>
       </div>
+      */}
 
-      {/* Defects Table */}
-      <div className="vessel-table-wrapper">
-        <Table
-          data={filteredDefects}
-          columns={columns.map(column => ({
-            field: column.dbField,
-            label: column.label,
-            width: column.width || '150px',
-            minWidth: column.minWidth || '80px',
-            maxWidth: column.maxWidth || column.width || '150px',
-            sortable: true
-          }))}
-          expandedContent={(defect) => (
-            <div className="expanded-grid">
-              {/* Your expanded content */}
-            </div>
-          )}
-          uniqueIdField="id" // Make sure this matches the actual unique ID field in your defect data
-          defaultSortKey={columns[0]?.dbField}
-          emptyMessage="No defects found"
-          className="vessel-table-container"
+      {/* Defects Table Section */}
+      <div className="data-table-wrapper defect-table-section">
+        <div className="table-header">
+          <h3>Equipment Defects</h3>
+          <div className="table-controls">
+            <span className="defect-count">
+              {filteredDefects.length} {filteredDefects.length === 1 ? 'defect' : 'defects'} found
+            </span>
+            
+            <button 
+              className="refresh-btn" 
+              onClick={fetchDefects}
+              title="Refresh data"
+            >
+              <RefreshCw size={16} />
+            </button>
+          </div>
+        </div>
+        
+        <DefectTable
+          defects={filteredDefects}
+          onView={handleView}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onOpenInstructions={handleOpenInstructions}
+          currentUser={currentUser}
+          loading={loading}
         />
       </div>
     </div>
