@@ -1,28 +1,35 @@
 // src/components/dashboard/defects/DefectsDashboard.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Download, Filter, RefreshCw } from 'lucide-react';
+import { Search, Filter, Download, RefreshCw, Plus, Upload } from 'lucide-react';
 import '../DashboardStyles.css';
-import '../../common/Table/tableStyles.css';
 import DefectTable from './DefectTable';
 import defectService from './services/defectService';
+import ActiveFiltersDisplay from '../fleet/ActiveFiltersDisplay'; // Reuse this component
 
-/**
- * DefectsDashboard component for displaying and managing defects
- */
 const DefectsDashboard = () => {
+  // State variables
   const [defects, setDefects] = useState([]);
   const [filteredDefects, setFilteredDefects] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterCriticality, setFilterCriticality] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Filter state variables
+  const [statusFilters, setStatusFilters] = useState([]);
+  const [criticalityFilters, setCriticalityFilters] = useState([]);
+  const [sourceFilters, setSourceFilters] = useState([]);
+  
+  // Dropdown visibility state
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showCriticalityDropdown, setShowCriticalityDropdown] = useState(false);
+  const [showSourceDropdown, setShowSourceDropdown] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   
   // Current user mock (in a real app, this would come from auth context)
   const currentUser = {
     id: 123,
     name: 'John Doe',
-    role: 'admin' // or 'user'
+    role: 'admin'
   };
 
   // Fetch defects data from API
@@ -36,6 +43,16 @@ const DefectsDashboard = () => {
       
       setDefects(data);
       setFilteredDefects(data);
+      
+      // Initialize filters with all available options
+      const uniqueStatuses = [...new Set(data.map(d => d['Status (Vessel)']).filter(Boolean))];
+      const uniqueCriticalities = [...new Set(data.map(d => d.Criticality).filter(Boolean))];
+      const uniqueSources = [...new Set(data.map(d => d.Source).filter(Boolean))];
+      
+      setStatusFilters(uniqueStatuses);
+      setCriticalityFilters(uniqueCriticalities);
+      setSourceFilters(uniqueSources);
+      
     } catch (error) {
       console.error('Error fetching defects:', error);
       setError('Failed to fetch data. Please check the API connection.');
@@ -49,103 +66,142 @@ const DefectsDashboard = () => {
     fetchDefects();
   }, [fetchDefects]);
 
-  // Apply filters and search whenever the source data or filter criteria change
+  // Apply filters and search
   useEffect(() => {
     if (!defects.length) return;
     
-    let result = [...defects];
+    let results = [...defects];
     
-    // Apply status filter
-    if (filterStatus !== 'all') {
-      result = result.filter(defect => 
-        defect['Status (Vessel)']?.toLowerCase() === filterStatus.toLowerCase()
+    // Apply status filters if any selected
+    if (statusFilters.length > 0) {
+      results = results.filter(defect => 
+        !defect['Status (Vessel)'] || statusFilters.includes(defect['Status (Vessel)'])
       );
     }
     
-    // Apply criticality filter
-    if (filterCriticality !== 'all') {
-      result = result.filter(defect => 
-        defect['Criticality']?.toLowerCase() === filterCriticality.toLowerCase()
+    // Apply criticality filters if any selected
+    if (criticalityFilters.length > 0) {
+      results = results.filter(defect => 
+        !defect.Criticality || criticalityFilters.includes(defect.Criticality)
       );
     }
     
-    // Apply search query
-    if (searchQuery.trim()) {
-      result = result.filter(defect => 
+    // Apply source filters if any selected
+    if (sourceFilters.length > 0) {
+      results = results.filter(defect => 
+        !defect.Source || sourceFilters.includes(defect.Source)
+      );
+    }
+    
+    // Apply search term if not empty
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      results = results.filter(defect => 
         Object.values(defect).some(value => 
-          value && String(value).toLowerCase().includes(searchQuery.toLowerCase())
+          value && String(value).toLowerCase().includes(term)
         )
       );
     }
     
-    setFilteredDefects(result);
-  }, [defects, filterStatus, filterCriticality, searchQuery]);
-
-  // Handle search input changes
-  const handleSearch = (e) => {
-    setSearchQuery(e.target.value);
-  };
+    setFilteredDefects(results);
+  }, [defects, searchTerm, statusFilters, criticalityFilters, sourceFilters]);
 
   // Reset all filters
-  const resetFilters = () => {
-    setSearchQuery('');
-    setFilterStatus('all');
-    setFilterCriticality('all');
+  const resetFilters = useCallback(() => {
+    setSearchTerm('');
+    
+    // Reset filters to include all options
+    const uniqueStatuses = [...new Set(defects.map(d => d['Status (Vessel)']).filter(Boolean))];
+    const uniqueCriticalities = [...new Set(defects.map(d => d.Criticality).filter(Boolean))];
+    const uniqueSources = [...new Set(defects.map(d => d.Source).filter(Boolean))];
+    
+    setStatusFilters(uniqueStatuses);
+    setCriticalityFilters(uniqueCriticalities);
+    setSourceFilters(uniqueSources);
+  }, [defects]);
+
+  // Toggle all items in a filter group
+  const toggleAllItems = (type) => {
+    // Get all unique values from all defects
+    const uniqueStatuses = [...new Set(defects.map(d => d['Status (Vessel)']).filter(Boolean))];
+    const uniqueCriticalities = [...new Set(defects.map(d => d.Criticality).filter(Boolean))];
+    const uniqueSources = [...new Set(defects.map(d => d.Source).filter(Boolean))];
+    
+    switch(type) {
+      case 'statuses':
+        setStatusFilters(statusFilters.length === uniqueStatuses.length ? [] : uniqueStatuses);
+        break;
+      case 'criticalities':
+        setCriticalityFilters(criticalityFilters.length === uniqueCriticalities.length ? [] : uniqueCriticalities);
+        break;
+      case 'sources':
+        setSourceFilters(sourceFilters.length === uniqueSources.length ? [] : uniqueSources);
+        break;
+      default:
+        break;
+    }
   };
 
-  // Export data to CSV
+  // Toggle a specific filter item
+  const toggleFilterItem = (type, item) => {
+    switch(type) {
+      case 'statuses':
+        setStatusFilters(prevFilters => 
+          prevFilters.includes(item) 
+            ? prevFilters.filter(i => i !== item)
+            : [...prevFilters, item]
+        );
+        break;
+      case 'criticalities':
+        setCriticalityFilters(prevFilters => 
+          prevFilters.includes(item) 
+            ? prevFilters.filter(i => i !== item)
+            : [...prevFilters, item]
+        );
+        break;
+      case 'sources':
+        setSourceFilters(prevFilters => 
+          prevFilters.includes(item) 
+            ? prevFilters.filter(i => i !== item)
+            : [...prevFilters, item]
+        );
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Export data to Excel
   const handleExport = () => {
-    // Get visible columns
-    const visibleColumns = [
-      'id', 'vessel_name', 'Status (Vessel)', 'Criticality', 'Equipments', 
-      'Description', 'Action Planned', 'Date Reported', 'target_date'
-    ];
-    
-    // Create CSV header
-    const header = visibleColumns.join(',');
-    
-    // Create CSV rows
-    const rows = filteredDefects.map(defect => {
-      return visibleColumns.map(field => {
-        const value = defect[field];
-        // Handle null values and escape commas for CSV
-        return value !== null && value !== undefined 
-          ? `"${String(value).replace(/"/g, '""')}"` 
-          : '';
-      }).join(',');
-    });
-    
-    // Combine header and rows
-    const csv = [header, ...rows].join('\n');
-    
-    // Create and download the file
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `defects_export_${new Date().toISOString().slice(0,10)}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    console.log('Exporting data to Excel...');
+    // Implement export logic here
   };
 
-  // Handlers for table actions
+  // Import data from VIR Excel
+  const handleImport = () => {
+    console.log('Importing data from VIR Excel...');
+    // Implement import logic here
+  };
+
+  // Add new defect
+  const handleAddDefect = () => {
+    console.log('Adding new defect...');
+    // Implement add defect logic here
+  };
+
+  // Table action handlers
   const handleView = (defect) => {
     console.log('View defect:', defect);
-    // Implement view logic here - e.g., open a modal or navigate to details page
   };
 
   const handleEdit = (defect) => {
     console.log('Edit defect:', defect);
-    // Implement edit logic here
   };
 
   const handleDelete = async (defect) => {
     if (window.confirm(`Are you sure you want to delete this defect?`)) {
       try {
         await defectService.deleteDefect(defect.id);
-        // Refresh the data
         fetchDefects();
       } catch (error) {
         console.error('Error deleting defect:', error);
@@ -154,171 +210,279 @@ const DefectsDashboard = () => {
     }
   };
 
-  const handleOpenInstructions = (defect) => {
-    console.log('Open instructions for defect:', defect);
-    // Implement instructions dialog here
+  // Close all dropdowns when clicking elsewhere
+  const closeAllDropdowns = () => {
+    setShowStatusDropdown(false);
+    setShowCriticalityDropdown(false);
+    setShowSourceDropdown(false);
+    setShowSearch(false);
   };
 
-  // Calculate counts for the stats display
-  const totalDefects = defects.length;
-  const openDefects = defects.filter(d => d['Status (Vessel)']?.toLowerCase() === 'open').length;
-  const inProgressDefects = defects.filter(d => d['Status (Vessel)']?.toLowerCase() === 'in progress').length;
-  const closedDefects = defects.filter(d => d['Status (Vessel)']?.toLowerCase() === 'closed').length;
+  // Get unique values for filter options
+  const uniqueStatuses = React.useMemo(() => 
+    [...new Set(defects.map(d => d['Status (Vessel)']).filter(Boolean))], 
+    [defects]
+  );
   
-  // Calculate overdue defects
-  const overdueDefects = defects.filter(defect => {
-    if (defect['Status (Vessel)']?.toLowerCase() === 'closed') return false;
-    
-    const targetDate = defect.target_date ? new Date(defect.target_date) : null;
-    if (!targetDate) return false;
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    targetDate.setHours(0, 0, 0, 0);
-    
-    return targetDate < today;
-  }).length;
+  const uniqueCriticalities = React.useMemo(() => 
+    [...new Set(defects.map(d => d.Criticality).filter(Boolean))], 
+    [defects]
+  );
+  
+  const uniqueSources = React.useMemo(() => 
+    [...new Set(defects.map(d => d.Source).filter(Boolean))], 
+    [defects]
+  );
 
-  // Loading state
-  if (loading && defects.length === 0) {
-    return (
-      <div className="dashboard-container loading">
-        <div className="loading-spinner">Loading defects data...</div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="dashboard-container error">
-        <div className="error-message">
-          <h2>Error</h2>
-          <p>{error}</p>
-          <button onClick={fetchDefects} className="retry-button">
-            <RefreshCw size={16} className="mr-2" />
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const defectCount = defects.length;
+  const filteredCount = filteredDefects.length;
 
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-container" onClick={closeAllDropdowns}>
       {/* Dashboard Header */}
-      <header className="dashboard-header">
-        <div className="dashboard-title">
-          <h1>FleetWatch Dashboard</h1>
-        </div>
-        <div className="dashboard-controls">
+      {/* <div className="dashboard-header">
+        <h1 className="dashboard-title">FleetWatch Dashboard</h1>
+      </div> */}
+      
+      {/* Filter Bar - Matching the Fleet Dashboard style */}
+      <div className="filter-bar">
+        <div className="filter-section-left">
           <div className="search-container">
-            <Search size={16} className="search-icon" />
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search defects..."
-              value={searchQuery}
-              onChange={handleSearch}
-            />
-          </div>
-          
-          <div className="filter-container">
-            <select 
-              className="filter-select"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
-              <option value="all">All Statuses</option>
-              <option value="open">Open</option>
-              <option value="in progress">In Progress</option>
-              <option value="closed">Closed</option>
-            </select>
-            
-            <select 
-              className="filter-select"
-              value={filterCriticality}
-              onChange={(e) => setFilterCriticality(e.target.value)}
-            >
-              <option value="all">All Criticality</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-            
             <button 
-              className="reset-button"
-              onClick={resetFilters}
-              title="Reset all filters"
+              className="search-toggle" 
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowSearch(!showSearch);
+              }}
             >
-              Reset
+              <Search size={14} />
             </button>
-          </div>
-          
-          <button 
-            className="control-btn export-btn"
-            onClick={handleExport}
-            disabled={filteredDefects.length === 0}
-          >
-            <Download size={16} className="mr-1" />
-            Export
-          </button>
-        </div>
-      </header>
-
-      {/* Stats Container - commented out but the values are calculated */}
-      {/* 
-      <div className="stats-container">
-        <div className="stat-card">
-          <div className="stat-card-title">Total Defects</div>
-          <div className="stat-card-value">{totalDefects}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-card-title">Open</div>
-          <div className="stat-card-value status-open">{openDefects}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-card-title">In Progress</div>
-          <div className="stat-card-value status-progress">{inProgressDefects}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-card-title">Closed</div>
-          <div className="stat-card-value status-closed">{closedDefects}</div>
-        </div>
-        <div className="stat-card overdue-card">
-          <div className="stat-card-title">Overdue</div>
-          <div className="stat-card-value overdue-value">{overdueDefects}</div>
-        </div>
-      </div>
-      */}
-
-      {/* Defects Table Section */}
-      <div className="data-table-wrapper defect-table-section">
-        <div className="table-header">
-          <h3>Equipment Defects</h3>
-          <div className="table-controls">
-            <span className="defect-count">
-              {filteredDefects.length} {filteredDefects.length === 1 ? 'defect' : 'defects'} found
-            </span>
             
-            <button 
-              className="refresh-btn" 
-              onClick={fetchDefects}
-              title="Refresh data"
-            >
-              <RefreshCw size={16} />
-            </button>
+            {showSearch && (
+              <div className="search-popup" onClick={(e) => e.stopPropagation()}>
+                <input 
+                  type="text" 
+                  placeholder="Search defects..." 
+                  className="search-input"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            )}
           </div>
         </div>
         
+        <div className="filter-label">
+          <Filter size={14} />
+        </div>
+        
+        <div className="filter-chips">
+          {/* Status Filter Dropdown */}
+          <div className="filter-dropdown-container" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className={`filter-dropdown-button ${showStatusDropdown ? 'active' : ''}`}
+              onClick={() => {
+                setShowStatusDropdown(!showStatusDropdown);
+                setShowCriticalityDropdown(false);
+                setShowSourceDropdown(false);
+              }}
+            >
+              All Statuses
+              <span className="filter-count">{statusFilters.length}/{uniqueStatuses.length}</span>
+            </button>
+            
+            {showStatusDropdown && (
+              <div className="filter-dropdown-content">
+                <div className="filter-dropdown-header">
+                  <h4>Filter by Status</h4>
+                  <button className="select-all-btn" onClick={() => toggleAllItems('statuses')}>
+                    {statusFilters.length === uniqueStatuses.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+                <div className="filter-dropdown-items">
+                  {uniqueStatuses.map(status => (
+                    <div key={status} className="filter-checkbox-item">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={statusFilters.includes(status)}
+                          onChange={() => toggleFilterItem('statuses', status)}
+                        />
+                        <span>{status}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <div className="filter-dropdown-footer">
+                  <button 
+                    className="apply-btn"
+                    onClick={() => setShowStatusDropdown(false)}
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Criticality Filter Dropdown */}
+          <div className="filter-dropdown-container" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className={`filter-dropdown-button ${showCriticalityDropdown ? 'active' : ''}`}
+              onClick={() => {
+                setShowCriticalityDropdown(!showCriticalityDropdown);
+                setShowStatusDropdown(false);
+                setShowSourceDropdown(false);
+              }}
+            >
+              All Criticality
+              <span className="filter-count">{criticalityFilters.length}/{uniqueCriticalities.length}</span>
+            </button>
+            
+            {showCriticalityDropdown && (
+              <div className="filter-dropdown-content">
+                <div className="filter-dropdown-header">
+                  <h4>Filter by Criticality</h4>
+                  <button className="select-all-btn" onClick={() => toggleAllItems('criticalities')}>
+                    {criticalityFilters.length === uniqueCriticalities.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+                <div className="filter-dropdown-items">
+                  {uniqueCriticalities.map(criticality => (
+                    <div key={criticality} className="filter-checkbox-item">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={criticalityFilters.includes(criticality)}
+                          onChange={() => toggleFilterItem('criticalities', criticality)}
+                        />
+                        <span>{criticality}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <div className="filter-dropdown-footer">
+                  <button 
+                    className="apply-btn"
+                    onClick={() => setShowCriticalityDropdown(false)}
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Source Filter Dropdown */}
+          <div className="filter-dropdown-container" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className={`filter-dropdown-button ${showSourceDropdown ? 'active' : ''}`}
+              onClick={() => {
+                setShowSourceDropdown(!showSourceDropdown);
+                setShowStatusDropdown(false);
+                setShowCriticalityDropdown(false);
+              }}
+            >
+              All Sources
+              <span className="filter-count">{sourceFilters.length}/{uniqueSources.length}</span>
+            </button>
+            
+            {showSourceDropdown && (
+              <div className="filter-dropdown-content">
+                <div className="filter-dropdown-header">
+                  <h4>Filter by Source</h4>
+                  <button className="select-all-btn" onClick={() => toggleAllItems('sources')}>
+                    {sourceFilters.length === uniqueSources.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+                <div className="filter-dropdown-items">
+                  {uniqueSources.map(source => (
+                    <div key={source} className="filter-checkbox-item">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={sourceFilters.includes(source)}
+                          onChange={() => toggleFilterItem('sources', source)}
+                        />
+                        <span>{source}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <div className="filter-dropdown-footer">
+                  <button 
+                    className="apply-btn"
+                    onClick={() => setShowSourceDropdown(false)}
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Reset Button */}
+          <button className="reset-button" onClick={resetFilters}>
+            Reset
+          </button>
+        </div>
+        
+        <div className="filter-section-right">
+          <button className="control-btn refresh-btn" onClick={fetchDefects} title="Refresh data">
+            <RefreshCw size={14} className={loading ? "spinning" : ""} />
+          </button>
+          
+          {/* <button className="control-btn export-btn" title="Export data" onClick={handleExport}>
+            <Download size={14} />
+            <span>Export</span>
+          </button> */}
+        </div>
+      </div>
+      
+      {/* Equipment Defects Section */}
+      <div className="content-area" style={{
+        height: 'calc(100vh - 00px)', // Adjust 200px based on your header/filter heights
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        {/* <div className="section-header">
+          <h2>Equipment Defects</h2>
+          <div className="defect-count">
+            {filteredCount} {filteredCount === 1 ? 'defect' : 'defects'} found
+          </div>
+        </div> */}
+        
+        {/* Action Buttons */}
+        {/* <div className="action-buttons" style={{ 
+          display: 'flex', 
+          justifyContent: 'flex-end', 
+          marginBottom: '16px',
+          padding: '0 0px'
+        }}>
+          <button className="action-button" onClick={handleExport}>
+            <Download size={16} />
+            Export Excel
+          </button>
+          <button className="action-button" onClick={handleImport}>
+            <Upload size={16} />
+            Import VIR Excel
+          </button>
+          <button className="action-button primary" onClick={handleAddDefect}>
+            <Plus size={16} />
+            Add Defect
+          </button>
+        </div> */}
+        
+        {/* Defect Table */}
         <DefectTable
           defects={filteredDefects}
           onView={handleView}
           onEdit={handleEdit}
           onDelete={handleDelete}
-          onOpenInstructions={handleOpenInstructions}
           currentUser={currentUser}
           loading={loading}
+          removeFilterBar={true} // Important! This tells DefectTable not to render its own filter bar
         />
       </div>
     </div>

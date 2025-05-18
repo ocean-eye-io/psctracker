@@ -274,7 +274,8 @@
   min-height: calc(100vh - var(--header-height));
   background-color: var(--primary-dark);
   color: var(--text-light);
-  padding-bottom: 40px;
+  padding-bottom: 5px;
+  padding-top: 5px;
 }
 
 /* Streamlined Header */
@@ -1131,6 +1132,7 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .notification-button {
@@ -1165,13 +1167,18 @@
 
 .action-button {
   display: flex;
-  align-items: center;
+  flex-direction: row; /* explicitly set row */
+  justify-content: flex-start; /* align left */
+  align-items: center; /* vertical center */
   gap: 8px;
-  height: 36px;
+  flex-wrap: nowrap; /* prevent wrapping */
+  margin-top: 0; /* reset margin if needed */
+  height: 28px;
   border-radius: 6px;
   padding: 0 12px;
-  font-size: 14px;
-  background-color: rgba(15, 23, 42, 0.5);
+  font-size: 12px;
+  /* background-color: rgba(15, 23, 42, 0.5); */
+  background-color: #3BADE5B3;
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: white;
   cursor: pointer;
