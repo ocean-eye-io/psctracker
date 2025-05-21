@@ -10,47 +10,47 @@
   --card-dark: #0c1a29;
   --bg-gradient-1: linear-gradient(145deg, #0a1725, #112032);
   --bg-gradient-2: linear-gradient(to bottom, #0a1725, #0e1e2f);
-  
+
   /* Accent colors - slightly brightened */
   --primary-accent: #4DC3FF;
   --primary-accent-dark: #2BA5E0;
   --primary-accent-light: rgba(77, 195, 255, 0.2);
   --primary-accent-glow: rgba(77, 195, 255, 0.4);
-  
+
   /* Status colors - slightly brightened */
   --success-color: #2EE086;
   --warning-color: #FFD426;
   --danger-color: #FF5252;
   --info-color: #42A5F5;
-  
+
   /* Text colors */
   --text-light: #ffffff;
   --text-muted: rgba(255, 255, 255, 0.7);
   --text-subtle: rgba(255, 255, 255, 0.5);
-  
+
   /* Border colors */
   --border-subtle: rgba(255, 255, 255, 0.07);
   --border-accent: rgba(77, 195, 255, 0.3);
-  
+
   /* Shadow effects */
   --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.16);
   --shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.2);
   --shadow-highlight: 0 0 10px rgba(77, 195, 255, 0.3);
   --shadow-inner: inset 0 1px 3px rgba(0, 0, 0, 0.2);
-  
+
   /* Transitions */
   --transition-fast: all 0.15s ease;
   --transition-normal: all 0.25s ease;
-  
+
   /* Dimensions */
   --header-height: 48px;
   --border-radius-sm: 4px;
   --border-radius-md: 6px;
   --border-radius-lg: 8px;
-  
+
   /* Chart dimensions - Updated */
-  /* --chart-height: 220px; */
+  /* --chart-height: 220px; */ /* Removed or commented out */
 }
 
 /* ===== ANIMATIONS ===== */
@@ -120,7 +120,7 @@
   flex-wrap: wrap;
   flex-shrink: 0;
   height: 42px;
-  
+
 }
 .user-info {
   display: flex;
@@ -146,9 +146,9 @@
   left: 0;
   width: 100%;
   height: 1px;
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(77, 195, 255, 0.15), 
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(77, 195, 255, 0.15),
     transparent
   );
 }
@@ -553,7 +553,7 @@
   left: 12px;
   right: 12px;
   height: 1px;
-  background: linear-gradient(90deg, 
+  background: linear-gradient(90deg,
     transparent,
     var(--border-subtle),
     transparent
@@ -735,48 +735,10 @@
   flex-shrink: 0;
 }
 
-.dashboard-card {
-  background: var(--bg-gradient-1);
-  border-radius: var(--border-radius-md);
-  overflow: hidden;
-  box-shadow: var(--shadow-md);
-  position: relative;
-  border: 1px solid var(--border-subtle);
-  transition: var(--transition-normal);
-  height: var(--chart-height);
-}
-
-.dashboard-card:hover {
-  transform: translateY(-1px) scale(1.005);
-  box-shadow: var(--shadow-lg), 0 0 15px rgba(77, 195, 255, 0.1);
-  border-color: var(--border-accent);
-}
-
-.dashboard-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, 
-    transparent,
-    var(--primary-accent),
-    transparent
-  );
-  opacity: 0.6;
-  box-shadow: var(--shadow-highlight);
-  z-index: 2;
-}
-
-.dashboard-card-body {
-  padding: 8px;
-  min-height: 150px !important;
-  height: var(--chart-height) !important;
-  max-height: var(--chart-height) !important;
-  display: flex;
-  flex-direction: column;
-}
+/* Removed duplicate .dashboard-card styles */
+/* Removed duplicate .dashboard-card:hover styles */
+/* Removed duplicate .dashboard-card::before styles */
+/* Removed duplicate .dashboard-card-body styles */
 
 .chart-loading {
   display: flex;
@@ -1007,7 +969,7 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, 
+  background: linear-gradient(90deg,
     rgba(77, 195, 255, 0.1),
     rgba(77, 195, 255, 0.3),
     rgba(77, 195, 255, 0.1)
@@ -1292,7 +1254,7 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, 
+  background: linear-gradient(90deg,
     rgba(77, 195, 255, 0),
     rgba(77, 195, 255, 0.2),
     rgba(77, 195, 255, 0)
@@ -1529,7 +1491,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, 
+  background: linear-gradient(90deg,
     transparent,
     var(--primary-accent),
     transparent
@@ -1555,7 +1517,7 @@
   left: 10%;
   right: 10%;
   height: 1px;
-  background: linear-gradient(90deg, 
+  background: linear-gradient(90deg,
     transparent,
     rgba(77, 195, 255, 0.3),
     transparent
@@ -1670,7 +1632,7 @@
   left: 10%;
   right: 10%;
   height: 1px;
-  background: linear-gradient(90deg, 
+  background: linear-gradient(90deg,
     transparent,
     rgba(77, 195, 255, 0.2),
     transparent
@@ -1739,7 +1701,7 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, 
+  background: linear-gradient(90deg,
     transparent,
     rgba(77, 195, 255, 0.1),
     transparent
@@ -1834,20 +1796,15 @@
   gap: 8px !important;
 }
 
-.force-compact .chart-card,
-.force-compact .dashboard-card {
-  height: 120px !important;
-  min-height: 120px !important;
-  max-height: 120px !important;
-}
+
 
 .force-compact .chart-wrapper {
   height: calc(100% - 32px) !important;
 }
 
 .force-compact .dashboard-card-body {
-  min-height: 150px !important;
-  max-height: 180px !important;
+  /* min-height: 150px !important; */ /* Removed or commented out */
+  /* max-height: 180px !important; */ /* Removed or commented out */
   padding: 6px !important;
 }
 
@@ -1870,24 +1827,24 @@
 /* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 1366px) {
   :root {
-    --chart-height: 150px;
+    /* --chart-height: 150px; */ /* Removed or commented out */
   }
-  
+
   .dashboard-charts {
     margin: 8px;
     gap: 8px;
   }
-  
+
   .vessel-table-wrapper {
     margin: 0 10px 10px 10px;
   }
-  
+
   .data-table th {
     padding: 6px 10px;
     height: 30px;
     font-size: 12px;
   }
-  
+
   .data-table td {
     padding: 4px 10px;
     height: 28px;
@@ -1899,10 +1856,10 @@
   .dashboard-charts {
     grid-template-columns: 1fr;
   }
-  
+
   /* :root {
     --chart-height: 130px;
-  } */
+  } */ /* Removed or commented out */
 }
 
 @media (max-width: 992px) {
@@ -1910,30 +1867,30 @@
     flex-wrap: wrap;
     padding: 8px 12px;
   }
-  
+
   .filter-section-left {
     width: 100%;
     margin-bottom: 6px;
   }
-  
+
   .filter-chips {
     flex-wrap: wrap;
   }
-  
+
   .filter-section-right {
     margin-left: 0;
     margin-top: 6px;
     order: 4;
   }
-  
+
   .filter-label {
     order: 2;
   }
-  
+
   .dashboard-charts {
     margin: 8px;
   }
-  
+
   .vessel-table-wrapper {
     margin: 0 8px 8px 8px;
   }
@@ -1944,38 +1901,38 @@
   .filter-bar {
     padding: 6px 10px;
   }
-  
+
   .dashboard-title {
     font-size: 1rem;
   }
-  
+
   .filter-dropdown-button {
     font-size: 11px;
     min-width: 100px;
     height: 30px;
   }
-  
+
   .vessel-counter, .control-btn, .reset-button, .map-toggle {
     height: 28px !important;
   }
-  
+
   .search-input {
     height: 30px !important;
   }
-  
+
   .expanded-grid {
     grid-template-columns: 1fr 1fr;
   }
-  
+
   .data-table {
     font-size: 11px;
   }
-  
+
   .data-table th {
     padding: 5px 8px;
     height: 28px;
   }
-  
+
   .data-table td {
     padding: 4px 8px;
     height: 26px;
@@ -1989,7 +1946,7 @@
     margin-left: 6px;
     margin-right: 6px;
   }
-  
+
   .filter-section-left,
   .filter-chips,
   .filter-section-right {
@@ -1998,29 +1955,29 @@
     display: flex;
     align-items: center !important;
   }
-  
+
   .filter-dropdown-container {
     flex: 1;
   }
-  
+
   .filter-dropdown-button {
     width: 100%;
   }
-  
+
   .vessel-counter {
     margin-left: auto;
   }
-  
+
   .filter-section-right {
     justify-content: space-between;
   }
-  
+
   .map-toggle {
     width: auto;
     flex: 1;
     justify-content: center;
   }
-  
+
   .dashboard-footer {
     flex-direction: column;
     align-items: center;
@@ -2028,16 +1985,16 @@
     text-align: center;
     padding: 6px 10px;
   }
-  
+
   .expanded-grid {
     grid-template-columns: 1fr;
   }
-  
+
   /* Mobile hiding class */
   .mobile-hide {
     display: none !important;
   }
-  
+
   .data-table-wrapper {
     max-height: calc(100vh - 180px);
   }
@@ -2050,47 +2007,47 @@
     height: 100vh !important;
     overflow: hidden !important;
   }
-  
-  .force-compact-all .chart-card,
-  .dashboard-container .chart-card {
-    height: 120px !important;
-    min-height: 240px !important;
-    max-height: 120px !important;
+
+  .force-compact-all .dashboard-card,
+  .dashboard-container .dashboard-card {
+    /* height: 120px !important; */ /* Removed or commented out */
+    /* min-height: 240px !important; */ /* Removed or commented out */
+    /* max-height: 120px !important; */ /* Removed or commented out */
     margin-bottom: 6px !important;
   }
-  
+
   .force-compact-all .chart-wrapper,
   .dashboard-container .chart-wrapper {
     height: calc(100% - 35px) !important;
   }
-  
+
   .force-compact-all .dashboard-charts,
   .dashboard-container .dashboard-charts {
     margin: 8px !important;
     gap: 8px !important;
   }
-  
+
   .force-compact-all .dashboard-card-body,
   .dashboard-container .dashboard-card-body {
-    min-height: 100px !important;
-    max-height: 120px !important;
+    /* min-height: 100px !important; */ /* Removed or commented out */
+    /* max-height: 120px !important; */ /* Removed or commented out */
     padding: 6px !important;
   }
-  
+
   .force-compact-all .data-table th,
   .dashboard-container .data-table th {
     padding: 6px 10px !important;
     height: 30px !important;
     font-size: 12px !important;
   }
-  
+
   .force-compact-all .data-table td,
   .dashboard-container .data-table td {
     padding: 4px 10px !important;
     height: 28px !important;
     font-size: 12px !important;
   }
-  
+
   .force-compact-all .vessel-table-wrapper,
   .dashboard-container .vessel-table-wrapper {
     margin: 0 8px 8px 8px !important;
@@ -2149,28 +2106,28 @@
 /* Ultra compact mode for very small screens */
 @media (max-height: 650px) {
   :root {
-    --chart-height: 250px !important;
+    /* --chart-height: 250px !important; */ /* Removed or commented out */
   }
-  
+
   .dashboard-charts {
     margin: 6px !important;
     gap: 6px !important;
   }
-  
+
   /* .chart-card {
     padding: 6px !important;
   }
-  
+
   .chart-header {
     height: 28px !important;
     margin-bottom: 4px !important;
     padding: 4px 8px !important;
   }
-  
+
   .chart-title {
     font-size: 11px !important;
   }
-  
+
   .chart-action-btn {
     padding: 2px 4px !important;
   }
@@ -2180,44 +2137,44 @@
     height: 28px !important;
     font-size: 11px !important;
   }
-  
+
   .data-table td {
     padding: 2px 8px !important;
     height: 24px !important;
     font-size: 11px !important;
   }
-  
+
   .vessel-table-wrapper {
     margin: 0 6px 6px 6px !important;
   }
-  
+
   .filter-bar {
     padding: 5px 10px !important;
   }
-  
+
   .dashboard-footer {
     padding: 5px 10px !important;
     font-size: 10px !important;
   }
-  
+
   .expanded-content {
     padding: 8px !important;
     margin: 0 8px 8px !important;
   }
-  
+
   .expanded-grid {
     gap: 6px !important;
   }
-  
+
   .expanded-item {
     padding: 6px !important;
   }
-  
+
   .expanded-label {
     font-size: 10px !important;
     margin-bottom: 2px !important;
   }
-  
+
   .expanded-value {
     font-size: 11px !important;
   }
@@ -2276,44 +2233,44 @@
   .dashboard-container {
     height: auto !important;
   }
-  
+
   .filter-bar,
   .dashboard-footer,
   .chart-actions,
   .action-button {
     display: none !important;
   }
-  
+
   .dashboard-charts {
     margin: 0 !important;
     page-break-inside: avoid !important;
   }
-  
+
   .vessel-table-wrapper {
     height: auto !important;
     overflow: visible !important;
   }
-  
+
   .data-table-wrapper {
     height: auto !important;
     overflow: visible !important;
   }
-  
+
   /* .chart-card,
   .dashboard-card {
     box-shadow: none !important;
     border: 1px solid #ddd !important;
   } */
-  
+
   .data-table {
     font-size: 8pt !important;
   }
-  
+
   .data-table th {
     background: #f0f0f0 !important;
     color: #000 !important;
   }
-  
+
   .data-table td {
     border-bottom: 1px solid #ddd !important;
   }
@@ -2332,4 +2289,4 @@
 
 .chart-card, .dashboard-card {
   min-height: 220px !important;
-} */
+} */ /* Removed or commented out */

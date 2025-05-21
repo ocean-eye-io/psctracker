@@ -5,7 +5,7 @@ export const fleetFieldMappings = {
       dbField: 'vessel_name',
       label: 'Vessel',
       priority: 1,
-      width: '150px'
+      width: '250px'
     },
     vessel_type: {
       dbField: 'vessel_type',
@@ -35,7 +35,7 @@ export const fleetFieldMappings = {
       dbField: 'event_type',
       label: 'Event Type',
       priority: 4,
-      width: '130px'
+      width: '110px'
     },
     
     
@@ -70,6 +70,7 @@ export const fleetFieldMappings = {
       dbField: 'etd',
       label: 'ETD',
       priority: 11,
+      width: '120px',
       type: 'datetime'
     },
     checklist_received: {

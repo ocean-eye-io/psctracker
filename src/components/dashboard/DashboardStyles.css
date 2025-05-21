@@ -18,7 +18,15 @@
   --card-radius: 8px;
   --transition-standard: all 0.2s ease;
   --input-bg: rgba(11, 22, 35, 0.5);
+
+  /* Enhanced Filter Styles Variables */
+  --filter-bg: rgba(30, 41, 59, 0.5);
+  --filter-hover: rgba(59, 173, 229, 0.2);
+  --filter-border: rgba(59, 173, 229, 0.3);
+  --filter-active: rgba(59, 173, 229, 0.3);
+  --dropdown-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
 }
+
 /* Add these styles to your CSS file */
 
 /* Comments Modal Overlay */
@@ -227,21 +235,22 @@
   }
 }
 
-/* Responsive Adjustments */
+/* Responsive Adjustments for Comments Modal */
 @media (max-width: 640px) {
   .comments-modal {
     width: 95%;
     max-height: 80vh;
   }
-  
+
   .comments-modal-body {
     padding: 16px;
   }
-  
+
   .comments-modal-footer {
     padding: 12px 16px;
   }
 }
+
 /* Common animations */
 @keyframes fadeIn {
   from { opacity: 0; }
@@ -253,14 +262,8 @@
   to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
+/* Removed chart-specific spin animation here */
+/* Removed chart-specific pulse animation here */
 
 /* Common animation classes */
 .spinning { animation: spin 1s linear infinite; }
@@ -268,7 +271,7 @@
 .zoom-in { animation: zoomIn 0.3s ease-out; }
 .pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
-/* Dashboard Container */
+/* Dashboard Container - Ensure this wraps the entire dashboard content */
 .dashboard-container {
   margin-top: var(--header-height);
   min-height: calc(100vh - var(--header-height));
@@ -276,6 +279,8 @@
   color: var(--text-light);
   padding-bottom: 5px;
   padding-top: 5px;
+  display: flex; /* Added flex display */
+  flex-direction: column; /* Added column direction */
 }
 
 /* Streamlined Header */
@@ -488,9 +493,12 @@
   font-size: 0.85rem;
 }
 
-/* Content Area */
+/* Content Area - Ensure this wraps the main content below the header and filter bar */
 .content-area {
   padding: 0 24px;
+  flex-grow: 1; /* Allow content area to grow */
+  display: flex; /* Added flex display */
+  flex-direction: column; /* Added column direction */
 }
 
 /* Error Message */
@@ -579,17 +587,24 @@
   flex-shrink: 0;
 }
 
-/* Dashboard Cards
-.dashboard-card, .chart-card, .notification-center, .tabs-container {
+/* Dashboard Cards - Uncommented and refined for dashboard context */
+/* Removed duplicate .dashboard-charts > .dashboard-card styles */
+/* Removed duplicate .dashboard-charts > .dashboard-card::after styles */
+/* Removed duplicate .dashboard-charts > .dashboard-card-body styles */
+.dashboard-card,
+.notification-center,
+.tabs-container {
   background: var(--card-bg);
   border-radius: var(--card-radius);
   overflow: hidden;
   box-shadow: var(--card-shadow);
   position: relative;
   border: 1px solid var(--border-subtle);
+  display: flex; /* Ensure flex display */
+  flex-direction: column; /* Ensure column direction */
 }
 
-.dashboard-card::after, .chart-card::after {
+.dashboard-card::after {
   content: '';
   position: absolute;
   top: 0;
@@ -601,91 +616,35 @@
   pointer-events: none;
 }
 
-.dashboard-card-body, .chart-wrapper {
+.dashboard-card-body {
   padding: 16px;
-  min-height: 300px;
+  /* Adjusted min-height and added max-height for better control */
+  min-height: 260px; /* Adjusted to match chart-card height */
+  height: auto; /* Allow height to adjust */
+  max-height: calc(100% - 32px); /* Example: Adjust based on padding */
   display: flex;
   flex-direction: column;
-} */
-
-/* Chart Styles
-.chart-card {
-  height: 280px;
-  min-height: 280px;
-  display: flex;
-  flex-direction: column;
+  flex-grow: 1; /* Allow body to grow */
+  overflow: hidden; /* Hide overflow */
 }
 
-.chart-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: rgba(0, 0, 0, 0.2);
-}
 
-.chart-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-light);
-  margin: 0;
-}
+/* Chart Styles - Removed duplicate chart-specific styles */
+/* Removed .chart-card styles */
+/* Removed .chart-header styles */
+/* Removed .chart-title styles */
+/* Removed .chart-wrapper styles */
+/* Removed .chart-action-btn styles */
+/* Removed .chart-content styles */
+/* Removed .chart-loading styles */
+/* Removed .loading-spinner styles */
 
-.chart-wrapper {
-  flex: 1;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: auto;
-}
 
-.chart-action-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(59, 173, 229, 0.1);
-  border: 1px solid rgba(59, 173, 229, 0.2);
-  border-radius: 4px;
-  padding: 4px 8px;
-  color: var(--primary-accent);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.chart-content {
-  width: 100%;
-  height: 100%;
-  min-height: 268px;
-} */
-
-.chart-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  min-height: 250px;
-  color: var(--text-muted);
-}
-
-.loading-spinner {
-  width: 30px !important;
-  height: 30px !important;
-  border: 2px solid rgba(77, 195, 255, 0.1) !important;
-  border-radius: 50% !important;
-  border-top-color: var(--primary-accent) !important;
-  animation: spin 1s linear infinite !important;
-  margin-bottom: 10px !important;
-  box-shadow: 0 0 8px rgba(77, 195, 255, 0.3) !important;
-}
-
-/* Chart Layout
+/* Chart Layout - Uncommented and refined */
 .dashboard-charts {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  grid-template-columns: 1fr 1fr; /* Adjust columns as needed */
+  gap: 24px; /* Adjust gap as needed */
   margin: 0 24px 24px 24px;
 }
 
@@ -699,7 +658,7 @@
 .chart-column {
   flex: 1;
   min-width: 0;
-} */
+}
 
 /* Chart placeholder */
 .chart-placeholder {
@@ -1722,7 +1681,8 @@
   background: rgba(244, 244, 244, 0.1);
 }
 
-.spinner-sm {
+/* Spinner for Remarks Modal */
+.remarks-modal .spinner-sm {
   display: inline-block;
   width: 16px;
   height: 16px;
@@ -1754,11 +1714,11 @@
 }
 
 @keyframes slideUp {
-  from { 
+  from {
     opacity: 0;
     transform: translateY(20px);
   }
-  to { 
+  to {
     opacity: 1;
     transform: translateY(0);
   }
@@ -1769,7 +1729,7 @@
     width: 95%;
     max-height: 90vh;
   }
-  
+
   .remarks-modal-body {
     padding: 16px;
   }
@@ -1791,16 +1751,12 @@
 
 @media (max-width: 1200px) {
   .dashboard-charts {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr; /* Stack charts on smaller screens */
   }
-  
-  .dashboard-charts > div {
-    flex-direction: column;
-  }
-  
-  /* .chart-card {
-    margin-bottom: 16px;
-  } */
+
+  /* Removed duplicate .dashboard-charts > div styles */
+
+  /* Removed duplicate .chart-card margin-bottom */
 }
 
 @media (max-width: 992px) {
@@ -1809,64 +1765,64 @@
     align-items: stretch;
     padding: 16px;
   }
-  
+
   .dashboard-title {
     margin-bottom: 12px;
   }
-  
+
   .dashboard-controls {
     flex-wrap: wrap;
   }
-  
+
   .search-container {
     flex: 1;
   }
-  
+
   .search-input {
     width: 100%;
   }
-  
+
   .filter-bar {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
     padding: 12px 16px;
   }
-  
+
   .filter-chips {
     flex-wrap: wrap;
   }
-  
+
   .date-filter {
     margin-left: 0;
     margin-top: 8px;
   }
-  
+
   .map-toggle {
     margin-left: 0;
     width: 100%;
     justify-content: center;
     margin-top: 8px;
   }
-  
-  .dashboard-charts, 
-  .vessel-table-wrapper, 
+
+  .dashboard-charts,
+  .vessel-table-wrapper,
   .error-message {
     margin-left: 16px;
     margin-right: 16px;
   }
-  
+
   .dashboard-footer {
     padding: 16px;
     flex-direction: column;
     gap: 8px;
     align-items: center;
   }
-  
+
   .stats-container {
     flex-wrap: wrap;
   }
-  
+
   .stat-card {
     flex-basis: 50%;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -1877,26 +1833,27 @@
   .chart-row {
     flex-direction: column;
   }
-  
+
   .chart-column {
     margin-bottom: 16px;
   }
-  
+
   .reports-header {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .action-buttons {
     width: 100%;
     margin-top: 12px;
   }
-  
+
   .action-button, .notification-button {
     flex: 1;
     justify-content: center;
   }
 }
+
 /* Enhanced Filter Styles for Consistent UI */
 :root {
   --filter-bg: rgba(30, 41, 59, 0.5);
@@ -2197,75 +2154,76 @@
   }
 }
 
-/* Responsive Adjustments */
+/* Responsive Adjustments for Filters */
 @media (max-width: 768px) {
   .filter-bar {
     padding: 10px 16px;
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .filter-label {
     margin-bottom: 8px;
   }
-  
+
   .filter-chips {
     flex-direction: column;
     align-items: stretch;
     width: 100%;
   }
-  
+
   .filter-dropdown,
   .filter-dropdown-container {
     width: 100%;
   }
-  
+
   .filter-select,
   .filter-dropdown-button {
     width: 100%;
     justify-content: space-between;
   }
-  
+
   .filter-dropdown-content {
     width: 100%;
     max-width: none;
     left: 0;
     right: 0;
   }
-  
+
   .map-toggle {
     width: 100%;
     justify-content: center;
     margin-left: 0;
     margin-top: 8px;
   }
-  
+
   .date-filter {
     margin-left: 0;
     margin-top: 8px;
     align-self: flex-end;
   }
 }
+
 @media (max-width: 576px) {
   .stats-container {
     flex-direction: column;
   }
-  
+
   .stat-card {
     flex-basis: 100%;
     border-right: none;
   }
-  
+
   .control-buttons {
     justify-content: flex-end;
     width: 100%;
     margin-top: 8px;
   }
-  
+
   .filter-dropdown {
     width: 100%;
   }
-  
+
   .filter-select {
     width: 100%;
   }

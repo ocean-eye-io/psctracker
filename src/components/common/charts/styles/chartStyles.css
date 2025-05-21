@@ -1,6 +1,4 @@
 /* src/components/common/charts/styles/chartStyles.css */
-
-/* Base variables */
 :root {
   --text-primary: #f4f4f4;
   --text-secondary: rgba(244, 244, 244, 0.7);
@@ -14,12 +12,13 @@
   --border-color: rgba(244, 244, 244, 0.05);
   --shadow-primary: rgba(0, 0, 0, 0.3);
   --shadow-glow: rgba(76, 201, 240, 0.3);
-  --chart-height: 300px;
-  
-  /* Color variables for different statuses */
-  --positive-color: #2ECC71;
-  --warning-color: #F1C40F;
-  --negative-color: #E74C3C;
+  --chart-height: 300px; /* This is a key variable for overall height */
+
+  /* Color variables for different statuses and criticality */
+  --positive-color: #2ECC71; /* Success Green */
+  --warning-color: #F1C40F; /* Warning Yellow */
+  --negative-color: #E74C3C; /* Danger Red */
+  --info-color: #4DC3FF; /* Info Blue (Used for Low Criticality) */
 }
 
 /* Chart Card Styling */
@@ -32,13 +31,16 @@
   border: 1px solid var(--border-color);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  overflow: hidden;
+  overflow: hidden; /* IMPORTANT: Helps contain children */
   color: var(--text-primary);
   transform-style: preserve-3d;
   perspective: 1000px;
   margin-bottom: 3px;
-  height: var(--chart-height);
-  min-height: 250px;
+  height: auto; /* Ensure this height is sufficient */
+  min-height: 250px; /* Or adjust this based on content */
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box; /* Added box-sizing */
 }
 
 .chart-card::before {
@@ -48,9 +50,9 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, 
-    rgba(255, 255, 255, 0), 
-    rgba(255, 255, 255, 0.1), 
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.1),
     rgba(255, 255, 255, 0)
   );
   z-index: 1;
@@ -87,6 +89,8 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   position: relative;
   height: 30px;
+  flex-shrink: 0;
+  box-sizing: border-box; /* Added box-sizing */
 }
 
 .chart-header::after {
@@ -96,9 +100,9 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, 
-    rgba(255, 255, 255, 0.05), 
-    rgba(255, 255, 255, 0.1), 
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.1),
     rgba(255, 255, 255, 0.05)
   );
 }
@@ -132,6 +136,363 @@
   width: 100%;
   opacity: 1;
 }
+
+/* Chart Wrapper */
+.chart-wrapper {
+  /* height: calc(100% - 38px); REMOVED - Let flex-grow manage height */
+  filter: drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.2));
+  transform: translateZ(0);
+  border-radius: 6px;
+  overflow: hidden; /* IMPORTANT: Helps contain children */
+  perspective: 1000px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  background: rgba(11, 22, 35, 0.5);
+  padding: 10px;
+  max-height: calc(100vh - 100px); /* Verify this max-height */
+  flex-grow: 1; /* Takes remaining space in chart-card */
+  min-height: 0; /* Crucial for flex children */
+  gap: 8px; /* Reduced gap slightly */
+  box-sizing: border-box; /* Added box-sizing */
+}
+
+.chart-wrapper:hover {
+  filter: drop-shadow(0px 5px 10px rgba(0, 0, 0, 0.3));
+}
+
+/* Total defects styling */
+.total-defects-header { /* This is the "TOTAL DEFECTS 643" part */
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  flex-shrink: 0; /* Does not grow, takes only needed space */
+  box-sizing: border-box; /* Added box-sizing */
+}
+
+.total-defects-title {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin: 0;
+  opacity: 0.9;
+  flex-shrink: 0;
+}
+
+.total-defects-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  text-shadow: 0 1px 6px rgba(59, 173, 229, 0.3);
+  margin: 0;
+}
+
+/* Container for the chart and KPIs */
+.chart-and-kpis-container {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1; /* Takes remaining space in chart-wrapper */
+  width: 100%;
+  min-height: 0; /* Crucial for flex children */
+  gap: 15px;
+  max-height: calc(100% - 40px); /* Keep this as it is, but verify parent height */
+  overflow: hidden; /* IMPORTANT: Helps contain children */
+  box-sizing: border-box; /* Added box-sizing */
+}
+
+/* Chart area container (for the main vertical bar chart) */
+.chart-area-container {
+  flex-grow: 1; /* Takes available horizontal space */
+  flex-basis: 0; /* Allows it to shrink if needed */
+  min-width: 0; /* Allows it to shrink if needed */
+  position: relative;
+  height: auto; /* Takes full height of parent .chart-and-kpis-container */
+  max-height: 100%;
+  min-height: 0; /* Crucial for flex children */
+  display: flex; /* To make ResponsiveContainer behave */
+  flex-direction: column; /* To make ResponsiveContainer behave */
+  /* Add overflow here as a fallback if parent overflow isn't enough */
+  overflow: hidden;
+  box-sizing: border-box; /* Added box-sizing */
+}
+
+/* Ensure ResponsiveContainer takes full height of its parent */
+.chart-area-container .recharts-responsive-container {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important; /* Change from 150px to 0 */
+  max-height: 100% !important; /* Add this to limit height */
+  box-sizing: border-box !important; /* Added box-sizing */
+}
+
+/* Recharts specific overrides - CONSOLIDATED HERE */
+.recharts-wrapper {
+  position: absolute !important; /* This is often default and needed */
+  width: 100% !important;
+  height: 100% !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  box-sizing: border-box !important; /* Added box-sizing */
+}
+
+.recharts-cartesian-axis-tick-value {
+  font-family: 'Nunito', sans-serif;
+  font-size: 10px;
+  fill: var(--text-secondary) !important;
+}
+
+.recharts-text {
+  font-family: 'Nunito', sans-serif;
+  font-size: 10px;
+  fill: var(--text-secondary) !important;
+}
+
+.recharts-legend-item-text {
+  font-family: 'Nunito', sans-serif;
+  font-size: 10px;
+  color: var(--text-secondary) !important;
+}
+
+.recharts-cartesian-grid line {
+  stroke: rgba(244, 244, 244, 0.05);
+}
+
+.recharts-cartesian-axis line,
+.recharts-cartesian-axis path {
+  stroke: rgba(244, 244, 244, 0.1);
+}
+
+.recharts-reference-line line {
+  stroke: var(--accent-secondary);
+  stroke-dasharray: 3 3;
+  stroke-width: 1;
+}
+
+.recharts-reference-line-label {
+  fill: var(--accent-secondary) !important;
+  font-family: 'Nunito', sans-serif;
+  font-size: 10px;
+}
+
+.recharts-tooltip-wrapper {
+  pointer-events: auto !important;
+  z-index: 1200 !important;
+}
+
+.recharts-surface {
+  overflow: visible;
+  transition: opacity 0.3s ease;
+}
+
+.recharts-default-legend {
+  margin-top: 6px !important;
+  padding: 0 !important;
+}
+
+.recharts-legend-wrapper {
+  background: rgba(11, 22, 35, 0.5);
+  border-radius: 4px;
+  padding: 3px 6px !important;
+  border: 1px solid var(--border-color);
+}
+
+.recharts-legend-item {
+  padding: 2px !important;
+}
+
+.recharts-bar-rectangle:hover {
+  filter: brightness(1.1);
+}
+
+.recharts-label-list text {
+  fill: var(--text-primary) !important;
+  font-weight: 600;
+}
+
+
+/* Additional Metrics Panel (KPIs) */
+.chart-metrics-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Distribute KPIs evenly, or use flex-start */
+
+  flex: 0 0 300px;
+
+  min-width: 300px;
+  padding: 5px; /* Reduced padding */
+  height: 100%; /* Takes full height of parent .chart-and-kpis-container */
+  max-height: 100%; /* Added this line */
+  min-height: 0; /* Crucial for flex children */
+  overflow: hidden; /* Prevent its own scroll if content is still too large */
+  gap: 5px; /* Reduced gap between KPI items */
+  box-sizing: border-box; /* Added box-sizing */
+}
+
+/* Individual KPI item */
+.chart-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex-shrink: 0; /* Prevent individual KPIs from shrinking too much */
+  padding: 0;
+  position: relative;
+  width: 100%;
+  /* border: 1px solid red; /* For debugging layout */
+  box-sizing: border-box; /* Added box-sizing */
+  /* Ensure no fixed height here that causes overflow */
+}
+
+/* Container for label and value within each chart-metric */
+.metric-label-value {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  margin-bottom: 2px; /* Reduced margin */
+  box-sizing: border-box; /* Added box-sizing */
+}
+
+.chart-metric-label {
+  font-size: 9px; /* Slightly smaller */
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 1px; /* Reduced margin */
+}
+
+.chart-metric-value {
+  font-size: 16px; /* Slightly smaller */
+  font-weight: 700;
+  margin-bottom: 2px; /* Reduced margin */
+}
+
+/* Horizontal Bar Styles (used in KPIs and Criticality Chart) */
+.horizontal-bar-container,
+.criticality-progress-bar,
+.high-criticality-status-progress {
+  width: 100%;
+  height: 5px; /* Slightly smaller */
+  background: rgba(244, 244, 244, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 2px; /* Reduced margin */
+  box-sizing: border-box; /* Added box-sizing */
+  display: flex; /* Added for criticality progress bars */
+}
+
+.horizontal-bar,
+.criticality-progress-bar > div,
+.high-criticality-status-progress > div {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease-in-out;
+  max-width: 100%; /* Add this line */
+  box-sizing: border-box; /* Added box-sizing */
+}
+
+
+/* --- Criticality Chart Specific Styles --- */
+.criticality-chart-content {
+  padding: 15px; /* Match the padding from the inline style */
+  height: 100%;
+  width: 100%;
+  display: flex; /* Use flexbox for layout */
+  flex-direction: column; /* Stack elements vertically */
+  justify-content: space-between; /* Distribute space */
+  box-sizing: border-box;
+}
+
+.criticality-values {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px; /* Space below the numbers */
+}
+
+.criticality-value-item {
+  text-align: center;
+}
+
+.criticality-value-number {
+  font-size: 32px;
+  font-weight: 700;
+  /* Color is set inline based on criticality */
+  text-shadow: 0 0 10px rgba(var(--color-blue-rgb), 0.2); /* Example text shadow using a variable */
+}
+
+.criticality-value-label {
+  font-size: 13px;
+  color: var(--text-secondary); /* Match existing text color */
+}
+
+/* Criticality progress bar - Merged with horizontal-bar-container */
+/* .criticality-progress-bar { ... } */
+
+/* High Criticality Status Section */
+.high-criticality-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(244, 244, 244, 0.9); /* Match existing text color */
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.high-criticality-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--negative-color); /* High criticality color (Danger Red) */
+  transform: rotate(45deg);
+}
+
+.high-criticality-status {
+  margin-top: 10px;
+}
+
+.high-criticality-status-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.high-criticality-status-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  /* Background color is set inline based on status */
+}
+
+.high-criticality-status-item span {
+  font-size: 12px;
+  color: rgba(244, 244, 244, 0.9); /* Match existing text color */
+}
+
+/* High Criticality Status Progress Bar - Merged with horizontal-bar-container */
+/* .high-criticality-status-progress { ... } */
+
+.criticality-status-message {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 10px;
+}
+
+
+/* --- Other existing styles remain below --- */
 
 /* Chart Toggle Buttons */
 .chart-toggle {
@@ -213,32 +574,22 @@
 }
 
 
-
-/* Chart Wrapper */
-.chart-wrapper {
-  height: calc(100% - 38px);
-  filter: drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.2));
-  transform: translateZ(0);
-  border-radius: 6px;
-  overflow: hidden;
-  perspective: 1000px;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(11, 22, 35, 0.5);
-  padding: 4px;
-}
-
-.chart-wrapper:hover {
-  filter: drop-shadow(0px 5px 10px rgba(0, 0, 0, 0.3));
-}
-.recharts-tooltip-wrapper {
-  pointer-events: auto !important;
-  z-index: 1200 !important;
-}
-
+/* Tooltip Styling */
 .custom-tooltip {
+  font-family: 'Nunito', sans-serif;
+  background: rgba(11, 22, 35, 0.95);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 6px var(--shadow-glow);
+  backdrop-filter: blur(4px);
+  position: relative;
+  animation: tooltipFade 0.2s ease-in-out;
+  font-size: 11px;
+  z-index: 1000;
+  transform-style: preserve-3d;
+  pointer-events: none;
+  max-width: 250px;
   scrollbar-width: thin;
   scrollbar-color: rgba(59, 173, 229, 0.4) rgba(11, 22, 35, 0.5);
 }
@@ -260,6 +611,69 @@
 .tooltip-categories::-webkit-scrollbar {
   width: 4px;
 }
+
+.tooltip-label {
+  color: var(--accent-primary);
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  margin: 0 0 4px 0;
+  font-weight: 500;
+}
+
+.tooltip-value {
+  color: var(--text-primary);
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.tooltip-arrow {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid rgba(11, 22, 35, 0.95);
+}
+
+.tooltip-subcategories {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(244, 244, 244, 0.1);
+}
+
+.tooltip-subtitle {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin: 0 0 4px 0;
+  font-weight: 500;
+}
+
+.tooltip-code-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tooltip-code-item {
+  font-size: 10px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+}
+
+.tooltip-more {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  text-align: center;
+}
+
+
 /* Chart Elements */
 .chart-bar {
   fill: url(#barGradient);
@@ -317,120 +731,6 @@
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
 }
 
-/* Tooltip Styling */
-
-.tooltip-list {
-  margin: 0;
-  padding: 0 0 0 12px; /* Add left padding to accommodate the bullets/dots */
-  list-style-position: inside; /* Keep bullets inside the container */
-}
-
-.tooltip-list li {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.8);
-  padding: 2px 0;
-  text-indent: -12px; /* Negative text indent to align text properly */
-  margin-left: 12px; /* Offset the negative text indent */
-}
-
-.custom-tooltip {
-  font-family: 'Nunito', sans-serif;
-  background: rgba(11, 22, 35, 0.95);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 8px 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 6px var(--shadow-glow);
-  backdrop-filter: blur(4px);
-  position: relative;
-  animation: tooltipFade 0.2s ease-in-out;
-  font-size: 11px;
-  z-index: 1000;
-  transform-style: preserve-3d;
-  pointer-events: none;
-  max-width: 250px;
-}
-
-.custom-tooltip::before {
-  content: '';
-  position: absolute;
-  top: -15;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, 
-    rgba(255, 255, 255, 0), 
-    rgba(255, 255, 255, 0.1), 
-    rgba(255, 255, 255, 0)
-  );
-}
-
-.tooltip-label {
-  color: var(--accent-primary);
-  font-family: 'Nunito', sans-serif;
-  font-size: 11px;
-  margin: 0 0 4px 0;
-  font-weight: 500;
-}
-
-.tooltip-value {
-  color: var(--text-primary);
-  font-family: 'Nunito', sans-serif;
-  font-size: 11px;
-  font-weight: 600;
-  margin: 0;
-}
-
-.tooltip-arrow {
-  position: absolute;
-  bottom: -6px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid rgba(11, 22, 35, 0.95);
-}
-
-/* Chart Axis and Grid Styling */
-.recharts-cartesian-axis-tick-value {
-  font-family: 'Nunito', sans-serif;
-  font-size: 10px;
-  fill: var(--text-secondary) !important;
-}
-
-.recharts-text {
-  font-family: 'Nunito', sans-serif;
-  font-size: 10px;
-  fill: var(--text-secondary) !important;
-}
-
-.recharts-legend-item-text {
-  font-family: 'Nunito', sans-serif;
-  font-size: 10px;
-  color: var(--text-secondary) !important;
-}
-
-.recharts-cartesian-grid line {
-  stroke: rgba(244, 244, 244, 0.05);
-}
-
-.recharts-cartesian-axis line,
-.recharts-cartesian-axis path {
-  stroke: rgba(244, 244, 244, 0.1);
-}
-
-.recharts-reference-line line {
-  stroke: var(--accent-secondary);
-  stroke-dasharray: 3 3;
-  stroke-width: 1;
-}
-
-.recharts-reference-line-label {
-  fill: var(--accent-secondary) !important;
-  font-family: 'Nunito', sans-serif;
-  font-size: 10px;
-}
 
 /* Loading State */
 .chart-loading {
@@ -441,11 +741,15 @@
   bottom: 0;
   background: rgba(11, 22, 35, 0.85);
   display: flex;
+  flex-direction: column; /* Added for text below spinner */
   justify-content: center;
   align-items: center;
   z-index: 10;
   backdrop-filter: blur(3px);
   border-radius: 6px;
+  color: var(--text-secondary); /* Added text color */
+  font-size: 12px; /* Added text size */
+  gap: 10px; /* Added gap between spinner and text */
 }
 
 .loading-spinner {
@@ -485,6 +789,7 @@
   right: 0;
   bottom: 0;
   display: flex;
+  flex-direction: column; /* Added for icon and text */
   justify-content: center;
   align-items: center;
   color: var(--text-secondary);
@@ -492,57 +797,9 @@
   text-align: center;
   background: rgba(11, 22, 35, 0.5);
   border-radius: 6px;
+  gap: 8px; /* Added gap between icon and text */
 }
 
-/* Recharts specific overrides */
-.recharts-wrapper {
-  position: absolute !important;
-  width: 100% !important;
-  height: 100% !important;
-  top: -20;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
-
-.recharts-surface {
-  overflow: visible;
-  transition: opacity 0.3s ease;
-}
-
-/* .recharts-tooltip-wrapper {
-  pointer-events: none !important;
-} */
-
-.recharts-responsive-container {
-  width: 100% !important;
-  height: 100% !important;
-}
-
-.recharts-default-legend {
-  margin-top: 6px !important;
-  padding: 0 !important;
-}
-
-.recharts-legend-wrapper {
-  background: rgba(11, 22, 35, 0.5);
-  border-radius: 4px;
-  padding: 3px 6px !important;
-  border: 1px solid var(--border-color);
-}
-
-.recharts-legend-item {
-  padding: 2px !important;
-}
-
-.recharts-bar-rectangle:hover {
-  filter: brightness(1.1);
-}
-
-.recharts-label-list text {
-  fill: var(--text-primary) !important;
-  font-weight: 600;
-}
 
 /* Hover and Active States */
 .hovered-bar {
@@ -594,7 +851,7 @@
 }
 
 /* Filter badges and indicators */
-.chart-filter-badge, 
+.chart-filter-badge,
 .filter-badge {
   display: inline-flex;
   align-items: center;
@@ -669,56 +926,172 @@
   transition: all 0.3s ease;
 }
 
-/* Responsive styles */
-@media (max-width: 1200px) {
-  .chart-card.active {
-    width: 90vw;
-  }
-  
-  :root {
-    --chart-height: 150px;
-  }
+/* Status-specific colors for the horizontal bars */
+.horizontal-bar.status-open,
+.high-criticality-status-progress > div.status-open {
+  background-color: var(--negative-color);
 }
 
-@media (max-width: 768px) {
-  .chart-card {
-    padding: 8px;
-    min-height: 100px;
-  }
-  
-  .chart-title {
-    font-size: 11px;
-  }
-  
-  .chart-card.active {
-    width: 95vw;
-    height: 80vh;
-    padding: 10px;
-  }
-  
-  .chart-header {
-    padding: 5px 8px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-    height: auto;
-  }
-  
-  .chart-toggle {
-    width: 100%;
-  }
-  
-  .chart-toggle button {
-    flex: 1;
-    text-align: center;
-  }
-  
-  .chart-action-btn {
-    padding: 3px 5px;
-  }
+.horizontal-bar.status-progress,
+.high-criticality-status-progress > div.status-progress {
+  background-color: var(--warning-color);
 }
 
-/* Animations */
+.horizontal-bar.status-closed,
+.high-criticality-status-progress > div.status-closed {
+  background-color: var(--positive-color);
+}
+
+.horizontal-bar.overdue-value {
+  background-color: var(--negative-color); /* Using negative color for overdue */
+}
+
+/* Status overview styling for total defects chart (if used elsewhere) */
+.status-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px;
+}
+
+.status-overview-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.status-overview-title::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-primary), rgba(76, 201, 240, 0.5));
+  border-radius: 1px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(11, 22, 35, 0.4);
+  border-radius: 6px;
+  margin-bottom: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.status-item:hover {
+  background: rgba(11, 22, 35, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.status-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.status-count {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.status-percent {
+  font-size: 11px;
+  opacity: 0.8;
+  margin-left: 4px;
+}
+
+.status-progress-bar {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: rgba(11, 22, 35, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 4px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.status-progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.status-open {
+  color: var(--negative-color);
+}
+
+.status-progress {
+  color: var(--warning-color);
+}
+
+.status-closed {
+  color: var(--positive-color);
+}
+
+.overdue-value {
+  color: var(--negative-color); /* Using negative color for overdue */
+}
+
+/* Status colors for metric values */
+.chart-metric-value.status-open {
+  color: var(--negative-color);
+  text-shadow: 0 0 10px rgba(231, 76, 60, 0.3);
+}
+
+.chart-metric-value.status-progress {
+  color: var(--warning-color);
+  text-shadow: 0 0 10px rgba(241, 196, 15, 0.3);
+}
+
+.chart-metric-value.status-closed {
+  color: var(--positive-color);
+  text-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+}
+
+.chart-metric-value.overdue-value {
+  color: var(--negative-color);
+  text-shadow: 0 0 10px rgba(255, 82, 82, 0.3);
+}
+
+.criticality-breakdown {
+  position: relative;
+  margin-top: 25px;
+}
+
+/* Force compact mode if needed */
+.force-compact .chart-card {
+  height: 150px !important;
+  min-height: 180px !important;
+  max-height: 180px !important;
+}
+
+.force-compact .chart-wrapper {
+  height: calc(100% - 38px) !important;
+}
+
+/* Animations - CONSOLIDATED CHART ANIMATIONS HERE */
 @keyframes tooltipFade {
   from {
     opacity: 0;
@@ -741,13 +1114,95 @@
   100% { box-shadow: 0 0 0 0 rgba(76, 201, 240, 0); }
 }
 
-/* Force compact mode if needed */
-.force-compact .chart-card {
-  height: 150px !important;
-  min-height: 180px !important;
-  max-height: 180px !important;
+/* Chart Footer and Metrics (Original styles, kept for other components) */
+.chart-footer {
+  display: flex;
+  padding: 6px 10px 8px;
+  background: rgba(11, 22, 35, 0.4);
+  border-radius: 6px;
+  margin: 4px 6px 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  position: relative;
+  justify-content: space-around;
+  flex-shrink: 0;
 }
 
-.force-compact .chart-wrapper {
-  height: calc(100% - 38px) !important;
+.chart-footer-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  margin-bottom: 6px;
+  padding-left: 8px;
+  border-left: 2px solid var(--accent-primary);
+  position: absolute;
+  top: -20px;
+  left: 0;
+}
+
+.chart-metrics-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding-top: 8px;
+}
+
+/* Responsive styles */
+@media (max-width: 1200px) {
+  .chart-card.active {
+    width: 90vw;
+  }
+
+  :root {
+    /* --chart-height: 150px; /* Example: reduce height on smaller screens */
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-card {
+    padding: 8px;
+    min-height: 100px; /* Adjust as needed */
+  }
+
+  .chart-title {
+    font-size: 11px;
+  }
+
+  .chart-card.active {
+    width: 95vw;
+    height: 80vh;
+    padding: 10px;
+  }
+
+  .chart-header {
+    padding: 5px 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    height: auto;
+  }
+
+  .chart-toggle {
+    width: 100%;
+  }
+
+  .chart-toggle button {
+    flex: 1;
+    text-align: center;
+  }
+
+  .chart-action-btn {
+    padding: 3px 5px;
+  }
+
+  /* For smaller screens, stack chart and KPIs if needed */
+  .chart-and-kpis-container {
+    flex-direction: column; /* Stack them on small screens */
+    gap: 10px;
+  }
+
+  .chart-metrics-panel {
+    flex-basis: auto; /* Allow panel to take full width when stacked */
+    height: auto; /* Adjust height as needed when stacked */
+    /* Consider making KPIs horizontal on very small screens if space is an issue */
+  }
 }
