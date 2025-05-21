@@ -1091,7 +1091,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       )}
       
       <div className="dashboard-charts">
-        <div className="dashboard-card">
+        {/* <div className="dashboard-card"> */}
           <div className="dashboard-card-body">
             {loading ? (
               <div className="chart-loading">
@@ -1113,9 +1113,9 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
               
             )}
           </div>
-        </div>
+        {/* </div> */}
         
-        <div className="dashboard-card">
+        {/* <div className="dashboard-card"> */}
           <div className="dashboard-card-body">
             {loading ? (
               <div className="chart-loading">
@@ -1159,7 +1159,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
 
             )}
           </div>
-        </div>
+        {/* </div> */}
       </div>
       
       <div className="vessel-table-wrapper">

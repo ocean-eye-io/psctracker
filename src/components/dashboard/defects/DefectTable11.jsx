@@ -1,4 +1,3 @@
-// Modify your DefectTable.jsx component with these changes:
 import React, { useState, useEffect, useMemo } from 'react';
 import Table from '../../common/Table/Table';
 import { Trash2, FileText, Download, Upload, Plus, Filter, MoreHorizontal } from 'lucide-react';
@@ -348,7 +347,7 @@ const DefectTable = ({
       </div>
       
       {/* Table container */}
-      <div className="responsive-table-container" style={{ height: "calc(100vh - 180px)" }}>
+      <div className="responsive-table-container">
         <Table
           data={pageData}
           columns={columns}

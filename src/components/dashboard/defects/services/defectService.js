@@ -68,7 +68,7 @@ const defectService = {
         
         // Check for Status field variations
         let status = 'OPEN'; // Default value
-        if (defect['Status (Vessel)'] !== undefined) status = defect['Status (Vessel)'];
+        if (defect['Status'] !== undefined) status = defect['Status'];
         else if (defect.status !== undefined) status = defect.status;
         
         // Check for Criticality field variations
@@ -106,7 +106,7 @@ const defectService = {
           // Mapped and standardized fields for the UI
           Description: description,
           'Action Planned': actionPlanned,
-          'Status (Vessel)': status,
+          'Status': status,
           Criticality: criticality,
           Equipments: equipments,
           'Date Reported': dateReported,
@@ -170,7 +170,7 @@ const defectService = {
         Equipments: defect.Equipments || defect.equipments || '',
         Description: defect.Description || defect.description || '',
         'Action Planned': defect['Action Planned'] || defect.action_planned || '',
-        'Status (Vessel)': defect['Status (Vessel)'] || 'OPEN',
+        'Status': defect['Status'] || 'OPEN',
         Criticality: defect.Criticality || 'Medium',
         'Date Reported': defect['Date Reported'] || defect.date_reported || null,
         'Date Completed': defect['Date Completed'] || defect.date_completed || null,
