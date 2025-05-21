@@ -617,11 +617,11 @@
 }
 
 .dashboard-card-body {
-  padding: 16px;
+  padding: 8px;
   /* Adjusted min-height and added max-height for better control */
   min-height: 260px; /* Adjusted to match chart-card height */
   height: auto; /* Allow height to adjust */
-  max-height: calc(100% - 32px); /* Example: Adjust based on padding */
+  max-height: calc(100% - 16px); /* Example: Adjust based on padding */
   display: flex;
   flex-direction: column;
   flex-grow: 1; /* Allow body to grow */
@@ -644,8 +644,8 @@
 .dashboard-charts {
   display: grid;
   grid-template-columns: 1fr 1fr; /* Adjust columns as needed */
-  gap: 24px; /* Adjust gap as needed */
-  margin: 0 24px 24px 24px;
+  gap: 4px; /* Adjust gap as needed */
+  margin: 0 8px 8px 8px;
 }
 
 .chart-row {
@@ -1808,8 +1808,8 @@
   .dashboard-charts,
   .vessel-table-wrapper,
   .error-message {
-    margin-left: 16px;
-    margin-right: 16px;
+    margin-left: 8px;
+    margin-right: 8px;
   }
 
   .dashboard-footer {
