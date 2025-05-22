@@ -6,11 +6,11 @@ import awsConfig from './config/aws-config';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import FloatingChatbot from './components/FloatingChatbot';
 
-
 // Components
 import NavigationHeader from './components/layout/NavigationHeader';
 import FleetDashboard from './components/dashboard/fleet/FleetDashboard';
 import DefectsDashboard from './components/dashboard/defects/DefectsDashboard';
+import DataQualityDashboard from './components/dashboard/datavalidation/DataQualityDashboard';
 import VesselReportingPage from './components/dashboard/reporting/VesselReportingPage';
 import { fleetFieldMappings } from './components/dashboard/fleet/FleetFieldMappings';
 
@@ -31,6 +31,7 @@ try {
 } catch (error) {
   console.error("Error configuring Amplify:", error);
 }
+
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
   const { currentUser, loading } = useAuth();
@@ -85,6 +86,8 @@ function AppContent() {
           />
         ) : activePage === 'defects' ? (
           <DefectsDashboard />
+        ) : activePage === 'dataQuality' ? (
+          <DataQualityDashboard />
         ) : activePage === 'reporting' ? (
           <VesselReportingPage />
         ) : null}
@@ -109,12 +112,12 @@ function App() {
           
           {/* Protected Main App */}
           <Route 
-            path="/" 
+            path="/"
             element={
               <ProtectedRoute>
                 <AppContent />
               </ProtectedRoute>
-            } 
+            }
           />
           
           {/* Redirect any other routes to the main app */}
