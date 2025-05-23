@@ -78,9 +78,9 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo }) => {
   
   const navItems = [
     //{ id: 'dashboard', label: 'Dashboard', icon: <Home size={20} />, path: '/dashboard' },
-    { id: 'fleet', label: 'Dashboard', icon: <Ship size={20} />, path: '/fleet' },
-    { id: 'reports', label: 'Defects Register', icon: <BarChart2 size={20} />, path: '/reports' },
-    { id: 'dataQuality', label: 'Data Quality', icon: <Database size={20} />, path: '/data-quality' },
+    //{ id: 'fleet', label: 'Dashboard', icon: <Ship size={20} />, path: '/fleet' },
+    //{ id: 'reports', label: 'Defects Register', icon: <BarChart2 size={20} />, path: '/reports' },
+    { id: 'dataQuality', label: 'Data Quality Dashboard', icon: <Database size={20} />, path: '/data-quality' },
     //{ id: 'reporting', label: 'Vessel Reporting', icon: <FileText size={20} />, path: '/reporting' },
     //{ id: 'ports', label: 'Ports', icon: <Anchor size={20} />, path: '/ports' },
     //{ id: 'settings', label: 'Settings', icon: <Settings size={20} />, path: '/settings' }
