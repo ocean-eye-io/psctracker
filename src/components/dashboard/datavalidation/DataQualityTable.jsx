@@ -26,8 +26,9 @@ const DataQualityTable = ({ metrics, fieldMappings }) => {
       .map(([fieldId, field]) => ({
         field: field.dbField,
         label: field.label,
-        // Use minWidth instead of width for better responsiveness
-        minWidth: field.minWidth, 
+        // Use 'width' if defined, otherwise fallback to 'minWidth' for responsiveness
+        width: field.width || field.minWidth, 
+        minWidth: field.minWidth, // Keep minWidth for responsiveness
         sortable: true,
         render: (value, rowData) => {
           // Vessel Name column with status indicator
@@ -52,7 +53,7 @@ const DataQualityTable = ({ metrics, fieldMappings }) => {
           if (fieldId === 'vessel_type') {
             return (
               <div className="vessel-type">
-                <Ship size={14} className="mr-1" />
+                {/* <Ship size={14} className="mr-1" /> */}
                 <span>{value || 'Unknown'}</span>
               </div>
             );
@@ -129,7 +130,9 @@ const DataQualityTable = ({ metrics, fieldMappings }) => {
 
   // Create expanded content renderer
   const renderExpandedContent = (metric) => {
+    // Filter out the gridTemplateColumns property from the iteration
     const expandedColumns = Object.entries(fieldMappings.EXPANDED)
+      .filter(([key]) => key !== 'gridTemplateColumns') 
       .sort((a, b) => a[1].priority - b[1].priority);
     
     // For vessels with no data, show a special empty state
@@ -155,7 +158,8 @@ const DataQualityTable = ({ metrics, fieldMappings }) => {
     }
     
     return (
-      <div className="expanded-grid">
+      // Apply gridTemplateColumns from fieldMappings.EXPANDED
+      <div className="expanded-grid" style={{ gridTemplateColumns: fieldMappings.EXPANDED.gridTemplateColumns }}>
         {expandedColumns.map(([fieldId, field]) => {
           let displayValue = metric[field.dbField] || '-';
           
@@ -172,7 +176,11 @@ const DataQualityTable = ({ metrics, fieldMappings }) => {
           // For issue type, add warning icon for items with issues
           if (fieldId === 'issue_type' && metric.issue_count > 0) {
             return (
-              <div key={fieldId} className="expanded-item">
+              <div 
+                key={fieldId} 
+                className="expanded-item" 
+                style={{ gridColumn: `span ${field.gridColumnSpan || 1}` }} // Apply gridColumnSpan
+              >
                 <p className="expanded-label">{field.label}</p>
                 <p className="expanded-value issue-value">
                   <AlertTriangle size={16} color="#E74C3C" className="mr-2" />
@@ -185,7 +193,11 @@ const DataQualityTable = ({ metrics, fieldMappings }) => {
           // For missing fields, highlight in red if there are any
           if (fieldId === 'missing_fields_info' && displayValue !== 'None') {
             return (
-              <div key={fieldId} className="expanded-item">
+              <div 
+                key={fieldId} 
+                className="expanded-item" 
+                style={{ gridColumn: `span ${field.gridColumnSpan || 1}` }} // Apply gridColumnSpan
+              >
                 <p className="expanded-label">{field.label}</p>
                 <p className="expanded-value" style={{ color: '#E74C3C' }}>
                   {displayValue}
@@ -197,7 +209,11 @@ const DataQualityTable = ({ metrics, fieldMappings }) => {
           // For incorrect fields, highlight in yellow if there are any
           if (fieldId === 'incorrect_fields_info' && displayValue !== 'None') {
             return (
-              <div key={fieldId} className="expanded-item">
+              <div 
+                key={fieldId} 
+                className="expanded-item" 
+                style={{ gridColumn: `span ${field.gridColumnSpan || 1}` }} // Apply gridColumnSpan
+              >
                 <p className="expanded-label">{field.label}</p>
                 <p className="expanded-value" style={{ color: '#F1C40F' }}>
                   {displayValue}
@@ -217,7 +233,11 @@ const DataQualityTable = ({ metrics, fieldMappings }) => {
             }
             
             return (
-              <div key={fieldId} className="expanded-item">
+              <div 
+                key={fieldId} 
+                className="expanded-item" 
+                style={{ gridColumn: `span ${field.gridColumnSpan || 1}` }} // Apply gridColumnSpan
+              >
                 <p className="expanded-label">{field.label}</p>
                 <p className="expanded-value" style={{ color }}>
                   <Clock size={16} className="mr-2" />
@@ -230,7 +250,11 @@ const DataQualityTable = ({ metrics, fieldMappings }) => {
           // For issue description, include more details
           if (fieldId === 'issue_description' && metric.issue_count > 0) {
             return (
-              <div key={fieldId} className="expanded-item" style={{ gridColumn: '1 / -1' }}>
+              <div 
+                key={fieldId} 
+                className="expanded-item" 
+                style={{ gridColumn: `span ${field.gridColumnSpan || 1}` }} // Apply gridColumnSpan
+              >
                 <p className="expanded-label">{field.label}</p>
                 <p className="expanded-value issue-value">
                   {displayValue}
@@ -240,7 +264,11 @@ const DataQualityTable = ({ metrics, fieldMappings }) => {
           }
           
           return (
-            <div key={fieldId} className="expanded-item">
+            <div 
+              key={fieldId} 
+              className="expanded-item" 
+              style={{ gridColumn: `span ${field.gridColumnSpan || 1}` }} // Apply gridColumnSpan
+            >
               <p className="expanded-label">{field.label}</p>
               <p className="expanded-value">
                 {displayValue}
@@ -250,6 +278,41 @@ const DataQualityTable = ({ metrics, fieldMappings }) => {
         })}
         
         <style jsx>{`
+          .expanded-grid {
+            display: grid;
+            gap: 1rem; /* Spacing between items */
+            padding: 1rem;
+            background-color: var(--color-surface-light);
+            border-top: 1px solid var(--color-border);
+          }
+
+          .expanded-item {
+            display: flex;
+            flex-direction: column;
+            padding: 0.5rem;
+            border-radius: 4px;
+            background-color: var(--color-surface);
+            border: 1px solid var(--color-border);
+          }
+
+          .expanded-label {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 0.25rem;
+            font-weight: 500;
+          }
+
+          .expanded-value {
+            font-size: 0.875rem;
+            color: var(--color-text);
+            display: flex;
+            align-items: center;
+          }
+
+          .issue-value {
+            color: #E74C3C; /* Red for issues */
+          }
+          
           .expanded-empty-state {
             display: flex;
             padding: 2rem;
@@ -292,7 +355,8 @@ const DataQualityTable = ({ metrics, fieldMappings }) => {
   // Create actions content
   const actions = {
     label: 'Actions',
-    minWidth: '120px', // Changed from width to minWidth
+    minWidth: '120px', 
+    width: '10%', // Added width for the actions column
     content: (metric) => {
       // If this is a vessel with no data, don't show the details button
       if (metric.issue_type && 

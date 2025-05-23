@@ -49,7 +49,7 @@ const ProtectedRoute = ({ children }) => {
 
 // Main App Content with navigation and protected pages
 function AppContent() {
-  const [activePage, setActivePage] = useState('fleet');
+  const [activePage, setActivePage] = useState('dataQuality');
   const { currentUser, checkAuthStatus } = useAuth();
   
   useEffect(() => {

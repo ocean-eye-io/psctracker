@@ -8,35 +8,12 @@ import {
 import '../DashboardStyles.css';
 import '../../common/Table/tableStyles.css';
 import DataQualityTable from './DataQualityTable';
+import { DATA_QUALITY_FIELDS } from './dataQualityFieldMappings'; // Import from the new file
 
 // API Configuration
 const API_URL = 'https://ijvra3ghrlijudmmxpny7bj4aa0oqfbz.lambda-url.ap-south-1.on.aws/';
 const ANALYSIS_DAYS = 10;
 const REQUEST_TIMEOUT = 60000;
-
-// Field mappings configuration
-const DATA_QUALITY_FIELDS = {
-  TABLE: {
-    vessel_name: { dbField: 'vessel_name', label: 'Vessel Name', priority: 1, minWidth: '180px' },
-    vessel_imo: { dbField: 'vessel_imo', label: 'IMO Number', priority: 2, minWidth: '120px' },
-    vessel_type: { dbField: 'vessel_type', label: 'Vessel Type', priority: 3, minWidth: '140px' },
-    completeness: { dbField: 'completeness', label: 'Completeness', priority: 4, minWidth: '120px' },
-    correctness: { dbField: 'correctness', label: 'Correctness', priority: 5, minWidth: '120px' },
-    freshness: { dbField: 'freshness', label: 'Freshness', priority: 6, minWidth: '120px' },
-    overall_score: { dbField: 'overall_score', label: 'Overall Score', priority: 7, minWidth: '130px' },
-    last_updated: { dbField: 'last_updated', label: 'Last Updated', priority: 8, minWidth: '180px' },
-    issue_count: { dbField: 'issue_count', label: 'Issues', priority: 9, minWidth: '80px' }
-  },
-  EXPANDED: {
-    entries_analyzed: { dbField: 'entries_analyzed', label: 'Entries Analyzed', priority: 1 },
-    issue_type: { dbField: 'issue_type', label: 'Issue Type', priority: 2 },
-    issue_description: { dbField: 'issue_description', label: 'Issue Description', priority: 3 },
-    missing_fields_info: { dbField: 'missing_fields_info', label: 'Missing Fields', priority: 4 },
-    incorrect_fields_info: { dbField: 'incorrect_fields_info', label: 'Incorrect Fields', priority: 5 },
-    last_validated: { dbField: 'last_validated', label: 'Last Validated', priority: 6 },
-    days_since_update: { dbField: 'days_since_update', label: 'Days Since Update', priority: 7 }
-  }
-};
 
 // Quality score thresholds
 const QUALITY_THRESHOLDS = {
@@ -303,7 +280,7 @@ const DataQualityDashboard = () => {
     <div className="dashboard-container">
       {/* Header Section */}
       <div className="dashboard-header">
-        <div className="header-content">
+        <div className="header-content"> {/* This is the main flex container */}
           <div className="header-title-section">
             <div className="header-title">
               <BarChart2 size={18} className="header-icon" />
@@ -322,68 +299,71 @@ const DataQualityDashboard = () => {
             </div>
           </div>
           
-          <div className="quality-summary">
-            <div className="quality-indicator excellent">
-              <span className="quality-count">{summaryMetrics.excellentVessels}</span>
-              <span className="quality-label">Excellent</span>
+          {/* This new container will be pushed to the right */}
+          <div className="header-right-section"> 
+            <div className="quality-summary">
+              <div className="quality-indicator excellent">
+                <span className="quality-count">{summaryMetrics.excellentVessels}</span>
+                <span className="quality-label">Excellent</span>
+              </div>
+              <div className="quality-indicator good">
+                <span className="quality-count">{summaryMetrics.goodVessels}</span>
+                <span className="quality-label">Good</span>
+              </div>
+              <div className="quality-indicator acceptable">
+                <span className="quality-count">{summaryMetrics.acceptableVessels}</span>
+                <span className="quality-label">Acceptable</span>
+              </div>
+              <div className="quality-indicator poor">
+                <span className="quality-count">{summaryMetrics.poorVessels}</span>
+                <span className="quality-label">Poor</span>
+              </div>
             </div>
-            <div className="quality-indicator good">
-              <span className="quality-count">{summaryMetrics.goodVessels}</span>
-              <span className="quality-label">Good</span>
-            </div>
-            <div className="quality-indicator acceptable">
-              <span className="quality-count">{summaryMetrics.acceptableVessels}</span>
-              <span className="quality-label">Acceptable</span>
-            </div>
-            <div className="quality-indicator poor">
-              <span className="quality-count">{summaryMetrics.poorVessels}</span>
-              <span className="quality-label">Poor</span>
-            </div>
-          </div>
-          
-          <div className="header-actions">
-            <div className="search-container">
+            
+            <div className="header-actions">
+              <div className="search-container">
+                <button 
+                  className="action-btn search-btn" 
+                  onClick={() => setShowSearch(!showSearch)}
+                  title="Search vessels"
+                >
+                  <Search size={14} />
+                  <span>Search</span>
+                </button>
+                
+                {showSearch && (
+                  <div className="search-popup">
+                    <input 
+                      type="text" 
+                      placeholder="Search vessels, IMO, type..." 
+                      className="search-input"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                )}
+              </div>
+              
               <button 
-                className="action-btn search-btn" 
-                onClick={() => setShowSearch(!showSearch)}
-                title="Search vessels"
+                className="action-btn refresh-btn" 
+                onClick={fetchDataQualityMetrics} 
+                disabled={loading}
               >
-                <Search size={14} />
-                <span>Search</span>
+                <RefreshCw size={14} className={loading ? "spinning" : ""} />
+                <span>{loading ? 'Analyzing...' : 'Refresh'}</span>
               </button>
               
-              {showSearch && (
-                <div className="search-popup">
-                  <input 
-                    type="text" 
-                    placeholder="Search vessels, IMO, type..." 
-                    className="search-input"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    autoFocus
-                  />
-                </div>
-              )}
+              <button 
+                className="action-btn export-btn" 
+                onClick={handleExport}
+                disabled={filteredMetrics.length === 0 || loading}
+              >
+                <Download size={14} />
+                <span>Export</span>
+              </button>
             </div>
-            
-            <button 
-              className="action-btn refresh-btn" 
-              onClick={fetchDataQualityMetrics} 
-              disabled={loading}
-            >
-              <RefreshCw size={14} className={loading ? "spinning" : ""} />
-              <span>{loading ? 'Analyzing...' : 'Refresh'}</span>
-            </button>
-            
-            <button 
-              className="action-btn export-btn" 
-              onClick={handleExport}
-              disabled={filteredMetrics.length === 0 || loading}
-            >
-              <Download size={14} />
-              <span>Export</span>
-            </button>
-          </div>
+          </div> {/* End of header-right-section */}
         </div>
       </div>
 
@@ -423,7 +403,7 @@ const DataQualityDashboard = () => {
       <div className="metrics-dashboard">
         <div className="gauge-container">
           <div className="gauge-card">
-            <div className="gauge-title">Fleet Quality</div>
+            <div className="gauge-title">Fleet Data Quality Score</div>
             <div className="gauge-wrapper">
               <div className="gauge">
                 <div className="gauge-fill" style={{ 
@@ -439,21 +419,21 @@ const DataQualityDashboard = () => {
           
           <div className="metrics-trio">
             <div className="metric-pill" style={{ borderColor: getQualityScoreColor(summaryMetrics.completeness) }}>
-              <span className="metric-pill-label">Completeness</span>
+              <span className="metric-pill-label">Data Completeness</span>
               <span className="metric-pill-value" style={{ color: getQualityScoreColor(summaryMetrics.completeness) }}>
                 {summaryMetrics.completeness}%
               </span>
             </div>
             
             <div className="metric-pill" style={{ borderColor: getQualityScoreColor(summaryMetrics.correctness) }}>
-              <span className="metric-pill-label">Correctness</span>
+              <span className="metric-pill-label">Data Accuracy</span>
               <span className="metric-pill-value" style={{ color: getQualityScoreColor(summaryMetrics.correctness) }}>
                 {summaryMetrics.correctness}%
               </span>
             </div>
             
             <div className="metric-pill" style={{ borderColor: getQualityScoreColor(summaryMetrics.freshness) }}>
-              <span className="metric-pill-label">Freshness</span>
+              <span className="metric-pill-label">Data Recency</span>
               <span className="metric-pill-value" style={{ color: getQualityScoreColor(summaryMetrics.freshness) }}>
                 {summaryMetrics.freshness}%
               </span>
@@ -626,21 +606,22 @@ const DataQualityDashboard = () => {
           margin-bottom: 0.75rem;
           background: var(--color-surface);
           border-radius: var(--radius-md);
-          padding: 0.75rem;
+          padding: 0.5rem 0.75rem; /* Adjusted padding here */
           box-shadow: var(--shadow-md);
           border: 1px solid var(--color-border);
         }
 
         .header-content {
           display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          gap: 0.75rem;
+          justify-content: space-between; /* THIS IS THE KEY FOR LEFT/RIGHT ALIGNMENT */
+          align-items: center; /* Vertically centers items */
+          flex-wrap: wrap; /* Allows items to wrap on smaller screens */
+          width: 100%; /* Explicitly ensure it takes full width */
+          gap: 0.75rem; /* This gap is for when items wrap, not for space-between */
         }
 
         .header-title-section {
-          flex: 1;
-          min-width: 200px;
+          min-width: 200px; /* Ensure it doesn't shrink too much */
         }
 
         .header-title {
@@ -683,6 +664,14 @@ const DataQualityDashboard = () => {
 
         .analysis-duration {
           color: var(--color-success);
+        }
+
+        /* New style for the right-aligned section */
+        .header-right-section {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 0.75rem; /* Gap between quality summary and actions */
         }
 
         /* Quality Summary */
@@ -731,7 +720,6 @@ const DataQualityDashboard = () => {
         .header-actions {
           display: flex;
           gap: 0.5rem;
-          margin-left: auto;
           flex-wrap: wrap;
         }
 
@@ -960,13 +948,6 @@ const DataQualityDashboard = () => {
         }
 
         .gauge-wrapper {
-          position: relative;
-          width: 100%;
-          display: flex;
-          justify-content: center;
-        }
-
-        .gauge {
           position: relative;
           width: 100px;
           height: 50px;
@@ -1243,14 +1224,13 @@ const DataQualityDashboard = () => {
         /* Responsive Adjustments */
         @media (max-width: 768px) {
           .header-content {
-            flex-direction: column;
-            align-items: flex-start;
+            flex-direction: column; /* Stack items vertically */
+            align-items: flex-start; /* Align to left */
           }
 
-          .header-actions {
-            margin-left: 0;
-            width: 100%;
-            justify-content: flex-start;
+          .header-right-section { 
+            width: 100%; /* Take full width when stacked */
+            justify-content: flex-start; /* Align its content to start */
           }
 
           .quality-summary {
