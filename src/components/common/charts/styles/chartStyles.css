@@ -37,7 +37,7 @@
   perspective: 1000px;
   margin-bottom: 3px;
   height: auto; /* Ensure this height is sufficient */
-  min-height: 250px; /* Or adjust this based on content */
+  min-height: 280px; /* Or adjust this based on content */
   display: flex;
   flex-direction: column;
   box-sizing: border-box; /* Added box-sizing */

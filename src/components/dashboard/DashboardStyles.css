@@ -619,7 +619,7 @@
 .dashboard-card-body {
   padding: 8px;
   /* Adjusted min-height and added max-height for better control */
-  min-height: 260px; /* Adjusted to match chart-card height */
+  min-height: 300px; /* Adjusted to match chart-card height */
   height: auto; /* Allow height to adjust */
   max-height: calc(100% - 16px); /* Example: Adjust based on padding */
   display: flex;
