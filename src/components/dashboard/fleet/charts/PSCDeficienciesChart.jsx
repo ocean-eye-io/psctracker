@@ -561,7 +561,7 @@ const getYAxisTicks = useMemo(() => {
               tickLine={false}
               angle={-45}
               textAnchor="end"
-              height={60}
+              height={35}
               interval={0}
               tickFormatter={(value) => value.length > 10 ? `${value.substring(0, 10)}...` : value}
             />
@@ -618,7 +618,7 @@ const getYAxisTicks = useMemo(() => {
               tickLine={false}
               angle={-45}
               textAnchor="end"
-              height={60}
+              height={35}
               interval={0}
               tickFormatter={(value) => value.length > 10 ? `${value.substring(0, 10)}...` : value}
             />

@@ -1230,10 +1230,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
             // In your dashboard component:
             <DeficiencyCodeChart
               data={pscDeficiencyData}
-              onFilterChange={(filter) => {
-
-                console.log('Risk chart filter changed:', filter);
-              }}
+              onFilterChange={() => { }}
               activeFilter={null}
             />
             // <PSCKpisChart
