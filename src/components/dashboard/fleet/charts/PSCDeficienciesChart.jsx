@@ -607,4 +607,3 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
 };
 
 export default PSCDeficienciesChart;
-
