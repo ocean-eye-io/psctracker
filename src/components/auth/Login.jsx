@@ -1,9 +1,11 @@
 // src/components/auth/Login.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Ship, Lock, User, AlertCircle } from 'lucide-react';
+import { Ship, Lock, User, AlertCircle } from 'lucide-react'; 
 import { useAuth } from '../../context/AuthContext';
+import Logo from '../Logo';
 import './AuthStyles.css';
+import LoginBackgroundSVG from './LoginBackgroundSVG'; // <--- ADDED IMPORT
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -12,7 +14,6 @@ const Login = () => {
   const { signIn, loading, currentUser } = useAuth();
   const navigate = useNavigate();
   
-  // Redirect if already authenticated
   useEffect(() => {
     if (currentUser) {
       navigate('/');
@@ -33,18 +34,26 @@ const Login = () => {
       navigate('/');
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message || 'Failed to sign in');
+      setError(err.message || 'Failed to sign in. Please check your credentials.');
     }
   };
 
   return (
     <div className="auth-container">
+      <LoginBackgroundSVG /> {/* <--- ADDED SVG COMPONENT HERE */}
       <div className="auth-card">
         <div className="auth-header">
-          <Ship size={40} className="brand-icon" />
-          <h1>FleetWatch</h1>
-          <div className="animated-wave auth-wave"></div>
+          <Logo width="180" height="180" className="brand-icon" id="login-logo" /> 
+          {/* NEW: Wrapper div for FleetWatch text and its wave */}
+          <div className="fleetwatch-text-wrapper"> 
+            <h1>FleetWatch</h1>
+            {/* MOVED: The animated wave is now inside this wrapper, directly under h1 */}
+            <div className="animated-wave auth-wave"></div> 
+          </div>
         </div>
+
+        {/* The separator line remains here, below the entire auth-header block */}
+        <div className="header-separator"></div> 
         
         <h2>Sign In</h2>
         
@@ -58,7 +67,7 @@ const Login = () => {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="username">
-              <User size={18} />
+              <User size={18} /> 
               <span>Username</span>
             </label>
             <input
@@ -74,7 +83,7 @@ const Login = () => {
           
           <div className="form-group">
             <label htmlFor="password">
-              <Lock size={18} />
+              <Lock size={18} /> 
               <span>Password</span>
             </label>
             <input
@@ -93,13 +102,13 @@ const Login = () => {
             className="auth-button"
             disabled={loading}
           >
-            {loading ? 'Signing In...' : 'Sign In'}
+            {loading ? 'Signing In...' : 'Sign In'} 
           </button>
         </form>
         
         <div className="auth-links">
           <Link to="/forgot-password">Forgot password?</Link>
-          <Link to="/signup">Don't have an account? Sign Up</Link>
+          <Link to="/signup">Don't have an account? Sign Up</Link> 
         </div>
       </div>
     </div>
