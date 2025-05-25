@@ -49,11 +49,11 @@ const EditableField = ({ value, onSave, type = 'text', placeholder = 'N/A', isSa
       setCurrentValue(newDate);
       onSave(newDate);
     }
-    setShowCustomCustomDatePicker(false);
+    setShowCustomDatePicker(false);
   };
 
   const handleDateCancel = () => {
-    setShowCustomCustomDatePicker(false);
+    setShowCustomDatePicker(false);
   };
 
   const handleSave = async () => {
