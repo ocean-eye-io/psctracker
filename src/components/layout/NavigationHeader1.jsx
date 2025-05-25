@@ -1,14 +1,15 @@
-// src/components/layout/NavigationHeader.jsx
 import React, { useState } from 'react';
 import { Ship, BarChart2, LogOut, Menu, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom'; // Import useLocation
 import { useAuth } from '../../context/AuthContext';
 import './NavigationStyles.css';
 
-const NavigationHeader = ({ activePage, onNavigate, userInfo }) => {
+// Remove onNavigate prop as it's no longer needed
+const NavigationHeader = ({ activePage, userInfo }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  // const location = useLocation(); // No longer needed here, activePage is passed as prop
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -19,9 +20,9 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo }) => {
 
   const handleNavClick = (id, e) => {
     e.preventDefault();
-    if (onNavigate) onNavigate(id);
+    // onNavigate is removed, as activePage is now derived from URL in AppLayout
     const navItem = navItems.find(item => item.id === id);
-    if (navItem) navigate(navItem.path);
+    if (navItem) navigate(navItem.path); // This correctly changes the URL
     if (sidebarOpen) setSidebarOpen(false);
   };
 
@@ -80,12 +81,12 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo }) => {
             <a
               key={item.id}
               href={item.path}
-              className={`nav-item ${activePage === item.id ? 'active' : ''}`}
+              className={`nav-item ${activePage === item.id ? 'active' : ''}`} // Use activePage prop
               onClick={e => handleNavClick(item.id, e)}
             >
               {item.icon}
               <span>{item.label}</span>
-              {activePage === item.id && <div className="active-indicator"></div>}
+              {activePage === item.id && <div className="active-indicator"></div>} {/* Use activePage prop */}
             </a>
           ))}
         </nav>
@@ -117,7 +118,7 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo }) => {
             <a
               key={item.id}
               href={item.path}
-              className={`sidebar-nav-item ${activePage === item.id ? 'active' : ''}`}
+              className={`sidebar-nav-item ${activePage === item.id ? 'active' : ''}`} // Use activePage prop
               onClick={e => handleNavClick(item.id, e)}
             >
               {item.icon}

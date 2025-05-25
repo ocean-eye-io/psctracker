@@ -1,13 +1,12 @@
 // src/App.jsx
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Amplify } from 'aws-amplify';
 import awsConfig from './config/aws-config';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import FloatingChatbot from './components/FloatingChatbot';
 
 
-// Components
 import NavigationHeader from './components/layout/NavigationHeader';
 import FleetDashboard from './components/dashboard/fleet/FleetDashboard';
 import DefectsDashboard from './components/dashboard/defects/DefectsDashboard';
@@ -24,76 +23,55 @@ import ResetPassword from './components/auth/ResetPassword';
 import './App.css';
 
 // Configure Amplify
-Amplify.configure(awsConfig);
 try {
   Amplify.configure(awsConfig);
   console.log("Amplify configured successfully");
 } catch (error) {
   console.error("Error configuring Amplify:", error);
 }
+
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
   const { currentUser, loading } = useAuth();
-  
+
   if (loading) {
     return <div className="loading-spinner">Loading...</div>;
   }
-  
+
   if (!currentUser) {
     return <Navigate to="/login" />;
   }
-  
+
   return children;
 };
 
-// Main App Content with navigation and protected pages
-function AppContent() {
-  const [activePage, setActivePage] = useState('fleet');
-  const { currentUser, checkAuthStatus } = useAuth();
-  
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-  
-  const handleOpenInstructions = (vessel) => {
-    console.log('Opening instructions for vessel:', vessel);
-    // Your implementation here
-  };
-  
-  const handleNavigation = (page) => {
-    setActivePage(page);
-  };
+// Helper to get activePage from URL
+const getActivePageFromPath = (pathname) => {
+  if (pathname.startsWith('/fleet')) return 'fleet';
+  if (pathname.startsWith('/defects')) return 'defects';
+  if (pathname.startsWith('/reporting')) return 'reporting';
+  return 'fleet'; // default
+};
 
-  // If not authenticated, don't render the main app content
-  if (!currentUser) {
-    return null;
-  }
+// Layout for protected pages
+const ProtectedLayout = ({ children }) => {
+  const { currentUser } = useAuth();
+  const location = useLocation();
+  const activePage = getActivePageFromPath(location.pathname);
 
   return (
     <div className="app">
-      <NavigationHeader 
+      <NavigationHeader
         activePage={activePage}
-        onNavigate={handleNavigation}
         userInfo={currentUser}
       />
-      
       <main className="app-content">
-        {activePage === 'fleet' ? (
-          <FleetDashboard
-            onOpenInstructions={handleOpenInstructions}
-            fieldMappings={fleetFieldMappings}
-          />
-        ) : activePage === 'defects' ? (
-          <DefectsDashboard />
-        ) : activePage === 'reporting' ? (
-          <VesselReportingPage />
-        ) : null}
+        {children}
       </main>
     </div>
   );
-}
+};
 
-// Main App component with routing
 function App() {
   return (
     <AuthProvider>
@@ -106,19 +84,50 @@ function App() {
           <Route path="/confirm-signup" element={<ConfirmSignUp />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          
-          {/* Protected Main App */}
-          <Route 
-            path="/" 
+
+          {/* Protected App Routes */}
+          <Route
+            path="/fleet"
             element={
               <ProtectedRoute>
-                <AppContent />
+                <ProtectedLayout>
+                  <FleetDashboard fieldMappings={fleetFieldMappings} />
+                </ProtectedLayout>
               </ProtectedRoute>
-            } 
+            }
           />
-          
-          {/* Redirect any other routes to the main app */}
-          <Route path="*" element={<Navigate to="/" />} />
+          <Route
+            path="/defects"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout>
+                  <DefectsDashboard />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reporting"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout>
+                  <VesselReportingPage />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Default route: redirect to /fleet */}
+          <Route
+            path="/"
+            element={<Navigate to="/fleet" replace />}
+          />
+
+          {/* Catch-all: redirect to /fleet */}
+          <Route
+            path="*"
+            element={<Navigate to="/fleet" replace />}
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -36,8 +36,9 @@
   transform-style: preserve-3d;
   perspective: 1000px;
   margin-bottom: 3px;
-  height: auto; /* Ensure this height is sufficient */
-  min-height: 280px; /* Or adjust this based on content */
+  height: 260px; /* Fixed height for compactness */
+  max-height: 280px; /* Fixed height for compactness */
+  min-height: 260px; /* Ensure it doesn't shrink below this */
   display: flex;
   flex-direction: column;
   box-sizing: border-box; /* Added box-sizing */
@@ -139,7 +140,6 @@
 
 /* Chart Wrapper */
 .chart-wrapper {
-  /* height: calc(100% - 38px); REMOVED - Let flex-grow manage height */
   filter: drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.2));
   transform: translateZ(0);
   border-radius: 6px;
@@ -151,11 +151,12 @@
   align-items: stretch;
   justify-content: flex-start;
   background: rgba(11, 22, 35, 0.5);
-  padding: 10px;
-  max-height: calc(100vh - 100px); /* Verify this max-height */
+  padding: 8px; /* Reduced padding for compactness */
+  height: 234px; /* Calculated height: 280 - 4*2 (card padding) - 30 (header) - 8 (header margin) */
+  max-height: 234px; /* Enforce max height */
   flex-grow: 1; /* Takes remaining space in chart-card */
   min-height: 0; /* Crucial for flex children */
-  gap: 8px; /* Reduced gap slightly */
+  gap: 8px; /* Reduced gap between sections for compactness */
   box-sizing: border-box; /* Added box-sizing */
 }
 
@@ -168,14 +169,14 @@
   margin-bottom: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 5px; /* Reduced gap */
   padding: 0;
   flex-shrink: 0; /* Does not grow, takes only needed space */
   box-sizing: border-box; /* Added box-sizing */
 }
 
 .total-defects-title {
-  font-size: 12px;
+  font-size: 10px; /* Reduced font size */
   color: var(--text-secondary);
   font-weight: 500;
   margin: 0;
@@ -184,7 +185,7 @@
 }
 
 .total-defects-value {
-  font-size: 28px;
+  font-size: 22px; /* Reduced font size */
   font-weight: 700;
   color: var(--accent-primary);
   text-shadow: 0 1px 6px rgba(59, 173, 229, 0.3);
@@ -198,7 +199,7 @@
   flex-grow: 1; /* Takes remaining space in chart-wrapper */
   width: 100%;
   min-height: 0; /* Crucial for flex children */
-  gap: 15px;
+  gap: 10px; /* Reduced gap */
   max-height: calc(100% - 40px); /* Keep this as it is, but verify parent height */
   overflow: hidden; /* IMPORTANT: Helps contain children */
   box-sizing: border-box; /* Added box-sizing */
@@ -321,16 +322,14 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between; /* Distribute KPIs evenly, or use flex-start */
-
   flex: 0 0 300px;
-
   min-width: 300px;
   padding: 5px; /* Reduced padding */
   height: 100%; /* Takes full height of parent .chart-and-kpis-container */
   max-height: 100%; /* Added this line */
   min-height: 0; /* Crucial for flex children */
   overflow: hidden; /* Prevent its own scroll if content is still too large */
-  gap: 5px; /* Reduced gap between KPI items */
+  gap: 3px; /* Reduced gap between KPI items */
   box-sizing: border-box; /* Added box-sizing */
 }
 
@@ -343,9 +342,7 @@
   padding: 0;
   position: relative;
   width: 100%;
-  /* border: 1px solid red; /* For debugging layout */
   box-sizing: border-box; /* Added box-sizing */
-  /* Ensure no fixed height here that causes overflow */
 }
 
 /* Container for label and value within each chart-metric */
@@ -354,141 +351,137 @@
   flex-direction: column;
   align-items: flex-start;
   width: 100%;
-  margin-bottom: 2px; /* Reduced margin */
+  margin-bottom: 1px; /* Reduced margin */
   box-sizing: border-box; /* Added box-sizing */
 }
 
 .chart-metric-label {
-  font-size: 9px; /* Slightly smaller */
+  font-size: 8px; /* Reduced font size */
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 1px; /* Reduced margin */
+  margin-bottom: 0px; /* Reduced margin */
 }
 
 .chart-metric-value {
-  font-size: 16px; /* Slightly smaller */
+  font-size: 12px; /* Reduced font size */
   font-weight: 700;
-  margin-bottom: 2px; /* Reduced margin */
+  margin-bottom: 1px; /* Reduced margin */
 }
 
 /* Horizontal Bar Styles (used in KPIs and Criticality Chart) */
-.horizontal-bar-container,
-.criticality-progress-bar,
-.high-criticality-status-progress {
+.horizontal-bar-container {
   width: 100%;
-  height: 5px; /* Slightly smaller */
-  background: rgba(244, 244, 244, 0.05);
-  border-radius: 3px;
+  height: 5px; /* Reduced height for compactness */
+  background: rgba(244, 244, 244, 0.08); /* Slightly darker background for contrast */
+  border-radius: 4px; /* Slightly larger border-radius */
   overflow: hidden;
-  margin-top: 2px; /* Reduced margin */
-  box-sizing: border-box; /* Added box-sizing */
-  display: flex; /* Added for criticality progress bars */
+  margin-top: 3px; /* Reduced margin */
+  display: flex;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2); /* Inner shadow for depth */
+  box-sizing: border-box;
 }
 
-.horizontal-bar,
-.criticality-progress-bar > div,
-.high-criticality-status-progress > div {
+.horizontal-bar {
   height: 100%;
-  border-radius: 3px;
-  transition: width 0.5s ease-in-out;
-  max-width: 100%; /* Add this line */
-  box-sizing: border-box; /* Added box-sizing */
+  border-radius: 4px; /* Match container border-radius */
+  transition: width 0.6s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smoother transition */
+  max-width: 100%;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.3); /* Subtle shadow for the bar itself */
+  box-sizing: border-box;
 }
 
 
 /* --- Criticality Chart Specific Styles --- */
-.criticality-chart-content {
-  padding: 15px; /* Match the padding from the inline style */
-  height: 100%;
-  width: 100%;
-  display: flex; /* Use flexbox for layout */
-  flex-direction: column; /* Stack elements vertically */
-  justify-content: space-between; /* Distribute space */
-  box-sizing: border-box;
-}
 
-.criticality-values {
+/* Main container for the KPI values (High, Medium, Low counts) */
+.criticality-kpi-values {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 8px; /* Space below the numbers */
+  justify-content: space-around; /* Distribute items evenly */
+  align-items: center;
+  margin-bottom: 8px; /* Reduced space */
+  padding: 5px 0; /* Reduced padding */
+  /* Removed border-bottom for a cleaner look as per image */
 }
 
-.criticality-value-item {
+.criticality-kpi-item {
   text-align: center;
+  flex: 1; /* Allow items to take equal space */
+  padding: 0 5px; /* Add some horizontal padding */
 }
 
-.criticality-value-number {
-  font-size: 32px;
+.criticality-kpi-number {
+  font-size: 32px; /* Reduced font size for compactness */
   font-weight: 700;
-  /* Color is set inline based on criticality */
-  text-shadow: 0 0 10px rgba(var(--color-blue-rgb), 0.2); /* Example text shadow using a variable */
+  margin-bottom: 3px; /* Reduced margin */
+  /* Color is set inline based on criticality (var(--negative-color), etc.) */
+  text-shadow: 0 0 20px rgba(76, 201, 240, 0.4); /* More prominent text shadow */
+  transition: all 0.3s ease;
 }
 
-.criticality-value-label {
-  font-size: 13px;
-  color: var(--text-secondary); /* Match existing text color */
+.criticality-kpi-item:hover .criticality-kpi-number {
+  transform: translateY(-3px) scale(1.03); /* Slightly more pronounced hover effect */
+  text-shadow: 0 0 25px currentColor; /* Glow based on its own color */
 }
 
-/* Criticality progress bar - Merged with horizontal-bar-container */
-/* .criticality-progress-bar { ... } */
+.criticality-kpi-label {
+  font-size: 12px; /* Reduced font size */
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px; /* Slightly more spacing for readability */
+  font-weight: 500;
+}
 
-/* High Criticality Status Section */
-.high-criticality-section-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: rgba(244, 244, 244, 0.9); /* Match existing text color */
+/* Subheader for sections like "High Criticality Status" */
+.criticality-subheader {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: 5px; /* Reduced gap */
+  font-size: 12px; /* Reduced font size */
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 10px; /* Reduced space above this section */
+  margin-bottom: 5px; /* Reduced space below subheader */
+  padding-bottom: 3px; /* Reduced padding */
+  border-bottom: 1px solid rgba(244, 244, 244, 0.05); /* Very subtle border for separation */
 }
 
-.high-criticality-indicator {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  background: var(--negative-color); /* High criticality color (Danger Red) */
-  transform: rotate(45deg);
+.criticality-subheader-icon {
+  color: var(--accent-primary); /* Icon color */
+  filter: drop-shadow(0 0 6px rgba(76, 201, 240, 0.4)); /* More prominent icon glow */
 }
 
-.high-criticality-status {
-  margin-top: 10px;
-}
-
+/* Summary section for High Criticality Status (Open, In Progress, Closed counts) */
 .high-criticality-status-summary {
   display: flex;
+  justify-content: space-around; /* Distribute items evenly */
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 8px; /* Reduced space */
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+  gap: 8px; /* Reduced gap between items when wrapping */
 }
 
 .high-criticality-status-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px; /* Reduced gap between dot and text */
+  font-size: 11px; /* Reduced font size */
+  color: var(--text-secondary);
+  font-weight: 500;
+  flex-basis: auto; /* Allow items to size naturally */
+  min-width: 100px; /* Ensure minimum width for each item */
 }
 
-.status-color-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  /* Background color is set inline based on status */
-}
-
-.high-criticality-status-item span {
-  font-size: 12px;
-  color: rgba(244, 244, 244, 0.9); /* Match existing text color */
-}
-
-/* High Criticality Status Progress Bar - Merged with horizontal-bar-container */
-/* .high-criticality-status-progress { ... } */
-
+/* Message for when no high criticality defects are present */
 .criticality-status-message {
-  font-size: 13px;
+  font-size: 11px; /* Reduced font size */
   color: var(--text-secondary);
   text-align: center;
-  padding: 10px;
+  padding: 10px; /* Reduced padding */
+  background: rgba(11, 22, 35, 0.4);
+  border-radius: 8px; /* Slightly larger border-radius */
+  margin-top: 8px; /* Reduced margin-top */
+  border: 1px dashed var(--border-color);
 }
 
 
@@ -525,11 +518,6 @@
 }
 
 /* Chart Action Buttons */
-.chart-actions {
-  display: flex;
-  gap: 6px;
-}
-
 .chart-action-btn {
   font-family: 'Nunito', sans-serif;
   background: rgba(59, 173, 229, 0.1);
@@ -717,7 +705,7 @@
 .chart-dot:hover {
   transform: scale(1.3);
   stroke-width: 2;
-  filter: drop-shadow(0 0 4px var(--accent-primary));
+  filter: drop_shadow(0 0 4px var(--accent-primary));
 }
 
 .chart-pie {
@@ -728,7 +716,7 @@
 
 .chart-pie:hover {
   transform: translateY(-2px) scale(1.02);
-  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+  filter: drop_shadow(0 3px 6px rgba(0, 0, 0, 0.5));
 }
 
 
@@ -838,7 +826,7 @@
 }
 
 .timeline-cell.active {
-  stroke: #ffffff;
+  stroke: #ffff;
   stroke-width: 1px;
   filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
 }
@@ -927,18 +915,15 @@
 }
 
 /* Status-specific colors for the horizontal bars */
-.horizontal-bar.status-open,
-.high-criticality-status-progress > div.status-open {
+.horizontal-bar.status-open {
   background-color: var(--negative-color);
 }
 
-.horizontal-bar.status-progress,
-.high-criticality-status-progress > div.status-progress {
+.horizontal-bar.status-progress {
   background-color: var(--warning-color);
 }
 
-.horizontal-bar.status-closed,
-.high-criticality-status-progress > div.status-closed {
+.horizontal-bar.status-closed {
   background-color: var(--positive-color);
 }
 
@@ -1204,5 +1189,25 @@
     flex-basis: auto; /* Allow panel to take full width when stacked */
     height: auto; /* Adjust height as needed when stacked */
     /* Consider making KPIs horizontal on very small screens if space is an issue */
+  }
+
+  /* Criticality Chart specific responsive adjustments */
+  .criticality-kpi-values {
+    flex-direction: column; /* Stack KPI values vertically */
+    align-items: stretch;
+    gap: 15px; /* Space between stacked items */
+  }
+
+  .criticality-kpi-item {
+    padding: 0; /* Remove horizontal padding when stacked */
+  }
+
+  .criticality-kpi-number {
+    font-size: 36px; /* Slightly smaller on mobile */
+  }
+
+  .high-criticality-status-summary {
+    flex-direction: column; /* Stack status items vertically */
+    align-items: flex-start;
   }
 }

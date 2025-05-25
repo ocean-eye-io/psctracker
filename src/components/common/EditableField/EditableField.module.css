@@ -1,0 +1,183 @@
+/* src/components/common/EditableField/EditableField.module.css */
+
+/* Base Container for the entire editable field */
+.container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+    font-family: 'Segoe UI', 'Roboto', sans-serif;
+    font-size: 13px;
+    color: #E0E0E0;
+    transition: all 0.2s ease-in-out;
+    padding: 2px 0;
+  }
+
+  /* Highlight for fields with override */
+  .hasOverride {
+    /* border-left: 2px solid #FFD700; */
+    /* background-color: rgba(255, 215, 0, 0.05); */
+  }
+
+  /* Input Group (when editing) */
+  .inputGroup {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-grow: 1;
+    background: rgba(26, 42, 58, 0.85);
+    border: 1px solid rgba(77, 195, 255, 0.3);
+    border-radius: 10px;
+    padding: 2px 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .input {
+    background: rgba(40, 60, 90, 0.7);
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: #F0F0F0;
+    font-size: 13px;
+    flex-grow: 1;
+    min-width: 0;
+    outline: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    transition: background 0.2s;
+  }
+
+  .input:focus {
+    background: rgba(50, 80, 120, 0.95);
+  }
+
+  .input::placeholder {
+    color: #A0A0A0;
+  }
+
+  /* Actions (Save/Cancel/Spinner) */
+  .actions {
+    display: flex;
+    gap: 4px;
+  }
+
+  .saveBtn,
+  .cancelBtn {
+    background: none;
+    border: none;
+    color: #4DC3FF;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  .saveBtn {
+    background: rgba(46, 224, 134, 0.15);
+    border: 1px solid rgba(46, 224, 134, 0.3);
+    color: #2EE086;
+    padding: 6px;
+    border-radius: 8px;
+  }
+
+  .saveBtn:hover {
+    background-color: rgba(46, 224, 134, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(46, 224, 134, 0.2);
+  }
+
+  .cancelBtn {
+    background: rgba(255, 82, 82, 0.15);
+    border: 1px solid rgba(255, 82, 82, 0.3);
+    color: #FF5252;
+    padding: 6px;
+    border-radius: 8px;
+  }
+
+  .cancelBtn:hover {
+    background-color: rgba(255, 82, 82, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 82, 82, 0.2);
+  }
+
+  .spinner {
+    color: #4DC3FF;
+    font-size: 14px;
+    margin: 4px;
+  }
+
+  /* Display Group (when not editing) */
+  .displayGroup {
+    display: flex;
+    align-items: center;
+    /* Tighter gap for closer icons */
+    gap: 2px; /* Changed from 3px to 2px */
+    flex-grow: 1;
+    cursor: pointer;
+    padding: 4px 0;
+  }
+
+  .value {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-grow: 1;
+    min-width: 0;
+    color: #F0F0F0;
+  }
+
+  /* New style for invalid date value */
+  .invalidValue {
+    color: #FF5252; /* Red color for invalid date */
+  }
+
+  .icon {
+    color: #A0A0A0;
+    font-size: 12px;
+    transition: color 0.2s ease-in-out;
+  }
+
+  .displayGroup:hover .icon {
+    color: #4DC3FF;
+  }
+
+  /* Override Info Container & Icon */
+  .overrideInfoContainer {
+    display: flex;
+    align-items: center;
+    /* Removed margin-right to bring it closer */
+    margin-right: 0; /* Changed from 2px to 0 */
+  }
+
+  .overrideInfoIcon {
+    color: #FFD700;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 3px;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .overrideInfoIcon:hover {
+    color: #FFEA00;
+    background-color: rgba(255, 215, 0, 0.1);
+  }
+
+  /* New style for invalid date info icon */
+  .invalidInfoIcon {
+    color: #FF5252; /* Red color for the alert icon */
+    font-size: 12px; /* Small size */
+    margin-left: 4px; /* Space between value and icon */
+    cursor: help; /* Indicate it's for information/tooltip */
+  }
+
+  /* Keyframe Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
