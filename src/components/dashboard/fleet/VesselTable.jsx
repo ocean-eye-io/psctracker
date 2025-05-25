@@ -20,9 +20,6 @@ import PropTypes from 'prop-types'; // Import PropTypes
 import EditableField from '../../common/EditableField/EditableField'; // Corrected import path
 
 // Import FontAwesome icons for EditableField (if not already imported by EditableField itself)
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPencilAlt, faCheck, faTimes, faSpinner, faInfoCircle, faExclamationCircle } from '@fortawesome/free-solid-svg-icons'; // Added faInfoCircle and faExclamationCircle
-
 const VesselTable = ({
   vessels,
   onOpenRemarks,
