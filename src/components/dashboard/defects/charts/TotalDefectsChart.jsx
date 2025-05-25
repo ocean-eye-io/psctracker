@@ -1,90 +1,134 @@
-// src/components/dashboard/defects/charts/TotalDefectsChart.jsx
 import React, { useMemo } from 'react';
-import { FilterIcon } from 'lucide-react'; // Import FilterIcon
-import '../../../common/charts/styles/chartStyles.css'; // Import chart styles
 
 const TotalDefectsChart = ({ data = [] }) => {
   // Process data for the status chart
   const statusData = useMemo(() => {
     const counts = {};
+    let overdueCount = 0; // Separate counter for overdue defects
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize to start of day for comparison
 
     data.forEach(defect => {
-      const status = defect['Status (Vessel)'] || 'Unknown'; // Use the correct field name
-      const normalizedStatus = status.toUpperCase(); // Normalize status here
+      const status = defect.Status || 'Unknown';
+      const normalizedStatus = status.toUpperCase();
 
+      // Increment count for the original status
       if (!counts[normalizedStatus]) {
         counts[normalizedStatus] = 0;
       }
       counts[normalizedStatus]++;
+
+      // Check for overdue condition independently
+      if (defect.target_date && normalizedStatus !== 'CLOSED') {
+        const targetDate = new Date(defect.target_date);
+        targetDate.setHours(0, 0, 0, 0); // Normalize target date
+
+        if (targetDate < today) {
+          overdueCount++; // Increment overdue count
+        }
+      }
     });
 
-    // Now map over the counts object
+    // Add OVERDUE to the counts object as a separate entry
+    if (overdueCount > 0) {
+      counts['OVERDUE'] = overdueCount;
+    }
+
     return Object.entries(counts)
-      .map(([status, value]) => { // 'status' here is the normalized status from the counts object key
+      .map(([status, value]) => {
         let color;
-        if (status === 'OPEN') {
-          color = '#E74C3C'; // Danger color
+        // Using CSS variables for consistency
+        if (status === 'OVERDUE') {
+          color = 'var(--negative-color)'; // Danger color for overdue
+        } else if (status === 'OPEN') {
+          color = 'var(--negative-color)'; // Red for Open
         } else if (status === 'IN PROGRESS') {
-          color = '#F1C40F'; // Warning color
+          color = 'var(--warning-color)'; // Yellow for In Progress
         } else if (status === 'CLOSED') {
-          color = '#2ECC71'; // Success color
+          color = 'var(--positive-color)'; // Green for Closed
         } else {
-          color = '#4DC3FF'; // Primary accent color
+          color = 'var(--accent-tertiary)'; // Default blue for Unknown
         }
 
-        return { name: status, value, color }; // Use 'status' which is the normalized status
+        return { name: status, value, color };
       })
       .sort((a, b) => {
-        const order = { 'OPEN': 1, 'IN PROGRESS': 2, 'CLOSED': 3 };
-        const orderA = order[a.name] || 4;
-        const orderB = order[b.name] || 4;
+        // Define a specific order for known statuses as per screenshot
+        const order = { 'OVERDUE': 1, 'OPEN': 2, 'IN PROGRESS': 3, 'CLOSED': 4 };
+        const orderA = order[a.name] || 99; // Assign a high number for unknown statuses
+        const orderB = order[b.name] || 99;
 
         if (orderA !== orderB) {
           return orderA - orderB;
         }
 
-        return a.name.localeCompare(b.name);
+        return a.name.localeCompare(b.name); // Alphabetical for same order or unknown
       });
   }, [data]);
 
   // Calculate total defects
   const totalDefects = useMemo(() => data.length, [data]);
 
-  // If no data is available
-  if (!data || data.length === 0) {
-    return (
-      <div className="chart-card">
-        <div className="chart-header">
-          <h3 className="chart-title">Defect Status Overview</h3>
-        </div>
-        <div className="chart-no-data">
-           <FilterIcon size={14} /> {/* Use FilterIcon */}
-          <p>No defect data available</p>
-        </div>
-      </div>
-    );
-  }
+  // Calculate percentage for each status
+  const getPercentage = (count) => {
+    return totalDefects > 0 ? ((count / totalDefects) * 100).toFixed(1) : 0;
+  };
 
   return (
     <div className="chart-card">
+      {/* Chart Header */}
       <div className="chart-header">
-        <h3 className="chart-title">Defect Status Overview</h3>
+        <h3 className="chart-title">
+          TOTAL DEFECTS
+          <span className="chart-title-highlight"></span>
+        </h3>
       </div>
-      <div className="chart-wrapper total-defects-summary"> {/* Use chart-wrapper and a new class for this layout */}
-        {/* Large central number for Total Defects */}
-        <div className="total-defects-main-number">
-          {totalDefects}
-          <div className="total-defects-main-label">Total Defects</div>
+
+      {/* Chart Wrapper */}
+      <div className="chart-wrapper">
+        {/* Total Defect count at the top, using total-defects-header */}
+        <div className="total-defects-header">
+          <h4 className="total-defects-title">TOTAL DEFECTS</h4>
+          <span className="total-defects-value">{totalDefects}</span>
         </div>
 
-        {/* Container for status indicators */}
-        <div className="status-indicators-container">
-          {statusData.map(status => (
-            <div key={status.name} className="status-indicator-item">
-              <div className="status-indicator-value" style={{ color: status.color }}>
-                {status.value}
+        {/* Status rows - adapted to fit compact design */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {statusData.map(statusItem => (
+            <div key={statusItem.name}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                <div style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: '11px',
+                  textTransform: 'uppercase',
+                  fontWeight: '500',
+                }}>
+                  {statusItem.name}
+                </div>
+                <div style={{
+                  color: statusItem.color,
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  textAlign: 'right',
+                  display: 'flex',
+                  alignItems: 'baseline'
+                }}>
+                  {statusItem.value}{' '}
+                  <span style={{ fontSize: '10px', color: 'rgba(244, 244, 244, 0.6)', marginLeft: '4px' }}>
+                    ({getPercentage(statusItem.value)}%)
+                  </span>
+                </div>
               </div>
-              <div className="status-indicator-label">{status.name}</div>
+              <div className="horizontal-bar-container">
+                <div
+                  className="horizontal-bar"
+                  style={{
+                    width: `${Math.min(100, getPercentage(statusItem.value))}%`,
+                    backgroundColor: statusItem.color,
+                  }}
+                ></div>
+              </div>
             </div>
           ))}
         </div>
