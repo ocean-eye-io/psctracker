@@ -11,6 +11,7 @@ import NavigationHeader from './components/layout/NavigationHeader';
 import FleetDashboard from './components/dashboard/fleet/FleetDashboard';
 import DefectsDashboard from './components/dashboard/defects/DefectsDashboard';
 import VesselReportingPage from './components/dashboard/reporting/VesselReportingPage';
+import AdminDashboard from './components/dashboard/admin/AdminDashboard'; // Import AdminDashboard
 import { fleetFieldMappings } from './components/dashboard/fleet/FleetFieldMappings';
 
 // Auth Components
@@ -50,6 +51,7 @@ const getActivePageFromPath = (pathname) => {
   if (pathname.startsWith('/fleet')) return 'fleet';
   if (pathname.startsWith('/defects')) return 'defects';
   if (pathname.startsWith('/reporting')) return 'reporting';
+  if (pathname.startsWith('/admin')) return 'admin'; // Add admin path
   return 'fleet'; // default
 };
 
@@ -112,6 +114,17 @@ function App() {
               <ProtectedRoute>
                 <ProtectedLayout>
                   <VesselReportingPage />
+                </ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          {/* New Admin Route */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout>
+                  <AdminDashboard />
                 </ProtectedLayout>
               </ProtectedRoute>
             }
