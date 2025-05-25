@@ -29,11 +29,10 @@ const DatePickerPortal = ({ children }) => {
     
     // Cleanup
     return () => {
-      // We don't remove the node on unmount because it might be reused
-      // If you want to remove it when not in use, uncomment:
-      // if (node && node.parentNode) {
-      //   node.parentNode.removeChild(node);
-      // }
+      // Only remove if no other portals are using it
+      if (node && node.parentNode && node.childNodes.length === 0) {
+        node.parentNode.removeChild(node);
+      }
     };
   }, []);
   
