@@ -1,138 +1,95 @@
-// src/components/dashboards/admin/tabs/UsersTab.js
 import React, { useState, useEffect } from 'react';
-import UserTable from '../components/UserTable';
-import UserForm from '../components/UserForm';
-import { API_BASE_URL } from '../config'; // Updated import path
+import UserTable from '../components/UserTable'; // Adjust path if necessary
 
 const UsersTab = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showUserForm, setShowUserForm] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // IMPORTANT: Replace with actual token retrieval from your AuthContext or similar
-      const idToken = localStorage.getItem('idToken'); // Placeholder: Get from localStorage
-      if (!idToken) {
-        throw new Error("Authentication token not found. Please log in.");
-      }
-
-      const response = await fetch(`${API_BASE_URL}/admin/users`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch users');
-      }
-
-      const data = await response.json();
-      setUsers(data);
-    } catch (err) {
-      console.error("Error fetching users:", err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Your auth-lambda's Function URL
+  const AUTH_LAMBDA_FUNCTION_URL = 'https://c73anpavlg4ezzsye5selr55gm0sagll.lambda-url.ap-south-1.on.aws/';
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    const fetchUsers = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        console.log('Frontend: Attempting to fetch users from auth-lambda Function URL...');
+        const response = await fetch(AUTH_LAMBDA_FUNCTION_URL, {
+          method: 'POST', // Use POST as per auth-lambda's handler for internal invocation
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            source: 'frontend', // Indicate the source of the invocation
+            action: 'listUsers', // The action to perform
+          }),
+        });
 
-  const handleAddUser = () => {
-    setEditingUser(null);
-    setShowUserForm(true);
-  };
-
-  const handleEditUser = (user) => {
-    setEditingUser(user);
-    setShowUserForm(true);
-  };
-
-  const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user? This will remove them from Cognito and RDS.')) return;
-
-    try {
-      const idToken = localStorage.getItem('idToken');
-      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
-      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete user');
+        const data = await response.json();
+        console.log('Frontend: Successfully fetched users:', data);
+
+        // The auth-lambda returns an array of Cognito user objects.
+        // We need to transform them slightly to fit the UserTable's expected 'rdsData' structure
+        // for username and email, and provide empty arrays for roles/vessels.
+        const transformedUsers = data.map(cognitoUser => {
+          const username = cognitoUser.Username;
+          const emailAttr = cognitoUser.Attributes.find(attr => attr.Name === 'email');
+          const email = emailAttr ? emailAttr.Value : 'N/A';
+          const sub = cognitoUser.Attributes.find(attr => attr.Name === 'sub')?.Value;
+
+          return {
+            cognitoUser: cognitoUser, // Keep the original Cognito user object
+            rdsData: { // Mock rdsData structure for UserTable compatibility
+              user_id: sub, // Use sub as user_id for keying
+              cognito_username: username,
+              email: email,
+              roles: [], // No roles from auth-lambda
+              assigned_vessels: [] // No vessels from auth-lambda
+            }
+          };
+        });
+
+        setUsers(transformedUsers);
+      } catch (err) {
+        console.error('Frontend: Error fetching users:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      alert('User deleted successfully!');
-      fetchUsers();
-    } catch (err) {
-      console.error("Error deleting user:", err);
-      alert(`Error deleting user: ${err.message}`);
-    }
+    fetchUsers();
+  }, []); // Empty dependency array means this runs once on component mount
+
+  if (loading) {
+    return <p>Loading users...</p>;
+  }
+
+  if (error) {
+    return <p style={{ color: 'red' }}>Error: {error}</p>;
+  }
+
+  // Placeholder functions for onEdit and onDelete as they are not implemented yet
+  const handleEdit = (user) => {
+    console.log('Edit user:', user);
+    alert('Edit functionality not yet implemented.');
   };
 
-  const handleFormSubmit = async (userData) => {
-    try {
-      const idToken = localStorage.getItem('idToken');
-      const method = editingUser ? 'PUT' : 'POST';
-      const url = editingUser ? `${API_BASE_URL}/admin/users/${editingUser.rdsData.user_id}` : `${API_BASE_URL}/admin/users`;
-
-      const response = await fetch(url, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify(userData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to ${editingUser ? 'update' : 'create'} user`);
-      }
-
-      alert(`User ${editingUser ? 'updated' : 'created'} successfully!`);
-      setShowUserForm(false);
-      setEditingUser(null);
-      fetchUsers();
-    } catch (err) {
-      console.error(`Error ${editingUser ? 'updating' : 'creating'} user:`, err);
-      alert(`Error ${editingUser ? 'updating' : 'creating'} user: ${err.message}`);
-    }
+  const handleDelete = (userId) => {
+    console.log('Delete user ID:', userId);
+    alert('Delete functionality not yet implemented.');
   };
 
   return (
-    <div className="users-tab-content" style={{ marginTop: '20px' }}>
+    <div className="users-tab-content">
       <h4>Manage Users</h4>
-      <button onClick={handleAddUser} style={{ padding: '10px 15px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginBottom: '15px' }}>Add New User</button>
-
-      {loading && <p>Loading users...</p>}
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
-
-      {!loading && !error && (
-        <UserTable users={users} onEdit={handleEditUser} onDelete={handleDeleteUser} />
-      )}
-
-      {showUserForm && (
-        <UserForm
-          user={editingUser}
-          onSubmit={handleFormSubmit}
-          onClose={() => setShowUserForm(false)}
-        />
-      )}
+      <UserTable users={users} onEdit={handleEdit} onDelete={handleDelete} />
     </div>
   );
 };

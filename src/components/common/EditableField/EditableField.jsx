@@ -2,13 +2,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPencilAlt, faCheck, faTimes, faSpinner, faInfoCircle } from '@fortawesome/free-solid-svg-icons'; // Removed faExclamationCircle
+import { faPencilAlt, faCheck, faTimes, faSpinner, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import ReactDOM from 'react-dom';
 
-import styles from './EditableField.module.css'; // Import CSS module for EditableField
-import OverrideInfoPopover from './OverrideInfoPopover'; // Import the extracted popover
-import CustomDatePicker from './CustomDatePicker'; // Import the extracted date picker
-import { TextTooltip } from '../../common/Table/Tooltip'; // Import TextTooltip
+import styles from './EditableField.module.css';
+import OverrideInfoPopover from './OverrideInfoPopover';
+import CustomDatePicker from './CustomDatePicker';
+import { TextTooltip } from '../../common/Table/Tooltip';
 
 const EditableField = ({ value, onSave, type = 'text', placeholder = 'N/A', isSaving, hasOverride = false, originalValue, onResetToOriginal, isInvalidDate = false, validationMessage = '' }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -16,7 +16,7 @@ const EditableField = ({ value, onSave, type = 'text', placeholder = 'N/A', isSa
   const [showPopover, setShowPopover] = useState(false);
   const [showCustomDatePicker, setShowCustomCustomDatePicker] = useState(false);
   const inputRef = useRef(null);
-  const infoIconRef = useRef(null); // Ref for the info icon
+  const infoIconRef = useRef(null);
 
   useEffect(() => {
     setCurrentValue(value);
@@ -29,7 +29,7 @@ const EditableField = ({ value, onSave, type = 'text', placeholder = 'N/A', isSa
   }, [isEditing, type]);
 
   const handleEditClick = (e) => {
-    e.stopPropagation(); // Stop propagation to prevent parent click handlers from interfering
+    e.stopPropagation();
 
     if (type === 'date' || type === 'datetime-local') {
       setShowCustomCustomDatePicker(true);
@@ -37,7 +37,7 @@ const EditableField = ({ value, onSave, type = 'text', placeholder = 'N/A', isSa
       setIsEditing(true);
     }
 
-    setShowPopover(false); // Ensure popover closes if editing starts
+    setShowPopover(false);
   };
 
   const handleChange = (e) => {
@@ -46,14 +46,15 @@ const EditableField = ({ value, onSave, type = 'text', placeholder = 'N/A', isSa
 
   const handleDateConfirm = (newDate) => {
     if (newDate !== currentValue) {
-      setCurrentValue(newDate);
-      onSave(newDate);
+      onSave(newDate); // Call onSave immediately for date picker
     }
-    setShowCustomDatePicker(false);
+    setShowCustomCustomDatePicker(false);
+    setIsEditing(false); // Exit editing mode after date selection
   };
 
   const handleDateCancel = () => {
-    setShowCustomDatePicker(false);
+    setShowCustomCustomDatePicker(false);
+    setIsEditing(false); // Exit editing mode on cancel
   };
 
   const handleSave = async () => {
@@ -88,7 +89,6 @@ const EditableField = ({ value, onSave, type = 'text', placeholder = 'N/A', isSa
       if (fieldType === 'date') {
         return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
       } else if (fieldType === 'datetime-local') {
-        // Format as "Month Day, Year, HH:MM"
         return date.toLocaleString('en-US', {
           year: 'numeric',
           month: 'short',
@@ -105,13 +105,13 @@ const EditableField = ({ value, onSave, type = 'text', placeholder = 'N/A', isSa
   };
 
   const handleInfoIconClick = (e) => {
-    e.preventDefault(); // Prevent default behavior (e.g., if it's inside a link)
-    e.stopPropagation(); // Stop event from bubbling up to parent elements (like editable-field-display)
-    setShowPopover(prev => !prev); // Toggle the state
+    e.preventDefault();
+    e.stopPropagation();
+    setShowPopover(prev => !prev);
   };
 
   const handleResetClick = (e) => {
-    e.stopPropagation(); // Prevent popover from closing immediately due to outside click handler
+    e.stopPropagation();
     if (onResetToOriginal) {
       onResetToOriginal();
     }
@@ -169,18 +169,17 @@ const EditableField = ({ value, onSave, type = 'text', placeholder = 'N/A', isSa
             displayValueContent
           )}
 
-          {hasOverride && !isInvalidDate && ( // Only show override info if not invalid date
+          {hasOverride && ( // Removed !isInvalidDate condition to always show info icon if override exists
             <div className={styles.overrideInfoContainer}>
               <FontAwesomeIcon
                 icon={faInfoCircle}
                 className={styles.overrideInfoIcon}
-                ref={infoIconRef} // Ensure ref is attached
-                onClick={handleInfoIconClick} // Ensure click handler is here
+                ref={infoIconRef}
+                onClick={handleInfoIconClick}
               />
-              {/* Render OverrideInfoPopover conditionally based on showPopover state */}
               {showPopover && (
                 <OverrideInfoPopover
-                  show={showPopover} // Pass the show state
+                  show={showPopover}
                   currentValue={currentValue}
                   originalValue={originalValue}
                   type={type}
@@ -211,8 +210,8 @@ EditableField.propTypes = {
   hasOverride: PropTypes.bool,
   originalValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   onResetToOriginal: PropTypes.func,
-  isInvalidDate: PropTypes.bool, // New prop
-  validationMessage: PropTypes.string, // New prop
+  isInvalidDate: PropTypes.bool,
+  validationMessage: PropTypes.string,
 };
 
 export default EditableField;
