@@ -1,4 +1,3 @@
-// src/components/dashboard/defects/DefectsDashboard.jsx
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Search, Filter, Download, RefreshCw, AlertTriangle } from 'lucide-react';
 import '../DashboardStyles.css'; // Assuming this contains the shared dashboard styles
@@ -6,9 +5,10 @@ import DefectTable from './DefectTable';
 import CriticalityChart from './charts/CriticalityChart';
 import TotalDefectsChart from './charts/TotalDefectsChart';
 import defectService from './services/defectService';
+import DefectDialog from './DefectDialog'; // <-- NEW: Import DefectDialog
 
 const DefectsDashboard = () => {
-  // State variables
+  // State variables - ALL STATE AND HOOKS MUST BE DECLARED FIRST
   const [defects, setDefects] = useState([]);
   const [filteredDefects, setFilteredDefects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +33,37 @@ const DefectsDashboard = () => {
     role: 'admin'
   };
 
+  // Permissions mock (for now, assume full permissions)
+  const permissions = useMemo(() => ({
+    actionPermissions: {
+      create: true,
+      update: true,
+      delete: true,
+      export: true,
+      import: true,
+      generateReport: true
+    },
+    fieldPermissions: {
+      // You can define field-level permissions here if needed
+      // e.g., target_date: { visible: true, editable: true }
+    }
+  }), []);
+
+  // Defect Dialog State
+  const [isDefectDialogOpen, setIsDefectDialogOpen] = useState(false);
+  const [currentDefect, setCurrentDefect] = useState(null);
+
+  // Mock vessel data (replace with actual fetch from your RDS if needed)
+  const vesselNames = useMemo(() => ({
+    'vessel1_id': 'MV Alpha',
+    'vessel2_id': 'MV Beta',
+    'vessel3_id': 'MV Gamma',
+  }), []);
+
+  // Now you can safely use isDefectDialogOpen after it's declared
+  console.log("DefectsDashboard rendering. isDefectDialogOpen:", isDefectDialogOpen);
+
+
   // Fetch defects data from API
   const fetchDefects = useCallback(async () => {
     try {
@@ -42,13 +73,20 @@ const DefectsDashboard = () => {
       const data = await defectService.getAllDefects();
       console.log('Fetched defects:', data.length);
 
-      setDefects(data);
-      setFilteredDefects(data);
+      // Add dummy vessel_id and vessel_name if not present in fetched data
+      const defectsWithVesselInfo = data.map(d => ({
+        ...d,
+        vessel_id: d.vessel_id || 'vessel1_id', // Assign a default dummy vessel_id
+        vessel_name: d.vessel_name || vesselNames[d.vessel_id] || 'MV Alpha' // Assign dummy vessel name
+      }));
+
+      setDefects(defectsWithVesselInfo);
+      setFilteredDefects(defectsWithVesselInfo);
 
       // Initialize filters with all available options
-      const uniqueStatuses = [...new Set(data.map(d => d['Status (Vessel)']).filter(Boolean))];
-      const uniqueCriticalities = [...new Set(data.map(d => d.Criticality).filter(Boolean))];
-      const uniqueSources = [...new Set(data.map(d => d.Source).filter(Boolean))];
+      const uniqueStatuses = [...new Set(defectsWithVesselInfo.map(d => d['Status']).filter(Boolean))]; // Use 'Status' as per DIALOG config
+      const uniqueCriticalities = [...new Set(defectsWithVesselInfo.map(d => d.Criticality).filter(Boolean))];
+      const uniqueSources = [...new Set(defectsWithVesselInfo.map(d => d.raised_by).filter(Boolean))]; // Use 'raised_by'
 
       setStatusFilters(uniqueStatuses);
       setCriticalityFilters(uniqueCriticalities);
@@ -60,7 +98,7 @@ const DefectsDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [vesselNames]); // Added vesselNames to dependencies
 
   // Initial data fetch
   useEffect(() => {
@@ -79,7 +117,7 @@ const DefectsDashboard = () => {
     // Apply status filters if any selected
     if (statusFilters.length > 0) {
       results = results.filter(defect =>
-        !defect['Status (Vessel)'] || statusFilters.includes(defect['Status (Vessel)'])
+        !defect['Status'] || statusFilters.includes(defect['Status']) // Use 'Status'
       );
     }
 
@@ -93,7 +131,7 @@ const DefectsDashboard = () => {
     // Apply source filters if any selected
     if (sourceFilters.length > 0) {
       results = results.filter(defect =>
-        !defect.Source || sourceFilters.includes(defect.Source)
+        !defect.raised_by || sourceFilters.includes(defect.raised_by) // Use 'raised_by'
       );
     }
 
@@ -115,9 +153,9 @@ const DefectsDashboard = () => {
     setSearchTerm('');
 
     // Reset filters to include all options
-    const uniqueStatuses = [...new Set(defects.map(d => d['Status (Vessel)']).filter(Boolean))];
+    const uniqueStatuses = [...new Set(defects.map(d => d['Status']).filter(Boolean))]; // Use 'Status'
     const uniqueCriticalities = [...new Set(defects.map(d => d.Criticality).filter(Boolean))];
-    const uniqueSources = [...new Set(defects.map(d => d.Source).filter(Boolean))];
+    const uniqueSources = [...new Set(defects.map(d => d.raised_by).filter(Boolean))]; // Use 'raised_by'
 
     setStatusFilters(uniqueStatuses);
     setCriticalityFilters(uniqueCriticalities);
@@ -127,9 +165,9 @@ const DefectsDashboard = () => {
   // Toggle all items in a filter group
   const toggleAllItems = (type) => {
     // Get all unique values from all defects
-    const uniqueStatuses = [...new Set(defects.map(d => d['Status (Vessel)']).filter(Boolean))];
+    const uniqueStatuses = [...new Set(defects.map(d => d['Status']).filter(Boolean))]; // Use 'Status'
     const uniqueCriticalities = [...new Set(defects.map(d => d.Criticality).filter(Boolean))];
-    const uniqueSources = [...new Set(defects.map(d => d.Source).filter(Boolean))];
+    const uniqueSources = [...new Set(defects.map(d => d.raised_by).filter(Boolean))]; // Use 'raised_by'
 
     switch(type) {
       case 'statuses':
@@ -184,20 +222,97 @@ const DefectsDashboard = () => {
   // Table action handlers
   const handleView = (defect) => {
     console.log('View defect:', defect);
+    // When viewing, we treat it as an edit operation to open the dialog
+    handleEditDefect(defect);
   };
 
-  const handleEdit = (defect) => {
-    console.log('Edit defect:', defect);
-  };
+  // NEW: Handle Add Defect
+  const handleAddDefect = useCallback(() => {
+    console.log("1. handleAddDefect called!"); // <-- Added console.log
+    // Initialize a new defect object with default values
+    setCurrentDefect({
+      id: `temp-${Date.now()}`, // Temporary ID for new defects
+      vessel_id: Object.keys(vesselNames)[0] || '', // Default to first vessel or empty
+      Equipments: '',
+      Description: '',
+      'Action Planned': '',
+      Criticality: '',
+      Status: 'OPEN', // Use 'Status' as per DIALOG config
+      'Date Reported': new Date().toISOString().split('T')[0],
+      'Date Completed': '',
+      target_date: '',
+      initial_files: [],
+      completion_files: [],
+      raised_by: '',
+      closure_comments: '',
+      external_visibility: true, // Default to visible
+      Comments: ''
+    });
+    // Note: currentDefect here might be stale due to closure, but the setter works
+    console.log("2. currentDefect set (inside handleAddDefect). Dialog will attempt to open."); // <-- Added console.log
+    setIsDefectDialogOpen(true);
+    console.log("3. setIsDefectDialogOpen(true) called."); // <-- Added console.log
+  }, [vesselNames]);
+
+  // NEW: Handle Edit Defect
+  const handleEditDefect = useCallback((defect) => {
+    console.log("handleEditDefect called with defect:", defect);
+    console.log("Defect vessel_id (from dashboard):", defect.vessel_id); // <-- Check this
+    console.log("Defect vessel_name (from dashboard):", defect.vessel_name); // <-- Check this
+    setCurrentDefect(defect);
+    setIsDefectDialogOpen(true);
+  }, []);
+
+  // NEW: Handle Save Defect (Add/Edit)
+  const handleSaveDefect = useCallback(async (updatedDefect) => {
+    try {
+      setLoading(true);
+      const isNew = updatedDefect.id?.startsWith('temp-');
+
+      let savedDefect;
+      if (isNew) {
+        // Simulate API call for adding
+        const newId = `defect-${Date.now()}`;
+        savedDefect = { ...updatedDefect, id: newId, created_at: new Date().toISOString() };
+        console.log('Simulating add defect:', savedDefect);
+        await defectService.addDefect(savedDefect); // Placeholder API call
+      } else {
+        // Simulate API call for updating
+        savedDefect = { ...updatedDefect, updated_at: new Date().toISOString() };
+        console.log('Simulating update defect:', savedDefect);
+        console.log('Attempting to update defect with payload:', savedDefect); // <-- Added for debugging 500 error
+        await defectService.updateDefect(savedDefect.id, savedDefect); // Placeholder API call
+      }
+
+      // Re-fetch all defects to ensure data consistency and update UI
+      await fetchDefects();
+
+      // Close dialog and reset current defect
+      setIsDefectDialogOpen(false);
+      setCurrentDefect(null);
+
+      return savedDefect; // Return the saved defect for PDF generation in dialog
+    } catch (err) {
+      console.error('Error saving defect:', err);
+      setError('Failed to save defect. Please try again.');
+      throw err; // Re-throw to be caught by DefectDialog
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchDefects]);
+
 
   const handleDelete = async (defect) => {
-    if (window.confirm(`Are you sure you want to delete this defect?`)) {
+    if (window.confirm(`Are you sure you want to delete defect ID: ${defect.id}?`)) {
       try {
-        await defectService.deleteDefect(defect.id);
+        setLoading(true);
+        await defectService.deleteDefect(defect.id); // Placeholder API call
         fetchDefects();
       } catch (error) {
         console.error('Error deleting defect:', error);
         alert('Failed to delete defect. Please try again.');
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -212,7 +327,7 @@ const DefectsDashboard = () => {
 
   // Get unique values for filter options
   const uniqueStatuses = useMemo(() =>
-    [...new Set(defects.map(d => d['Status (Vessel)']).filter(Boolean))],
+    [...new Set(defects.map(d => d['Status']).filter(Boolean))], // Use 'Status'
     [defects]
   );
 
@@ -223,7 +338,7 @@ const DefectsDashboard = () => {
 
 
   const uniqueSources = useMemo(() =>
-    [...new Set(defects.map(d => d.Source).filter(Boolean))],
+    [...new Set(defects.map(d => d.raised_by).filter(Boolean))], // Use 'raised_by'
     [defects]
   );
 
@@ -479,14 +594,36 @@ const DefectsDashboard = () => {
           <DefectTable
             defects={filteredDefects}
             onView={handleView}
-            onEdit={handleEdit}
+            onEdit={handleEditDefect} // Pass the new edit handler
             onDelete={handleDelete}
             currentUser={currentUser}
             loading={loading}
-            removeFilterBar={true} // This tells DefectTable not to render its own filter bar
+            removeFilterBar={true}
+            onAddDefect={handleAddDefect} // Pass the new add handler
+            permissions={permissions} // Pass permissions
+            onExport={handleExport} // Pass export handler
+            onImport={() => console.log('Import VIR Excel (placeholder)')} // Placeholder for import
           />
         )}
       </div>
+
+      {/* NEW: Defect Dialog */}
+      <DefectDialog
+        isOpen={isDefectDialogOpen}
+        onClose={() => {
+          console.log("DefectDialog onClose triggered."); // <-- Added console.log
+          setIsDefectDialogOpen(false);
+          setCurrentDefect(null);
+        }}
+        defect={currentDefect}
+        // The onChange prop is no longer needed as DefectDialog manages its own state
+        // onChange={(field, value) => setCurrentDefect(prev => ({ ...prev, [field]: value }))}
+        onSave={handleSaveDefect}
+        vessels={vesselNames} // Pass your vessel names map
+        isNew={currentDefect?.id?.startsWith('temp-')}
+        permissions={permissions}
+        isExternal={false} // Adjust based on your user role logic
+      />
     </div>
   );
 };

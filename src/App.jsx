@@ -4,6 +4,8 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { Amplify } from 'aws-amplify';
 import awsConfig from './config/aws-config';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider } from './components/common/ui/ToastContext'; // Import ToastProvider
+import { Toaster } from './components/common/ui/Toaster'; // Import Toaster
 import FloatingChatbot from './components/FloatingChatbot';
 
 // Components
@@ -75,61 +77,64 @@ const ProtectedLayout = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <FloatingChatbot />
-        <Routes>
-          {/* Auth Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/confirm-signup" element={<ConfirmSignUp />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+      <ToastProvider> {/* Wrap the entire application with ToastProvider */}
+        <BrowserRouter>
+          <FloatingChatbot />
+          <Routes>
+            {/* Auth Routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/confirm-signup" element={<ConfirmSignUp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
-          {/* Protected App Routes */}
-          <Route
-            path="/fleet"
-            element={
-              <ProtectedRoute>
-                <ProtectedLayout>
-                  <FleetDashboard fieldMappings={fleetFieldMappings} />
-                </ProtectedLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/defects"
-            element={
-              <ProtectedRoute>
-                <ProtectedLayout>
-                  <DefectsDashboard />
-                </ProtectedLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/reporting"
-            element={
-              <ProtectedRoute>
-                <ProtectedLayout>
-                  <VesselReportingPage />
-                </ProtectedLayout>
-              </ProtectedRoute>
-            }
-          />
+            {/* Protected App Routes */}
+            <Route
+              path="/fleet"
+              element={
+                <ProtectedRoute>
+                  <ProtectedLayout>
+                    <FleetDashboard fieldMappings={fleetFieldMappings} />
+                  </ProtectedLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/defects"
+              element={
+                <ProtectedRoute>
+                  <ProtectedLayout>
+                    <DefectsDashboard />
+                  </ProtectedLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reporting"
+              element={
+                <ProtectedRoute>
+                  <ProtectedLayout>
+                    <VesselReportingPage />
+                  </ProtectedLayout>
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Default route: redirect to /fleet */}
-          <Route
-            path="/"
-            element={<Navigate to="/fleet" replace />}
-          />
+            {/* Default route: redirect to /fleet */}
+            <Route
+              path="/"
+              element={<Navigate to="/fleet" replace />}
+            />
 
-          {/* Catch-all: redirect to /fleet */}
-          <Route
-            path="*"
-            element={<Navigate to="/fleet" replace />}
-          />
-        </Routes>
-      </BrowserRouter>
+            {/* Catch-all: redirect to /fleet */}
+            <Route
+              path="*"
+              element={<Navigate to="/fleet" replace />}
+            />
+          </Routes>
+          <Toaster /> {/* Render the Toaster component */}
+        </BrowserRouter>
+      </ToastProvider>
     </AuthProvider>
   );
 }

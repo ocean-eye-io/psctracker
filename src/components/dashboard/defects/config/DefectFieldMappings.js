@@ -151,12 +151,13 @@ export const DEFECT_FIELDS = {
       section: 'dates',
       displayOrder: 11,
       width: 'half',
-      conditionalRequired: (values) => values.status === 'CLOSED'
+      // MODIFIED: Added optional chaining
+      conditionalRequired: (values) => values?.status === 'CLOSED'
     },
     targetDate: {
       id: 'targetDate',
       label: 'Target Date',
-      dbField: 'target_date', 
+      dbField: 'target_date',
       type: 'date',
       required: true,
       section: 'dates',
@@ -173,6 +174,7 @@ export const DEFECT_FIELDS = {
       displayOrder: 12,
       width: 'full',
       rows: 3,
+      // Already correct with optional chaining
       conditionalDisplay: (values) => values?.status === 'CLOSED' || values?.['Status (Vessel)'] === 'CLOSED',
       conditionalRequired: (values) => values?.status === 'CLOSED' || values?.['Status (Vessel)'] === 'CLOSED'
     },
@@ -201,7 +203,8 @@ export const DEFECT_FIELDS = {
       accept: '.pdf,.doc,.docx,.jpg,.jpeg,.png',
       maxSize: 2 * 1024 * 1024, // 2MB
       multiple: true,
-      conditionalDisplay: (values) => values.status === 'CLOSED'
+      // MODIFIED: Added optional chaining
+      conditionalDisplay: (values) => values?.status === 'CLOSED'
     }
   },
 
@@ -344,7 +347,8 @@ export const DEFECT_FIELDS = {
       dbField: 'closure_comments',
       priority: 6,
       section: 'closure',
-      conditionalDisplay: (values) => values.status === 'CLOSED'
+      // MODIFIED: Added optional chaining
+      conditionalDisplay: (values) => values?.status === 'CLOSED'
     },
     completionFiles: {
       id: 'completionFiles',
@@ -352,7 +356,8 @@ export const DEFECT_FIELDS = {
       dbField: 'completion_files',
       priority: 7,
       section: 'files',
-      conditionalDisplay: (values) => values.status === 'CLOSED'
+      // MODIFIED: Added optional chaining
+      conditionalDisplay: (values) => values?.status === 'CLOSED'
     },
     raisedBy: {
       id: 'raisedBy',
@@ -392,7 +397,8 @@ export const FIELD_SECTIONS = {
     id: 'closure',
     label: 'Closure Details',
     order: 4,
-    conditionalDisplay: (values) => values.status === 'CLOSED'
+    // MODIFIED: Added optional chaining
+    conditionalDisplay: (values) => values?.status === 'CLOSED'
   },
   files: {
     id: 'files',

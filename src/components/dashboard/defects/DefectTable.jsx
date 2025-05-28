@@ -1,7 +1,6 @@
-// Modify your DefectTable.jsx component with these changes:
-import React, { useState, useEffect, useMemo } from 'react';
-import Table from '../../common/Table/Table';
-import { Trash2, FileText, Download, Upload, Plus, Filter, MoreHorizontal } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import Table from '../../common/Table/Table'; // Assuming this path is correct
+import { Trash2, FileText, Download, Upload, Plus } from 'lucide-react'; // Removed Filter, MoreHorizontal
 import { DEFECT_FIELDS } from './config/DefectFieldMappings';
 import '../DashboardStyles.css';
 
@@ -21,20 +20,20 @@ const PER_PAGE = 50;
 
 const DefectTable = ({
   defects = [], // Already filtered by the dashboard
-  onView,
-  onEdit,
+  onView, // This prop might become redundant if viewing is only via edit dialog
+  onEdit, // <-- This is the key prop for editing
   onDelete,
-  onOpenInstructions,
-  currentUser,
+  onOpenInstructions, // Not used in this context, can be removed if not needed
+  currentUser, // Not directly used in table rendering, but good to keep for permissions
   loading = false,
   emptyMessage = "No defects found",
-  permissions = { actionPermissions: { update: true, delete: true } },
+  permissions = { actionPermissions: { update: true, delete: true, create: true } }, // Added create
   onExport,
   onImport,
-  onAddDefect,
+  onAddDefect, // <-- This is the key prop for adding
   removeFilterBar = false // New prop to control filter bar visibility
 }) => {
-  const [selectedFile, setSelectedFile] = useState(null);
+  // const [selectedFile, setSelectedFile] = useState(null); // REMOVED: FileViewer is gone
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   const [page, setPage] = useState(0);
 
@@ -45,8 +44,8 @@ const DefectTable = ({
   }, []);
 
   // Reset pagination when defects change
-  useEffect(() => { 
-    setPage(0); 
+  useEffect(() => {
+    setPage(0);
   }, [defects]);
 
   // Pagination
@@ -83,7 +82,7 @@ const DefectTable = ({
   // Table columns
   const columns = useMemo(() => (
     Object.entries(DEFECT_FIELDS.TABLE)
-      .filter(([_, field]) => !field.isAction)
+      .filter(([_, field]) => !field.isAction) // Filter out action columns for the main data rendering
       .sort((a, b) => a[1].priority - b[1].priority)
       .map(([fieldId, field]) => ({
         field: field.dbField,
@@ -130,7 +129,9 @@ const DefectTable = ({
           }
           if (field.type === 'date') return formatDate(value);
           if (['description', 'actionPlanned', 'equipment'].includes(fieldId)) {
-            return <TruncatedText text={value} maxWidth={`max-w-[${field.width.replace('px', '')}px]`} />;
+            // Use the field's defined width for maxWidth if available, otherwise default
+            const calculatedMaxWidth = field.width ? `max-w-[${field.width.replace('px', '')}px]` : "max-w-[200px]";
+            return <TruncatedText text={value} maxWidth={calculatedMaxWidth} />;
           }
           return value || '-';
         }
@@ -140,10 +141,19 @@ const DefectTable = ({
   // Actions column
   const actions = useMemo(() => ({
     label: '',
-    width: '60px',
-    minWidth: '60px',
+    width: '80px', // Adjusted width to accommodate both buttons
+    minWidth: '80px',
     content: (defect) => (
-      <div className="flex justify-center">
+      <div className="flex justify-center gap-2"> {/* Added gap for spacing */}
+        {permissions.actionPermissions.update && ( // Check for update permission
+          <button
+            onClick={e => { e.stopPropagation(); onEdit && onEdit(defect); }} // Call onEdit
+            className="p-2 rounded-md bg-blue-500/10 hover:bg-blue-500/20 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+            title="Edit"
+          >
+            <FileText size={16} color="#3BADE5" /> {/* Changed icon to FileText for edit */}
+          </button>
+        )}
         {permissions.actionPermissions.delete && (
           <button
             onClick={e => { e.stopPropagation(); onDelete && onDelete(defect); }}
@@ -155,57 +165,33 @@ const DefectTable = ({
         )}
       </div>
     )
-  }), [permissions, onDelete]);
+  }), [permissions, onDelete, onEdit]); // Added onEdit to dependencies
 
-  // File viewer modal
-  const FileViewer = ({ url, filename, onClose }) => {
-    if (!url) return null;
-    const isImage = url.match(/\.(jpg|jpeg|png|gif)$/i);
-    return (
-      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-        <div className="bg-[#0B1623] border border-white/10 rounded-lg overflow-hidden max-w-4xl max-h-[90vh] w-full flex flex-col">
-          <div className="p-3 border-b border-white/10 flex justify-between items-center">
-            <div className="text-sm font-medium text-white truncate">{filename}</div>
-            <button onClick={onClose} className="text-white/60 hover:text-white">
-              <span className="text-xl">×</span>
-            </button>
-          </div>
-          <div className="flex-1 overflow-auto flex items-center justify-center p-4">
-            {isImage
-              ? <img src={url} alt={filename} className="max-w-full max-h-[70vh] object-contain" />
-              : <iframe src={url} className="w-full h-full" title={filename} />}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // File list for expanded content
-  const FileList = ({ files, title }) => {
-    if (!files?.length) return null;
-    return (
-      <div className="space-y-2">
-        {title && <div className="text-xs font-medium text-white/80 mb-1">{title}</div>}
-        {files.map((file, index) => (
-          <div key={index} className="flex items-center gap-2 text-xs">
-            <FileText className="h-3.5 w-3.5 text-[#3BADE5]" />
-            <button
-              onClick={() => setSelectedFile({ url: file.url || '#', name: file.name })}
-              className="text-white/90 hover:text-white truncate flex-1"
-            >
-              {file.name}
-            </button>
-          </div>
-        ))}
-      </div>
-    );
-  };
+  // File viewer modal (REMOVED from here, will be handled by DefectDialog or separate component)
+  // const FileViewer = ...
+  // const FileList = ...
 
   // Expanded content using ExpandedItem and custom button
-  const renderExpandedContent = (defect) => {
+  const renderExpandedContent = useCallback((defect) => {
     const expandedFields = Object.entries(DEFECT_FIELDS.EXPANDED)
       .sort((a, b) => a[1].priority - b[1].priority)
       .filter(([_, field]) => !(field.conditionalDisplay && !field.conditionalDisplay(defect)));
+
+    // Placeholder for FileList component
+    const FileListPlaceholder = ({ files, title }) => {
+      if (!files?.length) return null;
+      return (
+        <div className="space-y-2">
+          {title && <div className="text-xs font-medium text-white/80 mb-1">{title}</div>}
+          {files.map((file, index) => (
+            <div key={index} className="flex items-center gap-2 text-xs">
+              <FileText className="h-3.5 w-3.5 text-[#3BADE5]" />
+              <span className="text-white/90 truncate flex-1">{file.name} (Placeholder)</span>
+            </div>
+          ))}
+        </div>
+      );
+    };
 
     return (
       <div className="expanded-content p-4 relative min-h-[180px]">
@@ -215,7 +201,7 @@ const DefectTable = ({
               return (
                 <div key={fieldId}>
                   <div className="font-semibold text-white/80 mb-1">{field.label}</div>
-                  <FileList files={defect.initial_files || []} />
+                  <FileListPlaceholder files={defect.initial_files || []} />
                 </div>
               );
             }
@@ -223,7 +209,7 @@ const DefectTable = ({
               return (
                 <div key={fieldId}>
                   <div className="font-semibold text-white/80 mb-1">{field.label}</div>
-                  <FileList files={defect.completion_files || []} />
+                  <FileListPlaceholder files={defect.completion_files || []} />
                 </div>
               );
             }
@@ -257,18 +243,19 @@ const DefectTable = ({
           <button
             onClick={e => {
               e.stopPropagation();
-              // Add your report generation logic here
-              console.log('Generate report for defect:', defect.id);
+              // Add your report generation logic here (placeholder)
+              console.log('Generate report for defect (placeholder):', defect.id);
+              // You might want to call a prop like onGenerateReport(defect) here
             }}
             className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg transition-all"
           >
             <FileText className="h-5 w-5 mr-2" />
-            Generate Report
+            Generate Report (Placeholder)
           </button>
         </div>
       </div>
     );
-  };
+  }, []); // Added useCallback for renderExpandedContent
 
   // Pagination controls
   const PageButtons = ({ page, setPage, pageCount }) => (
@@ -299,7 +286,7 @@ const DefectTable = ({
             <Download size={16} className="mr-1" />
             Export Excel
           </button>
-          
+
           <button
             onClick={onImport}
             className="flex items-center gap-1 px-3 py-2 rounded bg-[#0c1c2f] border border-gray-700 text-white hover:bg-[#162d48] text-sm"
@@ -307,7 +294,7 @@ const DefectTable = ({
             <Upload size={16} className="mr-1" />
             Import VIR Excel
           </button>
-          
+
           <button
             onClick={onAddDefect}
             className="flex items-center gap-1 px-3 py-2 rounded bg-[#3BADE5] text-white hover:bg-[#2496c7] font-medium text-sm"
@@ -317,20 +304,20 @@ const DefectTable = ({
           </button>
         </div>
       )}
-      
+
       {/* Row for Defects List title with buttons on the right */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: '8px'
       }}>
-        <h2 style={{ 
-          fontSize: '16px', 
-          fontWeight: '500', 
+        <h2 style={{
+          fontSize: '16px',
+          fontWeight: '500',
           color: 'white'
         }}>Defects List</h2>
-        
+
         <div style={{ display: 'flex', gap: '8px' }}>
           <button className="action-button" onClick={onExport}>
             <Download size={16} />
@@ -346,30 +333,25 @@ const DefectTable = ({
           </button>
         </div>
       </div>
-      
+
       {/* Table container */}
       <div className="responsive-table-container" style={{ height: "calc(100vh - 180px)" }}>
         <Table
           data={pageData}
           columns={columns}
           expandedContent={renderExpandedContent}
-          actions={actions}
+          actions={actions} // Pass the actions object
           uniqueIdField="id"
           defaultSortKey="target_date"
           defaultSortDirection="desc"
           className="defect-table"
+          onRowClick={onEdit} // <-- NEW: Call onEdit when a row is clicked
         />
       </div>
 
       {pageCount > 1 && <PageButtons page={page} setPage={setPage} pageCount={pageCount} />}
 
-      {selectedFile && (
-        <FileViewer
-          url={selectedFile.url}
-          filename={selectedFile.name}
-          onClose={() => setSelectedFile(null)}
-        />
-      )}
+      {/* selectedFile state and FileViewer component are removed from here */}
     </div>
   );
 };
