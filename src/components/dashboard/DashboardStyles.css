@@ -621,7 +621,7 @@
   /* Adjusted min-height and added max-height for better control */
   min-height: 260px; /* Adjusted to match chart-card height */
   height: auto; /* Allow height to adjust */
-  max-height: calc(100% - 4px); /* Example: Adjust based on padding */
+  max-height: calc(100% - 16px); /* Example: Adjust based on padding */
   display: flex;
   flex-direction: column;
   flex-grow: 1; /* Allow body to grow */

@@ -1,31 +1,44 @@
+// src/components/layout/NavigationHeader.jsx
 import React, { useState } from 'react';
-import { Ship, BarChart2, LogOut, Menu, X } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom'; // Import useLocation
+import { Ship, Home, Anchor, BarChart2, Settings, Menu, X, FileText, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './NavigationStyles.css';
 
-// Remove onNavigate prop as it's no longer needed
-const NavigationHeader = ({ activePage, userInfo }) => {
+const NavigationHeader = ({ activePage, onNavigate, userInfo }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { signOut } = useAuth();
   const navigate = useNavigate();
-  // const location = useLocation(); // No longer needed here, activePage is passed as prop
-
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
-
-  const navItems = [
-    { id: 'fleet', label: 'Dashboard', icon: <Ship size={20} />, path: '/fleet' },
-    { id: 'defects', label: 'Defects Register', icon: <BarChart2 size={20} />, path: '/defects' },
-  ];
-
+  
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+  
   const handleNavClick = (id, e) => {
     e.preventDefault();
-    // onNavigate is removed, as activePage is now derived from URL in AppLayout
-    const navItem = navItems.find(item => item.id === id);
-    if (navItem) navigate(navItem.path); // This correctly changes the URL
-    if (sidebarOpen) setSidebarOpen(false);
+    
+    // Special case for 'reports' (Defects Register)
+    if (id === 'reports') {
+      // Open defectslog.netlify.app in a new tab
+      window.open('https://defectslog.netlify.app', '_blank');
+      
+      // Don't navigate away from current page
+      return;
+    }
+    
+    // Map 'reports' to 'defects' for the defects dashboard (keeping this part for other navigation functionality)
+    const pageId = id === 'reports' ? 'defects' : id;
+    
+    if (onNavigate) {
+      onNavigate(pageId);
+    }
+    
+    // Close sidebar on mobile if it's open
+    if (sidebarOpen) {
+      setSidebarOpen(false);
+    }
   };
-
+  
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -34,7 +47,7 @@ const NavigationHeader = ({ activePage, userInfo }) => {
       console.error('Sign out error:', error);
     }
   };
-
+  
   // Get user's name from Cognito attributes or use a default
   const getUserName = () => {
     if (userInfo) {
@@ -46,7 +59,7 @@ const NavigationHeader = ({ activePage, userInfo }) => {
     }
     return 'User';
   };
-
+  
   // Get user's initials for avatar
   const getUserInitials = () => {
     const name = getUserName();
@@ -57,14 +70,28 @@ const NavigationHeader = ({ activePage, userInfo }) => {
       .toUpperCase()
       .substring(0, 2);
   };
-
+  
+  // Get user's role (default for now, will be expanded with RBAC later)
+  const getUserRole = () => {
+    return 'Fleet Manager';
+  };
+  
+  const navItems = [
+    //{ id: 'dashboard', label: 'Dashboard', icon: <Home size={20} />, path: '/dashboard' },
+    { id: 'fleet', label: 'Dashboard', icon: <Ship size={20} />, path: '/fleet' },
+    { id: 'reports', label: 'Defects Register', icon: <BarChart2 size={20} />, path: '/reports' },
+    //{ id: 'reporting', label: 'Vessel Reporting', icon: <FileText size={20} />, path: '/reporting' },
+    //{ id: 'ports', label: 'Ports', icon: <Anchor size={20} />, path: '/ports' },
+    //{ id: 'settings', label: 'Settings', icon: <Settings size={20} />, path: '/settings' }
+  ];
+  
   return (
     <>
       {/* Mobile menu toggle */}
       <button className="mobile-menu-toggle" onClick={toggleSidebar}>
         {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
-
+      
       {/* Header */}
       <header className="navigation-header">
         <div className="brand-container">
@@ -74,31 +101,32 @@ const NavigationHeader = ({ activePage, userInfo }) => {
             <div className="animated-wave"></div>
           </div>
         </div>
-
+        
         {/* Desktop Navigation - centered */}
         <nav className="desktop-nav">
           {navItems.map(item => (
-            <a
+            <a 
               key={item.id}
               href={item.path}
-              className={`nav-item ${activePage === item.id ? 'active' : ''}`} // Use activePage prop
-              onClick={e => handleNavClick(item.id, e)}
+              className={`nav-item ${activePage === item.id || (item.id === 'reports' && activePage === 'defects') ? 'active' : ''}`}
+              onClick={(e) => handleNavClick(item.id, e)}
             >
               {item.icon}
               <span>{item.label}</span>
-              {activePage === item.id && <div className="active-indicator"></div>} {/* Use activePage prop */}
+              {(activePage === item.id || (item.id === 'reports' && activePage === 'defects')) && <div className="active-indicator"></div>}
             </a>
           ))}
         </nav>
-
+        
         {/* User profile area with logout */}
         <div className="user-profile">
           <div className="user-avatar">{getUserInitials()}</div>
           <div className="user-info">
             <span className="user-name">{getUserName()}</span>
+            {/* <span className="user-role">{getUserRole()}</span> */}
           </div>
-          <button
-            className="logout-button"
+          <button 
+            className="logout-button" 
             onClick={handleSignOut}
             aria-label="Sign out"
           >
@@ -106,7 +134,7 @@ const NavigationHeader = ({ activePage, userInfo }) => {
           </button>
         </div>
       </header>
-
+      
       {/* Mobile Sidebar */}
       <aside className={`mobile-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
@@ -115,21 +143,22 @@ const NavigationHeader = ({ activePage, userInfo }) => {
         </div>
         <nav className="sidebar-nav">
           {navItems.map(item => (
-            <a
+            <a 
               key={item.id}
               href={item.path}
-              className={`sidebar-nav-item ${activePage === item.id ? 'active' : ''}`} // Use activePage prop
-              onClick={e => handleNavClick(item.id, e)}
+              className={`sidebar-nav-item ${activePage === item.id || (item.id === 'reports' && activePage === 'defects') ? 'active' : ''}`}
+              onClick={(e) => handleNavClick(item.id, e)}
             >
               {item.icon}
               <span>{item.label}</span>
             </a>
           ))}
+          
           {/* Add logout to mobile sidebar */}
-          <a
+          <a 
             href="#"
             className="sidebar-nav-item logout-item"
-            onClick={e => {
+            onClick={(e) => {
               e.preventDefault();
               handleSignOut();
             }}
@@ -138,15 +167,17 @@ const NavigationHeader = ({ activePage, userInfo }) => {
             <span>Sign Out</span>
           </a>
         </nav>
+        
         {/* User info in sidebar */}
         <div className="sidebar-user-info">
           <div className="user-avatar">{getUserInitials()}</div>
           <div>
             <div className="user-name">{getUserName()}</div>
+            {/* <div className="user-role">{getUserRole()}</div> */}
           </div>
         </div>
       </aside>
-
+      
       {/* Backdrop for mobile */}
       {sidebarOpen && <div className="sidebar-backdrop" onClick={toggleSidebar}></div>}
     </>

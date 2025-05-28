@@ -360,7 +360,7 @@
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   overflow: visible;
   text-overflow: ellipsis;
-  /* REMOVED: max-width: 0; */
+  max-width: 0;
   position: relative;
   z-index: var(--z-index-base);
 }

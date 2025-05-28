@@ -1,10 +1,8 @@
 // src/components/layout/NavigationHeader.jsx
 import React, { useState } from 'react';
-// REMOVED: Ship icon from lucide-react as it's replaced by Logo component
-import { Home, Anchor, BarChart2, Settings, Menu, X, FileText, LogOut, Users } from 'lucide-react'; 
+import { Ship, BarChart2, LogOut, Menu, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import Logo from '../Logo'; // IMPORTED: Your new Logo component
 import './NavigationStyles.css';
 
 const NavigationHeader = ({ activePage, onNavigate, userInfo }) => {
@@ -12,36 +10,19 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo }) => {
   const { signOut } = useAuth();
   const navigate = useNavigate();
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+
+  const navItems = [
+    { id: 'fleet', label: 'Dashboard', icon: <Ship size={20} />, path: '/fleet' },
+    { id: 'defects', label: 'Defects Register', icon: <BarChart2 size={20} />, path: '/defects' },
+  ];
 
   const handleNavClick = (id, e) => {
     e.preventDefault();
-
-    // Special case for 'reports' (Defects Register)
-    if (id === 'reports') {
-      // Open defectslog.netlify.app in a new tab
-      window.open('https://defectslog.netlify.app', '_blank');
-
-      // Don't navigate away from current page
-      return;
-    }
-
-    // Map 'reports' to 'defects' for the defects dashboard (keeping this part for other navigation functionality)
-    const pageId = id === 'reports' ? 'defects' : id;
-
-    // For internal navigation, use navigate
-    if (id === 'admin') {
-      navigate('/admin');
-    } else if (onNavigate) {
-      onNavigate(pageId);
-    }
-
-    // Close sidebar on mobile if it's open
-    if (sidebarOpen) {
-      setSidebarOpen(false);
-    }
+    if (onNavigate) onNavigate(id);
+    const navItem = navItems.find(item => item.id === id);
+    if (navItem) navigate(navItem.path);
+    if (sidebarOpen) setSidebarOpen(false);
   };
 
   const handleSignOut = async () => {
@@ -76,34 +57,17 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo }) => {
       .substring(0, 2);
   };
 
-  // Placeholder for checking if user is admin
-  // IMPORTANT: Replace this with actual RBAC logic based on user's roles fetched from your backend
-  const isAdminUser = () => {
-    // For now, let's assume if the user's email contains 'admin', they are an admin.
-    // In a real application, you would fetch user roles from your backend (e.g., from the /admin/users endpoint)
-    // and check if they have an 'Admin' role or a specific permission.
-    return userInfo && userInfo.email && userInfo.email.includes('admin');
-  };
-
-  const navItems = [
-    { id: 'fleet', label: 'Dashboard', icon: <Home size={20} />, path: '/fleet' }, // Changed from Ship to Home for consistency with common dashboard icons
-    { id: 'reports', label: 'Defects Register', icon: <BarChart2 size={20} />, path: '/reports' },
-    // Conditionally add Admin link
-    //{ id: 'admin', label: 'Admin', icon: <Users size={20} />, path: '/admin' }
-  ];
-
   return (
     <>
       {/* Mobile menu toggle */}
-      {/* <button className="mobile-menu-toggle" onClick={toggleSidebar}>
+      <button className="mobile-menu-toggle" onClick={toggleSidebar}>
         {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-      </button> */}
+      </button>
 
       {/* Header */}
       <header className="navigation-header">
         <div className="brand-container">
-          {/* REPLACED: Ship icon with Logo component */}
-          <Logo width="70" height="70" className="brand-icon" id="nav-logo" /> 
+          <Ship size={28} className="brand-icon" />
           <div className="brand-text">
             <h1>FleetWatch</h1>
             <div className="animated-wave"></div>
@@ -116,12 +80,12 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo }) => {
             <a
               key={item.id}
               href={item.path}
-              className={`nav-item ${activePage === item.id || (item.id === 'reports' && activePage === 'defects') || (item.id === 'admin' && activePage === 'admin') ? 'active' : ''}`}
-              onClick={(e) => handleNavClick(item.id, e)}
+              className={`nav-item ${activePage === item.id ? 'active' : ''}`}
+              onClick={e => handleNavClick(item.id, e)}
             >
               {item.icon}
               <span>{item.label}</span>
-              {(activePage === item.id || (item.id === 'reports' && activePage === 'defects') || (item.id === 'admin' && activePage === 'admin')) && <div className="active-indicator"></div>}
+              {activePage === item.id && <div className="active-indicator"></div>}
             </a>
           ))}
         </nav>
@@ -131,7 +95,6 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo }) => {
           <div className="user-avatar">{getUserInitials()}</div>
           <div className="user-info">
             <span className="user-name">{getUserName()}</span>
-            {/* <span className="user-role">{getUserRole()}</span> */}
           </div>
           <button
             className="logout-button"
@@ -146,8 +109,7 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo }) => {
       {/* Mobile Sidebar */}
       <aside className={`mobile-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          {/* REPLACED: Ship icon with Logo component in sidebar */}
-          <Logo width="24" height="24" /> 
+          <Ship size={24} />
           <h2>FleetWatch</h2>
         </div>
         <nav className="sidebar-nav">
@@ -155,19 +117,18 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo }) => {
             <a
               key={item.id}
               href={item.path}
-              className={`sidebar-nav-item ${activePage === item.id || (item.id === 'reports' && activePage === 'defects') || (item.id === 'admin' && activePage === 'admin') ? 'active' : ''}`}
-              onClick={(e) => handleNavClick(item.id, e)}
+              className={`sidebar-nav-item ${activePage === item.id ? 'active' : ''}`}
+              onClick={e => handleNavClick(item.id, e)}
             >
               {item.icon}
               <span>{item.label}</span>
             </a>
           ))}
-
           {/* Add logout to mobile sidebar */}
           <a
             href="#"
             className="sidebar-nav-item logout-item"
-            onClick={(e) => {
+            onClick={e => {
               e.preventDefault();
               handleSignOut();
             }}
@@ -176,13 +137,11 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo }) => {
             <span>Sign Out</span>
           </a>
         </nav>
-
         {/* User info in sidebar */}
         <div className="sidebar-user-info">
           <div className="user-avatar">{getUserInitials()}</div>
           <div>
             <div className="user-name">{getUserName()}</div>
-            {/* <div className="user-role">{getUserRole()}</div> */}
           </div>
         </div>
       </aside>

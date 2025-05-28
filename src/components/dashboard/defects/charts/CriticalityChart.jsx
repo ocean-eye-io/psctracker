@@ -49,14 +49,13 @@ const CriticalityChart = ({ data = [] }) => {
     if (totalCriticality === 0) return null;
 
     return (
-      <div className="horizontal-bar-container">
+      <div className="image-target-progress-bar">
         {criticalityData.map(item => {
           const percent = totalCriticality > 0 ? (item.value / totalCriticality) * 100 : 0;
           if (percent === 0) return null;
           return (
             <div
               key={item.name}
-              className="horizontal-bar"
               style={{ width: `${percent}%`, backgroundColor: item.color }}
               title={`${item.name}: ${item.value} (${percent.toFixed(1)}%)`}
             ></div>
@@ -78,27 +77,26 @@ const CriticalityChart = ({ data = [] }) => {
 
     return (
       <>
-        <div className="criticality-subheader">
-          <AlertTriangle size={16} className="criticality-subheader-icon" />
+        <div className="image-target-subheader">
+          <AlertTriangle size={16} className="image-target-subheader-icon" />
           <span>High Criticality Status</span>
         </div>
-        <div className="high-criticality-status-summary">
+        <div className="image-target-high-crit-summary">
           {statusItems.map(item => (
-            <div key={item.name} className="high-criticality-status-item">
-              <div className="status-dot" style={{ backgroundColor: item.color }}></div>
+            <div key={item.name} className="image-target-high-crit-item">
+              <div className="image-target-status-dot" style={{ backgroundColor: item.color }}></div>
               <span>{item.name}: {item.value}</span>
             </div>
           ))}
         </div>
         {totalHighCriticality > 0 && (
-          <div className="horizontal-bar-container">
+          <div className="image-target-progress-bar">
             {statusItems.map(item => {
               const percent = totalHighCriticality > 0 ? (item.value / totalHighCriticality) * 100 : 0;
               if (percent === 0) return null;
               return (
                 <div
                   key={item.name}
-                  className="horizontal-bar"
                   style={{ width: `${percent}%`, backgroundColor: item.color }}
                   title={`${item.name}: ${item.value} (${percent.toFixed(1)}%)`}
                 ></div>
@@ -107,7 +105,7 @@ const CriticalityChart = ({ data = [] }) => {
           </div>
         )}
         {totalHighCriticality === 0 && (
-             <div className="criticality-status-message">
+             <div className="image-target-no-high-crit-message">
                 No high criticality defects to display status for.
              </div>
         )}
@@ -115,10 +113,10 @@ const CriticalityChart = ({ data = [] }) => {
     );
   };
 
-  if (!data) {
+  if (!data) { // Simpler check if data is not yet available (parent handles loading)
     return (
-      <div className="chart-card chart-loading">
-        <div className="loading-spinner"></div>
+      <div className="image-target-criticality-layout image-target-no-data-container">
+        <AlertTriangle size={24} />
         <p>Loading data...</p>
       </div>
     );
@@ -126,7 +124,7 @@ const CriticalityChart = ({ data = [] }) => {
 
   if (data.length === 0 && totalCriticality === 0) {
     return (
-      <div className="chart-card chart-no-data">
+      <div className="image-target-criticality-layout image-target-no-data-container">
         <AlertTriangle size={24} />
         <p>No defect data available to display criticality.</p>
       </div>
@@ -134,27 +132,24 @@ const CriticalityChart = ({ data = [] }) => {
   }
 
   return (
-    <div className="chart-card">
-      <div className="chart-header">
-        <h3 className="chart-title">Criticality Breakdown</h3>
-      </div>
-      <div className="chart-wrapper">
-        <div className="criticality-kpi-values">
-          {criticalityData.map(item => (
-            <div key={item.name} className="criticality-kpi-item">
-              <div className="criticality-kpi-number" style={{ color: item.color }}>
-                {item.value}
-              </div>
-              <div className="criticality-kpi-label">
-                {item.name}
-              </div>
-            </div>
-          ))}
-        </div>
+    <div className="image-target-criticality-layout">
+      <h3 className="image-target-title">Criticality Breakdown</h3>
 
-        {renderMainProgressBar()}
-        {renderHighCriticalityStatusSection()}
+      <div className="image-target-values">
+        {criticalityData.map(item => (
+          <div key={item.name} className="image-target-value-item">
+            <div className="image-target-value-number" style={{ color: item.color }}>
+              {item.value}
+            </div>
+            <div className="image-target-value-label">
+              {item.name}
+            </div>
+          </div>
+        ))}
       </div>
+
+      {renderMainProgressBar()}
+      {renderHighCriticalityStatusSection()}
     </div>
   );
 };

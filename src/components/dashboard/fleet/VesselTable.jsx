@@ -14,25 +14,18 @@ import CommentTooltip from '../../common/Table/CommentTooltip';
 import VesselFlagService from '../../../services/VesselFlagService';
 import { useAuth } from '../../../context/AuthContext';
 import ReactDOM from 'react-dom';
-import PropTypes from 'prop-types'; // Import PropTypes
 
-// Import EditableField from common/EditableField.jsx
-import EditableField from '../../common/EditableField/EditableField'; // Corrected import path
-
-// Import FontAwesome icons for EditableField (if not already imported by EditableField itself)
-const VesselTable = ({
-  vessels,
-  onOpenRemarks,
+const VesselTable = ({ 
+  vessels, 
+  onOpenRemarks, 
   fieldMappings,
   onUpdateVessel,
-  onUpdateOverride, // New prop for ETA/ETB/ETD overrides
-  savingStates,     // New prop for saving states
 }) => {
   const tableRef = useRef(null);
   const headerRef = useRef(null);
   const { currentUser } = useAuth();
   const userId = currentUser?.sub || currentUser?.email || currentUser?.username;
-
+  
   // State for filters
   const [statusFilters, setStatusFilters] = useState({
     green: false,
@@ -40,17 +33,17 @@ const VesselTable = ({
     red: false,
     grey: false
   });
-
+  
   const [flagFilters, setFlagFilters] = useState({
     green: false,
     yellow: false,
     red: false,
     none: false
   });
-
+  
   // State for active filter dropdown (if any)
   const [activeFilterDropdown, setActiveFilterDropdown] = useState(null);
-
+  
   // State for vessel flags
   const [vesselFlags, setVesselFlags] = useState({});
   const [flagsLoading, setFlagsLoading] = useState(true);
@@ -63,30 +56,30 @@ const VesselTable = ({
     // Separate active and inactive vessels
     const activeVessels = [];
     const inactiveVessels = [];
-
+    
     // First separate vessels by active status
     vessels.forEach(vessel => {
       // Normalize status check to handle different case formats
       const status = vessel.status?.toLowerCase?.();
       const isActive = status === 'active';
-
+      
       if (isActive) {
         activeVessels.push(vessel);
       } else {
         inactiveVessels.push(vessel);
       }
     });
-
+    
     // For active vessels, keep only the entry with highest ID for each IMO
     const activeVesselsByImo = new Map();
-
+    
     activeVessels.forEach(vessel => {
       // Make sure IMO numbers and IDs are properly handled
       const imo = vessel.imo_no?.toString()?.trim();
-
+      
       // Skip vessels without a valid IMO
       if (!imo) return;
-
+      
       // Convert ID to number, with fallback to ensure we always have a numeric value
       let id;
       try {
@@ -95,7 +88,7 @@ const VesselTable = ({
       } catch (e) {
         id = 0;
       }
-
+      
       // Check if we've already seen this IMO
       if (!activeVesselsByImo.has(imo)) {
         // First time seeing this IMO, add it directly
@@ -104,23 +97,23 @@ const VesselTable = ({
         // We've seen this IMO before, check if this vessel has a higher ID
         const existingVessel = activeVesselsByImo.get(imo);
         const existingId = parseInt(existingVessel.id, 10) || 0;
-
+        
         if (id > existingId) {
           // This vessel has a higher ID, replace the existing one
           activeVesselsByImo.set(imo, vessel);
         }
       }
     });
-
+    
     // Combine unique active vessels with all inactive vessels
     const result = [...activeVesselsByImo.values(), ...inactiveVessels];
-
+    
     return result;
   }, [vessels]);
 
   const ColumnFilterDropdown = ({ isOpen, dropdownName, children }) => {
     if (!isOpen) return null;
-
+    
     return ReactDOM.createPortal(
       <div className={`column-filter-dropdown ${dropdownName}-dropdown`}>
         {children}
@@ -128,15 +121,15 @@ const VesselTable = ({
       document.body
     );
   };
-
+  
   const positionDropdown = (dropdownName) => {
     setTimeout(() => {
       const button = document.querySelector(`.integrated-filter-button.${dropdownName}-filter`);
       const dropdown = document.querySelector(`.column-filter-dropdown.${dropdownName}-dropdown`);
-
+      
       if (button && dropdown) {
         const buttonRect = button.getBoundingClientRect();
-
+        
         dropdown.style.position = 'fixed';
         dropdown.style.top = `${buttonRect.bottom + 5}px`;
         dropdown.style.left = `${buttonRect.left}px`;
@@ -144,88 +137,88 @@ const VesselTable = ({
       }
     }, 10);
   };
-
+  
   // State for tracking filtered data
   const [filterActiveData, setFilterActiveData] = useState([]);
   const [filterActive, setFilterActive] = useState(false);
-
+  
   // Function to handle traffic light filter changes
   const handleTrafficFilterChange = (status) => {
     setStatusFilters(prev => {
-      const updated = { ...prev, [status]: !prev[status] };
-
+      const updated = {...prev, [status]: !prev[status]};
+      
       // Check if any filters are active
       const hasActiveFilters = Object.values(updated).some(Boolean);
       setFilterActive(hasActiveFilters || Object.values(flagFilters).some(Boolean));
-
+      
       return updated;
     });
   };
-
+  
   // Function to handle flag filter changes
   const handleFlagFilterChange = (flag) => {
     setFlagFilters(prev => {
-      const updated = { ...prev, [flag]: !prev[flag] };
-
+      const updated = {...prev, [flag]: !prev[flag]};
+      
       // Check if any filters are active
       const hasActiveFilters = Object.values(updated).some(Boolean);
       setFilterActive(hasActiveFilters || Object.values(statusFilters).some(Boolean));
-
+      
       return updated;
     });
   };
-
+  
   // Toggle filter dropdown
   const toggleFilterDropdown = (dropdownName) => {
     setActiveFilterDropdown(activeFilterDropdown === dropdownName ? null : dropdownName);
   };
-
+  
   // Handle click outside filter dropdowns
   useEffect(() => {
     const handleClickOutside = (event) => {
       const dropdowns = document.querySelectorAll('.column-filter-dropdown');
       const buttons = document.querySelectorAll('.integrated-filter-button');
-
+      
       let clickedOnDropdown = false;
       let clickedOnButton = false;
-
+      
       dropdowns.forEach(dropdown => {
         if (dropdown.contains(event.target)) clickedOnDropdown = true;
       });
-
+      
       buttons.forEach(button => {
         if (button.contains(event.target)) clickedOnButton = true;
       });
-
+      
       if (!clickedOnDropdown && !clickedOnButton) {
         setActiveFilterDropdown(null);
       }
     };
-
+  
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
+  
   // Function to handle flag changes
   const handleFlagChange = async (rowId, flagValue) => {
     if (!userId) {
       console.error('No user ID available');
       return;
     }
-
+  
     if (!rowId) {
       console.error('No row ID provided');
       return;
     }
-
+  
     // Update local state optimistically
     setVesselFlags(prev => ({
       ...prev,
       [rowId]: flagValue === 'none' ? null : flagValue
     }));
-
+    
     try {
       if (flagValue === 'none') {
         await VesselFlagService.deleteVesselFlag(rowId, userId);
@@ -238,18 +231,18 @@ const VesselTable = ({
       console.error('Error updating flag:', error);
     }
   };
-
+  
   // Function to get a vessel's flag - memoized to avoid dependency array issues
   const getVesselFlag = useCallback((vessel) => {
     return vessel?.id ? (vesselFlags[vessel.id] || 'none') : 'none';
   }, [vesselFlags]);
-
+  
   // Monitor window resize to adjust table layout
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
       setWindowWidth(width);
-
+      
       if (tableRef.current) {
         // Add/remove classes based on viewport width
         const tableContainer = tableRef.current.querySelector('.data-table-container');
@@ -265,7 +258,7 @@ const VesselTable = ({
 
     // Initial call
     handleResize();
-
+    
     // Set up resize listener
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -275,7 +268,7 @@ const VesselTable = ({
   useEffect(() => {
     if (userId) {
       setFlagsLoading(true);
-
+      
       VesselFlagService.getUserVesselFlags(userId)
         .then(flags => {
           setVesselFlags(flags);
@@ -299,21 +292,21 @@ const VesselTable = ({
       if (!vessel.hand_over_date_mod || vessel.hand_over_date_mod === '') {
         return true;
       }
-
+      
       try {
         const handoverDate = new Date(vessel.hand_over_date_mod);
-
+        
         // Keep the row if the date is invalid
         if (isNaN(handoverDate.getTime())) {
           return true;
         }
-
+        
         const today = new Date();
-
+        
         // Reset time part for accurate date comparison
         today.setHours(0, 0, 0, 0);
         handoverDate.setHours(0, 0, 0, 0);
-
+        
         // Keep vessel if handover date is greater than or equal to today
         return handoverDate >= today;
       } catch (error) {
@@ -329,7 +322,7 @@ const VesselTable = ({
     // Create an array to store all factors and their statuses
     const factors = [];
     let worstStatus = 'green'; // Start with best status and downgrade as needed
-
+    
     // Function to update the worst status
     const updateWorstStatus = (status) => {
       if (status === 'red' || worstStatus === 'red') {
@@ -339,7 +332,7 @@ const VesselTable = ({
       }
       // If both are green, worst status remains green
     };
-
+    
     // Check vessel age
     if (vessel.BUILT_DATE) {
       try {
@@ -349,7 +342,7 @@ const VesselTable = ({
           const ageInMs = currentDate - builtDate;
           const ageInYears = ageInMs / (1000 * 60 * 60 * 24 * 365.25);
           const formattedAge = ageInYears.toFixed(1);
-
+          
           let ageStatus;
           if (ageInYears < 5) {
             ageStatus = 'green';
@@ -358,22 +351,22 @@ const VesselTable = ({
           } else {
             ageStatus = 'red';
           }
-
+          
           updateWorstStatus(ageStatus);
           factors.push({
             name: 'Vessel Age',
             value: `${formattedAge} years`,
             status: ageStatus,
-            detail: ageInYears < 5 ? 'Less than 5 years old' :
-              ageInYears < 10 ? 'Between 5-10 years old' :
-                'More than 10 years old'
+            detail: ageInYears < 5 ? 'Less than 5 years old' : 
+                   ageInYears < 10 ? 'Between 5-10 years old' : 
+                   'More than 10 years old'
           });
         }
       } catch (error) {
         console.error('Error calculating vessel age:', error);
       }
     }
-
+    
     // Check PSC inspection date
     if (vessel.psc_last_inspection_date) {
       try {
@@ -382,7 +375,7 @@ const VesselTable = ({
           const currentDate = new Date();
           const monthsDiff = (currentDate - inspectionDate) / (1000 * 60 * 60 * 24 * 30.4375);
           const formattedDate = formatDateTime(vessel.psc_last_inspection_date, false);
-
+          
           let inspectionStatus;
           if (monthsDiff <= 3) {
             inspectionStatus = 'green';
@@ -391,7 +384,7 @@ const VesselTable = ({
           } else {
             inspectionStatus = 'red';
           }
-
+          
           updateWorstStatus(inspectionStatus);
           factors.push({
             name: 'PSC Inspection',
@@ -403,7 +396,7 @@ const VesselTable = ({
         console.error('Error checking PSC inspection date:', error);
       }
     }
-
+    
     // Check AMSA inspection date
     if (vessel.amsa_last_inspection_date) {
       try {
@@ -412,7 +405,7 @@ const VesselTable = ({
           const currentDate = new Date();
           const monthsDiff = (currentDate - inspectionDate) / (1000 * 60 * 60 * 24 * 30.4375);
           const formattedDate = formatDateTime(vessel.amsa_last_inspection_date, false);
-
+          
           let inspectionStatus;
           if (monthsDiff <= 3) {
             inspectionStatus = 'green';
@@ -421,7 +414,7 @@ const VesselTable = ({
           } else {
             inspectionStatus = 'red';
           }
-
+          
           updateWorstStatus(inspectionStatus);
           factors.push({
             name: 'AMSA Inspection',
@@ -433,12 +426,12 @@ const VesselTable = ({
         console.error('Error checking AMSA inspection date:', error);
       }
     }
-
+    
     // Add checklist status
     if (vessel.checklist_received !== undefined) {
       const checklistStatus = normalizeChecklistValue(vessel.checklist_received);
       let status;
-
+      
       if (checklistStatus === 'Acknowledged') {
         status = 'green';
       } else if (checklistStatus === 'Submitted') {
@@ -446,7 +439,7 @@ const VesselTable = ({
       } else { // 'Pending'
         status = 'red';
       }
-
+      
       updateWorstStatus(status);
       factors.push({
         name: 'Checklist',
@@ -454,7 +447,7 @@ const VesselTable = ({
         status: status
       });
     }
-
+    
     // If no factors were evaluated, use grey as default
     if (factors.length === 0) {
       return {
@@ -463,7 +456,7 @@ const VesselTable = ({
         factors: []
       };
     }
-
+    
     return {
       status: worstStatus,
       tooltip: 'Multiple factors affect this status',
@@ -476,32 +469,32 @@ const VesselTable = ({
     // Check if any filters are active
     const trafficFiltersActive = Object.values(statusFilters).some(Boolean);
     const flagFiltersActive = Object.values(flagFilters).some(Boolean);
-
+    
     if (!trafficFiltersActive && !flagFiltersActive) {
       // No filters active, use the date-filtered data
       setFilterActiveData(dateFilteredVessels);
       setFilterActive(false);
       return;
     }
-
+    
     // Apply filters
     const filtered = dateFilteredVessels.filter(vessel => {
       // Get vessel status and flag
       const statusInfo = getVesselStatus(vessel);
       const statusValue = statusInfo.status;
-
+      
       const flagValue = getVesselFlag(vessel);
-
+      
       // Check if vessel passes traffic light filter (if active)
       const passesTrafficFilter = !trafficFiltersActive || statusFilters[statusValue];
-
+      
       // Check if vessel passes flag filter (if active)
       const passesFlagFilter = !flagFiltersActive || flagFilters[flagValue];
-
+      
       // Vessel must pass both active filters
       return passesTrafficFilter && passesFlagFilter;
     });
-
+    
     setFilterActiveData(filtered);
     setFilterActive(true);
   }, [dateFilteredVessels, statusFilters, flagFilters, getVesselFlag, getVesselStatus]);
@@ -509,11 +502,11 @@ const VesselTable = ({
   // Enhanced format function that can handle both date and date+time
   const formatDateTime = (dateString, includeTime = false) => {
     if (!dateString) return '-';
-
+    
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return dateString; // Return original if invalid
-
+      
       if (includeTime) {
         // Format as "Month Day, Year, HH:MM"
         return date.toLocaleString('en-US', {
@@ -540,7 +533,7 @@ const VesselTable = ({
   // Helper function to get status color based on vessel status
   const getStatusColor = (status) => {
     if (!status) return '#f4f4f4';
-
+    
     // Now we can directly check the categorized status values
     if (status === "At Sea") {
       return '#3498DB'; // Blue for at sea
@@ -566,19 +559,19 @@ const VesselTable = ({
     if (value === null || value === undefined) {
       return "Pending";
     }
-
+    
     // Handle boolean values
     if (typeof value === 'boolean') {
       return value ? 'Submitted' : 'Pending';
     }
-
+    
     // Handle string values
     if (typeof value === 'string') {
       const validValues = ["Pending", "Acknowledged", "Submitted"];
       if (validValues.includes(value)) {
         return value;
       }
-
+      
       // Convert older boolean string values
       if (value.toLowerCase() === 'true') {
         return 'Submitted';
@@ -587,7 +580,7 @@ const VesselTable = ({
         return 'Pending';
       }
     }
-
+    
     // Default fallback
     return "Pending";
   };
@@ -598,22 +591,22 @@ const VesselTable = ({
     const isMobile = windowWidth < 768;
     const isTablet = windowWidth >= 768 && windowWidth < 1024;
     const isSmallDesktop = windowWidth >= 1024 && windowWidth < 1280;
-
+    
     // Columns to hide on mobile
     if (isMobile) {
       return ['riskScore', 'amsa_last_inspection_date', 'psc_last_inspection_date', 'dwt', 'arrival_country'].includes(fieldId);
     }
-
+    
     // Columns to hide on tablets
     if (isTablet) {
       return ['amsa_last_inspection_date', 'psc_last_inspection_date'].includes(fieldId);
     }
-
+    
     // Columns to hide on small desktops
     if (isSmallDesktop) {
       return ['psc_last_inspection_date'].includes(fieldId);
     }
-
+    
     // Show all columns on large desktops
     return false;
   };
@@ -629,7 +622,7 @@ const VesselTable = ({
       <div className="vessel-name-header" ref={headerRef}>
         <div className="integrated-filters">
           {/* Status filter button */}
-          <button
+          <button 
             className={`integrated-filter-button status-filter ${activeFilterDropdown === 'status' ? 'active' : ''} ${trafficFilterCount > 0 ? 'has-filters' : ''}`}
             onClick={(e) => {
               e.stopPropagation();
@@ -646,7 +639,7 @@ const VesselTable = ({
               <span className="filter-count">{trafficFilterCount}</span>
             )}
           </button>
-
+  
           {/* Status filter dropdown */}
           <ColumnFilterDropdown
             isOpen={activeFilterDropdown === 'status'}
@@ -654,7 +647,7 @@ const VesselTable = ({
           >
             <div className="column-filter-header">
               <h4>Filter by Status</h4>
-              <button
+              <button 
                 className="column-filter-all-btn"
                 onClick={() => {
                   const allStatuses = ['green', 'yellow', 'red', 'grey'];
@@ -670,7 +663,7 @@ const VesselTable = ({
                 {Object.values(statusFilters).every(Boolean) ? 'Deselect All' : 'Select All'}
               </button>
             </div>
-
+            
             <div className="column-filter-items">
               {[
                 { id: 'green', label: 'Green' },
@@ -691,9 +684,9 @@ const VesselTable = ({
                 </div>
               ))}
             </div>
-
+            
             <div className="column-filter-footer">
-              <button
+              <button 
                 className="column-filter-clear"
                 onClick={() => {
                   setStatusFilters({
@@ -707,7 +700,7 @@ const VesselTable = ({
               >
                 Clear
               </button>
-              <button
+              <button 
                 className="column-filter-apply"
                 onClick={() => setActiveFilterDropdown(null)}
               >
@@ -715,9 +708,9 @@ const VesselTable = ({
               </button>
             </div>
           </ColumnFilterDropdown>
-
+  
           {/* Flag filter button */}
-          <button
+          <button 
             className={`integrated-filter-button flag-filter ${activeFilterDropdown === 'flag' ? 'active' : ''} ${flagFilterCount > 0 ? 'has-filters' : ''}`}
             onClick={(e) => {
               e.stopPropagation();
@@ -730,7 +723,7 @@ const VesselTable = ({
               <span className="filter-count">{flagFilterCount}</span>
             )}
           </button>
-
+  
           {/* Flag filter dropdown */}
           <ColumnFilterDropdown
             isOpen={activeFilterDropdown === 'flag'}
@@ -738,7 +731,7 @@ const VesselTable = ({
           >
             <div className="column-filter-header">
               <h4>Filter by Flag</h4>
-              <button
+              <button 
                 className="column-filter-all-btn"
                 onClick={() => {
                   const allFlags = ['green', 'yellow', 'red', 'none'];
@@ -754,7 +747,7 @@ const VesselTable = ({
                 {Object.values(flagFilters).every(Boolean) ? 'Deselect All' : 'Select All'}
               </button>
             </div>
-
+            
             <div className="column-filter-items">
               {[
                 { id: 'green', label: 'Green' },
@@ -775,9 +768,9 @@ const VesselTable = ({
                 </div>
               ))}
             </div>
-
+            
             <div className="column-filter-footer">
-              <button
+              <button 
                 className="column-filter-clear"
                 onClick={() => {
                   setFlagFilters({
@@ -791,7 +784,7 @@ const VesselTable = ({
               >
                 Clear
               </button>
-              <button
+              <button 
                 className="column-filter-apply"
                 onClick={() => setActiveFilterDropdown(null)}
               >
@@ -800,7 +793,7 @@ const VesselTable = ({
             </div>
           </ColumnFilterDropdown>
         </div>
-
+        
         <div className="header-label">Vessel</div>
       </div>
     );
@@ -812,11 +805,29 @@ const VesselTable = ({
     const columnsData = Object.entries(fieldMappings.TABLE)
       .filter(([fieldId, field]) => !field.isAction && fieldId !== 'comments' && fieldId !== 'imo' && fieldId !== 'owner')
       .sort((a, b) => a[1].priority - b[1].priority);
-
+    
+    // // Add vessel_type after vessel_name
+    // const vesselTypeIndex = columnsData.findIndex(([fieldId]) => fieldId === 'vessel_name') + 1;
+    // columnsData.splice(vesselTypeIndex, 0, ['vessel_type', {
+    //   dbField: 'vessel_type',
+    //   label: 'Vessel Type',
+    //   priority: 2,
+    //   width: '100px'
+    // }]);
+    
+    // // Add doc_type after vessel_type
+    // const docTypeIndex = columnsData.findIndex(([fieldId]) => fieldId === 'vessel_type') + 1;
+    // columnsData.splice(docTypeIndex, 0, ['doc_type', {
+    //   dbField: 'doc_type',
+    //   label: 'DOC',
+    //   priority: 3,
+    //   width: '80px'
+    // }]);
+    
     return columnsData.map(([fieldId, field]) => {
       // Get responsive width based on screen size
       let columnWidth = field.width;
-
+      
       // Adjust column widths based on screen size
       if (windowWidth < 768) { // Mobile
         // Use percentage-based widths on mobile to ensure better scaling
@@ -872,7 +883,7 @@ const VesselTable = ({
             break;
         }
       }
-
+      
       // Create a basic column config
       const column = {
         field: field.dbField,
@@ -892,81 +903,21 @@ const VesselTable = ({
 
       // Define cell renderer
       column.render = (value, rowData) => {
-        // Determine the value to display: user override if present, otherwise original
-        // Note: Lambda now returns user_eta, user_etb, user_etd as top-level properties
-        const originalValue = rowData[field.dbField]; // This is the system's original value
-        let displayValue = originalValue;
-        let hasOverride = false;
-        let isInvalidDate = false; // New state for date validation
-        let validationMessage = ''; // New state for validation message
-
-        // Check for user overrides for ETA, ETB, ETD
-        if (fieldId === 'eta') {
-          if (rowData.user_eta !== null && rowData.user_eta !== undefined) {
-            displayValue = rowData.user_eta;
-            hasOverride = true;
-          }
-        } else if (fieldId === 'etb') {
-          if (rowData.user_etb !== null && rowData.user_etb !== undefined) {
-            displayValue = rowData.user_etb;
-            hasOverride = true;
-          }
-        } else if (fieldId === 'etd') {
-          if (rowData.user_etd !== null && rowData.user_etd !== undefined) {
-            displayValue = rowData.user_etd;
-            hasOverride = true;
-          }
-        }
-
-
-        // --- START: Editable ETA, ETB, ETD Integration ---
-        if (['eta', 'etb', 'etd'].includes(fieldId)) {
-          // Special check for ETB being less than ETA
-          if (fieldId === 'etb') {
-            const etbDate = displayValue ? new Date(displayValue) : null;
-            // Get ETA from either user_eta or original eta
-            const etaValueForComparison = rowData.user_eta !== null && rowData.user_eta !== undefined ? rowData.user_eta : rowData.eta;
-            const etaDate = etaValueForComparison ? new Date(etaValueForComparison) : null;
-
-            if (etbDate && etaDate && etbDate.getTime() < etaDate.getTime()) {
-              isInvalidDate = true;
-              validationMessage = `ETB cannot be before ETA. ETA is ${formatDateTime(etaValueForComparison, true)}`;
-            }
-          }
-
-          return (
-            <EditableField
-              value={displayValue} // The value currently displayed (user override or system)
-              originalValue={originalValue} // The system's original value
-              onSave={(newValue) => onUpdateOverride(rowData.id, field.dbField, newValue)}
-              onResetToOriginal={() => onUpdateOverride(rowData.id, field.dbField, null)} // Pass null to clear override
-              type="datetime-local"
-              placeholder="N/A"
-              isSaving={savingStates[`${rowData.id}-${field.dbField}`]}
-              hasOverride={hasOverride}
-              isInvalidDate={isInvalidDate} // Pass the new prop
-              validationMessage={validationMessage} // Pass the new prop
-            />
-          );
-        }
-        // --- END: Editable ETA, ETB, ETD Integration ---
-
-
         // Special rendering for event_type (status)
         if (fieldId === 'event_type') {
           return (
-            <StatusIndicator
+            <StatusIndicator 
               status={value}
               color={getStatusColor(value)}
             />
           );
         }
-
+        
         // Special rendering for vessel_name with traffic light, flag, and owner/IMO tooltip
         if (fieldId === 'vessel_name') {
           const statusInfo = getVesselStatus(rowData);
           const flagValue = getVesselFlag(rowData);
-
+          
           // Create enhanced vessel details for tooltip
           const vesselDetails = {
             ...rowData,
@@ -978,51 +929,51 @@ const VesselTable = ({
               { label: 'Flag', value: rowData.flag || '-' }
             ]
           };
-
+          
           return (
             <div className="vessel-name-cell">
               {/* Traffic light indicator */}
-              <TrafficLightIndicator
-                status={statusInfo.status}
+              <TrafficLightIndicator 
+                status={statusInfo.status} 
                 tooltipData={statusInfo}
               />
-
+              
               {/* Vessel flag indicator */}
               <div className="vessel-flag-container">
-                <button
+                <button 
                   className={`vessel-flag-button ${flagValue !== 'none' ? flagValue : ''}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
-
+                    
                     // Toggle through flag states: none -> green -> yellow -> red -> none
                     const flagSequence = ['green', 'yellow', 'red', 'none'];
                     const currentIndex = flagSequence.indexOf(flagValue);
                     const nextIndex = (currentIndex + 1) % flagSequence.length;
                     const nextFlag = flagSequence[nextIndex];
-
+                    
                     handleFlagChange(rowData.id, nextFlag);
                   }}
                   aria-label="Set vessel flag"
                 >
-                  <Flag
-                    size={14}
-                    style={{
-                      color: flagValue === 'green' ? '#2EE086' :
-                        flagValue === 'yellow' ? '#FFD426' :
-                          flagValue === 'red' ? '#FF5252' :
+                  <Flag 
+                    size={14} 
+                    style={{ 
+                      color: flagValue === 'green' ? '#2EE086' : 
+                            flagValue === 'yellow' ? '#FFD426' :
+                            flagValue === 'red' ? '#FF5252' : 
                             '#A0A0A0',
                       filter: flagValue !== 'none' ? `drop-shadow(0 0 3px ${
-                        flagValue === 'green' ? 'rgba(46, 224, 134, 0.6)' :
-                          flagValue === 'yellow' ? 'rgba(255, 212, 38, 0.6)' :
-                            flagValue === 'red' ? 'rgba(255, 82, 82, 0.6)' :
-                              'rgba(160, 160, 160, 0.3)'
-                        })` : 'none'
-                    }}
+                        flagValue === 'green' ? 'rgba(46, 224, 134, 0.6)' : 
+                        flagValue === 'yellow' ? 'rgba(255, 212, 38, 0.6)' :
+                        flagValue === 'red' ? 'rgba(255, 82, 82, 0.6)' : 
+                        'rgba(160, 160, 160, 0.3)'
+                      })` : 'none'
+                    }} 
                   />
                 </button>
               </div>
-
+              
               {/* Vessel name with enhanced tooltip including IMO and Owner */}
               <VesselDetailsTooltip vessel={vesselDetails}>
                 <span className="vessel-name">{(value || '-').toUpperCase()}</span>
@@ -1030,7 +981,7 @@ const VesselTable = ({
             </div>
           );
         }
-
+        
         // New column: vessel_type
         if (fieldId === 'vessel_type') {
           return (
@@ -1039,7 +990,7 @@ const VesselTable = ({
             </TextTooltip>
           );
         }
-
+        
         // New column: doc_type
         if (fieldId === 'doc_type') {
           return (
@@ -1049,18 +1000,38 @@ const VesselTable = ({
           );
         }
 
-        if (fieldId === 'arrival_port') {
-          const upperCaseValue = (value || '-').toUpperCase(); // Convert to uppercase
+        if (fieldId === 'etb') {
+          const etbDate = value ? new Date(value) : null;
+          const etaDate = rowData.eta ? new Date(rowData.eta) : null;
+        
+          // Check if etb is less than eta
+          if (etbDate && etaDate && etbDate.getTime() < etaDate.getTime()) {
+            return (
+              <TextTooltip text="-">
+                -
+              </TextTooltip>
+            );
+          }
+        
+          const formattedValue = formatDateTime(value, true);
           return (
-            <TextTooltip text={upperCaseValue}>
-              <span className="arrival-port">{upperCaseValue}</span>
+            <TextTooltip text={formattedValue}>
+              {formattedValue}
+            </TextTooltip>
+          );
+        }
+
+        if (fieldId === 'arrival_port') {
+          return (
+            <TextTooltip text={value || '-'}>
+              <span className="arrival-port">{value || '-'}</span>
             </TextTooltip>
           );
         }
 
         if (fieldId === 'arrival_country') {
           let displayValue = value;
-
+          
           // Convert country codes to full names
           if (value === 'AU' || value === 'au') {
             displayValue = 'AUSTRALIA';
@@ -1070,28 +1041,28 @@ const VesselTable = ({
             // Make everything caps for other countries
             displayValue = displayValue.toUpperCase();
           }
-
+          
           return (
             <TextTooltip text={displayValue || '-'}>
               <span>{displayValue || '-'}</span>
             </TextTooltip>
           );
         }
-
+         
         // Special rendering for risk score
         if (fieldId === 'riskScore') {
           const score = value !== null && value !== undefined ? Math.round(value) : null;
           return (
-            <TableBadge
+            <TableBadge 
               variant={getRiskScoreVariant(score)}
             >
               {score !== null ? score : '-'}
             </TableBadge>
           );
         }
-
-        // Special rendering for date fields (non-editable ones)
-        if (field.type === 'date' && !['eta', 'etb', 'etd'].includes(fieldId)) {
+        
+        // Special rendering for date fields
+        if (field.type === 'date') {
           const formattedValue = formatDateTime(value, false);
           return (
             <TextTooltip text={formattedValue}>
@@ -1100,10 +1071,12 @@ const VesselTable = ({
           );
         }
 
-        // Special rendering for date-time fields (non-editable ones)
+        // Special rendering for date-time fields
         if (
-          (fieldId === 'atd' || fieldId === 'psc_last_inspection_date') &&
-          !['eta', 'etb', 'etd'].includes(fieldId) // Ensure ETA/ETB/ETD are not double-handled
+          fieldId === 'eta' || 
+          fieldId === 'etd' || 
+          fieldId === 'atd' ||
+          fieldId === 'psc_last_inspection_date'
         ) {
           const formattedValue = formatDateTime(value, true);
           return (
@@ -1115,9 +1088,9 @@ const VesselTable = ({
 
         if (fieldId === 'checklist_received') {
           const normalizedValue = normalizeChecklistValue(value);
-
+          
           return (
-            <DropdownField
+            <DropdownField 
               value={normalizedValue}
               vessel={rowData}
               onUpdate={onUpdateVessel}
@@ -1127,11 +1100,11 @@ const VesselTable = ({
             />
           );
         }
-
+        
         // Special rendering for SANZ field
         if (fieldId === 'sanz') {
           return (
-            <DropdownField
+            <DropdownField 
               value={value || ""}
               vessel={rowData}
               onUpdate={onUpdateVessel}
@@ -1142,7 +1115,7 @@ const VesselTable = ({
             />
           );
         }
-
+        
         // Special rendering for days to go
         if (fieldId === 'daysToGo' && typeof value === 'number') {
           const formattedValue = value.toFixed(1);
@@ -1152,7 +1125,7 @@ const VesselTable = ({
             </TextTooltip>
           );
         }
-
+        
         // Default rendering for text content
         if (value !== null && value !== undefined && value !== '-') {
           const stringValue = String(value);
@@ -1162,11 +1135,11 @@ const VesselTable = ({
             </TextTooltip>
           );
         }
-
+        
         // Fallback for null/undefined values
         return '-';
       };
-
+      
       return column;
     });
   };
@@ -1175,7 +1148,7 @@ const VesselTable = ({
   const renderExpandedContent = (vessel) => {
     const expandedColumns = Object.entries(fieldMappings.EXPANDED)
       .sort((a, b) => a[1].priority - b[1].priority);
-
+    
     // Add IMO and Owner to expanded content if on mobile
     if (windowWidth < 768) {
       if (vessel.imo_no) {
@@ -1185,7 +1158,7 @@ const VesselTable = ({
           priority: -2
         }]);
       }
-
+      
       if (vessel.owner) {
         expandedColumns.unshift(['owner', {
           dbField: 'owner',
@@ -1194,28 +1167,17 @@ const VesselTable = ({
         }]);
       }
     }
-
+    
     return (
       <div className={`expanded-grid ${windowWidth < 768 ? 'mobile-grid' : ''}`}>
         {expandedColumns.map(([fieldId, field]) => {
           let value = vessel[field.dbField];
           let displayLabel = field.label;
-
-          // Check for user overrides in expanded content as well
-          // Note: Lambda now returns user_eta, user_etb, user_etd as top-level properties
-          if (fieldId === 'eta' && vessel.user_eta !== null && vessel.user_eta !== undefined) {
-            value = vessel.user_eta;
-          } else if (fieldId === 'etb' && vessel.user_etb !== null && vessel.user_etb !== undefined) {
-            value = vessel.user_etb;
-          } else if (fieldId === 'etd' && vessel.user_etd !== null && vessel.user_etd !== undefined) {
-            value = vessel.user_etd;
-          }
-
-
+          
           if (fieldId === 'departure_port' && field.combineWithCountry) {
             const port = value || '-';
             const country = vessel.departure_country || '';
-
+            
             // Combine them into a single display value
             if (country) {
               // Format country code if needed
@@ -1227,33 +1189,31 @@ const VesselTable = ({
               } else if (formattedCountry) {
                 formattedCountry = formattedCountry.toUpperCase();
               }
-
+              
               // Combine port and country
               value = `${port}, ${formattedCountry}`;
             }
-          }
+          }  
 
           // Format date values in expanded panel
           if (field.type === 'date') {
             value = formatDateTime(value, false);
           } else if (
-            fieldId === 'etd' ||
-            fieldId === 'atd' ||
-            fieldId === 'eta' || // Also format ETA/ETB in expanded view as datetime
-            fieldId === 'etb'
+            fieldId === 'etd' || 
+            fieldId === 'atd'
           ) {
             value = formatDateTime(value, true);
           }
-
+          
           // If value is a string and not empty, wrap it in a tooltip
-          const displayValue = (value !== null && value !== undefined && value !== '-')
+          const displayValue = (value !== null && value !== undefined && value !== '-') 
             ? (
-              <TextTooltip text={String(value)}>
-                {value}
-              </TextTooltip>
-            )
+                <TextTooltip text={String(value)}>
+                  {value}
+                </TextTooltip>
+              ) 
             : value;
-
+          
           return (
             <ExpandedItem
               key={fieldId}
@@ -1274,24 +1234,24 @@ const VesselTable = ({
     className: 'comments-column',
     content: (vessel) => {
       const hasComments = vessel.comments && vessel.comments.trim().length > 0;
-
+      
       return (
         <div className="comment-cell">
-          <CommentTooltip
-            comment={vessel.comments || ""}
+          <CommentTooltip 
+            comment={vessel.comments || ""} 
             onEditClick={() => onOpenRemarks(vessel)}
           >
-            <div
+            <div 
               className={`comment-indicator ${hasComments ? 'has-comment' : 'no-comment'}`}
             >
               <div className="comment-icon">
                 <MessageSquare size={16} />
               </div>
-
+              
               {hasComments && windowWidth >= 768 ? (
                 <div className="comment-preview-text">
-                  {vessel.comments.length > 28
-                    ? `${vessel.comments.substring(0, 28)}...`
+                  {vessel.comments.length > 28 
+                    ? `${vessel.comments.substring(0, 28)}...` 
                     : vessel.comments}
                 </div>
               ) : windowWidth >= 768 ? (
@@ -1314,22 +1274,22 @@ const VesselTable = ({
             max-width: 100%;
             overflow-x: hidden;
           }
-
+          
           /* Mobile Styles */
           @media (max-width: 767px) {
             .data-table th, .data-table td {
               padding: 6px 8px;
               font-size: 13px;
             }
-
+            
             .hidden-column {
               display: none !important;
             }
-
+            
             .vessel-name-cell {
               max-width: 120px;
             }
-
+            
             .vessel-name {
               max-width: 80px;
               white-space: nowrap;
@@ -1337,38 +1297,38 @@ const VesselTable = ({
               text-overflow: ellipsis;
               display: inline-block;
             }
-
+            
             .comment-indicator {
               width: 24px;
               height: 24px;
               padding: 0;
               justify-content: center;
             }
-
+            
             .comment-preview-text, .comment-add-text {
               display: none;
             }
-
+            
             .mobile-grid {
               grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
             }
-
+            
             .mobile-expanded-item {
               padding: 8px !important;
             }
           }
-
+          
           /* Tablet Styles */
           @media (min-width: 768px) and (max-width: 1023px) {
             .data-table th, .data-table td {
               padding: 8px 12px;
               font-size: 13px;
             }
-
+            
             .hidden-column {
               display: none !important;
             }
-
+            
             .vessel-name {
               max-width: 120px;
               white-space: nowrap;
@@ -1377,24 +1337,24 @@ const VesselTable = ({
               display: inline-block;
             }
           }
-
+          
           /* Small Desktop Styles */
           @media (min-width: 1024px) and (max-width: 1279px) {
             .data-table th, .data-table td {
               padding: 8px 14px;
             }
-
+            
             .hidden-column {
               display: none !important;
             }
           }
-
+          
           /* Reset default table styles for better app-wide consistency */
           .data-table-wrapper {
             max-width: 100%;
             overflow-x: auto;
           }
-
+          
           /* Make sure text tooltips don't overflow */
           .text-tooltip-trigger {
             max-width: 100%;
@@ -1402,7 +1362,7 @@ const VesselTable = ({
             text-overflow: ellipsis;
             white-space: nowrap;
           }
-
+          
           /* Enhance vessel name display */
           .vessel-name-cell {
             display: flex;
@@ -1410,7 +1370,7 @@ const VesselTable = ({
             gap: 6px;
             width: 100%;
           }
-
+          
           /* Improve flag button responsiveness */
           .vessel-flag-button {
             width: 20px;
@@ -1422,7 +1382,7 @@ const VesselTable = ({
           }
         `}
       </style>
-
+      
       <Table
         data={filterActive ? filterActiveData : dateFilteredVessels}
         columns={getTableColumns()}
@@ -1435,15 +1395,6 @@ const VesselTable = ({
       />
     </div>
   );
-};
-
-VesselTable.propTypes = {
-  vessels: PropTypes.arrayOf(PropTypes.object).isRequired,
-  onOpenRemarks: PropTypes.func.isRequired,
-  fieldMappings: PropTypes.object.isRequired, // Changed to object as per your original code
-  onUpdateVessel: PropTypes.func.isRequired,
-  onUpdateOverride: PropTypes.func.isRequired, // New prop
-  savingStates: PropTypes.object.isRequired,   // New prop
 };
 
 export default VesselTable;
