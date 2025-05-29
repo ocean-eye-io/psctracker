@@ -1,25 +1,32 @@
 // src/components/common/ui/ToastContext.jsx
 import React, { createContext, useContext } from 'react';
-import { toast as hotToast } from 'react-hot-toast'; // Assuming you use react-hot-toast
+import { toast as hotToast } from 'react-hot-toast'; // Correctly import react-hot-toast
 
 const ToastContext = createContext(undefined);
 
 export const ToastProvider = ({ children }) => {
   // This 'toast' function is what gets provided by the context
   const toast = ({ title, description, variant, className }) => {
+    const content = (
+      <div>
+        {title && <strong>{title}</strong>}
+        {description && <p>{description}</p>}
+      </div>
+    );
+
     if (variant === 'destructive') {
-      hotToast.error(<div><strong>{title}</strong><p>{description}</p></div>, { className });
+      hotToast.error(content, { className });
     } else if (variant === 'warning') {
-      hotToast.warn(<div><strong>{title}</strong><p>{description}</p></div>, { className });
+      hotToast.warn(content, { className });
     } else if (variant === 'subtle') {
-      hotToast(<div><strong>{title}</strong><p>{description}</p></div>, { className });
+      hotToast(content, { className }); // Default toast for subtle
     } else {
-      hotToast.success(<div><strong>{title}</strong><p>{description}</p></div>, { className });
+      hotToast.success(content, { className });
     }
   };
 
   return (
-    <ToastContext.Provider value={{ toast }}> {/* <--- THIS IS CRUCIAL */}
+    <ToastContext.Provider value={{ toast }}>
       {children}
     </ToastContext.Provider>
   );

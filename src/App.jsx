@@ -5,7 +5,8 @@ import { Amplify } from 'aws-amplify';
 import awsConfig from './config/aws-config';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './components/common/ui/ToastContext'; // Import ToastProvider
-import { Toaster } from './components/common/ui/Toaster'; // Import Toaster
+import { Toaster } from 'react-hot-toast'; // <--- IMPORTANT: Import Toaster from react-hot-toast
+
 import FloatingChatbot from './components/FloatingChatbot';
 
 // Components
@@ -14,6 +15,7 @@ import FleetDashboard from './components/dashboard/fleet/FleetDashboard';
 import DefectsDashboard from './components/dashboard/defects/DefectsDashboard';
 import VesselReportingPage from './components/dashboard/reporting/VesselReportingPage';
 import { fleetFieldMappings } from './components/dashboard/fleet/FleetFieldMappings';
+import AdminDashboard from './components/dashboard/admin/AdminDashboard'; 
 
 // Auth Components
 import Login from './components/auth/Login';
@@ -52,6 +54,7 @@ const getActivePageFromPath = (pathname) => {
   if (pathname.startsWith('/fleet')) return 'fleet';
   if (pathname.startsWith('/defects')) return 'defects';
   if (pathname.startsWith('/reporting')) return 'reporting';
+  if (pathname.startsWith('/admin')) return 'admin'; // ADDED: Admin route
   return 'fleet'; // default
 };
 
@@ -119,6 +122,17 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            {/* ADDED: Admin Route */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <ProtectedLayout>
+                    <AdminDashboard />
+                  </ProtectedLayout>
+                </ProtectedRoute>
+              }
+            />
 
             {/* Default route: redirect to /fleet */}
             <Route
@@ -132,7 +146,8 @@ function App() {
               element={<Navigate to="/fleet" replace />}
             />
           </Routes>
-          <Toaster /> {/* Render the Toaster component */}
+          {/* Render the react-hot-toast Toaster component */}
+          <Toaster position="top-right" /> {/* You can customize position and other props */}
         </BrowserRouter>
       </ToastProvider>
     </AuthProvider>

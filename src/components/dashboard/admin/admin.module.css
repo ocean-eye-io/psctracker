@@ -1,0 +1,755 @@
+/* src/components/dashboards/admin/admin.module.css */
+
+/* --- Global Variables (matching dashboard theme) --- */
+:root {
+    /* Color palette - matching tableStyles.css */
+    --primary-dark: #0a1725;
+    --secondary-dark: #112032;
+    --card-bg: #0e1e2f;
+    --card-dark: #0c1a29;
+    --table-row-hover-bg: #162d48;
+    
+    /* Text colors */
+    --text-light: #f4f4f4;
+    --text-muted: rgba(255, 255, 255, 0.6);
+    
+    /* Accent colors */
+    --blue-accent: #4DC3FF;
+    --primary-accent: #3BADE5;
+    --positive-color: #2EE086;
+    --negative-color: #FF5252;
+    --warning-color: #FFD426;
+    
+    /* Status colors */
+    --status-red: #E74C3C;
+    --status-yellow: #F1C40F;
+    --status-green: #2ECC71;
+    --status-grey: #95a5a6;
+    
+    /* Border and effects */
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --highlight-glow: rgba(77, 195, 255, 0.3);
+    
+    /* Sizing */
+    --border-radius-sm: 4px;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-size-small: 11px;
+    --font-size-normal: 12px;
+    --font-size-large: 14px;
+    
+    /* Z-index layers */
+    --z-index-dropdown: 1000;
+    --z-index-modal: 2000;
+  }
+  
+  /* --- General Layout for Admin Dashboard --- */
+  .adminDashboardContainer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 20px;
+    background-color: var(--primary-dark);
+    color: var(--text-light);
+  }
+  
+  .adminDashboardHeader {
+    margin-bottom: 20px;
+    font-size: 1.6rem;
+    color: var(--text-light);
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  
+  .adminTabsContainer {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius-md);
+    box-shadow: 0 6px 16px var(--shadow-color);
+    border: 1px solid var(--border-subtle);
+    padding: 16px;
+    position: relative;
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+  
+  .adminTabsContainer::before {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    border-radius: var(--border-radius-md);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    pointer-events: none;
+    z-index: 1;
+  }
+  
+  /* --- Tab Navigation --- */
+  .tabNav {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: linear-gradient(180deg, #0a1725, #112032);
+    border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+    padding: 8px 8px 0;
+  }
+  
+  .tabButton {
+    padding: 10px 16px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: var(--font-size-large);
+    transition: all 0.25s ease;
+    border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .tabButton::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(77, 195, 255, 0);
+    transform: scale(0);
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+  
+  .tabButton:hover {
+    color: var(--text-light);
+    transform: translateY(-1px);
+  }
+  
+  .tabButton:hover::before {
+    background: rgba(77, 195, 255, 0.1);
+    transform: scale(1);
+  }
+  
+  .tabButton.active {
+    color: var(--blue-accent);
+    background: rgba(77, 195, 255, 0.1);
+    font-weight: 600;
+    border-bottom: 2px solid var(--blue-accent);
+  }
+  
+  /* --- Data Table Styles --- */
+  .dataTableContainer {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+    position: relative;
+  }
+  
+  .dataTableWrapper {
+    width: 100%;
+    overflow: hidden;
+    border-radius: var(--border-radius-md);
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(77, 195, 255, 0.3) rgba(11, 22, 35, 0.5);
+    background: var(--card-bg);
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 4px 12px var(--shadow-color);
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  
+  .dataTableWrapper::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .dataTableWrapper::-webkit-scrollbar-track {
+    background: rgba(11, 22, 35, 0.5);
+    border-radius: 3px;
+  }
+  
+  .dataTableWrapper::-webkit-scrollbar-thumb {
+    background-color: rgba(77, 195, 255, 0.3);
+    border-radius: 3px;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+  }
+  
+  .dataTableWrapper::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(77, 195, 255, 0.5);
+  }
+  
+  .dataTable {
+    width: 100%;
+    min-width: 800px;
+    border-collapse: collapse;
+    color: var(--text-light);
+    font-family: 'Nunito', sans-serif;
+    font-size: var(--font-size-normal);
+    table-layout: fixed;
+  }
+  
+  .dataTable thead {
+    background: linear-gradient(180deg, #0a1725, #112032);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .dataTable th {
+    padding: 10px 15px;
+    text-align: left;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: var(--font-size-normal);
+    color: var(--text-light);
+    height: 38px;
+    box-sizing: border-box;
+    vertical-align: middle;
+    position: relative;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .dataTable th::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, 
+      rgba(255, 255, 255, 0.05), 
+      rgba(255, 255, 255, 0.1), 
+      rgba(255, 255, 255, 0.05)
+    );
+  }
+  
+  .dataTable th:hover {
+    background-color: rgba(77, 195, 255, 0.1);
+  }
+  
+  .tableHeaderContent {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: var(--border-radius-sm);
+    transition: all 0.2s ease;
+  }
+  
+  .tableHeaderContent:hover {
+    background: rgba(77, 195, 255, 0.15);
+    transform: translateY(-1px);
+  }
+  
+  .dataTable td {
+    padding: 8px 15px;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: var(--font-size-normal);
+    height: 36px;
+    box-sizing: border-box;
+    vertical-align: middle;
+    white-space: nowrap;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    overflow: visible;
+    text-overflow: ellipsis;
+    position: relative;
+  }
+  
+  .dataTable tbody tr {
+    transition: all 0.25s ease;
+    background-color: var(--card-bg);
+    position: relative;
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+  
+  .dataTable tbody tr:nth-child(even) {
+    background-color: var(--card-dark);
+  }
+  
+  .dataTable tbody tr:hover {
+    background: var(--table-row-hover-bg);
+    transform: translateY(-1px) scale(1.002);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    z-index: 5;
+  }
+  
+  .dataTable tbody tr:hover td {
+    border-bottom-color: rgba(77, 195, 255, 0.2);
+  }
+  
+  .dataTable .actionsCell {
+    text-align: center;
+    min-width: 180px;
+  }
+  
+  .cellContent {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+    max-width: 250px;
+    word-break: break-word;
+  }
+  
+  /* --- Table Status Indicators --- */
+  .statusIndicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    border-radius: var(--border-radius-sm);
+    background: rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    font-size: var(--font-size-small);
+    font-weight: 500;
+  }
+  
+  .statusIndicator:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.08);
+  }
+  
+  .statusDot {
+    width: 6px;
+    height: 6px;
+    min-width: 6px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 4px currentColor;
+  }
+  
+  .statusGreen {
+    color: var(--status-green);
+  }
+  
+  .statusYellow {
+    color: var(--status-yellow);
+  }
+  
+  .statusRed {
+    color: var(--status-red);
+  }
+  
+  /* --- Badges --- */
+  .badge {
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: var(--border-radius-sm);
+    display: inline-block;
+    font-size: var(--font-size-small);
+    text-align: center;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+  }
+  
+  .badge::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--border-radius-sm);
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    pointer-events: none;
+  }
+  
+  .badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  }
+  
+  .badgeInfo {
+    background: rgba(77, 195, 255, 0.15);
+    color: var(--blue-accent);
+    border: 1px solid rgba(77, 195, 255, 0.3);
+  }
+  
+  /* --- Action Buttons --- */
+  .actionButton {
+    background: rgba(77, 195, 255, 0.1);
+    border: 1px solid rgba(77, 195, 255, 0.2);
+    border-radius: var(--border-radius-sm);
+    color: var(--blue-accent);
+    cursor: pointer;
+    padding: 4px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.25s ease;
+    font-size: var(--font-size-small);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    white-space: nowrap;
+  }
+  
+  .actionButton::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+  
+  .actionButton:hover {
+    background: rgba(77, 195, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  .actionButton:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  }
+  
+  .actionButton i {
+    margin-right: 5px;
+  }
+  
+  /* Specific button styles */
+  .defectActionBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 14px;
+    height: 32px;
+    border-radius: 6px;
+    background: #3BADE5;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    transition: background 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(59, 173, 229, 0.08);
+    cursor: pointer;
+  }
+  
+  .defectActionBtn:hover {
+    background: #2496c7;
+  }
+  
+  .defectActionBtn.add {
+    background: rgba(59, 173, 229, 0.1);
+    border: 1px solid rgba(59, 173, 229, 0.2);
+    color: var(--blue-accent);
+  }
+  
+  .defectActionBtn.add:hover {
+    background: rgba(59, 173, 229, 0.2);
+  }
+  
+  /* --- Empty Table Message --- */
+  .emptyTableMessage {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+  
+  /* --- Form Styles --- */
+  .modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(2px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: var(--z-index-modal);
+    animation: fadeIn 0.2s ease-out;
+  }
+  
+  .modalContentBox {
+    background: linear-gradient(145deg, #0a1725, #112032);
+    padding: 24px;
+    border-radius: var(--border-radius-md);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(59, 173, 229, 0.2);
+    width: clamp(320px, 90%, 550px);
+    color: var(--text-light);
+    animation: zoomIn 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  .modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(59, 173, 229, 0.15);
+    position: relative;
+  }
+  
+  .modalHeader h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #f4f4f4;
+  }
+  
+  .closeButton {
+    background: rgba(244, 244, 244, 0.05);
+    border: none;
+    color: #f4f4f4;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 1.2rem;
+    line-height: 1;
+    padding: 0;
+  }
+  
+  .closeButton:hover {
+    background: rgba(244, 244, 244, 0.1);
+    transform: scale(1.05);
+  }
+  
+  .formGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    flex-grow: 1;
+    justify-content: space-between;
+  }
+  
+  .formGroup {
+    margin-bottom: 0;
+  }
+  
+  .formGroup label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-light);
+    font-size: 13px;
+  }
+  
+  .formGroup input[type="text"],
+  .formGroup input[type="password"],
+  .formGroup input[type="email"],
+  .formGroup textarea,
+  .formGroup select {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(59, 173, 229, 0.2);
+    padding: 10px 12px;
+    color: var(--text-light);
+    border-radius: 4px;
+    font-size: 13px;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+  }
+  
+  .formGroup input:focus,
+  .formGroup textarea:focus,
+  .formGroup select:focus {
+    outline: none;
+    border-color: rgba(59, 173, 229, 0.4);
+    box-shadow: 0 0 0 2px rgba(59, 173, 229, 0.1);
+  }
+  
+  .formGroup select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a0a0a0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+    padding-right: 30px;
+  }
+  
+  .inputError {
+    border-color: var(--negative-color) !important;
+  }
+  
+  .errorText {
+    color: var(--negative-color);
+    font-size: var(--font-size-small);
+    margin-top: 5px;
+  }
+  
+  .fullWidth {
+    grid-column: 1 / -1;
+  }
+  
+  .formActions {
+    margin-top: 25px;
+    text-align: right;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(59, 173, 229, 0.15);
+  }
+  
+  .cancelButton {
+    background: rgba(244, 244, 244, 0.05);
+    border: 1px solid rgba(244, 244, 244, 0.1);
+    color: #f4f4f4;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 13px;
+  }
+  
+  .cancelButton:hover {
+    background: rgba(244, 244, 244, 0.1);
+  }
+  
+  .submitButton {
+    background: rgba(59, 173, 229, 0.1);
+    border: 1px solid rgba(59, 173, 229, 0.3);
+    color: #3BADE5;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    font-size: 13px;
+  }
+  
+  .submitButton:hover {
+    background: rgba(59, 173, 229, 0.2);
+    transform: translateY(-1px);
+  }
+  
+  /* --- Module Checkbox Group --- */
+  .moduleCheckboxGroup {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid rgba(59, 173, 229, 0.15);
+    border-radius: var(--border-radius-md);
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+  
+  .moduleCheckboxesContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  
+  .moduleCheckboxItem {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 8px 12px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid rgba(59, 173, 229, 0.15);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .moduleCheckboxItem:hover {
+    background-color: rgba(59, 173, 229, 0.1);
+    border-color: rgba(59, 173, 229, 0.3);
+    transform: translateY(-1px);
+  }
+  
+  .moduleCheckboxInput {
+    margin-right: 8px;
+    cursor: pointer;
+    transform: scale(1.1);
+    accent-color: var(--blue-accent);
+  }
+  
+  .moduleCheckboxLabel {
+    margin-bottom: 0;
+    cursor: pointer;
+    color: var(--text-light);
+    font-weight: normal;
+    font-size: 12px;
+  }
+  
+  .formMessage {
+    color: var(--text-muted);
+    font-size: var(--font-size-small);
+    text-align: center;
+    width: 100%;
+    padding: 10px 0;
+  }
+  
+  /* Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes zoomIn {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .adminDashboardContainer {
+      padding: 10px;
+    }
+    
+    .adminTabsContainer {
+      padding: 10px;
+    }
+    
+    .dataTableContainer {
+      padding: 5px;
+    }
+    
+    .modalContentBox {
+      width: 95%;
+      padding: 16px;
+    }
+    
+    .formActions {
+      flex-direction: column-reverse;
+    }
+    
+    .submitButton, .cancelButton {
+      width: 100%;
+    }
+  }
