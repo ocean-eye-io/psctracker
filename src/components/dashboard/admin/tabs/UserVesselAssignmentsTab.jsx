@@ -1,4 +1,3 @@
-// src/components/dashboards/admin/tabs/UserVesselAssignmentsTab.jsx
 import React, { useState, useEffect } from 'react';
 import UserSelector from '../components/UserSelector';
 import VesselAssignmentSelector from '../components/VesselAssignmentSelector';
@@ -121,11 +120,12 @@ const UserVesselAssignmentsTab = () => {
   }
 
   return (
-    <div className={styles.dataTableContainer}> {/* Using dataTableContainer for padding/width */}
+    // Ensure this container allows scrolling if its content overflows
+    <div className={`${styles.dataTableContainer} ${styles.userVesselAssignmentsTabContent}`}>
       <h4 className={styles.formHeader} style={{ marginBottom: '20px' }}>Manage User-Vessel Assignments</h4>
 
       <div className={styles.formGroup} style={{ marginBottom: '30px' }}>
-        <label htmlFor="user-select" className={styles.formGroupLabel}>Select User:</label> {/* Added formGroupLabel */}
+        <label htmlFor="user-select" className={styles.formGroupLabel}>Select User:</label>
         <UserSelector onUserSelect={handleUserSelect} selectedUser={selectedUser} />
       </div>
 

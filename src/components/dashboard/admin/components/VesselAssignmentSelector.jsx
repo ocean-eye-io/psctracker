@@ -1,4 +1,3 @@
-// src/components/dashboards/admin/components/VesselAssignmentSelector.jsx
 import React, { useState, useEffect } from 'react';
 import CustomDualListBox from './CustomDualListBox'; // Import the new component
 import styles from '../admin.module.css'; // Import the CSS module
@@ -60,8 +59,9 @@ const VesselAssignmentSelector = ({ allVessels, initialAssignedVesselIds, onSave
   const filteredAssignedVessels = filterVessels(assignedVessels, assignedSearchTerm);
 
   return (
-    <div className={styles.vesselAssignmentContainer}>
-      <div className={styles.dualListBox}>
+    // Added flex-grow to ensure it takes available vertical space
+    <div className={`${styles.vesselAssignmentContainer} ${styles.flexGrowContainer}`}>
+      <div className={`${styles.dualListBox} ${styles.flexGrowContainer}`}>
         {/* Available Vessels Column */}
         <CustomDualListBox
           title="Available Vessels"
@@ -107,8 +107,9 @@ const VesselAssignmentSelector = ({ allVessels, initialAssignedVesselIds, onSave
         />
       </div>
 
+      {/* Save button moved outside dualListBox to ensure visibility */}
       <div className={styles.formActions} style={{ marginTop: '20px', justifyContent: 'center' }}>
-        <button onClick={handleSave} className={`${styles.submitButton}`}> {/* Using submitButton for consistency */}
+        <button onClick={handleSave} className={`${styles.submitButton} ${styles.formButton} ${styles.saveButton}`}>
           Save Assignments
         </button>
       </div>

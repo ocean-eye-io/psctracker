@@ -44,14 +44,23 @@
     --z-index-modal: 2000;
   }
   
+  /* Ensure html and body take full height */
+  html, body, #root { /* Assuming #root is your main app container */
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Prevent body scroll, let internal components manage */
+  }
+
   /* --- General Layout for Admin Dashboard --- */
   .adminDashboardContainer {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: 100%; /* Take full height of parent (#root) */
     padding: 20px;
     background-color: var(--primary-dark);
     color: var(--text-light);
+    overflow-y: hidden; /* Managed by inner components */
   }
   
   .adminDashboardHeader {
@@ -75,6 +84,8 @@
     position: relative;
     transform-style: preserve-3d;
     perspective: 1000px;
+    min-height: 0; /* Allow flex item to shrink */
+    overflow: hidden; /* Hide overflow from tabs container itself */
   }
   
   .adminTabsContainer::before {
@@ -98,6 +109,8 @@
     background: linear-gradient(180deg, #0a1725, #112032);
     border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
     padding: 8px 8px 0;
+    overflow-x: auto; /* Allow horizontal scrolling for many tabs */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
   }
   
   .tabButton {
@@ -111,6 +124,7 @@
     border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
     position: relative;
     overflow: hidden;
+    white-space: nowrap; /* Prevent text wrapping */
   }
   
   .tabButton::before {
@@ -728,6 +742,10 @@
     border: 1px solid var(--border-subtle);
     box-shadow: 0 4px 12px var(--shadow-color);
     margin-top: 20px;
+    display: flex; /* Use flexbox for internal layout */
+    flex-direction: column; /* Stack elements vertically by default */
+    flex-grow: 1; /* Allow it to take available space */
+    min-height: 0; /* Allow flex item to shrink */
   }
   
   .dualListBox {
@@ -735,6 +753,8 @@
     gap: 20px;
     justify-content: center;
     align-items: stretch; /* Ensure columns stretch to same height */
+    flex-grow: 1; /* Allow dual listbox to take available space */
+    min-height: 0; /* Allow flex item to shrink */
   }
   
   .listColumn {
@@ -852,105 +872,199 @@
 
 /* --- Custom Dual List Box Styles (for CustomDualListBox.jsx) --- */
 
-.selectAllContainer {
+.customDualListBoxContainer {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 10px;
-    margin-bottom: 10px;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 20px;
+    flex-grow: 1; /* Allow it to take available space */
+    min-height: 0; /* Allow flex item to shrink */
+}
+
+@media (min-width: 768px) {
+    .customDualListBoxContainer {
+        flex-direction: row;
+        justify-content: center;
+        align-items: flex-start;
+    }
+}
+
+.customDualListBoxColumn {
+    flex: 1;
+    min-width: 280px; /* Minimum width for each listbox */
+    max-width: 45%; /* Max width to allow two columns on larger screens */
+    background-color: var(--secondary-dark);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--border-radius-md);
+    padding: 15px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    /* Ensure column takes available height and allows its content to scroll */
+    height: 100%; 
+    min-height: 400px; /* A reasonable minimum height for the column */
+}
+
+.customDualListBoxColumn h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: var(--blue-accent);
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.customDualListBoxSearch {
+    width: 100%;
     padding: 8px 10px;
-    background-color: rgba(77, 195, 255, 0.05);
-    border: 1px solid rgba(77, 195, 255, 0.1);
-    border-radius: var(--border-radius-sm);
-    cursor: pointer;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
-  }
-  
-  .selectAllContainer:hover {
-    background-color: rgba(77, 195, 255, 0.1);
-    border-color: rgba(77, 195, 255, 0.2);
-  }
-  
-  .customVesselList {
-    flex-grow: 1;
-    min-height: 250px; /* Minimum height for visibility */
-    max-height: 400px; /* Max height for scroll */
-    background-color: rgba(0, 0, 0, 0.3);
+    margin-bottom: 10px;
     border: 1px solid rgba(59, 173, 229, 0.2);
     border-radius: var(--border-radius-sm);
-    color: var(--text-light);
     font-size: var(--font-size-normal);
-    padding: 8px;
     box-sizing: border-box;
-    overflow-y: auto;
+    background-color: rgba(0, 0, 0, 0.3);
+    color: var(--text-light);
+    transition: all 0.2s ease;
+}
+
+.customDualListBoxSearch:focus {
+    outline: none;
+    border-color: rgba(59, 173, 229, 0.4);
+    box-shadow: 0 0 0 2px rgba(59, 173, 229, 0.1);
+}
+
+.customDualListBoxList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1;
+    overflow-y: auto; /* Enable vertical scrolling */
+    /* Calculate height based on parent's available space, subtracting other elements */
+    /* This is crucial: it ensures the list takes remaining space and scrolls */
+    height: calc(100% - 120px); /* Adjust 120px based on actual header/search/buttons height */
+    min-height: 150px; /* Ensure a minimum height for the list to show scrollbar */
+    border: 1px solid rgba(59, 173, 229, 0.2);
+    border-radius: var(--border-radius-sm);
+    background-color: rgba(0, 0, 0, 0.3);
     scrollbar-width: thin;
     scrollbar-color: rgba(77, 195, 255, 0.3) rgba(11, 22, 35, 0.5);
-  }
-  
-  .customVesselList::-webkit-scrollbar {
+}
+
+.customDualListBoxList::-webkit-scrollbar {
     width: 6px;
     height: 6px;
-  }
-  
-  .customVesselList::-webkit-scrollbar-track {
+}
+
+.customDualListBoxList::-webkit-scrollbar-track {
     background: rgba(11, 22, 35, 0.5);
     border-radius: 3px;
-  }
-  
-  .customVesselList::-webkit-scrollbar-thumb {
+}
+
+.customDualListBoxList::-webkit-scrollbar-thumb {
     background-color: rgba(77, 195, 255, 0.3);
     border-radius: 3px;
     box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
-  }
-  
-  .customVesselList::-webkit-scrollbar-thumb:hover {
+}
+
+.customDualListBoxList::-webkit-scrollbar-thumb:hover {
     background-color: rgba(77, 195, 255, 0.5);
-  }
-  
-  .customVesselListItem {
+}
+
+.customDualListBoxItem {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
     align-items: center;
-    padding: 8px 10px;
-    cursor: pointer;
+    font-size: var(--font-size-normal);
+    color: var(--text-light);
     transition: background-color 0.2s ease;
-    border-radius: var(--border-radius-sm);
-    margin-bottom: 2px; /* Small gap between items */
-  }
-  
-  .customVesselListItem:hover {
+}
+
+.customDualListBoxItem:last-child {
+    border-bottom: none;
+}
+
+.customDualListBoxItem:hover {
     background-color: rgba(77, 195, 255, 0.1);
-  }
-  
-  .customVesselListItem.selected {
+}
+
+.customDualListBoxItem.selected {
     background-color: rgba(77, 195, 255, 0.2);
+    color: var(--blue-accent);
     border: 1px solid var(--blue-accent);
     box-shadow: 0 0 0 1px var(--blue-accent);
-  }
-  
-  /* Reusing existing moduleCheckboxInput and moduleCheckboxLabel for consistency */
-  /* .moduleCheckboxInput, .moduleCheckboxLabel are already defined in your CSS */
-  
-  /* Adjustments for the save button in VesselAssignmentSelector */
-  .formButton.saveButton { /* This class combination is used in VesselAssignmentSelector */
-    background: var(--blue-accent);
-    border: 1px solid var(--blue-accent);
-    color: var(--text-light);
-    padding: 10px 20px;
-    border-radius: var(--border-radius-md);
-    font-weight: 600;
-    font-size: var(--font-size-large);
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(77, 195, 255, 0.2);
-  }
-  
-  .formButton.saveButton:hover {
-    background: #309fd6; /* Slightly darker blue */
-    box-shadow: 0 6px 16px rgba(77, 195, 255, 0.3);
-    transform: translateY(-2px);
-  }
+}
 
-  /* --- Module Checkbox Group --- */
-  .moduleCheckboxGroup {
+.customDualListBoxItem input[type="checkbox"] {
+    margin-right: 10px;
+    transform: scale(1.1);
+    accent-color: var(--blue-accent);
+}
+
+.customDualListBoxControls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+}
+
+@media (min-width: 768px) {
+    .customDualListBoxControls {
+        margin: 0 20px; /* Adjust margin for horizontal layout */
+    }
+}
+
+.customDualListBoxControls button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--blue-accent);
+    color: white;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 2px 8px rgba(77, 195, 255, 0.2);
+}
+
+.customDualListBoxControls button:hover {
+    background-color: #309fd6;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(77, 195, 255, 0.3);
+}
+
+.customDualListBoxSelectAll {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.customDualListBoxSelectAll button {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: var(--font-size-normal);
+    border-radius: var(--border-radius-sm);
+    background-color: rgba(77, 195, 255, 0.1);
+    color: var(--blue-accent);
+    border: 1px solid rgba(77, 195, 255, 0.2);
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.customDualListBoxSelectAll button:hover {
+    background-color: rgba(77, 195, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+/* --- Module Checkbox Group --- */
+.moduleCheckboxGroup {
     margin-top: 20px;
     padding: 15px;
     border: 1px solid rgba(59, 173, 229, 0.15);
@@ -1042,5 +1156,116 @@
     .submitButton, .cancelButton {
       width: 100%;
     }
+
+    .customDualListBoxContainer {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .customDualListBoxColumn {
+        max-width: 100%; /* Full width for listboxes on small screens */
+    }
+
+    .customDualListBoxControls {
+        flex-direction: row;
+        width: 100%;
+        justify-content: center;
+        margin: 15px 0;
+    }
+  }
+
+/* Adjustments for the save button in VesselAssignmentSelector */
+.formButton.saveButton { /* This class combination is used in VesselAssignmentSelector */
+    background: var(--blue-accent);
+    border: 1px solid var(--blue-accent);
+    color: var(--text-light);
+    padding: 10px 20px;
+    border-radius: var(--border-radius-md);
+    font-weight: 600;
+    font-size: var(--font-size-large);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(77, 195, 255, 0.2);
+    width: auto; /* Allow button to size based on content */
+    align-self: flex-end; /* Align to the right within its flex container */
+    margin-top: 20px; /* Add some space above the button */
   }
   
+  .formButton.saveButton:hover {
+    background: #309fd6; /* Slightly darker blue */
+    box-shadow: 0 6px 16px rgba(77, 195, 255, 0.3);
+    transform: translateY(-2px);
+  }
+
+/* New styles for overall tab content scrolling */
+.userVesselAssignmentsTabContent {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow-y: auto; /* Enable scrolling for the tab content itself */
+    min-height: 0; /* Important for flex children in a column layout */
+}
+
+/* Ensure the main content area within the tab can scroll */
+.adminTabsContainer > div:not(.tabNav) {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto; /* This will make the content area scrollable */
+}
+
+/* Specific adjustments for the dual listbox layout to ensure scrollbars */
+.vesselAssignmentContainer {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Allow flex item to shrink */
+}
+
+.dualListBox {
+    flex-grow: 1;
+    display: flex;
+    min-height: 0; /* Allow flex item to shrink */
+    /* Added flex-wrap to allow columns to wrap on smaller screens */
+    flex-wrap: wrap; 
+}
+
+.customDualListBoxColumn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Allow flex item to shrink */
+    /* Set a flexible base height, allowing content to grow but enabling scroll */
+    height: 100%; 
+    max-height: 500px; /* A reasonable max height for the column itself */
+}
+
+.customDualListBoxList {
+    flex-grow: 1;
+    overflow-y: auto;
+    /* Calculate height based on parent's available space, subtracting other elements */
+    /* This is crucial: it ensures the list takes remaining space and scrolls */
+    height: calc(100% - 120px); /* Adjust 120px based on actual header/search/buttons height */
+    min-height: 150px; /* Ensure a minimum height for the list to show scrollbar */
+}
+
+/* Media query for smaller screens to stack listboxes */
+@media (max-width: 992px) {
+    .dualListBox {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .customDualListBoxColumn {
+        width: 100%;
+        max-width: 400px; /* Limit width on smaller screens */
+        margin-bottom: 20px; /* Add space between stacked columns */
+    }
+
+    .actionButtons {
+        flex-direction: row;
+        width: 100%;
+        justify-content: center;
+        margin: 15px 0;
+    }
+}
