@@ -1,9 +1,11 @@
 // src/components/dashboards/admin/components/VesselForm.js
 import React, { useState, useEffect } from 'react';
+import styles from '../admin.module.css';
 
 const VesselForm = ({ vessel, onSubmit, onClose }) => {
   const [vesselName, setVesselName] = useState('');
   const [imoNumber, setImoNumber] = useState('');
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     if (vessel) {
@@ -13,105 +15,61 @@ const VesselForm = ({ vessel, onSubmit, onClose }) => {
       setVesselName('');
       setImoNumber('');
     }
+    setFormError('');
   }, [vessel]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({ vessel_name: vesselName, imo_number: imoNumber });
-  };
+    setFormError('');
 
-  const modalStyle = {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  };
+    if (!vesselName.trim()) {
+      setFormError('Vessel Name is required.');
+      return;
+    }
 
-  const contentStyle = {
-    backgroundColor: 'white',
-    padding: '30px',
-    borderRadius: '8px',
-    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-    width: '400px',
-    maxHeight: '90vh',
-    overflowY: 'auto',
-  };
-
-  const inputGroupStyle = {
-    marginBottom: '15px',
-  };
-
-  const labelStyle = {
-    display: 'block',
-    marginBottom: '5px',
-    fontWeight: 'bold',
-  };
-
-  const inputStyle = {
-    width: 'calc(100% - 20px)',
-    padding: '10px',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-  };
-
-  const buttonContainerStyle = {
-    marginTop: '20px',
-    textAlign: 'right',
-  };
-
-  const buttonStyle = {
-    padding: '10px 15px',
-    marginLeft: '10px',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-  };
-
-  const submitButtonStyle = {
-    ...buttonStyle,
-    backgroundColor: '#007bff',
-    color: 'white',
-  };
-
-  const cancelButtonStyle = {
-    ...buttonStyle,
-    backgroundColor: '#6c757d',
-    color: 'white',
+    onSubmit({
+      vessel_id: vessel ? vessel.vessel_id : undefined,
+      vessel_name: vesselName.trim(),
+      imo_number: imoNumber.trim() || null, // Send null if empty
+    });
   };
 
   return (
-    <div style={modalStyle}>
-      <div style={contentStyle}>
-        <h3>{vessel ? 'Edit Vessel' : 'Add New Vessel'}</h3>
+    <div className={styles.modalOverlay}>
+      <div className={styles.modalContent}>
+        <h4 className={styles.formHeader}>{vessel ? 'Edit Vessel' : 'Add New Vessel'}</h4>
         <form onSubmit={handleSubmit}>
-          <div style={inputGroupStyle}>
-            <label style={labelStyle}>Vessel Name:</label>
+          <div className={styles.formGroup}>
+            <label htmlFor="vesselName">Vessel Name:</label>
             <input
               type="text"
+              id="vesselName"
               value={vesselName}
               onChange={(e) => setVesselName(e.target.value)}
+              className={styles.formInput}
               required
-              style={inputStyle}
             />
           </div>
-          <div style={inputGroupStyle}>
-            <label style={labelStyle}>IMO Number:</label>
+          <div className={styles.formGroup}>
+            <label htmlFor="imoNumber">IMO Number (Optional):</label>
             <input
               type="text"
+              id="imoNumber"
               value={imoNumber}
               onChange={(e) => setImoNumber(e.target.value)}
-              style={inputStyle}
+              className={styles.formInput}
             />
           </div>
-          <div style={buttonContainerStyle}>
-            <button type="submit" style={submitButtonStyle}>{vessel ? 'Update Vessel' : 'Create Vessel'}</button>
-            <button type="button" onClick={onClose} style={cancelButtonStyle}>Cancel</button>
+
+          {formError && <p className={styles.formError}>{formError}</p>}
+
+          <div className={styles.formActions}>
+            <button type="submit" className={`${styles.formButton} ${styles.saveButton}`}>
+              {vessel ? 'Update Vessel' : 'Add Vessel'}
+            </button>
+            <button type="button" onClick={onClose} className={`${styles.formButton} ${styles.cancelButton}`}>
+              Cancel
+            </button>
           </div>
         </form>
       </div>

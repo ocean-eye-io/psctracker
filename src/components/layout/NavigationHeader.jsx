@@ -89,7 +89,7 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo }) => {
     { id: 'fleet', label: 'Dashboard', icon: <Home size={20} />, path: '/fleet' }, // Changed from Ship to Home for consistency with common dashboard icons
     { id: 'reports', label: 'Defects Register', icon: <BarChart2 size={20} />, path: '/reports' },
     // Conditionally add Admin link
-    //{ id: 'admin', label: 'Admin', icon: <Users size={20} />, path: '/admin' }
+    { id: 'admin', label: 'Admin', icon: <Users size={20} />, path: '/admin' }
   ];
 
   return (

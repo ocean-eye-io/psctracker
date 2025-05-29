@@ -659,6 +659,296 @@
     transform: translateY(-1px);
   }
   
+/* --- User Selector Styles --- */
+.userSelectorContainer {
+    position: relative;
+    width: 100%;
+    max-width: 400px; /* Adjust as needed */
+    margin: 0 auto; /* Center it */
+  }
+  
+  .userDropdownList {
+    position: absolute;
+    top: 100%; /* Position below the input */
+    left: 0;
+    right: 0;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--border-radius-sm);
+    box-shadow: 0 4px 12px var(--shadow-color);
+    max-height: 200px; /* Limit height for scroll */
+    overflow-y: auto;
+    z-index: var(--z-index-dropdown);
+    list-style: none;
+    padding: 0;
+    margin-top: 5px; /* Small gap from input */
+  }
+  
+  .userDropdownListItem {
+    padding: 10px 12px;
+    cursor: pointer;
+    color: var(--text-light);
+    font-size: var(--font-size-normal);
+    transition: background-color 0.2s ease;
+  }
+  
+  .userDropdownListItem:hover {
+    background-color: var(--table-row-hover-bg);
+  }
+  
+  .userDropdownListItem:last-child {
+    border-bottom-left-radius: var(--border-radius-sm);
+    border-bottom-right-radius: var(--border-radius-sm);
+  }
+  
+  .selectedUserDisplay {
+    margin-top: 15px;
+    padding: 10px 15px;
+    background-color: rgba(77, 195, 255, 0.1);
+    border: 1px solid rgba(77, 195, 255, 0.2);
+    border-radius: var(--border-radius-md);
+    color: var(--blue-accent);
+    font-size: var(--font-size-large);
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .noResults {
+    padding: 10px 12px;
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+  }
+
+/* --- Vessel Assignment Selector Styles --- */
+.vesselAssignmentContainer {
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius-md);
+    padding: 20px;
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 4px 12px var(--shadow-color);
+    margin-top: 20px;
+  }
+  
+  .dualListBox {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    align-items: stretch; /* Ensure columns stretch to same height */
+  }
+  
+  .listColumn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--secondary-dark);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--border-radius-md);
+    padding: 15px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+  
+  .listHeader {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--blue-accent);
+    margin-top: 0;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+  
+  .vesselList {
+    width: 100%;
+    flex-grow: 1;
+    min-height: 250px; /* Minimum height for visibility */
+    max-height: 400px; /* Max height for scroll */
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(59, 173, 229, 0.2);
+    border-radius: var(--border-radius-sm);
+    color: var(--text-light);
+    font-size: var(--font-size-normal);
+    padding: 8px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    margin-top: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(77, 195, 255, 0.3) rgba(11, 22, 35, 0.5);
+  }
+  
+  .vesselList::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .vesselList::-webkit-scrollbar-track {
+    background: rgba(11, 22, 35, 0.5);
+    border-radius: 3px;
+  }
+  
+  .vesselList::-webkit-scrollbar-thumb {
+    background-color: rgba(77, 195, 255, 0.3);
+    border-radius: 3px;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+  }
+  
+  .vesselList::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(77, 195, 255, 0.5);
+  }
+  
+  .vesselList option {
+    padding: 8px 10px;
+    background-color: transparent; /* Ensure option background is transparent */
+    color: var(--text-light);
+  }
+  
+  .vesselList option:checked {
+    background-color: rgba(77, 195, 255, 0.2); /* Highlight selected options */
+    color: var(--blue-accent);
+  }
+  
+  .vesselList option:hover {
+    background-color: rgba(77, 195, 255, 0.1);
+  }
+  
+  .actionButtons {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 15px;
+    margin: 0 10px;
+  }
+  
+  .moveButton {
+    width: 100px; /* Fixed width for move buttons */
+    padding: 8px 0;
+    text-align: center;
+    font-size: var(--font-size-large);
+    font-weight: 600;
+  }
+  
+  /* Responsive adjustments for dual listbox */
+  @media (max-width: 992px) {
+    .dualListBox {
+      flex-direction: column;
+      align-items: center;
+    }
+  
+    .listColumn {
+      width: 100%;
+      max-width: 400px; /* Limit width on smaller screens */
+    }
+  
+    .actionButtons {
+      flex-direction: row;
+      width: 100%;
+      justify-content: center;
+      margin: 15px 0;
+    }
+  
+    .moveButton {
+      width: 120px;
+    }
+  }
+
+/* --- Custom Dual List Box Styles (for CustomDualListBox.jsx) --- */
+
+.selectAllContainer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding: 8px 10px;
+    background-color: rgba(77, 195, 255, 0.05);
+    border: 1px solid rgba(77, 195, 255, 0.1);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+  
+  .selectAllContainer:hover {
+    background-color: rgba(77, 195, 255, 0.1);
+    border-color: rgba(77, 195, 255, 0.2);
+  }
+  
+  .customVesselList {
+    flex-grow: 1;
+    min-height: 250px; /* Minimum height for visibility */
+    max-height: 400px; /* Max height for scroll */
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(59, 173, 229, 0.2);
+    border-radius: var(--border-radius-sm);
+    color: var(--text-light);
+    font-size: var(--font-size-normal);
+    padding: 8px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(77, 195, 255, 0.3) rgba(11, 22, 35, 0.5);
+  }
+  
+  .customVesselList::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .customVesselList::-webkit-scrollbar-track {
+    background: rgba(11, 22, 35, 0.5);
+    border-radius: 3px;
+  }
+  
+  .customVesselList::-webkit-scrollbar-thumb {
+    background-color: rgba(77, 195, 255, 0.3);
+    border-radius: 3px;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+  }
+  
+  .customVesselList::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(77, 195, 255, 0.5);
+  }
+  
+  .customVesselListItem {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-radius: var(--border-radius-sm);
+    margin-bottom: 2px; /* Small gap between items */
+  }
+  
+  .customVesselListItem:hover {
+    background-color: rgba(77, 195, 255, 0.1);
+  }
+  
+  .customVesselListItem.selected {
+    background-color: rgba(77, 195, 255, 0.2);
+    border: 1px solid var(--blue-accent);
+    box-shadow: 0 0 0 1px var(--blue-accent);
+  }
+  
+  /* Reusing existing moduleCheckboxInput and moduleCheckboxLabel for consistency */
+  /* .moduleCheckboxInput, .moduleCheckboxLabel are already defined in your CSS */
+  
+  /* Adjustments for the save button in VesselAssignmentSelector */
+  .formButton.saveButton { /* This class combination is used in VesselAssignmentSelector */
+    background: var(--blue-accent);
+    border: 1px solid var(--blue-accent);
+    color: var(--text-light);
+    padding: 10px 20px;
+    border-radius: var(--border-radius-md);
+    font-weight: 600;
+    font-size: var(--font-size-large);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(77, 195, 255, 0.2);
+  }
+  
+  .formButton.saveButton:hover {
+    background: #309fd6; /* Slightly darker blue */
+    box-shadow: 0 6px 16px rgba(77, 195, 255, 0.3);
+    transform: translateY(-2px);
+  }
+
   /* --- Module Checkbox Group --- */
   .moduleCheckboxGroup {
     margin-top: 20px;
