@@ -1,18 +1,13 @@
-// src/components/dashboards/admin/components/UserSelector.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../../../../context/AuthContext';
-import styles from '../admin.module.css'; // Import the CSS module
+import styles from '../admin.module.css';
 
 const UserSelector = ({ onUserSelect, selectedUser }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-
   const { currentUser, loading: authLoading, getSession } = useAuth();
-  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -40,7 +35,8 @@ const UserSelector = ({ onUserSelect, selectedUser }) => {
         }
 
         const data = await response.json();
-        const validUsers = Array.isArray(data) ? data.filter(user => user && user.user_id && user.cognito_username && user.email) : [];
+        // Filter out users that don't have a user_id or cognito_username or email
+        const validUsers = data.filter(user => user.user_id && (user.cognito_username || user.email));
         setUsers(validUsers);
       } catch (err) {
         console.error("Error fetching users:", err);
@@ -53,83 +49,41 @@ const UserSelector = ({ onUserSelect, selectedUser }) => {
     if (!authLoading && currentUser) {
       fetchUsers();
     } else if (!authLoading && !currentUser) {
-      setError('Authentication required to fetch users.');
+      setError('Please log in to view users.');
       setLoading(false);
       setUsers([]);
     }
   }, [currentUser, authLoading]);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  const handleSelectUser = (user) => {
-    onUserSelect(user);
-    setSearchTerm(user.cognito_username);
-    setDropdownOpen(false);
-  };
-
-  const filteredUsers = users.filter(user => {
-    const usernameMatch = user.cognito_username && user.cognito_username.toLowerCase().includes(searchTerm.toLowerCase());
-    const emailMatch = user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    return usernameMatch || emailMatch;
-  });
-
   if (loading) {
-    return <p className={styles.emptyTableMessage}>Loading users...</p>;
+    return <div className={styles.loadingMessage}>Loading users...</div>;
   }
 
   if (error) {
-    return <p className={styles.emptyTableMessage} style={{ color: 'var(--negative-color)' }}>Error: {error}</p>;
+    return <div className={styles.errorMessage}>Error: {error}</div>;
   }
 
   if (users.length === 0) {
-    return <p className={styles.emptyTableMessage}>No users found.</p>;
+    return <div className={styles.emptyTableMessage}>No users found.</div>;
   }
 
   return (
-    <div className={styles.userSelectorContainer} ref={dropdownRef}>
-      <input
-        type="text"
-        placeholder="Search or select a user..."
-        value={selectedUser ? selectedUser.cognito_username : searchTerm}
-        onChange={(e) => {
-          setSearchTerm(e.target.value);
-          setDropdownOpen(true);
-          onUserSelect(null);
-        }}
-        onFocus={() => setDropdownOpen(true)}
-        className={styles.formInput} // Apply formInput style
-        style={{ width: '100%' }}
-      />
-      {dropdownOpen && (
-        <ul className={styles.userDropdownList}> {/* New style for dropdown list */}
-          {filteredUsers.length > 0 ? (
-            filteredUsers.map(user => (
-              <li key={user.user_id} onClick={() => handleSelectUser(user)} className={styles.userDropdownListItem}> {/* New style for list item */}
-                {user.cognito_username} ({user.email})
-              </li>
-            ))
-          ) : (
-            <li className={styles.noResults}>No users found matching "{searchTerm}"</li>
-          )}
-        </ul>
-      )}
-      {selectedUser && (
-        <p className={styles.selectedUserDisplay}> {/* New style for selected user display */}
-          Selected: <strong>{selectedUser.cognito_username}</strong> ({selectedUser.email})
-        </p>
-      )}
-    </div>
+    <select
+      className={styles.selectInput}
+      onChange={(e) => {
+        const selectedId = e.target.value;
+        const user = users.find(u => u.user_id === selectedId);
+        onUserSelect(user);
+      }}
+      value={selectedUser?.user_id || ''}
+    >
+      <option value="">Select a user</option>
+      {users.map(user => (
+        <option key={user.user_id} value={user.user_id}>
+          {user.email || user.cognito_username} {/* Display email, fallback to cognito_username */}
+        </option>
+      ))}
+    </select>
   );
 };
 
