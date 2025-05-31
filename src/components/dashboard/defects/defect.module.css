@@ -1,0 +1,1158 @@
+/* src/components/dashboard/defects/defect.module.css */
+
+/* Base Variables */
+.root {
+  /* Colors */
+  --primary-dark: #0a1725;
+  --secondary-dark: #112032;
+  --card-bg: #0e1e2f;
+  --card-dark: #0c1a29;
+  --blue-accent: #3BADE5;
+  --secondary-accent: #2A95C5;
+  --text-light: #f4f4f4;
+  --text-muted: rgba(244, 244, 244, 0.6);
+  --border-subtle: rgba(244, 244, 244, 0.05);
+  --warning-color: #F1C40F;
+  --success-color: #2ECC71;
+  --danger-color: #E74C3C;
+  
+  /* Sizing */
+  --header-height: 70px;
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --hover-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  --card-radius: 8px;
+  --transition-standard: all 0.2s ease;
+  --input-bg: rgba(11, 22, 35, 0.5);
+  
+  /* Filter Styles (Original, will be overridden by new filter bar styles) */
+  --filter-bg: rgba(30, 41, 59, 0.5);
+  --filter-hover: rgba(59, 173, 229, 0.2);
+  --filter-border: rgba(59, 173, 229, 0.3);
+  --filter-active: rgba(59, 173, 229, 0.3);
+  --dropdown-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  
+  /* Table specific */
+  --table-header-bg: linear-gradient(180deg, #0a1725, #112032);
+  --table-row-bg: #0e1e2f;
+  --table-row-alt-bg: #0c1a29;
+  --table-row-hover-bg: #162d48;
+  --table-border-color: rgba(255, 255, 255, 0.05);
+  --status-red: #E74C3C;
+  --status-yellow: #F1C40F;
+  --status-green: #2ECC71;
+  --status-grey: #95a5a6;
+
+  /* New variables from FleetStyles.css for filter bar */
+  --bg-gradient-1: linear-gradient(145deg, #0a1725, #112032);
+  --primary-accent: #4DC3FF;
+  --primary-accent-dark: #2BA5E0;
+  --primary-accent-light: rgba(77, 195, 255, 0.2);
+  --primary-accent-glow: rgba(77, 195, 255, 0.4);
+  --border-accent: rgba(77, 195, 255, 0.3);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.16);
+  --shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.2);
+  --shadow-highlight: 0 0 10px rgba(77, 195, 255, 0.3);
+  --shadow-inner: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+  --transition-fast: all 0.15s ease;
+  --border-radius-sm: 4px;
+  --border-radius-md: 6px;
+
+  /* DashboardStyles.css specific variables for filter bar */
+  --dashboard-filter-bg: #0e1e2f;
+  --dashboard-filter-border: rgba(244, 244, 244, 0.05);
+  --dashboard-filter-text: #f4f4f4;
+  --dashboard-filter-muted-text: rgba(244, 244, 244, 0.6);
+  --dashboard-filter-accent: #3BADE5;
+  --dashboard-filter-hover-bg: rgba(59, 173, 229, 0.1);
+  --dashboard-filter-active-bg: rgba(59, 173, 229, 0.2);
+  --dashboard-filter-dropdown-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  --dashboard-input-bg: rgba(11, 22, 35, 0.5);
+
+  /* New variables for ActiveFiltersDisplay-like styling */
+  --filter-badge-bg: rgba(59, 173, 229, 0.15);
+  --filter-badge-border: rgba(59, 173, 229, 0.4);
+  --filter-badge-text: #3BADE5;
+  --filter-badge-clear-hover: rgba(255, 255, 255, 0.2);
+  --clear-all-btn-bg: rgba(255, 255, 255, 0.05);
+  --clear-all-btn-border: rgba(255, 255, 255, 0.1);
+  --clear-all-btn-text: rgba(244, 244, 244, 0.8);
+  --clear-all-btn-hover-bg: rgba(255, 255, 255, 0.1);
+
+  /* Specific colors from Fleet Dashboard for buttons and badges */
+  --fleet-button-bg-blue: #0F766E; /* A darker teal/blue from screenshot */
+  --fleet-button-hover-blue: #138D83; /* Slightly lighter for hover */
+  --fleet-add-button-bg: #3BADE5; /* The brighter blue for Add Defect */
+  --fleet-add-button-hover: #2496c7; /* Darker hover for Add Defect */
+  --fleet-filter-badge-bg: #1A3A5A; /* Darker blue for filter count badge */
+  --fleet-filter-badge-text: #4DC3FF; /* Lighter blue for filter count text */
+  --fleet-filter-badge-border: #2A5C8A; /* Border for filter count badge */
+  --fleet-search-input-bg: #132337; /* Background for search input */
+  --fleet-search-input-border: rgba(255, 255, 255, 0.1); /* Border for search input */
+  --fleet-search-input-placeholder: rgba(255, 255, 255, 0.4); /* Placeholder color */
+  --fleet-filter-dropdown-bg: #132337; /* Background for dropdown buttons */
+  --fleet-filter-dropdown-border: rgba(255, 255, 255, 0.1); /* Border for dropdown buttons */
+  --fleet-filter-dropdown-hover: rgba(59, 173, 229, 0.2); /* Hover for dropdown buttons */
+  --fleet-filter-dropdown-text: #f4f4f4; /* Text color for dropdown buttons */
+  --fleet-filter-bar-bg: #0B1623; /* Background for the entire filter bar */
+  --fleet-filter-bar-border: rgba(255, 255, 255, 0.1); /* Border for the entire filter bar */
+}
+
+/* Animations */
+@keyframes spinAnimation {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeInDropdown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Dashboard Container */
+.dashboardContainer {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--header-height));
+  background-color: var(--primary-dark);
+  color: var(--text-light);
+  padding: 0;
+  box-sizing: border-box;
+  margin-top: var(--header-height);
+  margin-bottom: 50px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Filter Bar - Match Fleet Dashboard exactly */
+.filterBar {
+  display: flex;
+  align-items: center;
+  background: var(--bg-gradient-1);
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  z-index: 10;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  height: 42px;
+  margin-bottom: 0;
+}
+
+.filterSectionLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.dashboardTitle {
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-light);
+  background: none;
+  -webkit-background-clip: unset;
+  background-clip: unset;
+  text-shadow: none;
+  letter-spacing: normal;
+}
+
+.searchContainer {
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+
+.searchInput {
+  background: var(--input-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 7px 12px 7px 36px;
+  color: var(--text-light);
+  width: 280px;
+  transition: var(--transition-standard);
+  font-size: 0.9rem;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--blue-accent);
+  box-shadow: 0 0 0 2px rgba(59, 173, 229, 0.2);
+}
+
+.searchToggle {
+  background: var(--input-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  color: var(--text-light);
+  cursor: pointer;
+  height: 36px;
+  width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-standard);
+}
+
+.searchToggle:hover {
+  background: var(--filter-hover);
+  border-color: var(--blue-accent);
+  color: var(--text-light);
+}
+
+.searchPopup {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1000;
+  background: var(--card-bg);
+  border-radius: 8px;
+  box-shadow: var(--dropdown-shadow);
+  border: 1px solid var(--border-subtle);
+  padding: 10px;
+  min-width: 200px;
+  animation: fadeInDropdown 0.2s ease-out;
+  backdrop-filter: none;
+}
+
+.filterLabel {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-right: 12px;
+}
+
+.filterChips {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.filterDropdownContainer {
+  position: relative;
+  display: inline-block;
+}
+
+.filterDropdownButton {
+  appearance: none;
+  background: var(--filter-bg);
+  border: 1px solid var(--filter-border);
+  border-radius: 4px;
+  color: var(--text-light);
+  cursor: pointer;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 13px;
+  min-width: 100px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  justify-content: space-between;
+}
+
+.filterDropdownButton::after {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid var(--text-muted);
+  margin-left: 8px;
+  transition: transform 0.2s ease;
+}
+
+.filterDropdownButton.active::after {
+  transform: rotate(180deg);
+}
+
+.filterDropdownButton:hover {
+  background: var(--filter-hover);
+  border-color: var(--blue-accent);
+}
+
+.filterDropdownButton.active {
+  outline: none;
+  border-color: var(--blue-accent);
+  background: var(--filter-active);
+}
+
+.filterDropdownContent {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1050;
+  min-width: 250px;
+  max-width: 350px;
+  max-height: 400px;
+  background: var(--card-bg);
+  border-radius: 8px;
+  box-shadow: var(--dropdown-shadow);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: fadeInDropdown 0.2s ease-out;
+  backdrop-filter: none;
+}
+
+.filterDropdownHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--table-header-bg);
+}
+
+.filterDropdownHeader h4 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-light);
+  font-weight: 500;
+  letter-spacing: normal;
+}
+
+.selectAllBtn {
+  background: none;
+  border: none;
+  color: var(--blue-accent);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+  font-weight: normal;
+  position: static;
+  transition: none;
+}
+
+.selectAllBtn:hover {
+  text-decoration: underline;
+  color: var(--blue-accent);
+}
+
+.selectAllBtn::after {
+  display: none;
+}
+
+.filterDropdownItems {
+  padding: 6px 0;
+  overflow-y: auto;
+  max-height: 280px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(244, 244, 244, 0.2) rgba(11, 22, 35, 0.5);
+}
+
+.filterDropdownItems::-webkit-scrollbar {
+  width: 5px;
+}
+
+.filterDropdownItems::-webkit-scrollbar-track {
+  background: rgba(11, 22, 35, 0.5);
+  border-radius: 0;
+}
+
+.filterDropdownItems::-webkit-scrollbar-thumb {
+  background-color: rgba(59, 173, 229, 0.3);
+  border-radius: 3px;
+  transition: none;
+}
+
+.filterDropdownItems::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(59, 173, 229, 0.5);
+}
+
+.filterCheckboxItem {
+  padding: 6px 16px;
+  transition: background-color 0.2s ease;
+  position: static;
+}
+
+.filterCheckboxItem:hover {
+  background-color: rgba(59, 173, 229, 0.1);
+}
+
+.filterCheckboxItem::after {
+  display: none;
+}
+
+.filterCheckboxItem label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  width: 100%;
+}
+
+.filterCheckboxItem input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
+  accent-color: var(--blue-accent);
+  width: auto;
+  height: auto;
+}
+
+.filterCheckboxItem span {
+  font-size: 13px;
+  color: var(--text-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: none;
+}
+
+.filterCheckboxItem:hover span {
+  color: var(--text-light);
+}
+
+.filterDropdownFooter {
+  padding: 10px 16px;
+  background: var(--card-dark);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.applyBtn {
+  background: var(--blue-accent);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: normal;
+  transition: all 0.2s ease;
+  box-shadow: none;
+}
+
+.applyBtn:hover {
+  background: var(--secondary-accent);
+  transform: translateY(-1px);
+  box-shadow: none;
+}
+
+.applyBtn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.resetButton {
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  border-radius: 4px;
+  padding: 0 12px;
+  height: 36px;
+  color: var(--danger-color);
+  font-size: 13px;
+  font-weight: normal;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  box-shadow: none;
+}
+
+.resetButton:hover {
+  background: rgba(231, 76, 60, 0.2);
+  transform: none;
+  box-shadow: none;
+}
+
+.resetButton:active {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Filter Count Badge - Match DashboardStyles.css */
+.filterCount {
+  background: rgba(59, 173, 229, 0.2);
+  color: var(--blue-accent);
+  border-radius: 12px;
+  padding: 2px 6px;
+  font-size: 11px;
+  margin-left: 6px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.filterSectionRight {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* Action Buttons - From Fleet Dashboard and Table Styles */
+.actionButton {
+  background: linear-gradient(to bottom, rgba(77, 195, 255, 0.15), rgba(77, 195, 255, 0.1));
+  border: 1px solid rgba(77, 195, 255, 0.3);
+  border-radius: var(--border-radius-sm);
+  color: var(--primary-accent);
+  cursor: pointer;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: var(--transition-fast);
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  height: 28px;
+}
+
+.actionButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+}
+
+.actionButton:hover {
+  background: linear-gradient(to bottom, rgba(77, 195, 255, 0.2), rgba(77, 195, 255, 0.15));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md), 0 0 8px rgba(77, 195, 255, 0.3);
+}
+
+.actionButton:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Reset Button - From Fleet Dashboard styling */
+.resetButton {
+  background: linear-gradient(to bottom, rgba(255, 82, 82, 0.1), rgba(255, 82, 82, 0.15));
+  border: 1px solid rgba(255, 82, 82, 0.3);
+  border-radius: var(--border-radius-sm);
+  padding: 0 10px;
+  height: 28px !important;
+  color: var(--danger-color);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  display: flex;
+  align-items: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.resetButton:hover {
+  background: linear-gradient(to bottom, rgba(255, 82, 82, 0.15), rgba(255, 82, 82, 0.2));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md), 0 0 10px rgba(255, 82, 82, 0.3);
+}
+
+.resetButton:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Add Defect Button - From Fleet Dashboard styling */
+.defectActionBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(to bottom, rgba(14, 30, 47, 0.9), rgba(12, 26, 41, 0.9));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-sm);
+  padding: 0 10px;
+  height: 28px !important;
+  color: var(--text-light);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  font-size: 11px;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+}
+
+.defectActionBtn:hover {
+  background: linear-gradient(to bottom, rgba(14, 30, 47, 1), rgba(12, 26, 41, 1));
+  border-color: var(--primary-accent);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md), 0 0 0 1px var(--primary-accent-light);
+}
+
+.defectActionBtn:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Filter Section Right - Auto margin to push to right */
+.filterSectionRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.defectActionBtn.add {
+  background: #2496c7;
+}
+
+.defectActionBtn.add:hover {
+  background: #3BADE5;
+}
+
+.exportBtn,
+.importBtn {
+  background-color: var(--fleet-button-bg-blue);
+}
+
+.exportBtn:hover,
+.importBtn:hover {
+  background-color: var(--fleet-button-hover-blue);
+}
+
+.controlBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  height: 34px;
+  width: 34px;
+  color: var(--text-light);
+  cursor: pointer;
+  transition: var(--transition-standard);
+}
+
+.controlBtn.exportBtn {
+  width: auto;
+  padding: 0 12px;
+  gap: 6px;
+}
+
+.controlBtn:hover {
+  background: var(--secondary-dark);
+  border-color: rgba(244, 244, 244, 0.2);
+  transform: none;
+  box-shadow: none;
+}
+
+.spinning {
+  animation: spinAnimation 1s linear infinite;
+}
+
+/* Active Filters Display Styles (from ActiveFiltersDisplay.jsx visual intent) - Keeping these as they are for now */
+.active-filters-container {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Gap between badges and clear all button */
+  flex-wrap: wrap;
+}
+
+.filter-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 16px; /* More rounded corners */
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--filter-badge-text);
+  background-color: var(--filter-badge-bg);
+  border: 1px solid var(--filter-badge-border);
+  white-space: nowrap;
+}
+
+.filter-badge span {
+  margin-right: 6px;
+}
+
+.clear-filter-btn {
+  background: none;
+  border: none;
+  color: var(--filter-badge-text);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  margin-left: 4px;
+  transition: color 0.2s ease, background-color 0.2s ease;
+  border-radius: 50%; /* Make it a circle */
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clear-filter-btn:hover {
+  color: var(--text-light);
+  background-color: var(--filter-badge-clear-hover);
+}
+
+.clear-all-filters-btn {
+  background: var(--clear-all-btn-bg);
+  border: 1px solid var(--clear-all-btn-border);
+  border-radius: 4px;
+  color: var(--clear-all-btn-text);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.clear-all-filters-btn:hover {
+  background: var(--clear-all-btn-hover-bg);
+  border-color: var(--text-muted);
+}
+
+/* Error Message */
+.errorMessage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(231, 76, 60, 0.1);
+  border-left: 3px solid var(--danger-color);
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin: 0 0 24px 0;
+  color: var(--danger-color);
+  flex-shrink: 0;
+}
+
+/* Dashboard Charts - From Fleet Dashboard */
+.dashboardCharts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 12px;
+  margin-bottom: 8px; /* Reduced from 24px to 8px */
+  flex-shrink: 0;
+}
+
+/* Dashboard Card - From Fleet Dashboard */
+.dashboardCard {
+  background: var(--bg-gradient-1);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-subtle);
+  transition: var(--transition-normal);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboardCard:hover {
+  box-shadow: var(--shadow-lg), 0 0 15px rgba(77, 195, 255, 0.1);
+  border-color: var(--border-accent);
+}
+
+.dashboardCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: var(--border-radius-md);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  pointer-events: none;
+}
+
+.dashboardCardBody {
+  padding: 8px;
+  min-height: 260px;
+  height: auto;
+  max-height: calc(100% - 16px);
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+.chartLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+}
+
+.loadingSpinner {
+  border: 4px solid rgba(244, 244, 244, 0.1);
+  border-top: 4px solid var(--blue-accent);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spinAnimation 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+/* Vessel Table Wrapper - From Fleet Dashboard */
+.vesselTableWrapper {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 0 12px 12px 12px; /* Reduced top margin from implied spacing */
+  width: calc(100% - 12px) !important;
+  max-width: 100% !important;
+  align-self: center;
+}
+
+/* Loading container - From Fleet Dashboard */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+  color: var(--text-muted);
+  font-size: 12px;
+  /* Add bottom padding for floating pagination */
+  padding-bottom: 90px;
+}
+
+/* No results message - From Fleet Dashboard */
+.noResults {
+  background: linear-gradient(145deg, rgba(14, 30, 47, 0.7), rgba(12, 26, 41, 0.9));
+  border-radius: var(--border-radius-md);
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  box-shadow: var(--shadow-inner);
+  border: 1px solid var(--border-subtle);
+}
+
+.resetFilters {
+  margin-top: 12px;
+  padding: 6px 14px;
+  background: linear-gradient(to bottom, rgba(77, 195, 255, 0.15), rgba(77, 195, 255, 0.1));
+  border: 1px solid rgba(77, 195, 255, 0.3);
+  border-radius: var(--border-radius-sm);
+  color: var(--primary-accent);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  font-weight: 500;
+  font-size: 11px;
+  box-shadow: var(--shadow-sm);
+}
+
+.resetFilters:hover {
+  background: linear-gradient(to bottom, rgba(77, 195, 255, 0.2), rgba(77, 195, 255, 0.15));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md), 0 0 10px rgba(77, 195, 255, 0.2);
+}
+
+/* Table Container */
+.tableContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.tableHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.tableTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-light);
+  margin: 0;
+}
+
+.tableActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Responsive Table Container - Enhanced for truly floating pagination */
+.responsiveTableContainer {
+  /* Dynamic height calculation - no bottom padding needed for truly floating pagination */
+  height: calc(100vh - 350px);
+  overflow-y: auto;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 173, 229, 0.3) rgba(11, 22, 35, 0.5);
+  padding: 0;
+  position: relative;
+  /* Smooth scrolling behavior */
+  scroll-behavior: smooth;
+}
+
+.responsiveTableContainer::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.responsiveTableContainer::-webkit-scrollbar-track {
+  background: rgba(11, 22, 35, 0.3);
+  border-radius: 3px;
+}
+
+.responsiveTableContainer::-webkit-scrollbar-thumb {
+  background-color: rgba(59, 173, 229, 0.4);
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.responsiveTableContainer::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(59, 173, 229, 0.6);
+}
+
+/* Enhanced table wrapper for truly floating pagination */
+.defectTableWrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Data Table */
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--text-light);
+  font-size: 13px;
+  table-layout: auto;
+  min-width: 800px;
+}
+
+.dataTable th {
+  background: var(--table-header-bg);
+  color: var(--text-light);
+  font-weight: 600;
+  text-align: left;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--table-border-color);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+}
+
+.dataTable th:hover {
+  background: var(--secondary-dark);
+}
+
+.dataTable tbody tr {
+  background-color: var(--table-row-bg);
+  transition: background-color 0.2s ease;
+}
+
+.dataTable tbody tr:nth-child(even) {
+  background-color: var(--table-row-alt-bg);
+}
+
+.dataTable tbody tr:hover {
+  background-color: var(--table-row-hover-bg);
+}
+
+.dataTable td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--table-border-color);
+  vertical-align: middle;
+}
+
+.descriptionCell {
+  max-width: 250px;
+}
+
+.truncateText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+  min-width: 70px;
+}
+
+.statusRed {
+  background-color: rgba(231, 76, 60, 0.15);
+  color: var(--status-red);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.statusYellow {
+  background-color: rgba(241, 196, 15, 0.15);
+  color: var(--status-yellow);
+  border: 1px solid rgba(241, 196, 15, 0.3);
+}
+
+.statusGreen {
+  background-color: rgba(46, 204, 113, 0.15);
+  color: var(--status-green);
+  border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.statusGrey {
+  background-color: rgba(149, 165, 166, 0.15);
+  color: var(--status-grey);
+  border: 1px solid rgba(149, 165, 166, 0.3);
+}
+
+.actionsColumn {
+  width: 120px;
+  text-align: center;
+}
+
+.actionsCell {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.actionIcon {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.actionIcon:hover {
+  color: var(--blue-accent);
+  background-color: rgba(59, 173, 229, 0.1);
+}
+
+/* Loading container */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 200px;
+  color: var(--text-muted);
+}
+
+/* Media Queries for responsiveness */
+@media (max-width: 1200px) {
+  .dashboardCharts {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 992px) {
+  .filterBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+  .filterSectionLeft {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 10px;
+  }
+  .searchContainer {
+    width: 100%;
+  }
+  .searchInput {
+    width: 100%;
+  }
+  .filterLabel {
+    margin-right: 0;
+    margin-bottom: 8px;
+  }
+  .filterChips {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+  .filterDropdownContainer {
+    width: 100%;
+  }
+  .filterDropdownButton {
+    width: 100%;
+  }
+  .filterDropdownContent {
+    width: 100%;
+    max-width: none;
+    left: 0;
+    right: 0;
+  }
+  .filterSectionRight {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboardTitle {
+    font-size: 1.4rem;
+  }
+  .dashboardCharts {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 576px) {
+  .filterBar {
+    padding: 10px;
+  }
+  .filterSectionLeft {
+    align-items: center;
+  }
+  .dashboardTitle {
+    font-size: 1.2rem;
+  }
+  .filterSectionRight {
+    justify-content: center;
+  }
+  .actionButton {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}

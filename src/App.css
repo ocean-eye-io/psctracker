@@ -11,6 +11,12 @@
   padding: 0;
 }
 
+html, body, #root { /* Ensure html, body, and #root take full height */
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -22,13 +28,16 @@ body {
 }
 
 .app {
-  min-height: 100vh;
+  min-height: 100vh; /* Keep this to ensure the app container is at least full height */
   display: flex;
   flex-direction: column;
 }
 
 .app-content {
-  flex: 1;
+  flex: 1; /* This makes it take remaining height */
+  overflow-y: auto; /* ADD THIS: Make the content area scrollable */
+  display: flex; /* ADD THIS: Make app-content a flex container */
+  flex-direction: column; /* ADD THIS: Stack its children vertically */
 }
 
 /* Buttons and inputs reset */
