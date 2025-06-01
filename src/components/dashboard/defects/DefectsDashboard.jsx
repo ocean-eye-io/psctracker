@@ -83,10 +83,13 @@ const DefectsDashboard = () => {
       setLoading(true);
       setError(null);
 
+      console.log("fetchDefects: Calling defectService.getAllDefects...");
       const data = await defectService.getAllDefects(userId);
-      console.log('Fetched defects:', data.length);
+      console.log('fetchDefects: Fetched defects data. Count:', data.length);
 
       setDefects(data); // Set raw defects from API
+      console.log('fetchDefects: Defects state updated with new data.');
+
 
       // Initialize filters with all available options based on the fetched data
       const uniqueStatusesFromData = [...new Set(data.map(d => d['Status']).filter(Boolean))];
@@ -102,12 +105,14 @@ const DefectsDashboard = () => {
       setError(`Failed to fetch data: ${error.message}. Please check the API connection.`);
     } finally {
       setLoading(false);
+      console.log("fetchDefects: Loading set to false.");
     }
   }, [userId]);
 
   // Initial data fetch for vessels and defects
   useEffect(() => {
     if (!authLoading && userId) {
+      console.log("useEffect: Initial fetch triggered.");
       fetchUserVessels();
       fetchDefects();
     }
@@ -115,6 +120,7 @@ const DefectsDashboard = () => {
 
   // Memoized filtered defects to prevent re-calculation on every render
   const filteredDefects = useMemo(() => {
+    console.log("filteredDefects: Recalculating filtered defects. Current defects count:", defects.length);
     if (!defects.length) {
       return [];
     }
@@ -155,6 +161,7 @@ const DefectsDashboard = () => {
         )
       );
     }
+    console.log("filteredDefects: Filtered results count:", results.length);
     return results;
   }, [defects, searchTerm, statusFilters, criticalityFilters, sourceFilters]);
 
@@ -240,6 +247,8 @@ const DefectsDashboard = () => {
     setCurrentDefect({
       id: `temp-${Date.now()}`,
       vessel_id: vessels.length > 0 ? vessels[0].vessel_id : '',
+      
+      vessel_name: vessels.length > 0 ? vessels[0].vessel_name : '',
       Equipments: '',
       Description: '',
       'Action Planned': '',
@@ -280,26 +289,32 @@ const DefectsDashboard = () => {
       let savedDefect;
       if (isNew) {
         savedDefect = { ...updatedDefect, id: undefined };
-        console.log('Attempting to create defect with payload:', savedDefect);
-        await defectService.createDefect(savedDefect, userId);
+        console.log('handleSaveDefect: Attempting to create defect with payload:', savedDefect);
+        savedDefect = await defectService.createDefect(savedDefect, userId);
+        console.log('handleSaveDefect: Defect created successfully. Returned savedDefect:', savedDefect);
       } else {
         savedDefect = { ...updatedDefect };
-        console.log('Attempting to update defect with payload:', savedDefect);
-        await defectService.updateDefect(savedDefect.id, savedDefect, userId);
+        console.log('handleSaveDefect: Attempting to update defect with payload:', savedDefect);
+        savedDefect = await defectService.updateDefect(savedDefect.id, savedDefect, userId);
+        console.log('handleSaveDefect: Defect updated successfully. Returned savedDefect:', savedDefect);
       }
 
+      console.log('handleSaveDefect: Calling fetchDefects to refresh data...');
       await fetchDefects(); // Re-fetch all defects to ensure data consistency and update UI
+      console.log('handleSaveDefect: fetchDefects completed.');
 
       setIsDefectDialogOpen(false);
       setCurrentDefect(null);
+      console.log('handleSaveDefect: Dialog closed and currentDefect cleared.');
 
       return savedDefect;
     } catch (err) {
-      console.error('Error saving defect:', err);
+      console.error('handleSaveDefect: Error saving defect:', err);
       setError(`Failed to save defect: ${err.message}. Please try again.`);
       throw err;
     } finally {
       setLoading(false);
+      console.log('handleSaveDefect: Loading set to false.');
     }
   }, [fetchDefects, userId]);
 

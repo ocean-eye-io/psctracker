@@ -53,6 +53,7 @@ const DefectDialog = ({
   const initialFormData = useCallback(() => ({
     id: '',
     vessel_id: '', // This should be the ID, not the name
+    vessel_name: '', // Added vessel_name to initial state
     Equipments: '',
     Description: '',
     'Action Planned': '',
@@ -81,6 +82,7 @@ const DefectDialog = ({
       setFormData({
         id: defect.id || '',
         vessel_id: defect.vessel_id || '', // Ensure this is correctly mapped
+        vessel_name: defect.vessel_name || '', // Initialize vessel_name from defect prop
         Equipments: defect.Equipments || '',
         Description: defect.Description || '',
         'Action Planned': defect['Action Planned'] || '',
@@ -114,12 +116,23 @@ const DefectDialog = ({
   // Handle form field changes
   const handleChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+
+    setFormData(prev => {
+      const newState = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      };
+
+      // Special handling for vessel_id to also store vessel_name
+      if (name === 'vessel_id') {
+        const selectedVessel = vessels.find(v => v.vessel_id === value);
+        newState.vessel_name = selectedVessel ? selectedVessel.vessel_name : '';
+      }
+
+      return newState;
+    });
     setIsDirty(true); // Mark form as dirty on any change
-  }, []);
+  }, [vessels]); // Add 'vessels' to the dependency array because it's used inside
 
   // Function to check if field is visible
   const isFieldVisible = useCallback((fieldId) => {
@@ -426,7 +439,7 @@ const DefectDialog = ({
           // Generate PDF blob (using placeholder)
           console.log("DefectDialog: Calling generateDefectPDF function with (placeholder):", {
             defectId: savedDefect.id,
-            vesselName: vessels[savedDefect.vessel_id] || 'Unknown Vessel',
+            vesselName: vessels.find(v => v.vessel_id === savedDefect.vessel_id)?.vessel_name || 'Unknown Vessel', // Reverted this line
             publicUrlCount: Object.keys(filePublicUrls).length
           });
 
@@ -435,7 +448,7 @@ const DefectDialog = ({
             pdfBlob = await generateDefectPDF(
               {
                 ...savedDefect,
-                vessel_name: vessels[savedDefect.vessel_id] || 'Unknown Vessel'
+                vessel_name: vessels.find(v => v.vessel_id === savedDefect.vessel_id)?.vessel_name || 'Unknown Vessel' // Reverted this line
               },
               fileSignedUrls, // Placeholder
               filePublicUrls
@@ -613,8 +626,8 @@ const DefectDialog = ({
                                 >
                                   <option value="">Select {field.label}</option>
                                   {field.dbField === 'vessel_id'
-                                    ? Object.entries(vessels).map(([id, name]) => (
-                                      <option key={id} value={id}>{name}</option>
+                                    ? vessels.map(vessel => (
+                                      <option key={vessel.vessel_id} value={vessel.vessel_id}>{vessel.vessel_name}</option>
                                     ))
                                     : field.options?.map(option => (
                                       <option key={option} value={option}>{option}</option>
