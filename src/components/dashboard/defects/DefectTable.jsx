@@ -231,81 +231,123 @@ const DefectTable = ({
       .sort((a, b) => a[1].priority - b[1].priority)
       .filter(([_, field]) => !(field.conditionalDisplay && !field.conditionalDisplay(defect)));
 
-    const FileListPlaceholder = ({ files, title }) => {
-      if (!files?.length) return null;
+    const FileListCompact = ({ files }) => {
+      if (!files?.length) {
+        return <span className="text-gray-400 text-xs italic">No files</span>;
+      }
+      
       return (
-        <div className="space-y-2">
-          {title && <div className="text-xs font-medium text-white/80 mb-1">{title}</div>}
-          {files.map((file, index) => (
-            <div key={index} className="flex items-center gap-2 text-xs">
-              <FileText className="h-3.5 w-3.5 text-[#3BADE5]" />
-              <span className="text-white/90 truncate flex-1">{file.name} (Placeholder)</span>
+        <div className={styles.filesListCompact}>
+          {files.slice(0, 2).map((file, index) => (
+            <div key={index} className={styles.fileItemCompact}>
+              <FileText className={styles.fileIconCompact} />
+              <span className={styles.fileNameCompact}>{file.name}</span>
             </div>
           ))}
+          {files.length > 2 && (
+            <div className="text-xs text-gray-400">
+              +{files.length - 2} more
+            </div>
+          )}
         </div>
       );
     };
 
+    const renderFieldValue = (fieldId, field, value) => {
+      // Handle file fields
+      if (field.dbField === 'initial_files' || field.dbField === 'completion_files') {
+        return <FileListCompact files={value || []} />;
+      }
+
+      // Handle status with compact styling
+      if (fieldId === 'status') {
+        const status = value || 'Unknown';
+        const statusClass = `${styles.statusBadgeCompact} ${
+          status.toUpperCase().includes('OPEN') ? 'bg-red-500/20 text-red-300' :
+          status.toUpperCase().includes('CLOSED') ? 'bg-green-500/20 text-green-300' :
+          status.toUpperCase().includes('PROGRESS') ? 'bg-yellow-500/20 text-yellow-300' :
+          'bg-gray-500/20 text-gray-300'
+        }`;
+        
+        return (
+          <div className={statusClass}>
+            <span className={styles.statusDotCompact}></span>
+            {status}
+          </div>
+        );
+      }
+
+      // Handle criticality with compact styling
+      if (fieldId === 'criticality') {
+        const criticality = value || 'Unknown';
+        const priorityClass = `${styles.statusBadgeCompact} ${
+          criticality.toLowerCase().includes('high') ? 'bg-red-500/20 text-red-300' :
+          criticality.toLowerCase().includes('medium') ? 'bg-yellow-500/20 text-yellow-300' :
+          criticality.toLowerCase().includes('low') ? 'bg-blue-500/20 text-blue-300' :
+          'bg-gray-500/20 text-gray-300'
+        }`;
+        
+        return (
+          <span className={priorityClass}>
+            {criticality}
+          </span>
+        );
+      }
+
+      // Handle dates
+      if (field.type === 'date') {
+        return formatDate(value);
+      }
+
+      // Handle checkboxes
+      if (field.type === 'checkbox') {
+        const boolValue = typeof value === 'boolean' ? value : Boolean(value);
+        return (
+          <div className={`inline-flex items-center gap-1 text-xs ${boolValue ? 'text-green-300' : 'text-gray-400'}`}>
+            <span className={`w-1 h-1 rounded-full ${boolValue ? 'bg-green-400' : 'bg-gray-400'}`}></span>
+            {boolValue ? 'Yes' : 'No'}
+          </div>
+        );
+      }
+
+      // Handle all other fields with consistent truncation
+      if (!value) return '-';
+      
+      const stringValue = String(value);
+      // Return value with automatic truncation handled by CSS
+      return stringValue;
+    };
+
     return (
-      <div className="expanded-content p-4 relative min-h-[180px]">
-        <div className="expanded-grid grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className={styles.expandedContentContainer}>
+        <div className={styles.expandedUniformGrid}>
+          {/* Render all fields in uniform grid */}
           {expandedFields.map(([fieldId, field]) => {
-            if (field.dbField === 'initial_files') {
-              return (
-                <div key={fieldId}>
-                  <div className="font-semibold text-white/80 mb-1">{field.label}</div>
-                  <FileListPlaceholder files={defect.initial_files || []} />
-                </div>
-              );
-            }
-            
-            if (field.dbField === 'completion_files') {
-              return (
-                <div key={fieldId}>
-                  <div className="font-semibold text-white/80 mb-1">{field.label}</div>
-                  <FileListPlaceholder files={defect.completion_files || []} />
-                </div>
-              );
-            }
-            
-            if (field.type === 'checkbox') {
-              const value = defect[field.dbField];
-              return (
-                <div key={fieldId}>
-                  <div className="font-semibold text-white/80 mb-1">{field.label}</div>
-                  <div>{typeof value === 'boolean' ? (value ? 'Yes' : 'No') : (value ? 'Yes' : 'No')}</div>
-                </div>
-              );
-            }
-            
-            if (field.type === 'date') {
-              return (
-                <div key={fieldId}>
-                  <div className="font-semibold text-white/80 mb-1">{field.label}</div>
-                  <div>{formatDate(defect[field.dbField]) || '-'}</div>
-                </div>
-              );
-            }
+            const value = defect[field.dbField];
             
             return (
-              <div key={fieldId}>
-                <div className="font-semibold text-white/80 mb-1">{field.label}</div>
-                <div>{defect[field.dbField] || '-'}</div>
+              <div key={fieldId} className={styles.expandedField}>
+                <div className={styles.expandedFieldLabel}>
+                  {field.label}
+                </div>
+                <div className={styles.expandedFieldValue}>
+                  {renderFieldValue(fieldId, field, value)}
+                </div>
               </div>
             );
           })}
-        </div>
-        
-        <div className="absolute right-6 bottom-6 z-10">
+          
+          {/* Generate Report button as a single cell */}
           <button
             onClick={e => {
               e.stopPropagation();
-              console.log('Generate report for defect (placeholder):', defect.id);
+              console.log('Generate report for defect:', defect.id);
             }}
-            className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg transition-all"
+            className={styles.expandedFieldAction}
+            title="Generate detailed report for this defect"
           >
-            <FileText className="h-5 w-5" />
-            Generate Report
+            <FileText className="h-3 w-3" />
+            <span>Generate Report</span>
           </button>
         </div>
       </div>

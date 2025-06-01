@@ -29,7 +29,11 @@ const FloatingChatbot = () => {
     location.pathname.includes('/confirm-signup');
 
   const shouldRender = !isAuthPage && currentUser;
-  const LAMBDA_URL = "https://z2knkxpjffymu254qmwpms6kia0kjacj.lambda-url.ap-south-1.on.aws/";
+
+  // --- IMPORTANT CHANGE HERE ---
+  // Update this URL to your new Proxy Orchestrator Lambda URL
+  const LAMBDA_URL = "https://yvxpfwg5aybgzcsao7pvofbave0ikqlq.lambda-url.ap-south-1.on.aws/";
+  // --- END IMPORTANT CHANGE ---
 
   const quickSuggestions = [
     "Vessels at sea",
@@ -107,10 +111,12 @@ const FloatingChatbot = () => {
       });
       if (!response.ok) throw new Error(`Error: ${response.status}`);
       const data = await response.json();
+
+      // The Lambda now returns a JSON object with 'answer' field
       setTimeout(() => {
         const botMessage = {
           id: Date.now(),
-          text: data.answer || "I'm sorry, I couldn't process your request.",
+          text: data.answer || "I'm sorry, I couldn't process your request.", // Use data.answer
           sender: 'bot',
           timestamp: new Date()
         };
@@ -118,6 +124,7 @@ const FloatingChatbot = () => {
         setIsTyping(false);
       }, 800);
     } catch (error) {
+      console.error("Frontend fetch error:", error); // Log the error for debugging
       setTimeout(() => {
         const errorMessage = {
           id: Date.now(),
@@ -757,9 +764,9 @@ const FloatingChatbot = () => {
                 <h3>ASK AI</h3>
                 <p>Your maritime intelligence assistant</p>
               </div>
-              <div class="watermark">
+              {/* <div class="watermark">
                   Powered by Perplexity AI
-              </div>
+              </div> */}
             </div>
             <button className="close-btn" onClick={handleCloseChat} aria-label="Close chat">
               <X size={16} />
