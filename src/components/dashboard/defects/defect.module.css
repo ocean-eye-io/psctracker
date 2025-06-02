@@ -15,6 +15,8 @@
   --warning-color: #F1C40F;
   --success-color: #2ECC71;
   --danger-color: #E74C3C;
+  --negative-color: #E74C3C; /* Added for consistency */
+  --positive-color: #2ECC71; /* Added for consistency */
   
   /* Sizing */
   --header-height: 70px;
@@ -41,6 +43,8 @@
   --status-yellow: #F1C40F;
   --status-green: #2ECC71;
   --status-grey: #95a5a6;
+  --table-text-color: #f4f4f4; /* Added for consistency */
+  --table-muted-text-color: rgba(244, 244, 244, 0.6); /* Added for consistency */
 
   /* New variables from FleetStyles.css for filter bar */
   --bg-gradient-1: linear-gradient(145deg, #0a1725, #112032);
@@ -57,6 +61,7 @@
   --transition-fast: all 0.15s ease;
   --border-radius-sm: 4px;
   --border-radius-md: 6px;
+  --transition-normal: all 0.3s ease; /* Added for consistency */
 
   /* DashboardStyles.css specific variables for filter bar */
   --dashboard-filter-bg: #0e1e2f;
@@ -112,6 +117,65 @@
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes expandIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes progressShine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes fadeInFile {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes slideIn {
+  from {
+    transform: scale(0.9) translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes imageAppear {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Dashboard Container */
@@ -320,27 +384,56 @@
 .filesListCompact {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px; /* Adjusted from 2px to 4px for better spacing */
   max-height: 50px;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(59, 173, 229, 0.3) transparent;
+  max-width: 200px; /* Added for table context */
 }
 
 .fileItemCompact {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px; /* Adjusted from 4px to 6px for better spacing */
   font-size: 0.65rem;
   color: var(--text-light);
-  padding: 1px 0;
+  padding: 2px 4px; /* Adjusted from 1px 0 */
+  border-radius: 4px; /* Added for visual consistency */
+  transition: background-color 0.2s ease; /* Added for hover effect */
+  position: relative; /* For hover effect */
+  overflow: hidden; /* For hover effect */
+}
+
+.fileItemCompact:hover {
+  background: rgba(59, 173, 229, 0.1);
+}
+
+.fileItemCompact::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(59, 173, 229, 0) 0%,
+    rgba(59, 173, 229, 0.1) 50%,
+    rgba(59, 173, 229, 0) 100%
+  );
+  transition: left 0.5s ease;
+}
+
+.fileItemCompact:hover::before {
+  left: 100%;
 }
 
 .fileIconCompact {
   color: var(--blue-accent);
   flex-shrink: 0;
-  width: 10px;
-  height: 10px;
+  width: 12px; /* Adjusted from 10px */
+  height: 12px; /* Adjusted from 10px */
 }
 
 .fileNameCompact {
@@ -350,15 +443,66 @@
   white-space: nowrap;
 }
 
+.fileNameButton {
+  background: none;
+  border: none;
+  color: var(--blue-accent);
+  cursor: pointer;
+  font-size: 11px; /* Adjusted from 0.65rem */
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px; /* Added for table context */
+  padding: 0;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  transition: all 0.2s ease;
+  position: relative; /* For tooltip */
+}
+
+.fileNameButton:hover {
+  text-decoration-color: var(--blue-accent);
+  color: #4FC3F7;
+}
+
+.fileNameButton::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 1000;
+}
+
+.fileNameButton:hover::after {
+  opacity: 1;
+}
+
+.fileSizeCompact {
+  font-size: 10px; /* Adjusted from 0.65rem */
+  color: var(--table-muted-text-color);
+  flex-shrink: 0;
+}
+
 /* Status and badges - more compact */
 .statusBadgeCompact {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px; /* Adjusted from 3px */
   padding: 2px 6px;
   border-radius: 12px;
-  font-size: 0.65rem;
-  font-weight: 600;
+  font-size: 10px; /* Adjusted from 0.65rem */
+  font-weight: 500; /* Adjusted from 600 */
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
@@ -413,18 +557,6 @@
   
   .expandedFieldAction {
     width: calc((100% - 6px) / 2); /* Match 2-column grid */
-  }
-}
-
-/* Animation for expand/collapse */
-@keyframes expandIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 
@@ -797,6 +929,397 @@
 .resetButton:active {
   transform: none;
   box-shadow: none;
+}
+
+/* File Upload Specific Styles */
+.fileListHeader {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--blue-accent);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.existingFilesHeader {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--table-muted-text-color);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fileSize {
+  font-size: 0.75rem;
+  color: var(--table-muted-text-color);
+  margin-left: 0.5rem;
+}
+
+.fileActions {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.fileActionButton {
+  background: none;
+  border: none;
+  color: var(--table-muted-text-color);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.fileActionButton:hover {
+  background: rgba(59, 173, 229, 0.1);
+  color: var(--blue-accent);
+}
+
+.fileDeleteButton:hover {
+  background: rgba(231, 76, 60, 0.1);
+  color: var(--negative-color);
+}
+
+.fileActionButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  animation: pulse 2s infinite; /* Added for loading state */
+}
+
+.fileActionButton:focus {
+  outline: 2px solid rgba(59, 173, 229, 0.3);
+  outline-offset: 2px;
+}
+
+.uploadProgress {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: rgba(59, 173, 229, 0.05);
+  border: 1px solid rgba(59, 173, 229, 0.1);
+  border-radius: 6px;
+}
+
+.progressBarContainer {
+  width: 100%;
+  height: 8px;
+  background: rgba(59, 173, 229, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progressBar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue-accent), #4FC3F7);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+.progressBar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: progressShine 2s infinite;
+}
+
+.uploadMessage {
+  font-size: 0.875rem;
+  color: var(--blue-accent);
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Enhanced File Item Styles */
+.fileItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(244, 244, 244, 0.02);
+  border: 1px solid var(--table-border-color);
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
+  animation: fadeInFile 0.3s ease-out; /* Added animation */
+}
+
+.fileItem:hover {
+  background: rgba(59, 173, 229, 0.05);
+  border-color: rgba(59, 173, 229, 0.2);
+}
+
+.fileIcon {
+  color: var(--blue-accent);
+  flex-shrink: 0;
+}
+
+.fileIcon.pdf { color: #E74C3C; } /* Added file type icons */
+.fileIcon.doc { color: #3498DB; }
+.fileIcon.image { color: #2ECC71; }
+
+.fileName {
+  flex: 1;
+  font-size: 0.875rem;
+  color: var(--table-text-color);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileRemoveButton {
+  background: none;
+  border: none;
+  color: var(--table-muted-text-color);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.fileRemoveButton:hover {
+  background: rgba(231, 76, 60, 0.1);
+  color: var(--negative-color);
+}
+
+.fileRemoveButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fileRemoveIcon {
+  width: 14px;
+  height: 14px;
+}
+
+/* File List Containers */
+.fileList {
+  margin-top: 0.75rem;
+}
+
+.existingFileList {
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--table-border-color);
+  padding-top: 0.75rem;
+}
+
+/* Upload Button Enhancements */
+.fileUploadButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 1rem;
+  border: 2px dashed rgba(59, 173, 229, 0.3);
+  border-radius: 8px;
+  background: rgba(59, 173, 229, 0.02);
+  color: var(--blue-accent);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+}
+
+.fileUploadButton:hover {
+  border-color: rgba(59, 173, 229, 0.5);
+  background: rgba(59, 173, 229, 0.05);
+  transform: translateY(-1px);
+}
+
+.fileUploadButton:active {
+  transform: translateY(0);
+}
+
+.fileUploadButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(59, 173, 229, 0) 0%,
+    rgba(59, 173, 229, 0.1) 50%,
+    rgba(59, 173, 229, 0) 100%
+  );
+  transition: left 0.5s ease;
+}
+
+.fileUploadButton:hover::before {
+  left: 100%;
+}
+
+.fileUploadButton.dragOver { /* Added drag and drop enhancement */
+  border-color: var(--blue-accent);
+  background: rgba(59, 173, 229, 0.1);
+  transform: scale(1.02);
+}
+
+.fileUploadIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+/* File Upload Container */
+.fileUploadContainer {
+  border: 1px solid var(--table-border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  background: rgba(11, 22, 35, 0.3);
+  transition: all 0.3s ease;
+}
+
+.fileUploadContainer:hover {
+  border-color: rgba(59, 173, 229, 0.3);
+  background: rgba(11, 22, 35, 0.5);
+}
+
+.fileUploadContainer:has(.uploadingFiles) { /* Added enhanced state */
+  border-color: rgba(59, 173, 229, 0.4);
+  background: rgba(59, 173, 229, 0.08);
+}
+
+/* Disabled State for File Upload */
+.fileUploadButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.fileUploadButton:disabled:hover {
+  border-color: rgba(59, 173, 229, 0.3);
+  background: rgba(59, 173, 229, 0.02);
+  transform: none;
+}
+
+/* File Upload Error State */
+.fileUploadError {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.2);
+  border-radius: 4px;
+  color: var(--negative-color);
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fileValidationError { /* Added file validation feedback */
+  color: var(--negative-color);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Responsive Design for File Upload */
+@media (max-width: 768px) {
+  .fileItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .fileActions {
+    align-self: stretch;
+    justify-content: flex-end;
+  }
+  
+  .fileName {
+    font-size: 0.8rem;
+  }
+  
+  .fileSize {
+    font-size: 0.7rem;
+  }
+  
+  .uploadMessage {
+    font-size: 0.8rem;
+  }
+}
+
+/* Success state for completed uploads */
+.uploadComplete {
+  background: rgba(46, 204, 113, 0.05);
+  border-color: rgba(46, 204, 113, 0.2);
+}
+
+.uploadComplete .uploadMessage {
+  color: var(--positive-color);
+}
+
+/* Global progress container */
+.globalProgressContainer {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: rgba(59, 173, 229, 0.03);
+  border: 1px solid rgba(59, 173, 229, 0.1);
+  border-radius: 6px;
+}
+
+/* File size formatting */
+.fileSize.large {
+  color: var(--warning-color);
+  font-weight: 500;
+}
+
+/* Upload queue styling */
+.uploadQueue {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(59, 173, 229, 0.02);
+  border-radius: 4px;
+  border: 1px dashed rgba(59, 173, 229, 0.2);
+}
+
+.uploadQueueItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  font-size: 0.875rem;
+}
+
+.uploadQueueProgress {
+  width: 60px;
+  height: 4px;
+  background: rgba(59, 173, 229, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.uploadQueueProgressBar {
+  height: 100%;
+  background: var(--blue-accent);
+  transition: width 0.3s ease;
 }
 
 /* Filter Count Badge - Match DashboardStyles.css */
@@ -1473,5 +1996,224 @@
   .actionButton {
     font-size: 12px;
     padding: 6px 10px;
+  }
+}
+
+/* File Preview Modal Styles */
+.filePreviewOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out; /* Added animation */
+}
+
+.filePreviewModal {
+  background: linear-gradient(145deg, #0a1725, #112032); /* Dark theme enhancement */
+  border: 1px solid var(--table-border-color);
+  border-radius: 12px;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 1px rgba(255, 255, 255, 0.1) inset; /* Dark theme enhancement */
+  animation: slideIn 0.3s ease-out; /* Added animation */
+}
+
+.filePreviewHeader {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--table-border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(145deg, #132337, #1a2c42); /* Dark theme enhancement */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); /* Dark theme enhancement */
+}
+
+.filePreviewTitle {
+  color: var(--table-text-color);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filePreviewActions {
+  display: flex;
+  gap: 8px;
+}
+
+.filePreviewDownload, .filePreviewClose {
+  background: rgba(59, 173, 229, 0.1);
+  border: 1px solid rgba(59, 173, 229, 0.3);
+  border-radius: 6px;
+  color: var(--blue-accent);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.filePreviewDownload:hover, .filePreviewClose:hover {
+  background: rgba(59, 173, 229, 0.2);
+  transform: translateY(-1px);
+}
+
+.filePreviewClose {
+  background: rgba(231, 76, 60, 0.1);
+  border-color: rgba(231, 76, 60, 0.3);
+  color: var(--negative-color);
+}
+
+.filePreviewClose:hover {
+  background: rgba(231, 76, 60, 0.2);
+}
+
+.filePreviewContent {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  max-height: 70vh;
+  overflow: hidden;
+}
+
+.filePreviewLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--table-muted-text-color);
+}
+
+.filePreviewLoading .loadingSpinner { /* Enhanced loading spinner */
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(59, 173, 229, 0.2);
+  border-top: 3px solid var(--blue-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.filePreviewError, .filePreviewPdf, .filePreviewDocument {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: var(--table-text-color);
+  text-align: center;
+}
+
+.filePreviewError {
+  color: var(--negative-color);
+}
+
+.filePreviewImage {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  animation: imageAppear 0.3s ease-out; /* Added animation */
+}
+
+.filePreviewPdfNote, .filePreviewDocNote {
+  color: var(--table-muted-text-color);
+  font-size: 14px;
+  margin: 8px 0;
+}
+
+.downloadButton {
+  background: var(--blue-accent);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.downloadButton:hover {
+  background: #2a9fd7;
+  transform: translateY(-1px);
+}
+
+.filePreviewFooter {
+  padding: 12px 20px;
+  border-top: 1px solid var(--table-border-color);
+  background: linear-gradient(145deg, #0b1623, #132337); /* Dark theme enhancement */
+}
+
+.filePreviewInfo {
+  display: flex;
+  gap: 20px;
+  font-size: 12px;
+  color: var(--table-muted-text-color);
+}
+
+/* Responsive Design for File Preview Modal */
+@media (max-width: 768px) {
+  .filePreviewModal {
+    max-width: 95vw;
+    max-height: 95vh;
+  }
+  
+  .filePreviewHeader {
+    padding: 12px 16px;
+  }
+  
+  .filePreviewTitle {
+    font-size: 14px;
+    max-width: 50%;
+  }
+  
+  .filePreviewActions {
+    gap: 6px;
+  }
+  
+  .filePreviewDownload, .filePreviewClose {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  .filePreviewContent {
+    padding: 16px;
+    min-height: 200px;
+  }
+  
+  .filePreviewInfo {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .filesListCompact {
+    max-width: 150px;
+  }
+  
+  .fileNameButton {
+    max-width: 80px;
+    font-size: 10px;
   }
 }

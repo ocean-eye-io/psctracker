@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Upload, FileText, X } from 'lucide-react';
+import { Upload, FileText, X, Download, Trash2, AlertCircle } from 'lucide-react';
 import { useToast } from '../../common/ui/ToastContext';
 import { formatDateForInput, formatDateDisplay } from '../../../utils/dateUtils';
 import { DEFECT_FIELDS, FIELD_SECTIONS } from './config/DefectFieldMappings';
 import { generateDefectPDF } from '../../../utils/generateDefectPDF';
-import formStyles from '../../common/ui/form.module.css'; // Import form-specific styles
+import fileService from './services/fileService';
+import formStyles from '../../common/ui/form.module.css';
 
 // Import the new dialog components
 import {
@@ -16,7 +17,7 @@ import {
   DialogBody,
   DialogFooter,
   DialogButton
-} from '../../common/ui/dialog'; // Import the dialog components
+} from '../../common/ui/dialog';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_FILE_TYPES = [
@@ -32,28 +33,32 @@ const DefectDialog = ({
   isOpen,
   onClose,
   defect,
-  onChange, // This prop is no longer directly used for internal state management
+  onChange, // This prop is not used in the provided code, but kept for consistency
   onSave,
-  vessels,
+  vessels = [], // CRITICAL FIX: Default vessels to an empty array
   isNew,
-  permissions,
-  isExternal
+  permissions, // This prop is not used in the provided code, but kept for consistency
+  isExternal, // This prop is not used in the provided code, but kept for consistency
+  currentUser
 }) => {
   const { toast } = useToast();
   const [initialFiles, setInitialFiles] = useState([]);
   const [closureFiles, setClosureFiles] = useState([]);
   const [saving, setSaving] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState({});
   const [showConfirmClose, setShowConfirmClose] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
 
-  // Add this log to see when the dialog component itself renders
+  // Get userId from currentUser prop
+  const userId = currentUser?.id || currentUser?.userId;
+
   console.log("DefectDialog component rendering. isOpen:", isOpen, "defect:", defect?.id);
 
-  // Initial form data structure (used for resetting)
+  // Initial form data structure
   const initialFormData = useCallback(() => ({
     id: '',
-    vessel_id: '', // This should be the ID, not the name
-    vessel_name: '', // Added vessel_name to initial state
+    vessel_id: '',
+    vessel_name: '',
     Equipments: '',
     Description: '',
     'Action Planned': '',
@@ -70,19 +75,25 @@ const DefectDialog = ({
     Comments: ''
   }), []);
 
-  // State for form data, managed internally by DefectDialog
   const [formData, setFormData] = useState(initialFormData());
-  const [isDirty, setIsDirty] = useState(false); // Track if form has changes
+  const [isDirty, setIsDirty] = useState(false);
 
-  // Effect to update internal formData when 'defect' prop changes (for edit mode)
+  // Effect to update internal formData when 'defect' prop changes
   useEffect(() => {
     console.log("DefectDialog useEffect triggered. isOpen:", isOpen, "defect:", defect?.id);
     if (isOpen && defect) {
-      // Initialize form state from defect prop
+      const initialFilesData = defect.initial_files || [];
+      const completionFilesData = defect.completion_files || [];
+
+      console.log("DefectDialog: Loading existing files:", {
+        initialFiles: initialFilesData,
+        completionFiles: completionFilesData
+      });
+
       setFormData({
         id: defect.id || '',
-        vessel_id: defect.vessel_id || '', // Ensure this is correctly mapped
-        vessel_name: defect.vessel_name || '', // Initialize vessel_name from defect prop
+        vessel_id: defect.vessel_id || '',
+        vessel_name: defect.vessel_name || '',
         Equipments: defect.Equipments || '',
         Description: defect.Description || '',
         'Action Planned': defect['Action Planned'] || '',
@@ -91,25 +102,27 @@ const DefectDialog = ({
         'Date Reported': defect['Date Reported'] || new Date().toISOString().split('T')[0],
         'Date Completed': defect['Date Completed'] || '',
         target_date: defect.target_date || '',
-        initial_files: defect.initial_files || [],
-        completion_files: defect.completion_files || [],
+        initial_files: initialFilesData,
+        completion_files: completionFilesData,
         raised_by: defect.raised_by || '',
         closure_comments: defect.closure_comments || '',
         external_visibility: typeof defect.external_visibility === 'boolean' ? defect.external_visibility : true,
         Comments: defect.Comments || ''
       });
-      setInitialFiles(defect.initial_files || []); // Set existing files
-      setClosureFiles(defect.completion_files || []); // Set existing files
-      setIsDirty(false); // Reset dirty state on initial load
+      setInitialFiles([]);
+      setClosureFiles([]);
+      setUploadProgress({}); // Reset upload progress on new defect load
+      setIsDirty(false);
+      setUploadingFiles(false); // Reset uploading state
     } else if (!isOpen) {
-      // Reset state when dialog closes
       console.log("DefectDialog: Resetting state on close.");
       setFormData(initialFormData());
       setInitialFiles([]);
       setClosureFiles([]);
-      setUploadProgress(0);
+      setUploadProgress({});
       setShowConfirmClose(false);
-      setIsDirty(false); // Reset dirty state on close
+      setIsDirty(false);
+      setUploadingFiles(false);
     }
   }, [isOpen, defect, initialFormData]);
 
@@ -123,7 +136,6 @@ const DefectDialog = ({
         [name]: type === 'checkbox' ? checked : value
       };
 
-      // Special handling for vessel_id to also store vessel_name
       if (name === 'vessel_id') {
         const selectedVessel = vessels.find(v => v.vessel_id === value);
         newState.vessel_name = selectedVessel ? selectedVessel.vessel_name : '';
@@ -131,33 +143,32 @@ const DefectDialog = ({
 
       return newState;
     });
-    setIsDirty(true); // Mark form as dirty on any change
-  }, [vessels]); // Add 'vessels' to the dependency array because it's used inside
+    setIsDirty(true);
+  }, [vessels]); // vessels is now guaranteed to be an array
 
-  // Function to check if field is visible
+  // Function to check if field is visible (SIMPLIFIED)
   const isFieldVisible = useCallback((fieldId) => {
-    // Placeholder for actual visibility logic based on permissions, defect status, etc.
-    // For now, all fields are visible.
+    // All field-specific conditional display logic is now handled by field.conditionalDisplay
+    // in the getVisibleFields function.
+    // This function can be removed or simplified if no other global visibility rules exist.
     return true;
   }, []);
 
-  // Function to handle silent mode change (placeholder for DB update)
+  // Function to handle silent mode change
   const handleSilentModeChange = async (checked) => {
-    setFormData(prev => ({ ...prev, external_visibility: !checked })); // Note the inversion: checked means hidden
+    setFormData(prev => ({ ...prev, external_visibility: !checked }));
     setIsDirty(true);
     if (!isNew) {
-      console.log(`Placeholder: Updating external_visibility to ${!checked} for defect ${defect.id}`);
+      console.log(`Updating external_visibility to ${!checked} for defect ${defect.id}`);
       toast({
         title: "Info",
-        description: `Defect visibility changed locally. DB update is a placeholder.`,
+        description: `Defect visibility changed locally.`,
       });
     }
   };
 
   // Function to check if field is editable
   const isFieldEditable = useCallback((fieldId) => {
-    // Placeholder for actual editability logic based on permissions, defect status, etc.
-    // For now, all fields are editable.
     return true;
   }, []);
 
@@ -166,26 +177,24 @@ const DefectDialog = ({
     const allFields = Object.entries(DEFECT_FIELDS.DIALOG);
     return allFields
       .filter(([fieldId, field]) => {
-        if (!isFieldVisible(fieldId)) return false;
-        if (field.conditionalDisplay && !field.conditionalDisplay(formData)) { // Use formData for conditional display
+        if (!isFieldVisible(fieldId)) return false; // This will now always return true
+        if (field.conditionalDisplay && !field.conditionalDisplay(formData)) {
           return false;
         }
         return true;
       })
       .sort((a, b) => a[1].displayOrder - b[1].displayOrder);
-  }, [formData, isFieldVisible]); // Depend on formData
+  }, [formData, isFieldVisible]);
 
   // Function to check if save should be enabled
   const canSave = useCallback(() => {
-    // Placeholder for actual save validation logic
-    // e.g., return formData.vessel_id && formData.Description && formData.Status;
     return true;
-  }, [formData]); // Depend on formData
+  }, []);
 
   // Handle dialog close attempt
   const handleCloseAttempt = () => {
     console.log("DefectDialog: handleCloseAttempt called.");
-    if (isDirty || initialFiles.length > 0 || closureFiles.length > 0) { // Check isDirty state
+    if (isDirty || initialFiles.length > 0 || closureFiles.length > 0) {
       console.log("DefectDialog: Unsaved changes detected, showing confirmation.");
       setShowConfirmClose(true);
     } else {
@@ -208,7 +217,6 @@ const DefectDialog = ({
   };
 
   const validateDefect = (defectData) => {
-    // Check dates logic
     if (defectData['Date Completed'] && defectData['Date Reported']) {
       const closureDate = new Date(defectData['Date Completed']);
       const reportedDate = new Date(defectData['Date Reported']);
@@ -223,19 +231,15 @@ const DefectDialog = ({
       }
     }
 
-    // Get visible fields and their requirements
     const visibleFields = Object.entries(DEFECT_FIELDS.DIALOG)
       .filter(([fieldId, field]) => {
         if (!isFieldVisible(fieldId)) return false;
-
-        // Check conditional display
         if (field.conditionalDisplay && !field.conditionalDisplay(defectData)) {
           return false;
         }
         return true;
       })
       .filter(([_, field]) => {
-        // Check if field is required
         if (field.required) return true;
         if (field.conditionalRequired && field.conditionalRequired(defectData)) {
           return true;
@@ -246,8 +250,7 @@ const DefectDialog = ({
         return field.dbField;
       });
 
-    // Add specific requirements for CLOSED status
-    if (defectData['Status'] === 'CLOSED') { // Use 'Status' as per your DIALOG config
+    if (defectData['Status'] === 'CLOSED') {
       if (!defectData['Date Completed']) {
         toast({
           title: "Required Field Missing",
@@ -256,15 +259,11 @@ const DefectDialog = ({
         });
         return false;
       }
-      // closure_comments is conditionally required in DEFECT_FIELDS.DIALOG
-      // so it will be included in visibleFields if status is CLOSED
     }
 
-    // Check for missing required fields
     const missing = visibleFields.filter(field => !defectData[field]);
 
     if (missing.length > 0) {
-      // Map field names to more readable labels from DEFECT_FIELDS.DIALOG
       const fieldLabels = Object.values(DEFECT_FIELDS.DIALOG).reduce((acc, field) => {
         acc[field.dbField] = field.label;
         return acc;
@@ -274,18 +273,8 @@ const DefectDialog = ({
 
       toast({
         title: "Missing Information",
-        description: (
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Please fill in the following fields:</p>
-            <ul className="list-disc pl-4 text-sm space-y-1">
-              {missingFieldLabels.map((field, index) => (
-                <li key={index} className="text-sm opacity-90">{field}</li>
-              ))}
-            </ul>
-          </div>
-        ),
-        variant: "subtle",
-        className: "bg-[#132337] border border-[#3BADE5]/20 text-white",
+        description: `Please fill in the following fields: ${missingFieldLabels.join(', ')}`,
+        variant: "destructive",
       });
       return false;
     }
@@ -314,22 +303,79 @@ const DefectDialog = ({
     return true;
   };
 
-  // Placeholder for file upload
-  const uploadFiles = async (files, defectId, type = 'initial') => {
-    console.warn(`Placeholder: Uploading ${files.length} files of type ${type} for defect ${defectId}`);
-    setUploadProgress(50); // Simulate progress
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+  // CRITICAL FIX: Enhanced file upload with proper parameter validation
+  const handleFileUpload = async (files, uploadType, defectId) => { // Add defectId parameter
+    if (!files || files.length === 0) return [];
 
-    const uploadedFiles = files.map(file => ({
-      name: file.name,
-      path: `placeholder/path/${defectId}/${type}/${file.name}`, // Dummy path
-      type: file.type,
-      size: file.size,
-      uploadedAt: new Date().toISOString(),
-      url: `https://example.com/placeholder/${defectId}/${type}/${file.name}` // Dummy URL
-    }));
-    setUploadProgress(100);
-    return uploadedFiles;
+    setUploadingFiles(true);
+    setUploadProgress({});
+
+    try {
+      console.log(`Starting optimized upload of ${files.length} ${uploadType} files`);
+      console.log('Current defect ID (passed):', defectId); // Log the passed ID
+      console.log('Files to upload:', files);
+
+      // CRITICAL FIX: Ensure we have a valid defect ID
+      // Use the passed defectId instead of formData?.id
+      if (!defectId || defectId.startsWith('temp-')) {
+        throw new Error('Cannot upload files: Invalid or temporary defect ID. Please save the defect first.');
+      }
+
+      // CRITICAL FIX: Ensure userId is available
+      if (!userId) {
+        throw new Error('Cannot upload files: User ID is required');
+      }
+
+      // CRITICAL FIX: Use the correct parameter order for fileService.uploadFiles
+      // Original signature: uploadFiles(files, defectId, uploadType, userId, onProgress)
+      const uploadedFiles = await fileService.uploadFiles(
+        Array.from(files), // Ensure it's an array, not FileList
+        defectId,          // Correct defect ID (now guaranteed to be the actual ID)
+        uploadType,        // 'initial' or 'completion'
+        userId,           // User ID
+        (progress, message, fileIndex) => {
+          // Convert legacy progress format to new format for display
+          const fileName = files[fileIndex]?.name || `File ${fileIndex + 1}`;
+          setUploadProgress(prev => ({
+            ...prev,
+            [fileName]: progress
+          }));
+        }
+      );
+
+      console.log(`Successfully uploaded ${uploadedFiles.length} files`);
+
+      // CRITICAL FIX: Use correct toast variant names
+      toast({
+        title: "Upload Successful",
+        description: `${uploadedFiles.length} files uploaded successfully`,
+      });
+
+      return uploadedFiles;
+
+    } catch (error) {
+      console.error('Error uploading files:', error);
+
+      // CRITICAL FIX: Use correct toast variant names
+      if (error.message.includes('CORS') || error.message.includes('Network Error')) {
+        toast({
+          title: "Upload Configuration Issue",
+          description: "File upload is currently unavailable due to server configuration.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Upload Failed",
+          description: `Upload failed: ${error.message}`,
+          variant: "destructive",
+        });
+      }
+
+      return [];
+    } finally {
+      setUploadingFiles(false);
+      setUploadProgress({});
+    }
   };
 
   const handleInitialFileChange = (e) => {
@@ -356,15 +402,80 @@ const DefectDialog = ({
     setIsDirty(true);
   };
 
+  // OPTIMIZED: Handle downloading existing files with backwards compatibility
+  const handleDownloadFile = async (file) => {
+    if (!userId || !formData.id) {
+      toast({
+        title: "Error",
+        description: "Cannot download file: missing user or defect information",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Use the existing fileService.downloadFile method
+      await fileService.downloadFile(formData.id, file.id, file.name || file.originalName, userId);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast({
+        title: "Download Failed",
+        description: `Failed to download ${file.name}: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // OPTIMIZED: Handle deleting existing files with backwards compatibility
+  const handleDeleteExistingFile = async (file, fileType) => {
+    if (!userId || !formData.id) {
+      toast({
+        title: "Error",
+        description: "Cannot delete file: missing user or defect information",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete "${file.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      // Use the existing fileService.deleteFile method
+      await fileService.deleteFile(formData.id, file.id, userId);
+
+      // Update local state to remove the deleted file
+      setFormData(prev => ({
+        ...prev,
+        [fileType]: prev[fileType].filter(f => f.id !== file.id)
+      }));
+
+      setIsDirty(true);
+
+      toast({
+        title: "Success",
+        description: `${file.name} has been deleted`,
+      });
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      toast({
+        title: "Delete Failed",
+        description: `Failed to delete ${file.name}: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // CRITICAL FIX: Enhanced save handler with proper file upload flow
   const handleSave = async () => {
     try {
       console.log("DefectDialog: Starting save operation...");
       setSaving(true);
-      setUploadProgress(0);
+      setUploadProgress({});
 
-      // Set default value for external_visibility if not set
       const updatedDefectData = {
-        ...formData, // Use formData from internal state
+        ...formData,
         external_visibility: formData.external_visibility ?? true
       };
 
@@ -374,83 +485,133 @@ const DefectDialog = ({
         return;
       }
 
-      // Upload files if any (using placeholder)
+      // Check if files were uploaded or need to be uploaded
+      const hasNewFiles = initialFiles.length > 0 || closureFiles.length > 0;
       let uploadedInitialFiles = [];
       let uploadedClosureFiles = [];
+      let defectToUse = updatedDefectData;
+      let actualDefectId = defectToUse.id; // Initialize with existing ID or temporary ID
 
-      if (initialFiles.length > 0) {
+      // CRITICAL FIX: For new defects with files, create defect first to get valid ID
+      if (isNew && hasNewFiles) {
+        console.log("DefectDialog: Creating defect first to get ID for file upload...");
+        try {
+          // Create defect without files first
+          const tempDefectData = {
+            ...updatedDefectData,
+            initial_files: [],
+            completion_files: []
+          };
+          // Remove the temp ID for creation
+          delete tempDefectData.id;
+
+          const createdDefect = await onSave(tempDefectData);
+
+          // CRITICAL FIX: Ensure we get the actual defect ID
+          actualDefectId = createdDefect?.id || createdDefect; // Get the real ID
+          defectToUse = { ...updatedDefectData, id: actualDefectId };
+
+          console.log("DefectDialog: Defect created with ID:", actualDefectId);
+
+          // CRITICAL FIX: Update formData with the new ID immediately
+          // This is still good practice for UI consistency, but handleFileUpload will use actualDefectId
+          setFormData(prev => ({ ...prev, id: actualDefectId }));
+
+        } catch (saveError) {
+          console.error("DefectDialog: Error creating defect for file upload:", saveError);
+          throw saveError;
+        }
+      }
+
+      // CRITICAL FIX: Upload files only if we have a valid defect ID
+      // Pass actualDefectId directly to handleFileUpload
+      if (initialFiles.length > 0 && actualDefectId && !actualDefectId.startsWith('temp-')) {
         console.log(`DefectDialog: Uploading ${initialFiles.length} initial files...`);
-        uploadedInitialFiles = await uploadFiles(initialFiles, updatedDefectData.id || 'temp', 'initial');
+        uploadedInitialFiles = await handleFileUpload(initialFiles, 'initial', actualDefectId); // Pass actualDefectId
+        console.log("DefectDialog: Initial files uploaded successfully");
       }
 
-      if (closureFiles.length > 0 && updatedDefectData['Status'] === 'CLOSED') { // Use 'Status'
+      if (closureFiles.length > 0 && defectToUse['Status'] === 'CLOSED' && actualDefectId && !actualDefectId.startsWith('temp-')) {
         console.log(`DefectDialog: Uploading ${closureFiles.length} closure files...`);
-        uploadedClosureFiles = await uploadFiles(closureFiles, updatedDefectData.id || 'temp', 'closure');
+        uploadedClosureFiles = await handleFileUpload(closureFiles, 'completion', actualDefectId); // Pass actualDefectId
+        console.log("DefectDialog: Closure files uploaded successfully");
       }
 
-      // Combine existing and new files
-      const finalDefect = {
-        ...updatedDefectData,
-        initial_files: [
-          ...(defect?.initial_files || []), // Use defect prop for existing files
-          ...uploadedInitialFiles
-        ],
-        completion_files: [
-          ...(defect?.completion_files || []), // Use defect prop for existing files
-          ...uploadedClosureFiles
-        ],
-        closure_comments: updatedDefectData.closure_comments || '',
-        target_date: updatedDefectData.target_date || null
-      };
-
-      console.log("DefectDialog: Saving defect to database (via onSave prop)...");
-      // Save the defect - IMPORTANT: make sure this returns the saved object with ID
+      // Final save with file metadata
       let savedDefect;
-      try {
-        savedDefect = await onSave(finalDefect);
-        console.log("DefectDialog: Defect saved successfully:", savedDefect?.id);
-      } catch (saveError) {
-        console.error("DefectDialog: Error saving defect:", saveError);
-        throw saveError; // Rethrow to be caught by outer try/catch
+      if (uploadedInitialFiles.length > 0 || uploadedClosureFiles.length > 0) {
+        // Update the defect with file metadata
+        const finalDefect = {
+          ...defectToUse,
+          initial_files: [
+            ...(formData.initial_files || []), // Use formData here as it should be updated by now
+            ...uploadedInitialFiles
+          ],
+          completion_files: [
+            ...(formData.completion_files || []), // Use formData here as it should be updated by now
+            ...uploadedClosureFiles
+          ],
+          closure_comments: defectToUse.closure_comments || '',
+          target_date: defectToUse.target_date || null
+        };
+
+        console.log("DefectDialog: Updating defect with file metadata...");
+        try {
+          savedDefect = await onSave(finalDefect);
+          console.log("DefectDialog: Defect updated with files successfully:", savedDefect?.id);
+        } catch (saveError) {
+          console.error("DefectDialog: Error updating defect with files:", saveError);
+          throw saveError;
+        }
+      } else {
+        // No files to upload, just save the defect normally
+        console.log("DefectDialog: Saving defect without files...");
+        try {
+          if (isNew) {
+            // Remove temp ID for new defects
+            const newDefectData = { ...defectToUse };
+            if (newDefectData.id && newDefectData.id.startsWith('temp-')) {
+              delete newDefectData.id;
+            }
+            savedDefect = await onSave(newDefectData);
+          } else {
+            savedDefect = await onSave(defectToUse);
+          }
+          console.log("DefectDialog: Defect saved successfully:", savedDefect?.id);
+        } catch (saveError) {
+          console.error("DefectDialog: Error saving defect:", saveError);
+          throw saveError;
+        }
       }
 
-      console.log("DefectDialog: Checking if we can generate PDF...");
-      console.log("DefectDialog: savedDefect exists:", !!savedDefect);
-      console.log("DefectDialog: savedDefect.id exists:", !!savedDefect?.id);
-
-      // Only proceed with PDF generation if we have a valid savedDefect with ID
+      // PDF generation (keeping as placeholder for now)
       if (savedDefect && savedDefect.id) {
         console.log("DefectDialog: Starting PDF generation process for defect:", savedDefect.id);
 
         try {
-          // Define the PDF path (placeholder)
           const pdfPath = `placeholder/defect-reports/${savedDefect.id}.pdf`;
           console.log("DefectDialog: PDF will be saved to (placeholder):", pdfPath);
 
-          // Get signed URLs for file attachments (placeholder)
-          console.log("DefectDialog: Getting signed URLs for attachments (placeholder)...");
           const fileSignedUrls = {};
           const filePublicUrls = {};
 
-          // Populate dummy URLs for PDF generation
-          (savedDefect.initial_files || []).forEach(f => filePublicUrls[f.path] = f.url);
-          (savedDefect.completion_files || []).forEach(f => filePublicUrls[f.path] = f.url);
-
-          // Generate PDF blob (using placeholder)
-          console.log("DefectDialog: Calling generateDefectPDF function with (placeholder):", {
-            defectId: savedDefect.id,
-            vesselName: vessels.find(v => v.vessel_id === savedDefect.vessel_id)?.vessel_name || 'Unknown Vessel', // Reverted this line
-            publicUrlCount: Object.keys(filePublicUrls).length
+          (savedDefect.initial_files || []).forEach(f => {
+            if (f.url) filePublicUrls[f.path || f.s3Key] = f.url;
           });
+          (savedDefect.completion_files || []).forEach(f => {
+            if (f.url) filePublicUrls[f.path || f.s3Key] = f.url;
+          });
+
+          console.log("DefectDialog: Calling generateDefectPDF function with (placeholder)");
 
           let pdfBlob;
           try {
             pdfBlob = await generateDefectPDF(
               {
                 ...savedDefect,
-                vessel_name: vessels.find(v => v.vessel_id === savedDefect.vessel_id)?.vessel_name || 'Unknown Vessel' // Reverted this line
+                vessel_name: vessels.find(v => v.vessel_id === savedDefect.vessel_id)?.vessel_name || 'Unknown Vessel'
               },
-              fileSignedUrls, // Placeholder
+              fileSignedUrls,
               filePublicUrls
             );
 
@@ -464,39 +625,30 @@ const DefectDialog = ({
             throw pdfGenError;
           }
 
-          // Upload the PDF (placeholder)
-          console.log("DefectDialog: Preparing to upload PDF (placeholder)...");
-          console.log(`DefectDialog: Uploading PDF (${pdfBlob.size} bytes) to (placeholder): ${pdfPath}`);
-          // Simulate upload success
           await new Promise(resolve => setTimeout(resolve, 500));
           console.log("DefectDialog: PDF uploaded successfully (placeholder)");
 
         } catch (pdfError) {
           console.error("DefectDialog: PDF generation or upload failed (placeholder):", pdfError);
-          // Continue without failing the save operation
           toast({
             title: "Warning",
             description: "Defect saved, but PDF report generation failed (placeholder).",
-            variant: "warning",
+            variant: "destructive",
           });
         }
-      } else {
-        console.warn("DefectDialog: Cannot generate PDF - savedDefect or savedDefect.id is missing!");
       }
 
       // Clear file selections
       setInitialFiles([]);
       setClosureFiles([]);
-      setUploadProgress(0);
-      setIsDirty(false); // Reset dirty state after successful save
+      setUploadProgress({});
+      setIsDirty(false);
 
-      // Show success message
       toast({
         title: "Success",
         description: isNew ? "Defect added successfully" : "Changes saved successfully",
       });
 
-      // Close the dialog
       onClose();
 
     } catch (error) {
@@ -508,6 +660,7 @@ const DefectDialog = ({
       });
     } finally {
       setSaving(false);
+      setUploadingFiles(false);
     }
   };
 
@@ -518,7 +671,7 @@ const DefectDialog = ({
 
   // Group fields by section
   const groupedFields = getVisibleFields().reduce((acc, [fieldId, field]) => {
-    const sectionId = field.section || 'basic'; // Default to 'basic' if no section
+    const sectionId = field.section || 'basic';
     if (!acc[sectionId]) {
       acc[sectionId] = [];
     }
@@ -529,12 +682,44 @@ const DefectDialog = ({
   const sortedSections = Object.entries(FIELD_SECTIONS)
     .sort(([, a], [, b]) => a.order - b.order)
     .filter(([sectionId, section]) => {
-      // Only show sections that have visible fields or are conditionally displayed
-      if (section.conditionalDisplay && !section.conditionalDisplay(formData)) { // Use formData
+      // This specific check is now redundant if section.conditionalDisplay is used.
+      // It's better to remove it and rely solely on section.conditionalDisplay.
+      // if (sectionId === 'closureDetails' && formData.Status !== 'CLOSED') {
+      //   return false;
+      // }
+      if (section.conditionalDisplay && !section.conditionalDisplay(formData)) {
         return false;
       }
       return groupedFields[sectionId] && groupedFields[sectionId].length > 0;
     });
+
+  // OPTIMIZED: Render upload progress with enhanced error display
+  const renderUploadProgress = () => {
+    if (!uploadingFiles || Object.keys(uploadProgress).length === 0) return null;
+
+    return (
+      <div className="upload-progress-container">
+        <h4>Uploading Files...</h4>
+        {Object.entries(uploadProgress).map(([fileName, progress]) => (
+          <div key={fileName} className="upload-progress-item">
+            <span className="file-name">{fileName}</span>
+            <div className="progress-bar">
+              <div
+                className="progress-fill"
+                style={{
+                  width: `${Math.max(0, progress)}%`,
+                  backgroundColor: progress === -1 || progress === 0 ? '#e74c3c' : '#3bade5'
+                }}
+              />
+            </div>
+            <span className="progress-text">
+              {progress === -1 || (progress === 0 && uploadingFiles) ? 'Failed' : `${progress}%`}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -543,9 +728,8 @@ const DefectDialog = ({
         open={isOpen}
         onOpenChange={(open) => {
           if (!open) {
-            // Intercept the close event
             handleCloseAttempt();
-            return false; // Prevent default closing behavior
+            return false;
           }
           return true;
         }}
@@ -583,7 +767,7 @@ const DefectDialog = ({
                                   type="checkbox"
                                   className={formStyles.checkboxInput}
                                   checked={fieldId === 'silentMode'
-                                    ? !formData?.[field.dbField] // Invert for silent mode
+                                    ? !formData?.[field.dbField]
                                     : formData?.[field.dbField] ?? field.defaultValue}
                                   onChange={(e) => {
                                     if (fieldId === 'silentMode') {
@@ -617,9 +801,9 @@ const DefectDialog = ({
                                 <select
                                   id={fieldId}
                                   className={formStyles.formSelect}
-                                  name={field.dbField} // Add name attribute
-                                  value={formData?.[field.dbField] || ''} // Use formData
-                                  onChange={handleChange} // Use local handleChange
+                                  name={field.dbField}
+                                  value={formData?.[field.dbField] || ''}
+                                  onChange={handleChange}
                                   required={field.required}
                                   disabled={!isEditable}
                                   aria-required={field.required}
@@ -651,9 +835,9 @@ const DefectDialog = ({
                               <textarea
                                 id={fieldId}
                                 className={formStyles.formTextarea}
-                                name={field.dbField} // Add name attribute
-                                value={formData?.[field.dbField] || ''} // Use formData
-                                onChange={handleChange} // Use local handleChange
+                                name={field.dbField}
+                                value={formData?.[field.dbField] || ''}
+                                onChange={handleChange}
                                 placeholder={`Enter ${field.label.toLowerCase()}`}
                                 required={field.required}
                                 disabled={!isEditable}
@@ -673,9 +857,9 @@ const DefectDialog = ({
                                   id={fieldId}
                                   type="date"
                                   className={formStyles.dateInput}
-                                  name={field.dbField} // Add name attribute
-                                  value={formatDateForInput(formData?.[field.dbField])} // Use formData
-                                  onChange={handleChange} // Use local handleChange
+                                  name={field.dbField}
+                                  value={formatDateForInput(formData?.[field.dbField])}
+                                  onChange={handleChange}
                                   required={field.required}
                                   disabled={!isEditable}
                                   aria-required={field.required}
@@ -688,11 +872,12 @@ const DefectDialog = ({
                           );
 
                         case 'file':
-                          // Handle initialFiles and completionFiles separately based on fieldId
                           const isInitialFilesField = fieldId === 'initialFiles';
                           const currentFiles = isInitialFilesField ? initialFiles : closureFiles;
                           const handleFileChange = isInitialFilesField ? handleInitialFileChange : handleClosureFileChange;
-                          const removeFile = isInitialFilesField ? removeInitialFile : removeClosureFile;
+                          // FIX: Directly use removeInitialFile or removeClosureFile
+                          const removeFileHandler = isInitialFilesField ? removeInitialFile : removeClosureFile;
+                          const existingFiles = formData?.[field.dbField] || [];
 
                           // Only render completionFiles if shouldShowClosureFiles is true
                           if (!isInitialFilesField && !shouldShowClosureFiles()) {
@@ -714,20 +899,26 @@ const DefectDialog = ({
                                     className={formStyles.hiddenFileInput}
                                     onChange={handleFileChange}
                                     accept={field.accept}
-                                    disabled={!isEditable}
+                                    disabled={!isEditable || uploadingFiles}
                                   />
                                 </label>
-                                {/* Show selected files */}
+
+                                {/* Show newly selected files */}
                                 {currentFiles.length > 0 && (
                                   <div className={formStyles.fileList}>
+                                    <div className={formStyles.fileListHeader}>New files to upload:</div>
                                     {currentFiles.map((file, index) => (
                                       <div key={index} className={formStyles.fileItem}>
                                         <FileText className={formStyles.fileIcon} />
                                         <span className={formStyles.fileName}>{file.name}</span>
+                                        <span className={formStyles.fileSize}>
+                                          ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                                        </span>
                                         <button
-                                          onClick={() => removeFile(index)}
+                                          onClick={() => removeFileHandler(index)} // Use the correct handler here
                                           className={formStyles.fileRemoveButton}
-                                          disabled={!isEditable}
+                                          disabled={!isEditable || uploadingFiles}
+                                          title="Remove file"
                                         >
                                           <X className={formStyles.fileRemoveIcon} />
                                         </button>
@@ -735,16 +926,51 @@ const DefectDialog = ({
                                     ))}
                                   </div>
                                 )}
-                                {/* Show existing files (from defect object) */}
-                                {defect?.[field.dbField]?.length > 0 && (
+
+                                {/* Show existing files (already uploaded) */}
+                                {existingFiles.length > 0 && (
                                   <div className={formStyles.existingFileList}>
                                     <div className={formStyles.existingFilesHeader}>Existing files:</div>
-                                    {defect[field.dbField].map((file, index) => (
-                                      <div key={index} className={formStyles.fileItem}>
+                                    {existingFiles.map((file, index) => (
+                                      <div key={file.id || index} className={formStyles.fileItem}>
                                         <FileText className={formStyles.fileIcon} />
-                                        <span className={formStyles.fileName}>{file.name}</span>
+                                        <span className={formStyles.fileName}>{file.name || file.originalName}</span>
+                                        <span className={formStyles.fileSize}>
+                                          ({((file.size || 0) / 1024 / 1024).toFixed(2)} MB)
+                                        </span>
+                                        <div className={formStyles.fileActions}>
+                                          <button
+                                            onClick={() => handleDownloadFile(file)}
+                                            className={formStyles.fileActionButton}
+                                            title="Download file"
+                                            disabled={!userId}
+                                          >
+                                            <Download size={14} />
+                                          </button>
+                                          {isEditable && (
+                                            <button
+                                              onClick={() => handleDeleteExistingFile(file, field.dbField)}
+                                              className={`${formStyles.fileActionButton} ${formStyles.fileDeleteButton}`}
+                                              title="Delete file"
+                                              disabled={!userId}
+                                            >
+                                              <Trash2 size={14} />
+                                            </button>
+                                          )}
+                                        </div>
                                       </div>
                                     ))}
+                                  </div>
+                                )}
+
+                                {/* Show optimized upload progress */}
+                                {renderUploadProgress()}
+
+                                {/* Enhanced error state for upload failures */}
+                                {Object.values(uploadProgress).some(p => p === -1) && (
+                                  <div className={formStyles.fileUploadError}>
+                                    <AlertCircle size={16} />
+                                    <span>Some files failed to upload. Please check file size and format.</span>
                                   </div>
                                 )}
                               </div>
@@ -752,7 +978,6 @@ const DefectDialog = ({
                           );
 
                         default:
-                          // For text/number inputs (default case)
                           return (
                             <div key={fieldId} className={formStyles.formGroup}>
                               <label htmlFor={fieldId} className={formStyles.formLabel}>
@@ -760,11 +985,11 @@ const DefectDialog = ({
                               </label>
                               <input
                                 id={fieldId}
-                                type={field.type || 'text'} // Default to text if type is not specified
+                                type={field.type || 'text'}
                                 className={formStyles.formInput}
-                                name={field.dbField} // Add name attribute
-                                value={formData?.[field.dbField] || ''} // Use formData
-                                onChange={handleChange} // Use local handleChange
+                                name={field.dbField}
+                                value={formData?.[field.dbField] || ''}
+                                onChange={handleChange}
                                 placeholder={`Enter ${field.label.toLowerCase()}`}
                                 required={field.required}
                                 disabled={!isEditable}
@@ -777,23 +1002,13 @@ const DefectDialog = ({
                   </div>
                 </div>
               ))}
-
-              {/* Upload Progress */}
-              {uploadProgress > 0 && uploadProgress < 100 && (
-                <div className={formStyles.progressBar}>
-                  <div
-                    className={formStyles.progressBarFill}
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-              )}
             </div>
           </DialogBody>
 
           <DialogFooter>
             <DialogButton
               onClick={handleCloseAttempt}
-              disabled={saving}
+              disabled={saving || uploadingFiles}
               variant="cancel"
             >
               Cancel
@@ -801,10 +1016,10 @@ const DefectDialog = ({
             {canSave() && (
               <DialogButton
                 onClick={handleSave}
-                disabled={saving}
+                disabled={saving || uploadingFiles}
                 variant="save"
               >
-                {saving ? 'Saving...' : (isNew ? 'Add Defect' : 'Save Changes')}
+                {saving ? 'Saving...' : uploadingFiles ? 'Uploading...' : (isNew ? 'Add Defect' : 'Save Changes')}
               </DialogButton>
             )}
           </DialogFooter>
@@ -834,8 +1049,8 @@ const DefectDialog = ({
               </DialogButton>
               <DialogButton
                 onClick={handleConfirmedClose}
-                variant="destructive" // Use destructive variant for discard
-                className={formStyles.discardButton} // Apply specific discard button style
+                variant="destructive"
+                className={formStyles.discardButton}
               >
                 Discard Changes
               </DialogButton>
@@ -843,6 +1058,145 @@ const DefectDialog = ({
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Enhanced CSS styles for optimized progress display and error handling */}
+      <style jsx>{`
+        .upload-progress-container {
+          margin: 16px 0;
+          padding: 16px;
+          background: rgba(59, 173, 229, 0.1);
+          border-radius: 8px;
+          border: 1px solid rgba(59, 173, 229, 0.2);
+          backdrop-filter: blur(5px);
+        }
+
+        .upload-progress-container h4 {
+          margin: 0 0 12px 0;
+          color: var(--table-text-color);
+          font-size: 14px;
+          font-weight: 600;
+        }
+
+        .upload-progress-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 8px;
+          padding: 8px;
+          background: rgba(244, 244, 244, 0.05);
+          border-radius: 4px;
+          transition: all 0.3s ease;
+        }
+
+        .upload-progress-item:hover {
+          background: rgba(244, 244, 244, 0.08);
+        }
+
+        .file-name {
+          flex: 1;
+          font-size: 13px;
+          color: var(--table-text-color);
+          font-weight: 500;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 200px;
+        }
+
+        .progress-bar {
+          flex: 2;
+          height: 8px;
+          background: rgba(244, 244, 244, 0.1);
+          border-radius: 4px;
+          overflow: hidden;
+          box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-fill {
+          height: 100%;
+          transition: width 0.3s ease, background-color 0.3s ease;
+          border-radius: 4px;
+          box-shadow: 0 0 4px rgba(59, 173, 229, 0.3);
+        }
+
+        .progress-text {
+          flex: 0 0 60px;
+          text-align: right;
+          font-size: 12px;
+          color: var(--table-muted-text-color);
+          font-weight: 600;
+        }
+
+        /* Enhanced error states */
+        .upload-progress-item .progress-fill[style*="e74c3c"] {
+          box-shadow: 0 0 4px rgba(231, 76, 60, 0.4);
+        }
+
+        .upload-progress-item .progress-text:contains("Failed") {
+          color: #e74c3c;
+        }
+
+        /* Loading animation */
+        @keyframes progressPulse {
+          0% { opacity: 0.6; }
+          50% { opacity: 1; }
+          100% { opacity: 0.6; }
+        }
+
+        .upload-progress-container:has(.progress-fill[style*="width: 0%"]) {
+          animation: progressPulse 2s ease-in-out infinite;
+        }
+
+        /* Success state */
+        .upload-progress-item:has(.progress-text:contains("100%")) {
+          background: rgba(46, 204, 113, 0.1);
+          border: 1px solid rgba(46, 204, 113, 0.2);
+        }
+
+        /* Error state */
+        .upload-progress-item:has(.progress-text:contains("Failed")) {
+          background: rgba(231, 76, 60, 0.1);
+          border: 1px solid rgba(231, 76, 60, 0.2);
+        }
+
+        /* Enhanced file upload error styling */
+        ${formStyles.fileUploadError} {
+          margin-top: 12px;
+          padding: 12px;
+          background: rgba(231, 76, 60, 0.1);
+          border: 1px solid rgba(231, 76, 60, 0.2);
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: #e74c3c;
+          font-size: 13px;
+        }
+
+        /* Responsive design for mobile */
+        @media (max-width: 768px) {
+          .upload-progress-item {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+          }
+
+          .file-name {
+            max-width: none;
+            text-align: center;
+          }
+
+          .progress-bar {
+            order: 2;
+          }
+
+          .progress-text {
+            order: 3;
+            text-align: center;
+            flex: 1;
+          }
+        }
+      `}</style>
     </>
   );
 };

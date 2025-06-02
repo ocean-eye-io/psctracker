@@ -90,7 +90,6 @@ const DefectsDashboard = () => {
       setDefects(data); // Set raw defects from API
       console.log('fetchDefects: Defects state updated with new data.');
 
-
       // Initialize filters with all available options based on the fetched data
       const uniqueStatusesFromData = [...new Set(data.map(d => d['Status']).filter(Boolean))];
       const uniqueCriticalitiesFromData = [...new Set(data.map(d => d.Criticality).filter(Boolean))].filter(c => c !== null && c !== undefined);
@@ -247,7 +246,6 @@ const DefectsDashboard = () => {
     setCurrentDefect({
       id: `temp-${Date.now()}`,
       vessel_id: vessels.length > 0 ? vessels[0].vessel_id : '',
-      
       vessel_name: vessels.length > 0 ? vessels[0].vessel_name : '',
       Equipments: '',
       Description: '',
@@ -284,13 +282,17 @@ const DefectsDashboard = () => {
     }
     try {
       setLoading(true);
-      const isNew = updatedDefect.id?.startsWith('temp-');
+      const isNew = updatedDefect.id?.startsWith('temp-') || !updatedDefect.id;
 
       let savedDefect;
       if (isNew) {
-        savedDefect = { ...updatedDefect, id: undefined };
-        console.log('handleSaveDefect: Attempting to create defect with payload:', savedDefect);
-        savedDefect = await defectService.createDefect(savedDefect, userId);
+        // Remove temp ID for creation
+        const newDefectData = { ...updatedDefect };
+        if (newDefectData.id && newDefectData.id.startsWith('temp-')) {
+          delete newDefectData.id;
+        }
+        console.log('handleSaveDefect: Attempting to create defect with payload:', newDefectData);
+        savedDefect = await defectService.createDefect(newDefectData, userId);
         console.log('handleSaveDefect: Defect created successfully. Returned savedDefect:', savedDefect);
       } else {
         savedDefect = { ...updatedDefect };
@@ -655,6 +657,7 @@ const DefectsDashboard = () => {
         isNew={currentDefect?.id?.startsWith('temp-')}
         permissions={permissions}
         isExternal={false}
+        currentUser={currentUser} // Pass currentUser prop to DefectDialog
       />
     </div>
   );

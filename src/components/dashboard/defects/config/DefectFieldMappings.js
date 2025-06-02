@@ -152,7 +152,8 @@ export const DEFECT_FIELDS = {
       displayOrder: 11,
       width: 'half',
       // MODIFIED: Added optional chaining
-      conditionalRequired: (values) => values?.status === 'CLOSED'
+      // conditionalRequired: (values) => values?.status === 'CLOSED'
+      conditionalDisplay: (values) => values?.Status === 'CLOSED'
     },
     targetDate: {
       id: 'targetDate',
@@ -170,13 +171,13 @@ export const DEFECT_FIELDS = {
       dbField: 'closure_comments',
       type: 'textarea',
       required: false,
-      section: 'closure',
+      section: 'dates',
       displayOrder: 12,
       width: 'full',
       rows: 3,
-      // Already correct with optional chaining
-      conditionalDisplay: (values) => values?.status === 'CLOSED' || values?.['Status (Vessel)'] === 'CLOSED',
-      conditionalRequired: (values) => values?.status === 'CLOSED' || values?.['Status (Vessel)'] === 'CLOSED'
+      
+      conditionalDisplay: (values) => values?.Status === 'CLOSED',
+      
     },
     initialFiles: {
       id: 'initialFiles',
@@ -204,7 +205,7 @@ export const DEFECT_FIELDS = {
       maxSize: 2 * 1024 * 1024, // 2MB
       multiple: true,
       // MODIFIED: Added optional chaining
-      conditionalDisplay: (values) => values?.status === 'CLOSED'
+      conditionalDisplay: (values) => values?.Status === 'CLOSED'
     }
   },
 
@@ -332,7 +333,8 @@ export const DEFECT_FIELDS = {
       label: 'Completed',
       dbField: 'Date Completed',
       priority: 4,
-      type: 'date'
+      type: 'date',
+      //conditionalDisplay: (values) => values?.status === 'CLOSED'
     },
     initialFiles: {
       id: 'initialFiles',
@@ -346,9 +348,9 @@ export const DEFECT_FIELDS = {
       label: 'Closure Comments',
       dbField: 'closure_comments',
       priority: 6,
-      section: 'closure',
+      section: 'dates',
       // MODIFIED: Added optional chaining
-      conditionalDisplay: (values) => values?.status === 'CLOSED'
+      //conditionalDisplay: (values) => values?.status === 'CLOSED'
     },
     completionFiles: {
       id: 'completionFiles',
@@ -357,7 +359,7 @@ export const DEFECT_FIELDS = {
       priority: 7,
       section: 'files',
       // MODIFIED: Added optional chaining
-      conditionalDisplay: (values) => values?.status === 'CLOSED'
+      //conditionalDisplay: (values) => values?.status === 'CLOSED'
     },
     raisedBy: {
       id: 'raisedBy',

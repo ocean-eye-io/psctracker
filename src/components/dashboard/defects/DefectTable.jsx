@@ -1,10 +1,11 @@
-// DefectTable.jsx - Updated for truly floating pagination
+// DefectTable.jsx - Updated with file display and preview functionality
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Table from '../../common/Table/Table';
 import FloatingPagination from './FloatingPagination';
-import { Trash2, FileText, Download, Upload, Plus } from 'lucide-react';
+import { Trash2, FileText, Download, Upload, Plus, Eye, X } from 'lucide-react';
 import { DEFECT_FIELDS } from './config/DefectFieldMappings';
+import fileService from './services/fileService'; // Fixed import path
 import styles from './defect.module.css';
 
 const STATUS_COLORS = {
@@ -20,6 +21,150 @@ const CRITICALITY_COLORS = {
 };
 
 const PER_PAGE = 10;
+
+// File Preview Modal Component
+const FilePreviewModal = ({ file, isOpen, onClose, onDownload, defectId, currentUser }) => {
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (isOpen && file) {
+      loadFilePreview();
+    }
+    
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [isOpen, file]);
+
+  const loadFilePreview = async () => {
+    if (!file || !currentUser?.id || !defectId) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const downloadData = await fileService.getDownloadUrl(defectId, file.id, currentUser.id);
+      
+      // For images, load the actual content for preview
+      if (file.type && file.type.startsWith('image/')) {
+        const response = await fetch(downloadData.downloadUrl);
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        setPreviewUrl(url);
+      }
+    } catch (err) {
+      console.error('Error loading file preview:', err);
+      setError('Failed to load file preview');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      await fileService.downloadFile(defectId, file.id, file.name, currentUser.id);
+    } catch (err) {
+      console.error('Error downloading file:', err);
+      setError('Failed to download file');
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const isImage = file?.type?.startsWith('image/');
+  const isPDF = file?.type === 'application/pdf';
+
+  return (
+    <div className={styles.filePreviewOverlay} onClick={onClose}>
+      <div className={styles.filePreviewModal} onClick={e => e.stopPropagation()}>
+        <div className={styles.filePreviewHeader}>
+          <h3 className={styles.filePreviewTitle}>{file?.name}</h3>
+          <div className={styles.filePreviewActions}>
+            <button
+              onClick={handleDownload}
+              className={styles.filePreviewDownload}
+              title="Download file"
+            >
+              <Download size={16} />
+              Download
+            </button>
+            <button
+              onClick={onClose}
+              className={styles.filePreviewClose}
+              title="Close preview"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+        
+        <div className={styles.filePreviewContent}>
+          {loading && (
+            <div className={styles.filePreviewLoading}>
+              <div className={styles.loadingSpinner}></div>
+              <span>Loading preview...</span>
+            </div>
+          )}
+          
+          {error && (
+            <div className={styles.filePreviewError}>
+              <FileText size={48} />
+              <p>{error}</p>
+              <button onClick={handleDownload} className={styles.downloadButton}>
+                Download File
+              </button>
+            </div>
+          )}
+          
+          {!loading && !error && isImage && previewUrl && (
+            <img
+              src={previewUrl}
+              alt={file.name}
+              className={styles.filePreviewImage}
+            />
+          )}
+          
+          {!loading && !error && isPDF && (
+            <div className={styles.filePreviewPdf}>
+              <FileText size={48} />
+              <p>PDF Preview</p>
+              <p className={styles.filePreviewPdfNote}>
+                Click download to view the full PDF document
+              </p>
+              <button onClick={handleDownload} className={styles.downloadButton}>
+                Download PDF
+              </button>
+            </div>
+          )}
+          
+          {!loading && !error && !isImage && !isPDF && (
+            <div className={styles.filePreviewDocument}>
+              <FileText size={48} />
+              <p>Document Preview</p>
+              <p className={styles.filePreviewDocNote}>
+                {file.name}
+              </p>
+              <button onClick={handleDownload} className={styles.downloadButton}>
+                Download Document
+              </button>
+            </div>
+          )}
+        </div>
+        
+        <div className={styles.filePreviewFooter}>
+          <div className={styles.filePreviewInfo}>
+            <span>Size: {((file?.size || 0) / 1024 / 1024).toFixed(2)} MB</span>
+            <span>Type: {file?.type || 'Unknown'}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const DefectTable = ({
   defects = [],
@@ -44,6 +189,9 @@ const DefectTable = ({
 }) => {
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   const [currentPage, setCurrentPage] = useState(1);
+  const [previewFile, setPreviewFile] = useState(null);
+  const [previewDefectId, setPreviewDefectId] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -72,6 +220,18 @@ const DefectTable = ({
       tableElement.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, []);
+
+  const handleFilePreview = (file, defectId) => {
+    setPreviewFile(file);
+    setPreviewDefectId(defectId);
+    setShowPreview(true);
+  };
+
+  const handleClosePreview = () => {
+    setShowPreview(false);
+    setPreviewFile(null);
+    setPreviewDefectId(null);
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -231,32 +391,43 @@ const DefectTable = ({
       .sort((a, b) => a[1].priority - b[1].priority)
       .filter(([_, field]) => !(field.conditionalDisplay && !field.conditionalDisplay(defect)));
 
-    const FileListCompact = ({ files }) => {
+    const FileListCompact = ({ files, fileType, defectId }) => {
       if (!files?.length) {
         return <span className="text-gray-400 text-xs italic">No files</span>;
       }
       
       return (
         <div className={styles.filesListCompact}>
-          {files.slice(0, 2).map((file, index) => (
-            <div key={index} className={styles.fileItemCompact}>
+          {files.map((file, index) => (
+            <div key={file.id || index} className={styles.fileItemCompact}>
               <FileText className={styles.fileIconCompact} />
-              <span className={styles.fileNameCompact}>{file.name}</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFilePreview(file, defectId);
+                }}
+                className={styles.fileNameButton}
+                title="Click to preview file"
+              >
+                {file.name || file.originalName}
+              </button>
+              <span className={styles.fileSizeCompact}>
+                ({((file.size || 0) / 1024 / 1024).toFixed(2)} MB)
+              </span>
             </div>
           ))}
-          {files.length > 2 && (
-            <div className="text-xs text-gray-400">
-              +{files.length - 2} more
-            </div>
-          )}
         </div>
       );
     };
 
     const renderFieldValue = (fieldId, field, value) => {
-      // Handle file fields
-      if (field.dbField === 'initial_files' || field.dbField === 'completion_files') {
-        return <FileListCompact files={value || []} />;
+      // Handle file fields - Updated to show files with preview functionality
+      if (field.dbField === 'initial_files') {
+        return <FileListCompact files={value || []} fileType="initial" defectId={defect.id} />;
+      }
+
+      if (field.dbField === 'completion_files') {
+        return <FileListCompact files={value || []} fileType="completion" defectId={defect.id} />;
       }
 
       // Handle status with compact styling
@@ -314,7 +485,6 @@ const DefectTable = ({
       if (!value) return '-';
       
       const stringValue = String(value);
-      // Return value with automatic truncation handled by CSS
       return stringValue;
     };
 
@@ -395,7 +565,7 @@ const DefectTable = ({
         </div>
       </div>
 
-      {/* Main table container - No bottom padding needed for truly floating pagination */}
+      {/* Main table container */}
       <div className={styles.responsiveTableContainer}>
         {loading ? (
           <div className={styles.loadingContainer}>
@@ -429,7 +599,7 @@ const DefectTable = ({
         )}
       </div>
 
-      {/* Truly Floating Pagination - Fixed position, small and compact, centered */}
+      {/* Floating Pagination */}
       {totalPages > 1 && !loading && paginatedDefects.length > 0 && (
         <FloatingPagination
           currentPage={currentPage}
@@ -440,6 +610,15 @@ const DefectTable = ({
           position="bottom-center"
         />
       )}
+
+      {/* File Preview Modal */}
+      <FilePreviewModal
+        file={previewFile}
+        isOpen={showPreview}
+        onClose={handleClosePreview}
+        defectId={previewDefectId}
+        currentUser={currentUser}
+      />
     </div>
   );
 };
