@@ -1,14 +1,15 @@
-// src/components/dashboard/defects/DefectDialog.jsx - Phase 2 Enhanced with Optimized Uploads
+// DefectDialog.jsx - Phase 4 Enhanced with Auto-Report Generation on Save/Add
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { Upload, FileText, X, Download, Trash2, AlertCircle } from 'lucide-react';
+import { Upload, FileText, X, Download, Trash2, AlertCircle, RefreshCw } from 'lucide-react';
 import { useToast } from '../../common/ui/ToastContext';
 import { formatDateForInput, formatDateDisplay } from '../../../utils/dateUtils';
 import { DEFECT_FIELDS, FIELD_SECTIONS } from './config/DefectFieldMappings';
-import { generateDefectPDF } from '../../../utils/generateDefectPDF';
-import fileService from './services/fileService'; // Now uses PHASE 2 optimized service
+import fileService from './services/fileService';
+import reportService from './services/reportService'; // PHASE 4: New report service
 import formStyles from '../../common/ui/form.module.css';
 
-// Import the new dialog components
+// Import the dialog components
 import {
   Dialog,
   DialogContent,
@@ -49,13 +50,17 @@ const DefectDialog = ({
   const [uploadProgress, setUploadProgress] = useState({});
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  
+  // PHASE 4: Auto-report generation states
+  const [autoGeneratingReport, setAutoGeneratingReport] = useState(false);
+  const [reportProgress, setReportProgress] = useState(0);
+  const [reportMessage, setReportMessage] = useState('');
 
-  // Get userId from currentUser prop
   const userId = currentUser?.id || currentUser?.userId;
 
   console.log("DefectDialog component rendering. isOpen:", isOpen, "defect:", defect?.id);
 
-  // Initial form data structure - UNCHANGED
+  // Initial form data structure
   const initialFormData = useCallback(() => ({
     id: '',
     vessel_id: '',
@@ -79,7 +84,7 @@ const DefectDialog = ({
   const [formData, setFormData] = useState(initialFormData());
   const [isDirty, setIsDirty] = useState(false);
 
-  // Effect to update internal formData when 'defect' prop changes - UNCHANGED
+  // Effect to update internal formData when 'defect' prop changes
   useEffect(() => {
     console.log("DefectDialog useEffect triggered. isOpen:", isOpen, "defect:", defect?.id);
     if (isOpen && defect) {
@@ -115,6 +120,11 @@ const DefectDialog = ({
       setUploadProgress({});
       setIsDirty(false);
       setUploadingFiles(false);
+      
+      // PHASE 4: Reset report generation states
+      setAutoGeneratingReport(false);
+      setReportProgress(0);
+      setReportMessage('');
     } else if (!isOpen) {
       console.log("DefectDialog: Resetting state on close.");
       setFormData(initialFormData());
@@ -124,10 +134,15 @@ const DefectDialog = ({
       setShowConfirmClose(false);
       setIsDirty(false);
       setUploadingFiles(false);
+      
+      // PHASE 4: Reset report generation states
+      setAutoGeneratingReport(false);
+      setReportProgress(0);
+      setReportMessage('');
     }
   }, [isOpen, defect, initialFormData]);
 
-  // Handle form field changes - UNCHANGED
+  // Handle form field changes
   const handleChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
 
@@ -147,12 +162,12 @@ const DefectDialog = ({
     setIsDirty(true);
   }, [vessels]);
 
-  // Function to check if field is visible - UNCHANGED
+  // Function to check if field is visible
   const isFieldVisible = useCallback((fieldId) => {
     return true;
   }, []);
 
-  // Function to handle silent mode change - UNCHANGED
+  // Function to handle silent mode change
   const handleSilentModeChange = async (checked) => {
     setFormData(prev => ({ ...prev, external_visibility: !checked }));
     setIsDirty(true);
@@ -165,12 +180,12 @@ const DefectDialog = ({
     }
   };
 
-  // Function to check if field is editable - UNCHANGED
+  // Function to check if field is editable
   const isFieldEditable = useCallback((fieldId) => {
     return true;
   }, []);
 
-  // Function to get visible fields from section - UNCHANGED
+  // Function to get visible fields from section
   const getVisibleFields = useCallback(() => {
     const allFields = Object.entries(DEFECT_FIELDS.DIALOG);
     return allFields
@@ -184,16 +199,16 @@ const DefectDialog = ({
       .sort((a, b) => a[1].displayOrder - b[1].displayOrder);
   }, [formData, isFieldVisible]);
 
-  // Function to check if save should be enabled - UNCHANGED
+  // Function to check if save should be enabled
   const canSave = useCallback(() => {
     return true;
   }, []);
 
-  // Handle dialog close attempt - UNCHANGED
+  // Handle dialog close attempt
   const handleCloseAttempt = () => {
     console.log("DefectDialog: handleCloseAttempt called.");
-    if (isDirty || initialFiles.length > 0 || closureFiles.length > 0) {
-      console.log("DefectDialog: Unsaved changes detected, showing confirmation.");
+    if (isDirty || initialFiles.length > 0 || closureFiles.length > 0 || autoGeneratingReport) {
+      console.log("DefectDialog: Unsaved changes or report generation in progress, showing confirmation.");
       setShowConfirmClose(true);
     } else {
       console.log("DefectDialog: No unsaved changes, closing directly.");
@@ -201,20 +216,28 @@ const DefectDialog = ({
     }
   };
 
-  // Handle confirmed close - UNCHANGED
+  // Handle confirmed close
   const handleConfirmedClose = () => {
     console.log("DefectDialog: Confirmed close, proceeding with onClose.");
     setShowConfirmClose(false);
+    
+    // PHASE 4: Cancel auto-report generation if in progress
+    if (autoGeneratingReport) {
+      setAutoGeneratingReport(false);
+      setReportProgress(0);
+      setReportMessage('');
+    }
+    
     onClose();
   };
 
-  // Cancel close attempt - UNCHANGED
+  // Cancel close attempt
   const handleCancelClose = () => {
     console.log("DefectDialog: Cancelled close.");
     setShowConfirmClose(false);
   };
 
-  // Validation functions - UNCHANGED
+  // Validation functions
   const validateDefect = (defectData) => {
     if (defectData['Date Completed'] && defectData['Date Reported']) {
       const closureDate = new Date(defectData['Date Completed']);
@@ -302,7 +325,7 @@ const DefectDialog = ({
     return true;
   };
 
-  // PHASE 2 ENHANCED: Optimized file upload with automatic strategy selection
+  // File upload with optimization
   const handleFileUpload = async (files, uploadType, defectId) => {
     if (!files || files.length === 0) return [];
 
@@ -310,11 +333,10 @@ const DefectDialog = ({
     setUploadProgress({});
 
     try {
-      console.log(`Starting PHASE 2 optimized upload of ${files.length} ${uploadType} files`);
+      console.log(`Starting Phase 2 optimized upload of ${files.length} ${uploadType} files`);
       console.log('Current defect ID (passed):', defectId);
       console.log('Files to upload:', files);
 
-      // Parameter validation - UNCHANGED
       if (!defectId || defectId.startsWith('temp-')) {
         throw new Error('Cannot upload files: Invalid or temporary defect ID. Please save the defect first.');
       }
@@ -323,32 +345,27 @@ const DefectDialog = ({
         throw new Error('Cannot upload files: User ID is required');
       }
 
-      // PHASE 2 ENHANCEMENT: Use new optimized upload method with automatic strategy selection
-      console.log('Using PHASE 2 optimized fileService.uploadFiles with smart strategy selection');
+      console.log('Using Phase 2 optimized fileService.uploadFiles with smart strategy selection');
       
       const uploadedFiles = await fileService.uploadFiles(
-        Array.from(files), // Ensure it's an array, not FileList
-        defectId,          // Correct defect ID
-        uploadType,        // 'initial' or 'completion'
-        userId,           // User ID
+        Array.from(files),
+        defectId,
+        uploadType,
+        userId,
         (progress, message, fileIndex) => {
-          // PHASE 2 ENHANCED: Better progress tracking for different strategies
           if (typeof fileIndex === 'number' && files[fileIndex]) {
-            // Individual file progress (sequential or detailed parallel)
             const fileName = files[fileIndex]?.name || `File ${fileIndex + 1}`;
             setUploadProgress(prev => ({
               ...prev,
               [fileName]: progress
             }));
           } else if (message && message.includes('Uploading')) {
-            // General progress message from parallel uploads
             const fileName = message.match(/Uploading (.+)\.\.\.$/)?.[1] || 'Unknown file';
             setUploadProgress(prev => ({
               ...prev,
               [fileName]: progress
             }));
           } else {
-            // Overall progress
             setUploadProgress(prev => ({
               ...prev,
               '_overall': progress
@@ -357,7 +374,7 @@ const DefectDialog = ({
         }
       );
 
-      console.log(`PHASE 2: Successfully uploaded ${uploadedFiles.length} files using optimized strategy`);
+      console.log(`Phase 2: Successfully uploaded ${uploadedFiles.length} files using optimized strategy`);
 
       toast({
         title: "Upload Successful",
@@ -367,9 +384,8 @@ const DefectDialog = ({
       return uploadedFiles;
 
     } catch (error) {
-      console.error('PHASE 2: Error uploading files:', error);
+      console.error('Phase 2: Error uploading files:', error);
 
-      // Enhanced error handling - UNCHANGED
       if (error.message.includes('CORS') || error.message.includes('Network Error')) {
         toast({
           title: "Upload Configuration Issue",
@@ -391,7 +407,7 @@ const DefectDialog = ({
     }
   };
 
-  // File handling functions - UNCHANGED
+  // File handling functions
   const handleInitialFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     const validFiles = selectedFiles.filter(validateFile);
@@ -416,7 +432,7 @@ const DefectDialog = ({
     setIsDirty(true);
   };
 
-  // Download and delete handlers - UNCHANGED (uses existing fileService methods)
+  // Download and delete handlers
   const handleDownloadFile = async (file) => {
     if (!userId || !formData.id) {
       toast({
@@ -477,10 +493,74 @@ const DefectDialog = ({
     }
   };
 
-  // PHASE 2 ENHANCED: Save handler with optimized file upload flow
+  // PHASE 4: Auto-generate report after successful save
+  const autoGenerateReport = async (savedDefectData, wasNewDefect) => {
+    console.log(`PHASE 4: Starting auto-report generation for ${wasNewDefect ? 'new' : 'updated'} defect ${savedDefectData.id}`);
+    
+    setAutoGeneratingReport(true);
+    setReportProgress(0);
+    setReportMessage('Preparing report generation...');
+
+    try {
+      // Small delay to ensure UI updates
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setReportMessage('Generating comprehensive report...');
+      setReportProgress(20);
+
+      // PHASE 4: Use auto-generation method (no download, just create/update)
+      const reportResult = await reportService.autoGenerateReportOnSave(
+        savedDefectData,
+        userId,
+        wasNewDefect
+      );
+
+      setReportProgress(100);
+      setReportMessage('Report generation complete!');
+
+      console.log('PHASE 4: Auto-report generation result:', reportResult);
+
+      // Show success message
+      if (reportResult.success) {
+        toast({
+          title: "Defect Saved Successfully",
+          description: `${reportResult.message}. Use "Generate Report" button to download.`,
+        });
+      } else {
+        // Report generation failed, but defect save succeeded
+        toast({
+          title: "Defect Saved",
+          description: `${reportResult.message}. You can try generating the report manually later.`,
+          variant: "warning",
+        });
+      }
+
+      // Keep auto-generation indicator for a moment
+      setTimeout(() => {
+        setAutoGeneratingReport(false);
+        setReportProgress(0);
+        setReportMessage('');
+      }, 1500);
+
+    } catch (error) {
+      console.error('PHASE 4: Error in auto-report generation:', error);
+      
+      setAutoGeneratingReport(false);
+      setReportProgress(0);
+      setReportMessage('');
+
+      // Don't show error for auto-generation failure - defect save was successful
+      toast({
+        title: "Defect Saved",
+        description: "Defect saved successfully. Report generation can be done manually later.",
+      });
+    }
+  };
+
+  // PHASE 4: Enhanced Save handler with auto-report generation
   const handleSave = async () => {
     try {
-      console.log("DefectDialog: Starting PHASE 2 optimized save operation...");
+      console.log("DefectDialog: Starting PHASE 4 enhanced save operation...");
       setSaving(true);
       setUploadProgress({});
 
@@ -495,16 +575,16 @@ const DefectDialog = ({
         return;
       }
 
-      // File upload logic - SAME LOGIC, now using PHASE 2 optimized uploads
+      // File upload logic - same as before
       const hasNewFiles = initialFiles.length > 0 || closureFiles.length > 0;
       let uploadedInitialFiles = [];
       let uploadedClosureFiles = [];
       let defectToUse = updatedDefectData;
       let actualDefectId = defectToUse.id;
 
-      // For new defects with files, create defect first - UNCHANGED LOGIC
+      // For new defects with files, create defect first
       if (isNew && hasNewFiles) {
-        console.log("DefectDialog: Creating defect first to get ID for PHASE 2 optimized file upload...");
+        console.log("DefectDialog: Creating defect first to get ID for file upload...");
         try {
           const tempDefectData = {
             ...updatedDefectData,
@@ -517,29 +597,29 @@ const DefectDialog = ({
           actualDefectId = createdDefect?.id || createdDefect;
           defectToUse = { ...updatedDefectData, id: actualDefectId };
 
-          console.log("DefectDialog: Defect created with ID for PHASE 2 upload:", actualDefectId);
+          console.log("DefectDialog: Defect created with ID:", actualDefectId);
           setFormData(prev => ({ ...prev, id: actualDefectId }));
 
         } catch (saveError) {
-          console.error("DefectDialog: Error creating defect for PHASE 2 file upload:", saveError);
+          console.error("DefectDialog: Error creating defect for file upload:", saveError);
           throw saveError;
         }
       }
 
-      // PHASE 2 ENHANCED: Upload files using optimized strategy
+      // Upload files
       if (initialFiles.length > 0 && actualDefectId && !actualDefectId.startsWith('temp-')) {
-        console.log(`DefectDialog: PHASE 2 uploading ${initialFiles.length} initial files...`);
+        console.log(`DefectDialog: Uploading ${initialFiles.length} initial files...`);
         uploadedInitialFiles = await handleFileUpload(initialFiles, 'initial', actualDefectId);
-        console.log("DefectDialog: PHASE 2 initial files uploaded successfully");
+        console.log("DefectDialog: Initial files uploaded successfully");
       }
 
       if (closureFiles.length > 0 && defectToUse['Status'] === 'CLOSED' && actualDefectId && !actualDefectId.startsWith('temp-')) {
-        console.log(`DefectDialog: PHASE 2 uploading ${closureFiles.length} closure files...`);
+        console.log(`DefectDialog: Uploading ${closureFiles.length} closure files...`);
         uploadedClosureFiles = await handleFileUpload(closureFiles, 'completion', actualDefectId);
-        console.log("DefectDialog: PHASE 2 closure files uploaded successfully");
+        console.log("DefectDialog: Closure files uploaded successfully");
       }
 
-      // Final save with file metadata - UNCHANGED LOGIC
+      // Final save with file metadata
       let savedDefect;
       if (uploadedInitialFiles.length > 0 || uploadedClosureFiles.length > 0) {
         const finalDefect = {
@@ -556,12 +636,12 @@ const DefectDialog = ({
           target_date: defectToUse.target_date || null
         };
 
-        console.log("DefectDialog: Updating defect with PHASE 2 uploaded file metadata...");
+        console.log("DefectDialog: Updating defect with uploaded file metadata...");
         try {
           savedDefect = await onSave(finalDefect);
-          console.log("DefectDialog: Defect updated with PHASE 2 files successfully:", savedDefect?.id);
+          console.log("DefectDialog: Defect updated with files successfully:", savedDefect?.id);
         } catch (saveError) {
-          console.error("DefectDialog: Error updating defect with PHASE 2 files:", saveError);
+          console.error("DefectDialog: Error updating defect with files:", saveError);
           throw saveError;
         }
       } else {
@@ -583,75 +663,33 @@ const DefectDialog = ({
         }
       }
 
-      // PDF generation - UNCHANGED (kept as placeholder)
-      if (savedDefect && savedDefect.id) {
-        console.log("DefectDialog: Starting PDF generation process for defect:", savedDefect.id);
-
-        try {
-          const pdfPath = `placeholder/defect-reports/${savedDefect.id}.pdf`;
-          console.log("DefectDialog: PDF will be saved to (placeholder):", pdfPath);
-
-          const fileSignedUrls = {};
-          const filePublicUrls = {};
-
-          (savedDefect.initial_files || []).forEach(f => {
-            if (f.url) filePublicUrls[f.path || f.s3Key] = f.url;
-          });
-          (savedDefect.completion_files || []).forEach(f => {
-            if (f.url) filePublicUrls[f.path || f.s3Key] = f.url;
-          });
-
-          console.log("DefectDialog: Calling generateDefectPDF function with (placeholder)");
-
-          let pdfBlob;
-          try {
-            pdfBlob = await generateDefectPDF(
-              {
-                ...savedDefect,
-                vessel_name: vessels.find(v => v.vessel_id === savedDefect.vessel_id)?.vessel_name || 'Unknown Vessel'
-              },
-              fileSignedUrls,
-              filePublicUrls
-            );
-
-            console.log(`DefectDialog: PDF generated successfully (placeholder), size: ${pdfBlob?.size || 0} bytes`);
-
-            if (!pdfBlob || pdfBlob.size === 0) {
-              throw new Error('Generated PDF is empty or invalid (placeholder)');
-            }
-          } catch (pdfGenError) {
-            console.error("DefectDialog: Error generating PDF (placeholder):", pdfGenError);
-            throw pdfGenError;
-          }
-
-          await new Promise(resolve => setTimeout(resolve, 500));
-          console.log("DefectDialog: PDF uploaded successfully (placeholder)");
-
-        } catch (pdfError) {
-          console.error("DefectDialog: PDF generation or upload failed (placeholder):", pdfError);
-          toast({
-            title: "Warning",
-            description: "Defect saved, but PDF report generation failed (placeholder).",
-            variant: "destructive",
-          });
-        }
-      }
-
-      // Clear file selections and finish - UNCHANGED
+      // Clear file selections
       setInitialFiles([]);
       setClosureFiles([]);
       setUploadProgress({});
       setIsDirty(false);
 
-      toast({
-        title: "Success",
-        description: isNew ? "Defect added successfully with PHASE 2 optimized uploads" : "Changes saved successfully with PHASE 2 optimized uploads",
-      });
+      // PHASE 4: Auto-generate report after successful save
+      if (savedDefect && savedDefect.id) {
+        console.log("PHASE 4: Starting auto-report generation...");
+        
+        // Don't await this - let it run in background
+        autoGenerateReport(savedDefect, isNew).catch(error => {
+          console.error('PHASE 4: Background auto-report generation failed:', error);
+        });
+      } else {
+        // Manual success message if no auto-report generation
+        toast({
+          title: "Success",
+          description: isNew ? "Defect added successfully" : "Changes saved successfully",
+        });
+      }
 
+      // Close dialog after successful save (auto-report runs in background)
       onClose();
 
     } catch (error) {
-      console.error("DefectDialog: Error in PHASE 2 optimized handleSave:", error);
+      console.error("DefectDialog: Error in PHASE 4 enhanced handleSave:", error);
       toast({
         title: "Error",
         description: "Failed to save defect. Please try again.",
@@ -663,12 +701,12 @@ const DefectDialog = ({
     }
   };
 
-  // Check if closure file upload should be displayed - UNCHANGED
+  // Check if closure file upload should be displayed
   const shouldShowClosureFiles = () => {
     return formData && (formData['Status'] === 'CLOSED' || formData['Status (Vessel)'] === 'CLOSED');
   };
 
-  // Group fields by section - UNCHANGED
+  // Group fields by section
   const groupedFields = getVisibleFields().reduce((acc, [fieldId, field]) => {
     const sectionId = field.section || 'basic';
     if (!acc[sectionId]) {
@@ -687,13 +725,13 @@ const DefectDialog = ({
       return groupedFields[sectionId] && groupedFields[sectionId].length > 0;
     });
 
-  // PHASE 2 ENHANCED: Upload progress with better strategy feedback
+  // Upload progress rendering
   const renderUploadProgress = () => {
     if (!uploadingFiles || Object.keys(uploadProgress).length === 0) return null;
 
     return (
       <div className="upload-progress-container">
-        <h4>PHASE 2 Optimized Upload in Progress...</h4>
+        <h4>Phase 2 Optimized Upload in Progress...</h4>
         {Object.entries(uploadProgress).map(([fileName, progress]) => {
           if (fileName === '_overall') {
             return (
@@ -734,13 +772,43 @@ const DefectDialog = ({
           );
         })}
         <div className="upload-strategy-info">
-          <small>Using PHASE 2 smart upload strategy for optimal performance</small>
+          <small>Using Phase 2 smart upload strategy for optimal performance</small>
         </div>
       </div>
     );
   };
 
-  // ALL UI RENDERING REMAINS EXACTLY THE SAME - NO CHANGES TO USER INTERFACE
+  // PHASE 4: Auto-report generation progress rendering
+  const renderAutoReportProgress = () => {
+    if (!autoGeneratingReport) return null;
+
+    return (
+      <div className="auto-report-progress-container">
+        <div className="auto-report-progress-header">
+          <RefreshCw size={16} className="animate-spin" />
+          <h4>Generating Report...</h4>
+        </div>
+        <div className="auto-report-progress-content">
+          <div className="progress-bar">
+            <div
+              className="progress-fill"
+              style={{
+                width: `${reportProgress}%`,
+                backgroundColor: '#2ECC71'
+              }}
+            />
+          </div>
+          <div className="progress-text">
+            {reportProgress}% - {reportMessage}
+          </div>
+        </div>
+        <div className="auto-report-progress-note">
+          <small>Report will be available for download after completion</small>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       {/* Main Dialog */}
@@ -763,12 +831,15 @@ const DefectDialog = ({
               {isNew ? 'Add New Defect' : 'Edit Defect'}
             </DialogTitle>
             <DialogDescription id="dialog-description">
-              {isNew ? 'Create a new defect record' : 'Edit existing defect details'}
+              {isNew ? 'Create a new defect record with auto-report generation' : 'Edit existing defect details with report update'}
             </DialogDescription>
           </DialogHeader>
 
           <DialogBody>
             <div className={formStyles.formContainer}>
+              {/* PHASE 4: Auto-report generation progress */}
+              {renderAutoReportProgress()}
+              
               {sortedSections.map(([sectionId, section]) => (
                 <div key={sectionId} className={formStyles.formSection}>
                   <h3 className={formStyles.sectionTitle}>
@@ -945,7 +1016,7 @@ const DefectDialog = ({
                                   </div>
                                 )}
 
-                                {/* Show existing files (already uploaded) */}
+                                {/* Show existing files */}
                                 {existingFiles.length > 0 && (
                                   <div className={formStyles.existingFileList}>
                                     <div className={formStyles.existingFilesHeader}>Existing files:</div>
@@ -981,7 +1052,7 @@ const DefectDialog = ({
                                   </div>
                                 )}
 
-                                {/* Show PHASE 2 optimized upload progress */}
+                                {/* Show upload progress */}
                                 {renderUploadProgress()}
 
                                 {/* Enhanced error state for upload failures */}
@@ -1026,7 +1097,7 @@ const DefectDialog = ({
           <DialogFooter>
             <DialogButton
               onClick={handleCloseAttempt}
-              disabled={saving || uploadingFiles}
+              disabled={saving || uploadingFiles || autoGeneratingReport}
               variant="cancel"
             >
               Cancel
@@ -1034,17 +1105,20 @@ const DefectDialog = ({
             {canSave() && (
               <DialogButton
                 onClick={handleSave}
-                disabled={saving || uploadingFiles}
+                disabled={saving || uploadingFiles || autoGeneratingReport}
                 variant="save"
               >
-                {saving ? 'Saving...' : uploadingFiles ? 'Uploading...' : (isNew ? 'Add Defect' : 'Save Changes')}
+                {saving ? 'Saving...' : 
+                 uploadingFiles ? 'Uploading...' : 
+                 autoGeneratingReport ? 'Generating Report...' :
+                 (isNew ? 'Add Defect' : 'Save Changes')}
               </DialogButton>
             )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Confirmation Dialog - UNCHANGED */}
+      {/* Confirmation Dialog */}
       {showConfirmClose && (
         <Dialog open={showConfirmClose} onOpenChange={handleCancelClose}>
           <DialogContent>
@@ -1055,7 +1129,10 @@ const DefectDialog = ({
             </DialogHeader>
             <DialogBody>
               <p className={formStyles.confirmationText}>
-                You have unsaved changes. Are you sure you want to close this form and discard your changes?
+                {autoGeneratingReport 
+                  ? 'Report generation is in progress. Are you sure you want to close and cancel the operation?'
+                  : 'You have unsaved changes. Are you sure you want to close this form and discard your changes?'
+                }
               </p>
             </DialogBody>
             <DialogFooter>
@@ -1070,15 +1147,16 @@ const DefectDialog = ({
                 variant="destructive"
                 className={formStyles.discardButton}
               >
-                Discard Changes
+                {autoGeneratingReport ? 'Cancel & Close' : 'Discard Changes'}
               </DialogButton>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
 
-      {/* PHASE 2 ENHANCED: CSS styles with optimized progress display */}
+      {/* PHASE 4: Enhanced CSS styles */}
       <style jsx>{`
+        /* Upload progress styles - same as before */
         .upload-progress-container {
           margin: 16px 0;
           padding: 16px;
@@ -1110,10 +1188,6 @@ const DefectDialog = ({
           background: rgba(59, 173, 229, 0.15);
           border: 1px solid rgba(59, 173, 229, 0.3);
           font-weight: 600;
-        }
-
-        .upload-progress-item:hover {
-          background: rgba(244, 244, 244, 0.08);
         }
 
         .file-name {
@@ -1165,6 +1239,70 @@ const DefectDialog = ({
           font-weight: 500;
         }
 
+        /* PHASE 4: Auto-report generation progress styles */
+        .auto-report-progress-container {
+          margin: 16px 0;
+          padding: 16px;
+          background: rgba(46, 204, 113, 0.1);
+          border-radius: 8px;
+          border: 1px solid rgba(46, 204, 113, 0.2);
+          backdrop-filter: blur(5px);
+          position: relative;
+        }
+
+        .auto-report-progress-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 12px;
+          color: #2ECC71;
+        }
+
+        .auto-report-progress-header h4 {
+          margin: 0;
+          font-size: 14px;
+          font-weight: 600;
+        }
+
+        .auto-report-progress-content {
+          margin-bottom: 8px;
+        }
+
+        .auto-report-progress-content .progress-bar {
+          height: 10px;
+          background: rgba(244, 244, 244, 0.1);
+          border-radius: 5px;
+          overflow: hidden;
+          margin-bottom: 8px;
+          box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .auto-report-progress-content .progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #2ECC71, #27AE60);
+          transition: width 0.3s ease;
+          border-radius: 5px;
+          box-shadow: 0 0 6px rgba(46, 204, 113, 0.4);
+        }
+
+        .auto-report-progress-content .progress-text {
+          color: #2ECC71;
+          font-size: 13px;
+          font-weight: 500;
+          text-align: center;
+        }
+
+        .auto-report-progress-note {
+          text-align: center;
+          margin-top: 8px;
+        }
+
+        .auto-report-progress-note small {
+          color: rgba(46, 204, 113, 0.8);
+          font-style: italic;
+          font-size: 12px;
+        }
+
         /* Enhanced error states */
         .upload-progress-item .progress-fill[style*="e74c3c"] {
           box-shadow: 0 0 4px rgba(231, 76, 60, 0.4);
@@ -1181,6 +1319,10 @@ const DefectDialog = ({
           animation: progressPulse 2s ease-in-out infinite;
         }
 
+        .auto-report-progress-container {
+          animation: progressPulse 2s ease-in-out infinite;
+        }
+
         /* Success state */
         .upload-progress-item:has(.progress-text:contains("100%")) {
           background: rgba(46, 204, 113, 0.1);
@@ -1194,7 +1336,7 @@ const DefectDialog = ({
         }
 
         /* Enhanced file upload error styling */
-        ${formStyles.fileUploadError} {
+        .file-upload-error {
           margin-top: 12px;
           padding: 12px;
           background: rgba(231, 76, 60, 0.1);
@@ -1207,9 +1349,20 @@ const DefectDialog = ({
           font-size: 13px;
         }
 
+        /* Spin animation for refresh icon */
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+
         /* Responsive design for mobile */
         @media (max-width: 768px) {
-          .upload-progress-item {
+          .upload-progress-item,
+          .auto-report-progress-container {
             flex-direction: column;
             align-items: stretch;
             gap: 8px;
@@ -1229,6 +1382,23 @@ const DefectDialog = ({
             text-align: center;
             flex: 1;
           }
+
+          .auto-report-progress-header {
+            justify-content: center;
+          }
+        }
+
+        /* Enhanced dialog overlay for report generation */
+        .dialog-content:has(.auto-report-progress-container) {
+          border: 2px solid rgba(46, 204, 113, 0.3);
+          box-shadow: 0 0 20px rgba(46, 204, 113, 0.2);
+        }
+
+        /* Disable pointer events during auto-report generation */
+        .form-container:has(.auto-report-progress-container) .form-section:not(:has(.auto-report-progress-container)) {
+          pointer-events: none;
+          opacity: 0.7;
+          filter: blur(1px);
         }
       `}</style>
     </>

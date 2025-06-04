@@ -1,11 +1,13 @@
-// DefectTable.jsx - Updated with file display and preview functionality
+// DefectTable.jsx - Phase 4 Enhanced with Comprehensive Report Management
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Table from '../../common/Table/Table';
 import FloatingPagination from './FloatingPagination';
-import { Trash2, FileText, Download, Upload, Plus, Eye, X } from 'lucide-react';
+import { Trash2, FileText, Download, Upload, Plus, Eye, X, RefreshCw } from 'lucide-react';
 import { DEFECT_FIELDS } from './config/DefectFieldMappings';
-import fileService from './services/fileService'; // Fixed import path
+import fileService from './services/fileService';
+import reportService from './services/reportService'; // PHASE 4: New report service
+import { useToast } from '../../common/ui/ToastContext';
 import styles from './defect.module.css';
 
 const STATUS_COLORS = {
@@ -22,7 +24,43 @@ const CRITICALITY_COLORS = {
 
 const PER_PAGE = 10;
 
-// File Preview Modal Component
+// PHASE 4: Report Generation Progress Modal
+const ReportProgressModal = ({ isOpen, onClose, progress, message, defectId }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className={styles.reportProgressOverlay}>
+      <div className={styles.reportProgressModal}>
+        <div className={styles.reportProgressHeader}>
+          <h3>Generating Report</h3>
+          <span className={styles.reportProgressDefectId}>Defect ID: {defectId}</span>
+        </div>
+        
+        <div className={styles.reportProgressContent}>
+          <div className={styles.reportProgressBar}>
+            <div 
+              className={styles.reportProgressFill}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className={styles.reportProgressText}>
+            {progress}% - {message}
+          </div>
+        </div>
+        
+        {progress >= 100 && (
+          <div className={styles.reportProgressFooter}>
+            <button onClick={onClose} className={styles.reportProgressClose}>
+              Close
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// File Preview Modal Component - UNCHANGED
 const FilePreviewModal = ({ file, isOpen, onClose, onDownload, defectId, currentUser }) => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -47,9 +85,8 @@ const FilePreviewModal = ({ file, isOpen, onClose, onDownload, defectId, current
     setError(null);
 
     try {
-      const downloadData = await fileService.getDownloadUrl(defectId, file.id, currentUser.id);
+      const downloadData = await fileService.getDownloadUrl(defectId, file.id, currentUser.userId);
       
-      // For images, load the actual content for preview
       if (file.type && file.type.startsWith('image/')) {
         const response = await fetch(downloadData.downloadUrl);
         const blob = await response.blob();
@@ -66,7 +103,7 @@ const FilePreviewModal = ({ file, isOpen, onClose, onDownload, defectId, current
 
   const handleDownload = async () => {
     try {
-      await fileService.downloadFile(defectId, file.id, file.name, currentUser.id);
+      await fileService.downloadFile(defectId, file.id, file.name, currentUser.userId);
     } catch (err) {
       console.error('Error downloading file:', err);
       setError('Failed to download file');
@@ -84,19 +121,11 @@ const FilePreviewModal = ({ file, isOpen, onClose, onDownload, defectId, current
         <div className={styles.filePreviewHeader}>
           <h3 className={styles.filePreviewTitle}>{file?.name}</h3>
           <div className={styles.filePreviewActions}>
-            <button
-              onClick={handleDownload}
-              className={styles.filePreviewDownload}
-              title="Download file"
-            >
+            <button onClick={handleDownload} className={styles.filePreviewDownload} title="Download file">
               <Download size={16} />
               Download
             </button>
-            <button
-              onClick={onClose}
-              className={styles.filePreviewClose}
-              title="Close preview"
-            >
+            <button onClick={onClose} className={styles.filePreviewClose} title="Close preview">
               <X size={16} />
             </button>
           </div>
@@ -121,11 +150,7 @@ const FilePreviewModal = ({ file, isOpen, onClose, onDownload, defectId, current
           )}
           
           {!loading && !error && isImage && previewUrl && (
-            <img
-              src={previewUrl}
-              alt={file.name}
-              className={styles.filePreviewImage}
-            />
+            <img src={previewUrl} alt={file.name} className={styles.filePreviewImage} />
           )}
           
           {!loading && !error && isPDF && (
@@ -145,9 +170,7 @@ const FilePreviewModal = ({ file, isOpen, onClose, onDownload, defectId, current
             <div className={styles.filePreviewDocument}>
               <FileText size={48} />
               <p>Document Preview</p>
-              <p className={styles.filePreviewDocNote}>
-                {file.name}
-              </p>
+              <p className={styles.filePreviewDocNote}>{file.name}</p>
               <button onClick={handleDownload} className={styles.downloadButton}>
                 Download Document
               </button>
@@ -187,11 +210,18 @@ const DefectTable = ({
   onAddDefect,
   removeFilterBar = false
 }) => {
+  const { toast } = useToast();
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   const [currentPage, setCurrentPage] = useState(1);
   const [previewFile, setPreviewFile] = useState(null);
   const [previewDefectId, setPreviewDefectId] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
+  
+  // PHASE 4: Report generation states
+  const [reportProgress, setReportProgress] = useState(0);
+  const [reportMessage, setReportMessage] = useState('');
+  const [showReportProgress, setShowReportProgress] = useState(false);
+  const [generatingReportForDefect, setGeneratingReportForDefect] = useState(null);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -214,7 +244,6 @@ const DefectTable = ({
   const handlePageChange = useCallback((pageNumber) => {
     setCurrentPage(pageNumber);
     
-    // Smooth scroll to top of table
     const tableElement = document.querySelector(`.${styles.responsiveTableContainer}`);
     if (tableElement) {
       tableElement.scrollTo({ top: 0, behavior: 'smooth' });
@@ -231,6 +260,80 @@ const DefectTable = ({
     setShowPreview(false);
     setPreviewFile(null);
     setPreviewDefectId(null);
+  };
+
+  // PHASE 4: Enhanced Report Generation Handler
+  const handleGenerateReport = async (defect) => {
+    console.log('PHASE 4: Generate report button clicked for defect:', defect.id);
+    
+    if (!currentUser?.userId) {
+      toast({
+        title: "Error",
+        description: "User information not available. Please refresh and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Show progress modal
+    setGeneratingReportForDefect(defect.id);
+    setShowReportProgress(true);
+    setReportProgress(0);
+    setReportMessage('Initializing report generation...');
+
+    try {
+      // PHASE 4: Use comprehensive report generation with progress tracking
+      const result = await reportService.generateAndDownloadReport(
+        defect.id,
+        currentUser.userId,
+        defect, // Pass defect data for filename generation
+        (progress, message) => {
+          setReportProgress(progress);
+          setReportMessage(message);
+        }
+      );
+
+      console.log('PHASE 4: Report generation completed:', result);
+
+      // Success feedback
+      toast({
+        title: "Report Generated Successfully",
+        description: result.message || 'Report has been generated and downloaded.',
+      });
+
+      // Keep progress modal open briefly to show completion
+      setTimeout(() => {
+        setShowReportProgress(false);
+        setGeneratingReportForDefect(null);
+        setReportProgress(0);
+        setReportMessage('');
+      }, 2000);
+
+    } catch (error) {
+      console.error('PHASE 4: Error generating report:', error);
+      
+      setShowReportProgress(false);
+      setGeneratingReportForDefect(null);
+      setReportProgress(0);
+      setReportMessage('');
+
+      // Enhanced error handling
+      let errorMessage = 'Failed to generate report. Please try again.';
+      
+      if (error.message.includes('not found')) {
+        errorMessage = 'Defect not found or you do not have access to it.';
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.message.includes('timeout')) {
+        errorMessage = 'Report generation timed out. Please try again.';
+      }
+
+      toast({
+        title: "Report Generation Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
   };
 
   const formatDate = (dateString) => {
@@ -354,10 +457,27 @@ const DefectTable = ({
 
   const actions = useMemo(() => ({
     label: 'Actions',
-    width: '80px',
-    minWidth: '80px',
+    width: '120px',
+    minWidth: '120px',
     content: (defect) => (
-      <div className="flex justify-center gap-2">
+      <div className="flex justify-center gap-1">
+        {/* PHASE 4: Generate Report Button */}
+        <button
+          onClick={e => { 
+            e.stopPropagation(); 
+            handleGenerateReport(defect); 
+          }}
+          className="p-2 rounded-md bg-green-500/10 hover:bg-green-500/20 transition-all focus:outline-none focus:ring-2 focus:ring-green-400/50"
+          title="Generate and download defect report"
+          disabled={generatingReportForDefect === defect.id}
+        >
+          {generatingReportForDefect === defect.id ? (
+            <RefreshCw size={16} color="#10B981" className="animate-spin" />
+          ) : (
+            <FileText size={16} color="#10B981" />
+          )}
+        </button>
+        
         {permissions.actionPermissions.update && (
           <button
             onClick={e => { 
@@ -367,9 +487,10 @@ const DefectTable = ({
             className="p-2 rounded-md bg-blue-500/10 hover:bg-blue-500/20 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50"
             title="Edit defect"
           >
-            <FileText size={16} color="#3BADE5" />
+            <Eye size={16} color="#3BADE5" />
           </button>
         )}
+        
         {permissions.actionPermissions.delete && (
           <button
             onClick={e => { 
@@ -384,7 +505,7 @@ const DefectTable = ({
         )}
       </div>
     )
-  }), [permissions, onDelete, onEdit]);
+  }), [permissions, onDelete, onEdit, handleGenerateReport, generatingReportForDefect]);
 
   const renderExpandedContent = useCallback((defect) => {
     const expandedFields = Object.entries(DEFECT_FIELDS.EXPANDED)
@@ -421,7 +542,6 @@ const DefectTable = ({
     };
 
     const renderFieldValue = (fieldId, field, value) => {
-      // Handle file fields - Updated to show files with preview functionality
       if (field.dbField === 'initial_files') {
         return <FileListCompact files={value || []} fileType="initial" defectId={defect.id} />;
       }
@@ -430,7 +550,6 @@ const DefectTable = ({
         return <FileListCompact files={value || []} fileType="completion" defectId={defect.id} />;
       }
 
-      // Handle status with compact styling
       if (fieldId === 'status') {
         const status = value || 'Unknown';
         const statusClass = `${styles.statusBadgeCompact} ${
@@ -448,7 +567,6 @@ const DefectTable = ({
         );
       }
 
-      // Handle criticality with compact styling
       if (fieldId === 'criticality') {
         const criticality = value || 'Unknown';
         const priorityClass = `${styles.statusBadgeCompact} ${
@@ -465,12 +583,10 @@ const DefectTable = ({
         );
       }
 
-      // Handle dates
       if (field.type === 'date') {
         return formatDate(value);
       }
 
-      // Handle checkboxes
       if (field.type === 'checkbox') {
         const boolValue = typeof value === 'boolean' ? value : Boolean(value);
         return (
@@ -481,7 +597,6 @@ const DefectTable = ({
         );
       }
 
-      // Handle all other fields with consistent truncation
       if (!value) return '-';
       
       const stringValue = String(value);
@@ -491,7 +606,6 @@ const DefectTable = ({
     return (
       <div className={styles.expandedContentContainer}>
         <div className={styles.expandedUniformGrid}>
-          {/* Render all fields in uniform grid */}
           {expandedFields.map(([fieldId, field]) => {
             const value = defect[field.dbField];
             
@@ -507,22 +621,34 @@ const DefectTable = ({
             );
           })}
           
-          {/* Generate Report button as a single cell */}
+          {/* PHASE 4: Enhanced Generate Report button in expanded view */}
           <button
             onClick={e => {
               e.stopPropagation();
-              console.log('Generate report for defect:', defect.id);
+              handleGenerateReport(defect);
             }}
-            className={styles.expandedFieldAction}
-            title="Generate detailed report for this defect"
+            className={`${styles.expandedFieldAction} ${
+              generatingReportForDefect === defect.id ? styles.expandedFieldActionGenerating : ''
+            }`}
+            title="Generate comprehensive defect report with all attachments"
+            disabled={generatingReportForDefect === defect.id}
           >
-            <FileText className="h-3 w-3" />
-            <span>Generate Report</span>
+            {generatingReportForDefect === defect.id ? (
+              <>
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <FileText className="h-3 w-3" />
+                <span>Generate Report</span>
+              </>
+            )}
           </button>
         </div>
       </div>
     );
-  }, []);
+  }, [handleGenerateReport, generatingReportForDefect]);
 
   return (
     <div className={styles.defectTableWrapper}>
@@ -611,6 +737,20 @@ const DefectTable = ({
         />
       )}
 
+      {/* PHASE 4: Report Generation Progress Modal */}
+      <ReportProgressModal
+        isOpen={showReportProgress}
+        onClose={() => {
+          setShowReportProgress(false);
+          setGeneratingReportForDefect(null);
+          setReportProgress(0);
+          setReportMessage('');
+        }}
+        progress={reportProgress}
+        message={reportMessage}
+        defectId={generatingReportForDefect}
+      />
+
       {/* File Preview Modal */}
       <FilePreviewModal
         file={previewFile}
@@ -619,6 +759,129 @@ const DefectTable = ({
         defectId={previewDefectId}
         currentUser={currentUser}
       />
+
+      {/* PHASE 4: Enhanced CSS styles for report generation */}
+      <style jsx>{`
+        .reportProgressOverlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.75);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+
+        .reportProgressModal {
+          background: linear-gradient(145deg, #0a1725, #112032);
+          border: 1px solid rgba(59, 173, 229, 0.2);
+          border-radius: 12px;
+          padding: 24px;
+          max-width: 400px;
+          width: 90%;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .reportProgressHeader {
+          text-align: center;
+          margin-bottom: 20px;
+        }
+
+        .reportProgressHeader h3 {
+          color: #f4f4f4;
+          font-size: 18px;
+          font-weight: 600;
+          margin: 0 0 8px 0;
+        }
+
+        .reportProgressDefectId {
+          color: #3BADE5;
+          font-size: 14px;
+          font-weight: 500;
+        }
+
+        .reportProgressContent {
+          margin-bottom: 20px;
+        }
+
+        .reportProgressBar {
+          width: 100%;
+          height: 12px;
+          background: rgba(244, 244, 244, 0.1);
+          border-radius: 6px;
+          overflow: hidden;
+          margin-bottom: 12px;
+          box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .reportProgressFill {
+          height: 100%;
+          background: linear-gradient(90deg, #3BADE5, #2ECC71);
+          transition: width 0.3s ease;
+          border-radius: 6px;
+          box-shadow: 0 0 8px rgba(59, 173, 229, 0.4);
+        }
+
+        .reportProgressText {
+          color: #f4f4f4;
+          font-size: 14px;
+          text-align: center;
+          font-weight: 500;
+        }
+
+        .reportProgressFooter {
+          text-align: center;
+        }
+
+        .reportProgressClose {
+          background: #3BADE5;
+          color: white;
+          border: none;
+          padding: 8px 24px;
+          border-radius: 6px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .reportProgressClose:hover {
+          background: #2c7be5;
+          transform: translateY(-1px);
+        }
+
+        .expandedFieldActionGenerating {
+          background: rgba(59, 173, 229, 0.2) !important;
+          border-color: rgba(59, 173, 229, 0.4) !important;
+          color: #3BADE5 !important;
+          cursor: not-allowed !important;
+        }
+
+        /* Enhanced action button spacing */
+        .defectTableWrapper .flex.justify-center.gap-1 {
+          gap: 4px;
+        }
+
+        /* Responsive adjustments for mobile */
+        @media (max-width: 768px) {
+          .reportProgressModal {
+            margin: 16px;
+            padding: 20px;
+          }
+
+          .defectTableWrapper .flex.justify-center.gap-1 {
+            flex-direction: column;
+            gap: 2px;
+          }
+
+          .defectTableWrapper .flex.justify-center.gap-1 button {
+            padding: 6px;
+          }
+        }
+      `}</style>
     </div>
   );
 };
