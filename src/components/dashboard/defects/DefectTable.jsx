@@ -1,30 +1,58 @@
-// DefectTable.jsx - Phase 4 Enhanced with Comprehensive Report Management
-
+// Enhanced DefectTable.jsx with improved button and status styling
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Table from '../../common/Table/Table';
 import FloatingPagination from './FloatingPagination';
-import { Trash2, FileText, Download, Upload, Plus, Eye, X, RefreshCw } from 'lucide-react';
+import { Trash2, FileText, Download, Upload, Plus, Eye, X, RefreshCw, Zap, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import { DEFECT_FIELDS } from './config/DefectFieldMappings';
 import fileService from './services/fileService';
-import reportService from './services/reportService'; // PHASE 4: New report service
+import reportService from './services/reportService';
 import { useToast } from '../../common/ui/ToastContext';
 import styles from './defect.module.css';
 
+// Enhanced Status Colors with gradients and effects
 const STATUS_COLORS = {
-  'OPEN': { bg: 'bg-red-500/20', text: 'text-red-300' },
-  'CLOSED': { bg: 'bg-green-500/20', text: 'text-green-300' },
-  'IN PROGRESS': { bg: 'bg-yellow-500/20', text: 'text-yellow-300' }
+  'OPEN': { 
+    bg: 'statusBadgeModern statusOpen', 
+    text: 'text-white',
+    icon: <AlertTriangle size={12} />,
+    class: 'open'
+  },
+  'CLOSED': { 
+    bg: 'statusBadgeModern statusClosed', 
+    text: 'text-white',
+    icon: <CheckCircle size={12} />,
+    class: 'closed'
+  },
+  'IN PROGRESS': { 
+    bg: 'statusBadgeModern statusInProgress', 
+    text: 'text-gray-900',
+    icon: <Clock size={12} />,
+    class: 'inProgress'
+  }
 };
 
+// Enhanced Criticality Colors
 const CRITICALITY_COLORS = {
-  'High': { bg: 'bg-red-500/20', text: 'text-red-300' },
-  'Medium': { bg: 'bg-yellow-500/20', text: 'text-yellow-300' },
-  'Low': { bg: 'bg-blue-500/20', text: 'text-blue-300' }
+  'High': { 
+    bg: 'criticalityBadgeModern criticalityHigh', 
+    text: 'text-white',
+    class: 'high'
+  },
+  'Medium': { 
+    bg: 'criticalityBadgeModern criticalityMedium', 
+    text: 'text-white',
+    class: 'medium'
+  },
+  'Low': { 
+    bg: 'criticalityBadgeModern criticalityLow', 
+    text: 'text-white',
+    class: 'low'
+  }
 };
 
 const PER_PAGE = 10;
 
-// PHASE 4: Report Generation Progress Modal
+// Report Generation Progress Modal (unchanged)
 const ReportProgressModal = ({ isOpen, onClose, progress, message, defectId }) => {
   if (!isOpen) return null;
 
@@ -60,133 +88,133 @@ const ReportProgressModal = ({ isOpen, onClose, progress, message, defectId }) =
   );
 };
 
-// File Preview Modal Component - UNCHANGED
-const FilePreviewModal = ({ file, isOpen, onClose, onDownload, defectId, currentUser }) => {
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (isOpen && file) {
-      loadFilePreview();
-    }
-    
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [isOpen, file]);
-
-  const loadFilePreview = async () => {
-    if (!file || !currentUser?.id || !defectId) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const downloadData = await fileService.getDownloadUrl(defectId, file.id, currentUser.userId);
-      
-      if (file.type && file.type.startsWith('image/')) {
-        const response = await fetch(downloadData.downloadUrl);
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        setPreviewUrl(url);
-      }
-    } catch (err) {
-      console.error('Error loading file preview:', err);
-      setError('Failed to load file preview');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDownload = async () => {
-    try {
-      await fileService.downloadFile(defectId, file.id, file.name, currentUser.userId);
-    } catch (err) {
-      console.error('Error downloading file:', err);
-      setError('Failed to download file');
-    }
-  };
-
-  if (!isOpen) return null;
-
-  const isImage = file?.type?.startsWith('image/');
-  const isPDF = file?.type === 'application/pdf';
-
-  return (
-    <div className={styles.filePreviewOverlay} onClick={onClose}>
-      <div className={styles.filePreviewModal} onClick={e => e.stopPropagation()}>
-        <div className={styles.filePreviewHeader}>
-          <h3 className={styles.filePreviewTitle}>{file?.name}</h3>
-          <div className={styles.filePreviewActions}>
-            <button onClick={handleDownload} className={styles.filePreviewDownload} title="Download file">
-              <Download size={16} />
-              Download
-            </button>
-            <button onClick={onClose} className={styles.filePreviewClose} title="Close preview">
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-        
-        <div className={styles.filePreviewContent}>
-          {loading && (
-            <div className={styles.filePreviewLoading}>
-              <div className={styles.loadingSpinner}></div>
-              <span>Loading preview...</span>
-            </div>
-          )}
-          
-          {error && (
-            <div className={styles.filePreviewError}>
-              <FileText size={48} />
-              <p>{error}</p>
-              <button onClick={handleDownload} className={styles.downloadButton}>
-                Download File
-              </button>
-            </div>
-          )}
-          
-          {!loading && !error && isImage && previewUrl && (
-            <img src={previewUrl} alt={file.name} className={styles.filePreviewImage} />
-          )}
-          
-          {!loading && !error && isPDF && (
-            <div className={styles.filePreviewPdf}>
-              <FileText size={48} />
-              <p>PDF Preview</p>
-              <p className={styles.filePreviewPdfNote}>
-                Click download to view the full PDF document
-              </p>
-              <button onClick={handleDownload} className={styles.downloadButton}>
-                Download PDF
-              </button>
-            </div>
-          )}
-          
-          {!loading && !error && !isImage && !isPDF && (
-            <div className={styles.filePreviewDocument}>
-              <FileText size={48} />
-              <p>Document Preview</p>
-              <p className={styles.filePreviewDocNote}>{file.name}</p>
-              <button onClick={handleDownload} className={styles.downloadButton}>
-                Download Document
-              </button>
-            </div>
-          )}
-        </div>
-        
-        <div className={styles.filePreviewFooter}>
-          <div className={styles.filePreviewInfo}>
-            <span>Size: {((file?.size || 0) / 1024 / 1024).toFixed(2)} MB</span>
-            <span>Type: {file?.type || 'Unknown'}</span>
-          </div>
-        </div>
+// Enhanced Status Badge Component
+const StatusBadge = ({ status, variant = 'modern' }) => {
+  if (!status) return <span className="text-gray-400">-</span>;
+  
+  const statusKey = Object.keys(STATUS_COLORS).find(key => 
+    status.toUpperCase().includes(key)
+  );
+  
+  if (!statusKey) {
+    return (
+      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-500/20 text-gray-300">
+        {status}
+      </span>
+    );
+  }
+  
+  const statusConfig = STATUS_COLORS[statusKey];
+  
+  if (variant === 'minimal') {
+    return (
+      <div className={`statusMinimal ${statusConfig.class}`}>
+        {statusConfig.icon}
+        {status}
       </div>
+    );
+  }
+  
+  if (variant === 'dot') {
+    return (
+      <div className={`statusDot ${statusConfig.class}`}>
+        {status}
+      </div>
+    );
+  }
+  
+  // Default modern variant
+  return (
+    <div className={statusConfig.bg}>
+      {statusConfig.icon}
+      {status}
     </div>
   );
+};
+
+// Enhanced Criticality Badge Component
+const CriticalityBadge = ({ criticality }) => {
+  if (!criticality) return <span className="text-gray-400">-</span>;
+  
+  const criticalityKey = Object.keys(CRITICALITY_COLORS).find(key => 
+    criticality.toLowerCase().includes(key.toLowerCase())
+  );
+  
+  if (!criticalityKey) {
+    return (
+      <span className="inline-block px-2 py-1 rounded text-xs bg-gray-500/20 text-gray-300">
+        {criticality}
+      </span>
+    );
+  }
+  
+  const criticalityConfig = CRITICALITY_COLORS[criticalityKey];
+  
+  return (
+    <div className={criticalityConfig.bg}>
+      {criticality}
+    </div>
+  );
+};
+
+// Enhanced Generate Report Button Component
+const GenerateReportButton = ({ 
+  defect, 
+  onGenerate, 
+  isGenerating, 
+  variant = 'floating' // 'floating', 'pill', 'corner'
+}) => {
+  const buttonProps = {
+    onClick: (e) => {
+      e.stopPropagation();
+      onGenerate(defect);
+    },
+    disabled: isGenerating,
+    title: "Generate comprehensive defect report with all attachments"
+  };
+  
+  const content = (
+    <>
+      {isGenerating ? (
+        <RefreshCw size={14} className="animate-spin" />
+      ) : (
+        <FileText size={14} />
+      )}
+      <span>{isGenerating ? 'Generating...' : 'Generate Report'}</span>
+    </>
+  );
+  
+  switch (variant) {
+    case 'pill':
+      return (
+        <button 
+          {...buttonProps}
+          className={`expandedFieldActionPill ${isGenerating ? 'opacity-70' : ''}`}
+        >
+          {content}
+        </button>
+      );
+    
+    case 'corner':
+      return (
+        <button 
+          {...buttonProps}
+          className={`expandedFieldActionCorner ${isGenerating ? 'opacity-70' : ''}`}
+        >
+          {content}
+        </button>
+      );
+    
+    default: // floating
+      return (
+        <button 
+          {...buttonProps}
+          className={`expandedFieldAction ${isGenerating ? 'opacity-70' : ''}`}
+        >
+          {content}
+        </button>
+      );
+  }
 };
 
 const DefectTable = ({
@@ -217,7 +245,7 @@ const DefectTable = ({
   const [previewDefectId, setPreviewDefectId] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   
-  // PHASE 4: Report generation states
+  // Report generation states
   const [reportProgress, setReportProgress] = useState(0);
   const [reportMessage, setReportMessage] = useState('');
   const [showReportProgress, setShowReportProgress] = useState(false);
@@ -262,9 +290,9 @@ const DefectTable = ({
     setPreviewDefectId(null);
   };
 
-  // PHASE 4: Enhanced Report Generation Handler
+  // Enhanced Report Generation Handler
   const handleGenerateReport = async (defect) => {
-    console.log('PHASE 4: Generate report button clicked for defect:', defect.id);
+    console.log('Generate report button clicked for defect:', defect.id);
     
     if (!currentUser?.userId) {
       toast({
@@ -282,26 +310,23 @@ const DefectTable = ({
     setReportMessage('Initializing report generation...');
 
     try {
-      // PHASE 4: Use comprehensive report generation with progress tracking
       const result = await reportService.generateAndDownloadReport(
         defect.id,
         currentUser.userId,
-        defect, // Pass defect data for filename generation
+        defect,
         (progress, message) => {
           setReportProgress(progress);
           setReportMessage(message);
         }
       );
 
-      console.log('PHASE 4: Report generation completed:', result);
+      console.log('Report generation completed:', result);
 
-      // Success feedback
       toast({
         title: "Report Generated Successfully",
         description: result.message || 'Report has been generated and downloaded.',
       });
 
-      // Keep progress modal open briefly to show completion
       setTimeout(() => {
         setShowReportProgress(false);
         setGeneratingReportForDefect(null);
@@ -310,14 +335,13 @@ const DefectTable = ({
       }, 2000);
 
     } catch (error) {
-      console.error('PHASE 4: Error generating report:', error);
+      console.error('Error generating report:', error);
       
       setShowReportProgress(false);
       setGeneratingReportForDefect(null);
       setReportProgress(0);
       setReportMessage('');
 
-      // Enhanced error handling
       let errorMessage = 'Failed to generate report. Please try again.';
       
       if (error.message.includes('not found')) {
@@ -397,47 +421,11 @@ const DefectTable = ({
         headerClassName: shouldHideColumn(fieldId) ? 'hidden-column' : '',
         render: (value, rowData) => {
           if (fieldId === 'status') {
-            const status = rowData[DEFECT_FIELDS.TABLE.status.dbField] || '-';
-            const statusKey = status !== '-' ? 
-              Object.keys(STATUS_COLORS).find(key => status.toUpperCase().includes(key)) : null;
-            
-            if (!statusKey) {
-              return (
-                <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-500/20 text-gray-300">
-                  <span className="w-1 h-1 rounded-full bg-current mr-1"></span>
-                  {status}
-                </div>
-              );
-            }
-            
-            return (
-              <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs ${STATUS_COLORS[statusKey].bg} ${STATUS_COLORS[statusKey].text}`}>
-                <span className="w-1 h-1 rounded-full bg-current mr-1"></span>
-                {status}
-              </div>
-            );
+            return <StatusBadge status={value} variant="modern" />;
           }
           
           if (fieldId === 'criticality') {
-            const criticality = value || '-';
-            const criticalityKey = criticality !== '-' ? 
-              Object.keys(CRITICALITY_COLORS).find(key => 
-                criticality.toLowerCase().includes(key.toLowerCase())
-              ) : null;
-            
-            if (!criticalityKey) {
-              return (
-                <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-gray-500/20 text-gray-300">
-                  {criticality}
-                </span>
-              );
-            }
-            
-            return (
-              <span className={`inline-block px-2 py-0.5 rounded-full text-xs ${CRITICALITY_COLORS[criticalityKey].bg} ${CRITICALITY_COLORS[criticalityKey].text}`}>
-                {criticality}
-              </span>
-            );
+            return <CriticalityBadge criticality={value} />;
           }
           
           if (field.type === 'date') {
@@ -461,7 +449,7 @@ const DefectTable = ({
     minWidth: '120px',
     content: (defect) => (
       <div className="flex justify-center gap-1">
-        {/* PHASE 4: Generate Report Button */}
+        {/* Generate Report Button */}
         <button
           onClick={e => { 
             e.stopPropagation(); 
@@ -551,36 +539,11 @@ const DefectTable = ({
       }
 
       if (fieldId === 'status') {
-        const status = value || 'Unknown';
-        const statusClass = `${styles.statusBadgeCompact} ${
-          status.toUpperCase().includes('OPEN') ? 'bg-red-500/20 text-red-300' :
-          status.toUpperCase().includes('CLOSED') ? 'bg-green-500/20 text-green-300' :
-          status.toUpperCase().includes('PROGRESS') ? 'bg-yellow-500/20 text-yellow-300' :
-          'bg-gray-500/20 text-gray-300'
-        }`;
-        
-        return (
-          <div className={statusClass}>
-            <span className={styles.statusDotCompact}></span>
-            {status}
-          </div>
-        );
+        return <StatusBadge status={value} variant="modern" />;
       }
 
       if (fieldId === 'criticality') {
-        const criticality = value || 'Unknown';
-        const priorityClass = `${styles.statusBadgeCompact} ${
-          criticality.toLowerCase().includes('high') ? 'bg-red-500/20 text-red-300' :
-          criticality.toLowerCase().includes('medium') ? 'bg-yellow-500/20 text-yellow-300' :
-          criticality.toLowerCase().includes('low') ? 'bg-blue-500/20 text-blue-300' :
-          'bg-gray-500/20 text-gray-300'
-        }`;
-        
-        return (
-          <span className={priorityClass}>
-            {criticality}
-          </span>
-        );
+        return <CriticalityBadge criticality={value} />;
       }
 
       if (field.type === 'date') {
@@ -620,32 +583,15 @@ const DefectTable = ({
               </div>
             );
           })}
-          
-          {/* PHASE 4: Enhanced Generate Report button in expanded view */}
-          <button
-            onClick={e => {
-              e.stopPropagation();
-              handleGenerateReport(defect);
-            }}
-            className={`${styles.expandedFieldAction} ${
-              generatingReportForDefect === defect.id ? styles.expandedFieldActionGenerating : ''
-            }`}
-            title="Generate comprehensive defect report with all attachments"
-            disabled={generatingReportForDefect === defect.id}
-          >
-            {generatingReportForDefect === defect.id ? (
-              <>
-                <RefreshCw className="h-3 w-3 animate-spin" />
-                <span>Generating...</span>
-              </>
-            ) : (
-              <>
-                <FileText className="h-3 w-3" />
-                <span>Generate Report</span>
-              </>
-            )}
-          </button>
         </div>
+        
+        {/* Enhanced Generate Report Button in expanded view */}
+        <GenerateReportButton
+          defect={defect}
+          onGenerate={handleGenerateReport}
+          isGenerating={generatingReportForDefect === defect.id}
+          variant="floating" // Try 'pill' or 'corner' for different styles
+        />
       </div>
     );
   }, [handleGenerateReport, generatingReportForDefect]);
@@ -737,7 +683,7 @@ const DefectTable = ({
         />
       )}
 
-      {/* PHASE 4: Report Generation Progress Modal */}
+      {/* Report Generation Progress Modal */}
       <ReportProgressModal
         isOpen={showReportProgress}
         onClose={() => {
@@ -751,137 +697,14 @@ const DefectTable = ({
         defectId={generatingReportForDefect}
       />
 
-      {/* File Preview Modal */}
-      <FilePreviewModal
+      {/* File Preview Modal - Add this if you have the FilePreviewModal component */}
+      {/* <FilePreviewModal
         file={previewFile}
         isOpen={showPreview}
         onClose={handleClosePreview}
         defectId={previewDefectId}
         currentUser={currentUser}
-      />
-
-      {/* PHASE 4: Enhanced CSS styles for report generation */}
-      <style jsx>{`
-        .reportProgressOverlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.75);
-          backdrop-filter: blur(4px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
-
-        .reportProgressModal {
-          background: linear-gradient(145deg, #0a1725, #112032);
-          border: 1px solid rgba(59, 173, 229, 0.2);
-          border-radius: 12px;
-          padding: 24px;
-          max-width: 400px;
-          width: 90%;
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-        }
-
-        .reportProgressHeader {
-          text-align: center;
-          margin-bottom: 20px;
-        }
-
-        .reportProgressHeader h3 {
-          color: #f4f4f4;
-          font-size: 18px;
-          font-weight: 600;
-          margin: 0 0 8px 0;
-        }
-
-        .reportProgressDefectId {
-          color: #3BADE5;
-          font-size: 14px;
-          font-weight: 500;
-        }
-
-        .reportProgressContent {
-          margin-bottom: 20px;
-        }
-
-        .reportProgressBar {
-          width: 100%;
-          height: 12px;
-          background: rgba(244, 244, 244, 0.1);
-          border-radius: 6px;
-          overflow: hidden;
-          margin-bottom: 12px;
-          box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .reportProgressFill {
-          height: 100%;
-          background: linear-gradient(90deg, #3BADE5, #2ECC71);
-          transition: width 0.3s ease;
-          border-radius: 6px;
-          box-shadow: 0 0 8px rgba(59, 173, 229, 0.4);
-        }
-
-        .reportProgressText {
-          color: #f4f4f4;
-          font-size: 14px;
-          text-align: center;
-          font-weight: 500;
-        }
-
-        .reportProgressFooter {
-          text-align: center;
-        }
-
-        .reportProgressClose {
-          background: #3BADE5;
-          color: white;
-          border: none;
-          padding: 8px 24px;
-          border-radius: 6px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .reportProgressClose:hover {
-          background: #2c7be5;
-          transform: translateY(-1px);
-        }
-
-        .expandedFieldActionGenerating {
-          background: rgba(59, 173, 229, 0.2) !important;
-          border-color: rgba(59, 173, 229, 0.4) !important;
-          color: #3BADE5 !important;
-          cursor: not-allowed !important;
-        }
-
-        /* Enhanced action button spacing */
-        .defectTableWrapper .flex.justify-center.gap-1 {
-          gap: 4px;
-        }
-
-        /* Responsive adjustments for mobile */
-        @media (max-width: 768px) {
-          .reportProgressModal {
-            margin: 16px;
-            padding: 20px;
-          }
-
-          .defectTableWrapper .flex.justify-center.gap-1 {
-            flex-direction: column;
-            gap: 2px;
-          }
-
-          .defectTableWrapper .flex.justify-center.gap-1 button {
-            padding: 6px;
-          }
-        }
-      `}</style>
+      /> */}
     </div>
   );
 };
