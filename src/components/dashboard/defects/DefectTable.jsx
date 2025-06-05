@@ -1,58 +1,379 @@
-// Enhanced DefectTable.jsx with improved button and status styling
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Table from '../../common/Table/Table';
 import FloatingPagination from './FloatingPagination';
-import { Trash2, FileText, Download, Upload, Plus, Eye, X, RefreshCw, Zap, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { 
+  Trash2, FileText, Download, Upload, Plus, Eye, X, RefreshCw, 
+  Zap, AlertTriangle, CheckCircle, Clock, AlertCircle 
+} from 'lucide-react';
 import { DEFECT_FIELDS } from './config/DefectFieldMappings';
 import fileService from './services/fileService';
 import reportService from './services/reportService';
 import { useToast } from '../../common/ui/ToastContext';
 import styles from './defect.module.css';
 
-// Enhanced Status Colors with gradients and effects
-const STATUS_COLORS = {
-  'OPEN': { 
-    bg: 'statusBadgeModern statusOpen', 
-    text: 'text-white',
-    icon: <AlertTriangle size={12} />,
-    class: 'open'
-  },
-  'CLOSED': { 
-    bg: 'statusBadgeModern statusClosed', 
-    text: 'text-white',
-    icon: <CheckCircle size={12} />,
-    class: 'closed'
-  },
-  'IN PROGRESS': { 
-    bg: 'statusBadgeModern statusInProgress', 
-    text: 'text-gray-900',
-    icon: <Clock size={12} />,
-    class: 'inProgress'
-  }
-};
-
-// Enhanced Criticality Colors
-const CRITICALITY_COLORS = {
-  'High': { 
-    bg: 'criticalityBadgeModern criticalityHigh', 
-    text: 'text-white',
-    class: 'high'
-  },
-  'Medium': { 
-    bg: 'criticalityBadgeModern criticalityMedium', 
-    text: 'text-white',
-    class: 'medium'
-  },
-  'Low': { 
-    bg: 'criticalityBadgeModern criticalityLow', 
-    text: 'text-white',
-    class: 'low'
-  }
-};
-
 const PER_PAGE = 10;
 
-// Report Generation Progress Modal (unchanged)
+// Senior UX Designer Badge Components - Modern, Sleek & Professional
+
+const StatusBadge = ({ status, variant = 'modern', size = 'medium' }) => {
+  if (!status) return <span className={styles.textMuted}>-</span>;
+  
+  const statusUpper = status.toUpperCase();
+  
+  const getStatusType = (status) => {
+    if (status.includes('OPEN')) return 'open';
+    if (status.includes('CLOSED')) return 'closed';
+    if (status.includes('PROGRESS') || status.includes('IN PROGRESS')) return 'inProgress';
+    return 'unknown';
+  };
+  
+  const statusType = getStatusType(statusUpper);
+  
+  // Variant selection for different design approaches
+  if (variant === 'pill') {
+    const pillClass = `${styles.statusBadgePill} ${styles[statusType] || ''}`;
+    return (
+      <div className={pillClass}>
+        <span>{status}</span>
+      </div>
+    );
+  }
+  
+  if (variant === 'accent') {
+    const accentClass = `${styles.statusBadgeAccent} ${styles[statusType] || ''}`;
+    return (
+      <div className={accentClass}>
+        <span>{status}</span>
+      </div>
+    );
+  }
+  
+  // Default modern variant - professional and sleek
+  const modernClass = `${styles.statusBadgeModern} ${styles[statusType] || ''}`;
+  return (
+    <div className={modernClass}>
+      <span>{status}</span>
+    </div>
+  );
+};
+
+const CriticalityBadge = ({ criticality, variant = 'modern', size = 'medium' }) => {
+  if (!criticality) return <span className={styles.textMuted}>-</span>;
+  
+  const getCriticalityType = (crit) => {
+    const critLower = crit.toLowerCase();
+    if (critLower.includes('high') || critLower.includes('critical')) return 'High';
+    if (critLower.includes('medium') || critLower.includes('moderate')) return 'Medium';
+    if (critLower.includes('low') || critLower.includes('minor')) return 'Low';
+    return 'Unknown';
+  };
+  
+  const criticalityType = getCriticalityType(criticality);
+  
+  if (variant === 'enhanced') {
+    const enhancedClass = `${styles.criticalityBadgeEnhanced} ${styles[criticalityType.toLowerCase()] || ''}`;
+    return (
+      <div className={enhancedClass}>
+        <span>{criticality}</span>
+      </div>
+    );
+  }
+  
+  // Default modern variant - keeps the text, adds subtle icons
+  const criticalityClass = `${styles.criticalityBadgeModern} ${styles[`criticality${criticalityType}`] || ''}`;
+  
+  return (
+    <div className={criticalityClass}>
+      <span>{criticality}</span>
+      {/* Icons are added via CSS ::after pseudo-elements */}
+    </div>
+  );
+};
+
+// Premium Design Option - For high-end applications
+const StatusBadgePremium = ({ status }) => {
+  if (!status) return <span className={styles.textMuted}>-</span>;
+  
+  const statusUpper = status.toUpperCase();
+  
+  // Inline styles for premium look with glassmorphism
+  const getPremiumStyle = (status) => {
+    const baseStyle = {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '6px',
+      padding: '6px 14px',
+      borderRadius: '10px',
+      fontSize: '0.75rem',
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: '0.4px',
+      border: '1px solid',
+      backdropFilter: 'blur(12px)',
+      position: 'relative',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      minWidth: '85px',
+      justifyContent: 'center',
+      cursor: 'default'
+    };
+    
+    if (status.includes('OPEN')) {
+      return {
+        ...baseStyle,
+        background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(220, 38, 38, 0.08) 100%)',
+        color: '#dc2626',
+        borderColor: 'rgba(239, 68, 68, 0.25)',
+        boxShadow: '0 4px 12px rgba(239, 68, 68, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+      };
+    }
+    
+    if (status.includes('CLOSED')) {
+      return {
+        ...baseStyle,
+        background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.12) 0%, rgba(22, 163, 74, 0.08) 100%)',
+        color: '#16a34a',
+        borderColor: 'rgba(34, 197, 94, 0.25)',
+        boxShadow: '0 4px 12px rgba(34, 197, 94, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+      };
+    }
+    
+    if (status.includes('PROGRESS')) {
+      return {
+        ...baseStyle,
+        background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(217, 119, 6, 0.08) 100%)',
+        color: '#d97706',
+        borderColor: 'rgba(245, 158, 11, 0.25)',
+        boxShadow: '0 4px 12px rgba(245, 158, 11, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+      };
+    }
+    
+    return {
+      ...baseStyle,
+      background: 'linear-gradient(135deg, rgba(107, 114, 128, 0.12) 0%, rgba(75, 85, 99, 0.08) 100%)',
+      color: '#6b7280',
+      borderColor: 'rgba(107, 114, 128, 0.25)',
+      boxShadow: '0 4px 12px rgba(107, 114, 128, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+    };
+  };
+  
+  return (
+    <div 
+      style={getPremiumStyle(statusUpper)}
+      onMouseEnter={(e) => {
+        e.target.style.transform = 'translateY(-1px)';
+        e.target.style.boxShadow = e.target.style.boxShadow.replace('0 4px 12px', '0 6px 16px');
+      }}
+      onMouseLeave={(e) => {
+        e.target.style.transform = 'translateY(0)';
+        e.target.style.boxShadow = e.target.style.boxShadow.replace('0 6px 16px', '0 4px 12px');
+      }}
+    >
+      <span>{status}</span>
+    </div>
+  );
+};
+
+const CriticalityBadgePremium = ({ criticality }) => {
+  if (!criticality) return <span className={styles.textMuted}>-</span>;
+  
+  // Premium glassmorphism design with proper visual hierarchy
+  const getPremiumCriticalityStyle = (crit) => {
+    const baseStyle = {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '6px',
+      padding: '5px 12px',
+      borderRadius: '10px',
+      fontSize: '0.7rem',
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: '0.4px',
+      border: '1px solid',
+      backdropFilter: 'blur(12px)',
+      position: 'relative',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      minWidth: '80px',
+      justifyContent: 'center',
+      cursor: 'default'
+    };
+    
+    const critLower = crit.toLowerCase();
+    
+    if (critLower.includes('high')) {
+      return {
+        ...baseStyle,
+        background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.14) 0%, rgba(220, 38, 38, 0.10) 100%)',
+        color: '#dc2626',
+        borderColor: 'rgba(239, 68, 68, 0.3)',
+        boxShadow: '0 4px 12px rgba(239, 68, 68, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+      };
+    }
+    
+    if (critLower.includes('medium')) {
+      return {
+        ...baseStyle,
+        background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.14) 0%, rgba(217, 119, 6, 0.10) 100%)',
+        color: '#d97706',
+        borderColor: 'rgba(245, 158, 11, 0.3)',
+        boxShadow: '0 4px 12px rgba(245, 158, 11, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+      };
+    }
+    
+    if (critLower.includes('low')) {
+      return {
+        ...baseStyle,
+        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.14) 0%, rgba(37, 99, 235, 0.10) 100%)',
+        color: '#2563eb',
+        borderColor: 'rgba(59, 130, 246, 0.3)',
+        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+      };
+    }
+    
+    return {
+      ...baseStyle,
+      background: 'linear-gradient(135deg, rgba(107, 114, 128, 0.14) 0%, rgba(75, 85, 99, 0.10) 100%)',
+      color: '#6b7280',
+      borderColor: 'rgba(107, 114, 128, 0.3)',
+      boxShadow: '0 4px 12px rgba(107, 114, 128, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+    };
+  };
+  
+  // Add appropriate icon based on criticality
+  const getIcon = (crit) => {
+    const critLower = crit.toLowerCase();
+    if (critLower.includes('high')) return '⚠';
+    if (critLower.includes('medium')) return '●';
+    if (critLower.includes('low')) return '●';
+    return '';
+  };
+  
+  return (
+    <div 
+      style={getPremiumCriticalityStyle(criticality)}
+      onMouseEnter={(e) => {
+        e.target.style.transform = 'translateY(-1px)';
+        e.target.style.boxShadow = e.target.style.boxShadow.replace('0 4px 12px', '0 6px 16px');
+      }}
+      onMouseLeave={(e) => {
+        e.target.style.transform = 'translateY(0)';
+        e.target.style.boxShadow = e.target.style.boxShadow.replace('0 6px 16px', '0 4px 12px');
+      }}
+    >
+      <span>{criticality}</span>
+      <span style={{ fontSize: '0.6rem', opacity: 0.8, marginLeft: '2px' }}>
+        {getIcon(criticality)}
+      </span>
+    </div>
+  );
+};
+
+// Export options - choose your preferred design approach
+export { 
+  StatusBadge, 
+  CriticalityBadge,           // Modern professional (recommended)
+  StatusBadgePremium, 
+  CriticalityBadgePremium     // Premium glassmorphism (high-end)
+};
+
+// Floating Generate Report Button - No Height Impact
+const GenerateReportButton = ({ 
+  defect, 
+  onGenerate, 
+  isGenerating, 
+  variant = 'floating',
+  size = 'medium'
+}) => {
+  const buttonProps = {
+    onClick: (e) => {
+      e.stopPropagation();
+      onGenerate(defect);
+    },
+    disabled: isGenerating,
+    title: "Generate comprehensive defect report with all attachments"
+  };
+  
+  const content = (
+    <>
+      {isGenerating ? (
+        <RefreshCw size={16} className={styles.spinning} />
+      ) : (
+        <FileText size={16} />
+      )}
+      <span>{isGenerating ? 'Generating...' : 'Generate Report'}</span>
+      {!isGenerating && (
+        <Zap size={12} className={styles.pulseIcon} />
+      )}
+    </>
+  );
+  
+  // Floating button - positioned outside normal flow, doesn't affect container height
+  const buttonStyle = {
+    position: 'absolute',
+    bottom: '12px',  // Small margin from bottom
+    right: '12px',   // Small margin from right
+    zIndex: 30,      // High z-index to float above everything
+    
+    // Styling
+    background: 'linear-gradient(135deg, rgba(59, 173, 229, 0.9) 0%, rgba(41, 128, 185, 0.9) 100%)',
+    backdropFilter: 'blur(10px)',
+    border: '1px solid rgba(59, 173, 229, 0.3)',
+    borderRadius: '12px',
+    
+    // Size
+    padding: '10px 16px',
+    minWidth: '140px',
+    height: '44px',
+    
+    // Typography
+    color: 'white',
+    fontSize: '0.8rem',
+    fontWeight: '600',
+    letterSpacing: '0.3px',
+    
+    // Layout
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    
+    // Interactions
+    cursor: isGenerating ? 'not-allowed' : 'pointer',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    
+    // Effects
+    boxShadow: '0 4px 16px rgba(59, 173, 229, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15)',
+    opacity: isGenerating ? 0.7 : 1,
+    
+    // Ensure it doesn't affect layout
+    pointerEvents: 'auto'
+  };
+  
+  const hoverStyle = {
+    transform: 'translateY(-2px) scale(1.02)',
+    boxShadow: '0 8px 24px rgba(59, 173, 229, 0.3), 0 4px 16px rgba(0, 0, 0, 0.2)'
+  };
+  
+  return (
+    <button 
+      {...buttonProps} 
+      style={buttonStyle}
+      onMouseEnter={(e) => {
+        if (!isGenerating) {
+          Object.assign(e.currentTarget.style, { ...buttonStyle, ...hoverStyle });
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isGenerating) {
+          Object.assign(e.currentTarget.style, buttonStyle);
+        }
+      }}
+    >
+      {content}
+    </button>
+  );
+};
+
+// Report Generation Progress Modal
 const ReportProgressModal = ({ isOpen, onClose, progress, message, defectId }) => {
   if (!isOpen) return null;
 
@@ -60,7 +381,10 @@ const ReportProgressModal = ({ isOpen, onClose, progress, message, defectId }) =
     <div className={styles.reportProgressOverlay}>
       <div className={styles.reportProgressModal}>
         <div className={styles.reportProgressHeader}>
-          <h3>Generating Report</h3>
+          <h3>
+            <FileText size={20} />
+            Generating Report
+          </h3>
           <span className={styles.reportProgressDefectId}>Defect ID: {defectId}</span>
         </div>
         
@@ -79,6 +403,7 @@ const ReportProgressModal = ({ isOpen, onClose, progress, message, defectId }) =
         {progress >= 100 && (
           <div className={styles.reportProgressFooter}>
             <button onClick={onClose} className={styles.reportProgressClose}>
+              <CheckCircle size={16} />
               Close
             </button>
           </div>
@@ -86,135 +411,6 @@ const ReportProgressModal = ({ isOpen, onClose, progress, message, defectId }) =
       </div>
     </div>
   );
-};
-
-// Enhanced Status Badge Component
-const StatusBadge = ({ status, variant = 'modern' }) => {
-  if (!status) return <span className="text-gray-400">-</span>;
-  
-  const statusKey = Object.keys(STATUS_COLORS).find(key => 
-    status.toUpperCase().includes(key)
-  );
-  
-  if (!statusKey) {
-    return (
-      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-500/20 text-gray-300">
-        {status}
-      </span>
-    );
-  }
-  
-  const statusConfig = STATUS_COLORS[statusKey];
-  
-  if (variant === 'minimal') {
-    return (
-      <div className={`statusMinimal ${statusConfig.class}`}>
-        {statusConfig.icon}
-        {status}
-      </div>
-    );
-  }
-  
-  if (variant === 'dot') {
-    return (
-      <div className={`statusDot ${statusConfig.class}`}>
-        {status}
-      </div>
-    );
-  }
-  
-  // Default modern variant
-  return (
-    <div className={statusConfig.bg}>
-      {statusConfig.icon}
-      {status}
-    </div>
-  );
-};
-
-// Enhanced Criticality Badge Component
-const CriticalityBadge = ({ criticality }) => {
-  if (!criticality) return <span className="text-gray-400">-</span>;
-  
-  const criticalityKey = Object.keys(CRITICALITY_COLORS).find(key => 
-    criticality.toLowerCase().includes(key.toLowerCase())
-  );
-  
-  if (!criticalityKey) {
-    return (
-      <span className="inline-block px-2 py-1 rounded text-xs bg-gray-500/20 text-gray-300">
-        {criticality}
-      </span>
-    );
-  }
-  
-  const criticalityConfig = CRITICALITY_COLORS[criticalityKey];
-  
-  return (
-    <div className={criticalityConfig.bg}>
-      {criticality}
-    </div>
-  );
-};
-
-// Enhanced Generate Report Button Component
-const GenerateReportButton = ({ 
-  defect, 
-  onGenerate, 
-  isGenerating, 
-  variant = 'floating' // 'floating', 'pill', 'corner'
-}) => {
-  const buttonProps = {
-    onClick: (e) => {
-      e.stopPropagation();
-      onGenerate(defect);
-    },
-    disabled: isGenerating,
-    title: "Generate comprehensive defect report with all attachments"
-  };
-  
-  const content = (
-    <>
-      {isGenerating ? (
-        <RefreshCw size={14} className="animate-spin" />
-      ) : (
-        <FileText size={14} />
-      )}
-      <span>{isGenerating ? 'Generating...' : 'Generate Report'}</span>
-    </>
-  );
-  
-  switch (variant) {
-    case 'pill':
-      return (
-        <button 
-          {...buttonProps}
-          className={`expandedFieldActionPill ${isGenerating ? 'opacity-70' : ''}`}
-        >
-          {content}
-        </button>
-      );
-    
-    case 'corner':
-      return (
-        <button 
-          {...buttonProps}
-          className={`expandedFieldActionCorner ${isGenerating ? 'opacity-70' : ''}`}
-        >
-          {content}
-        </button>
-      );
-    
-    default: // floating
-      return (
-        <button 
-          {...buttonProps}
-          className={`expandedFieldAction ${isGenerating ? 'opacity-70' : ''}`}
-        >
-          {content}
-        </button>
-      );
-  }
 };
 
 const DefectTable = ({
@@ -238,6 +434,61 @@ const DefectTable = ({
   onAddDefect,
   removeFilterBar = false
 }) => {
+  // Add these simple badge functions right inside your DefectTable component:
+  const EnhancedStatusBadge = ({ status, size = 'medium' }) => {
+    if (!status) return <span className={styles.textMuted}>-</span>;
+
+    const getStatusClass = (status) => {
+      const statusUpper = status.toUpperCase();
+      if (statusUpper.includes('OPEN')) return 'statusOpen';
+      if (statusUpper.includes('CLOSED')) return 'statusClosed';
+      if (statusUpper.includes('PROGRESS')) return 'statusProgress';
+      return 'statusOpen'; // default
+    };
+
+    const sizeClass = size === 'small' ? 'badgeSmall' : '';
+    const badgeClasses = `${styles.enhancedActionButton} ${styles.badgeStatus} ${styles[getStatusClass(status)]} ${styles[sizeClass]}`.trim();
+
+    return (
+      <div className={badgeClasses}>
+        <span>{status}</span>
+      </div>
+    );
+  };
+
+  // Simple inline Enhanced Criticality Badge
+  const EnhancedCriticalityBadge = ({ criticality, size = 'medium' }) => {
+    if (!criticality) return <span className={styles.textMuted}>-</span>;
+
+    const getCriticalityClass = (criticality) => {
+      const critLower = criticality.toLowerCase();
+      if (critLower.includes('high')) return 'criticalityHigh';
+      if (critLower.includes('medium')) return 'criticalityMedium';
+      if (critLower.includes('low')) return 'criticalityLow';
+      return 'criticalityMedium'; // default
+    };
+
+    const getIcon = (criticality) => {
+      const critLower = criticality.toLowerCase();
+      if (critLower.includes('high')) return '⚠';
+      if (critLower.includes('medium')) return '●';
+      if (critLower.includes('low')) return '●';
+      return '';
+    };
+
+    const sizeClass = size === 'small' ? 'badgeSmall' : '';
+    const badgeClasses = `${styles.enhancedActionButton} ${styles.badgeCriticality} ${styles[getCriticalityClass(criticality)]} ${styles[sizeClass]}`.trim();
+
+    return (
+      <div className={badgeClasses}>
+        <span>{criticality}</span>
+        <span style={{ fontSize: '0.55rem', opacity: 0.9, marginLeft: '3px' }}>
+          {getIcon(criticality)}
+        </span>
+      </div>
+    );
+  };
+
   const { toast } = useToast();
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   const [currentPage, setCurrentPage] = useState(1);
@@ -375,13 +626,9 @@ const DefectTable = ({
     }
   };
 
-  const TruncatedText = ({ text, maxWidth = "max-w-[200px]" }) => (
+  const TruncatedText = ({ text }) => (
     !text ? '-' : (
-      <div 
-        className={`truncate ${maxWidth}`} 
-        title={text}
-        style={{ cursor: 'help' }}
-      >
+      <div className={styles.truncateText} title={text}>
         {text}
       </div>
     )
@@ -407,6 +654,7 @@ const DefectTable = ({
     return false;
   };
 
+  // Enhanced columns configuration
   const columns = useMemo(() => (
     Object.entries(DEFECT_FIELDS.TABLE)
       .filter(([_, field]) => !field.isAction)
@@ -417,92 +665,119 @@ const DefectTable = ({
         width: field.width,
         minWidth: field.minWidth,
         sortable: true,
-        cellClassName: shouldHideColumn(fieldId) ? 'hidden-column' : '',
-        headerClassName: shouldHideColumn(fieldId) ? 'hidden-column' : '',
+        cellClassName: shouldHideColumn(fieldId) ? styles.hiddenColumn : '',
+        headerClassName: shouldHideColumn(fieldId) ? styles.hiddenColumn : '',
         render: (value, rowData) => {
           if (fieldId === 'status') {
-            return <StatusBadge status={value} variant="modern" />;
+            // CHANGE THIS LINE:
+            return <EnhancedStatusBadge status={value} size="medium" />;
           }
-          
+        
           if (fieldId === 'criticality') {
-            return <CriticalityBadge criticality={value} />;
+            // CHANGE THIS LINE:
+            return <EnhancedCriticalityBadge criticality={value} size="medium" />;
           }
-          
+        
+          // ... rest of your existing render logic stays the same
           if (field.type === 'date') {
-            return formatDate(value);
+            return (
+              <span className={styles.dateValue}>
+                {formatDate(value)}
+              </span>
+            );
           }
-          
+        
           if (['description', 'actionPlanned', 'equipment'].includes(fieldId)) {
-            const calculatedMaxWidth = field.width ? 
-              `max-w-[${field.width.replace('px', '')}px]` : "max-w-[200px]";
-            return <TruncatedText text={value} maxWidth={calculatedMaxWidth} />;
+            return <TruncatedText text={value} />;
           }
-          
-          return value || '-';
+        
+          return value || <span className={styles.textMuted}>-</span>;
         }
       }))
   ), [windowWidth]);
 
+  // Enhanced actions configuration with improved button styling
   const actions = useMemo(() => ({
     label: 'Actions',
-    width: '120px',
-    minWidth: '120px',
-    content: (defect) => (
-      <div className="flex justify-center gap-1">
-        {/* Generate Report Button */}
-        <button
-          onClick={e => { 
-            e.stopPropagation(); 
-            handleGenerateReport(defect); 
-          }}
-          className="p-2 rounded-md bg-green-500/10 hover:bg-green-500/20 transition-all focus:outline-none focus:ring-2 focus:ring-green-400/50"
-          title="Generate and download defect report"
-          disabled={generatingReportForDefect === defect.id}
-        >
-          {generatingReportForDefect === defect.id ? (
-            <RefreshCw size={16} color="#10B981" className="animate-spin" />
-          ) : (
-            <FileText size={16} color="#10B981" />
+    width: '140px',
+    minWidth: '140px',
+    content: (defect) => {
+      const actionsContainerStyle = {
+        display: 'flex',
+        justifyContent: 'center',
+        gap: '4px'
+      };
+
+      return (
+        <div style={actionsContainerStyle}>
+          {/* Enhanced Generate Report Button */}
+          <button
+            onClick={e => { 
+              e.stopPropagation(); 
+              handleGenerateReport(defect); 
+            }}
+            className={`${styles.enhancedActionButton} ${styles.generate} ${
+              generatingReportForDefect === defect.id ? styles.generating : ''
+            }`}
+            title="Generate comprehensive defect report"
+            disabled={generatingReportForDefect === defect.id}
+          >
+            {generatingReportForDefect === defect.id ? (
+              <RefreshCw size={16} className={styles.spinning} />
+            ) : (
+              <FileText size={16} />
+            )}
+          </button>
+          
+          {/* Enhanced Edit Button */}
+          {permissions.actionPermissions.update && (
+            <button
+              onClick={e => { 
+                e.stopPropagation(); 
+                onEdit && onEdit(defect); 
+              }}
+              className={`${styles.enhancedActionButton} ${styles.edit}`}
+              title="Edit defect details"
+            >
+              <Eye size={16} />
+            </button>
           )}
-        </button>
-        
-        {permissions.actionPermissions.update && (
-          <button
-            onClick={e => { 
-              e.stopPropagation(); 
-              onEdit && onEdit(defect); 
-            }}
-            className="p-2 rounded-md bg-blue-500/10 hover:bg-blue-500/20 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50"
-            title="Edit defect"
-          >
-            <Eye size={16} color="#3BADE5" />
-          </button>
-        )}
-        
-        {permissions.actionPermissions.delete && (
-          <button
-            onClick={e => { 
-              e.stopPropagation(); 
-              onDelete && onDelete(defect); 
-            }}
-            className="p-2 rounded-md bg-red-500/10 hover:bg-red-500/20 transition-all focus:outline-none focus:ring-2 focus:ring-red-400/50"
-            title="Delete defect"
-          >
-            <Trash2 size={16} color="#EF4444" />
-          </button>
-        )}
-      </div>
-    )
+          
+          {/* Enhanced Delete Button */}
+          {permissions.actionPermissions.delete && (
+            <button
+              onClick={e => { 
+                e.stopPropagation(); 
+                onDelete && onDelete(defect); 
+              }}
+              className={`${styles.enhancedActionButton} ${styles.delete}`}
+              title="Delete defect"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+        </div>
+      );
+    }
   }), [permissions, onDelete, onEdit, handleGenerateReport, generatingReportForDefect]);
 
+  // Enhanced expanded content renderer with improved file display
   const renderExpandedContent = useCallback((defect) => {
     const expandedFields = Object.entries(DEFECT_FIELDS.EXPANDED)
       .sort((a, b) => a[1].priority - b[1].priority)
       .filter(([_, field]) => !(field.conditionalDisplay && !field.conditionalDisplay(defect)));
 
+    // Enhanced File List Component
     const FileListCompact = ({ files, fileType, defectId }) => {
       if (!files?.length) {
-        return <span className="text-gray-400 text-xs italic">No files</span>;
+        return (
+          <div className={styles.filesListCompact}>
+            <div className={styles.fileItemCompact}>
+              <FileText className={styles.fileIconCompact} />
+              <span className={styles.textMuted}>No files</span>
+            </div>
+          </div>
+        );
       }
       
       return (
@@ -510,18 +785,20 @@ const DefectTable = ({
           {files.map((file, index) => (
             <div key={file.id || index} className={styles.fileItemCompact}>
               <FileText className={styles.fileIconCompact} />
+              
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleFilePreview(file, defectId);
                 }}
                 className={styles.fileNameButton}
-                title="Click to preview file"
+                title={`Click to preview: ${file.name || file.originalName}`}
               >
                 {file.name || file.originalName}
               </button>
+              
               <span className={styles.fileSizeCompact}>
-                ({((file.size || 0) / 1024 / 1024).toFixed(2)} MB)
+                {file.size ? `${(file.size / 1024 / 1024).toFixed(1)}MB` : '--'}
               </span>
             </div>
           ))}
@@ -529,6 +806,7 @@ const DefectTable = ({
       );
     };
 
+    // Update your renderFieldValue function - just change these two lines:
     const renderFieldValue = (fieldId, field, value) => {
       if (field.dbField === 'initial_files') {
         return <FileListCompact files={value || []} fileType="initial" defectId={defect.id} />;
@@ -539,35 +817,56 @@ const DefectTable = ({
       }
 
       if (fieldId === 'status') {
-        return <StatusBadge status={value} variant="modern" />;
+        // CHANGE THIS LINE:
+        return <EnhancedStatusBadge status={value} size="small" />;
       }
 
       if (fieldId === 'criticality') {
-        return <CriticalityBadge criticality={value} />;
+        // CHANGE THIS LINE:
+        return <EnhancedCriticalityBadge criticality={value} size="small" />;
       }
 
+      // ... rest of your existing renderFieldValue logic stays the same
       if (field.type === 'date') {
-        return formatDate(value);
+        return (
+          <span className={styles.dateValue}>
+            {formatDate(value)}
+          </span>
+        );
       }
 
       if (field.type === 'checkbox') {
         const boolValue = typeof value === 'boolean' ? value : Boolean(value);
+        const checkboxClass = `${styles.statusBadgeCompact} ${boolValue ? styles.statusGreen : styles.statusGrey}`;
         return (
-          <div className={`inline-flex items-center gap-1 text-xs ${boolValue ? 'text-green-300' : 'text-gray-400'}`}>
-            <span className={`w-1 h-1 rounded-full ${boolValue ? 'bg-green-400' : 'bg-gray-400'}`}></span>
+          <div className={checkboxClass}>
+            <span className={styles.statusDotCompact}></span>
             {boolValue ? 'Yes' : 'No'}
           </div>
         );
       }
 
-      if (!value) return '-';
+      if (!value) return <span className={styles.textMuted}>-</span>;
       
       const stringValue = String(value);
-      return stringValue;
+      
+      // Handle long text fields
+      if (stringValue.length > 100) {
+        return (
+          <div className={styles.expandedFieldLarge}>
+            <div className={styles.expandedFieldValue} title={stringValue}>
+              {stringValue}
+            </div>
+          </div>
+        );
+      }
+      
+      return <span className={styles.expandedFieldValue}>{stringValue}</span>;
     };
 
     return (
-      <div className={styles.expandedContentContainer}>
+      <div className={styles.expandedContentContainer} style={{ position: 'relative' }}>
+        {/* Fields Grid - natural height based on content only */}
         <div className={styles.expandedUniformGrid}>
           {expandedFields.map(([fieldId, field]) => {
             const value = defect[field.dbField];
@@ -577,7 +876,7 @@ const DefectTable = ({
                 <div className={styles.expandedFieldLabel}>
                   {field.label}
                 </div>
-                <div className={styles.expandedFieldValue}>
+                <div>
                   {renderFieldValue(fieldId, field, value)}
                 </div>
               </div>
@@ -585,49 +884,60 @@ const DefectTable = ({
           })}
         </div>
         
-        {/* Enhanced Generate Report Button in expanded view */}
+        {/* Floating button - doesn't affect container height */}
         <GenerateReportButton
           defect={defect}
           onGenerate={handleGenerateReport}
           isGenerating={generatingReportForDefect === defect.id}
-          variant="floating" // Try 'pill' or 'corner' for different styles
+          variant="floating"
+          size="medium"
         />
       </div>
     );
-  }, [handleGenerateReport, generatingReportForDefect]);
+  }, [handleGenerateReport, generatingReportForDefect, handleFilePreview]);
 
+  // Main render function with enhanced styling
   return (
     <div className={styles.defectTableWrapper}>
-      {/* Table header with action buttons */}
-      <div className={styles.tableHeader}>
-        <h2 className={styles.tableTitle}>
-          Defects List ({defects.length} {defects.length === 1 ? 'item' : 'items'})
+      {/* Enhanced Table Header */}
+      <div className={styles.enhancedTableHeader}>
+        <h2 className={styles.enhancedTableTitle}>
+          Defects List 
+          <span className={styles.tableItemCount}>
+            {defects.length} {defects.length === 1 ? 'item' : 'items'}
+          </span>
         </h2>
-        <div className={styles.tableActions}>
+        
+        <div className={styles.enhancedTableActions}>
+          {/* Enhanced Export Button */}
           {permissions.actionPermissions.export && (
             <button
               onClick={onExport}
-              className={styles.actionButton}
+              className={`${styles.enhancedHeaderButton} ${styles.export}`}
               title="Export data to Excel"
             >
               <Download size={16} />
               Export Excel
             </button>
           )}
+          
+          {/* Enhanced Import Button */}
           {permissions.actionPermissions.import && (
             <button
               onClick={onImport}
-              className={styles.actionButton}
+              className={`${styles.enhancedHeaderButton} ${styles.import}`}
               title="Import VIR Excel file"
             >
               <Upload size={16} />
               Import VIR Excel
             </button>
           )}
+          
+          {/* Enhanced Add Defect Button */}
           {permissions.actionPermissions.create && (
             <button
               onClick={onAddDefect}
-              className={`${styles.actionButton} ${styles.primary}`}
+              className={`${styles.enhancedHeaderButton} ${styles.add}`}
               title="Add new defect"
             >
               <Plus size={16} />
@@ -637,19 +947,32 @@ const DefectTable = ({
         </div>
       </div>
 
-      {/* Main table container */}
+      {/* Main table container with enhanced styling */}
       <div className={styles.responsiveTableContainer}>
         {loading ? (
-          <div className={styles.loadingContainer}>
-            <div className={styles.loadingSpinner}></div>
-            <p>Loading defect data...</p>
+          <div className={styles.enhancedLoadingContainer}>
+            <div className={styles.enhancedLoadingSpinner}></div>
+            <p className={styles.enhancedLoadingText}>Loading defect data...</p>
+            <div className={styles.enhancedLoadingDots}>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
           </div>
         ) : paginatedDefects.length === 0 ? (
-          <div className={styles.noResults}>
-            <p>{emptyMessage}</p>
+          <div className={styles.enhancedEmptyState}>
+            <div className={styles.enhancedEmptyIcon}>
+              <FileText size={32} className={styles.textMuted} />
+            </div>
+            <div className={styles.enhancedEmptyText}>
+              <h3>{emptyMessage}</h3>
+              {defects.length > 0 && (
+                <p>Try adjusting your search or filters</p>
+              )}
+            </div>
             {defects.length > 0 && (
               <button 
-                className={styles.resetFilters} 
+                className={styles.enhancedEmptyAction}
                 onClick={() => setCurrentPage(1)}
               >
                 Go to First Page
@@ -671,19 +994,21 @@ const DefectTable = ({
         )}
       </div>
 
-      {/* Floating Pagination */}
+      {/* Enhanced Floating Pagination */}
       {totalPages > 1 && !loading && paginatedDefects.length > 0 && (
-        <FloatingPagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={defects.length}
-          itemsPerPage={PER_PAGE}
-          onPageChange={handlePageChange}
-          position="bottom-center"
-        />
+        <div className={styles.enhancedPaginationContainer}>
+          <FloatingPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={defects.length}
+            itemsPerPage={PER_PAGE}
+            onPageChange={handlePageChange}
+            position="bottom-center"
+          />
+        </div>
       )}
 
-      {/* Report Generation Progress Modal */}
+      {/* Enhanced Report Generation Progress Modal */}
       <ReportProgressModal
         isOpen={showReportProgress}
         onClose={() => {
@@ -696,15 +1021,6 @@ const DefectTable = ({
         message={reportMessage}
         defectId={generatingReportForDefect}
       />
-
-      {/* File Preview Modal - Add this if you have the FilePreviewModal component */}
-      {/* <FilePreviewModal
-        file={previewFile}
-        isOpen={showPreview}
-        onClose={handleClosePreview}
-        defectId={previewDefectId}
-        currentUser={currentUser}
-      /> */}
     </div>
   );
 };

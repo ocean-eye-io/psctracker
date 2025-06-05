@@ -233,59 +233,59 @@
 
 /* Enhanced Expanded Content Styles */
 .expandedContentContainer {
-  padding: 20px 24px;
+  padding: 24px;
   position: relative;
-  background: linear-gradient(135deg,
-    rgba(14, 30, 47, 0.95) 0%,
-    rgba(12, 26, 41, 0.95) 50%,
-    rgba(10, 23, 37, 0.95) 100%);
-  border-radius: 12px;
-  border: 1px solid rgba(59, 173, 229, 0.2);
-  margin: 8px 16px 16px;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(145deg, 
+    rgba(15, 25, 40, 0.95) 0%,
+    rgba(20, 30, 45, 0.95) 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 12px 20px 20px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
   transition: all 0.3s ease;
-  animation: expandIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
 
+/* Subtle top gradient accent */
 .expandedContentContainer::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 2px;
-  background: linear-gradient(90deg,
-    transparent,
-    rgba(59, 173, 229, 0.6),
-    transparent);
-  border-radius: 12px 12px 0 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%,
+    rgba(59, 173, 229, 0.4) 25%,
+    rgba(59, 173, 229, 0.6) 50%,
+    rgba(59, 173, 229, 0.4) 75%,
+    transparent 100%);
 }
 
-/* Uniform Grid Layout */
+/* Modern Grid Layout */
 .expandedUniformGrid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
-  align-items: stretch;
-  width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
   position: relative;
 }
 
-/* Grid Fields */
+/* Refined Field Styling */
 .expandedField {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 6px 8px;
+  gap: 6px;
+  padding: 12px 16px;
   background: rgba(255, 255, 255, 0.02);
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.2s ease;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.25s ease;
   position: relative;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .expandedField::before {
@@ -293,40 +293,48 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: 3px;
+  width: 2px;
   height: 100%;
   background: linear-gradient(to bottom,
-    rgba(59, 173, 229, 0.6),
-    rgba(59, 173, 229, 0.2));
-  transition: all 0.2s ease;
+    rgba(59, 173, 229, 0.5) 0%,
+    rgba(59, 173, 229, 0.1) 100%);
+  transition: all 0.25s ease;
 }
 
 .expandedField:hover {
   background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(59, 173, 229, 0.3);
+  border-color: rgba(59, 173, 229, 0.2);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .expandedField:hover::before {
   background: linear-gradient(to bottom,
-    rgba(59, 173, 229, 0.8),
-    rgba(59, 173, 229, 0.4));
+    rgba(59, 173, 229, 0.8) 0%,
+    rgba(59, 173, 229, 0.3) 100%);
+  width: 3px;
 }
 
+/* Subtle Field Labels */
 .expandedFieldLabel {
   font-weight: 500;
-  color: rgba(244, 244, 244, 0.7);
+  color: rgba(244, 244, 244, 0.65);
   font-size: 0.7rem;
-  line-height: 1.1;
+  line-height: 1.2;
   text-transform: uppercase;
-  letter-spacing: 0.2px;
-  margin-bottom: 1px;
+  letter-spacing: 0.8px;
+  margin-bottom: 2px;
+  transition: color 0.25s ease;
+}
+
+.expandedField:hover .expandedFieldLabel {
+  color: rgba(244, 244, 244, 0.8);
 }
 
 .expandedFieldValue {
-  color: var(--text-light);
-  font-size: 0.75rem;
-  line-height: 1.2;
+  color: rgba(244, 244, 244, 0.95);
+  font-size: 0.8rem;
+  line-height: 1.3;
   font-weight: 500;
   word-break: break-word;
 }
@@ -467,223 +475,621 @@
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
 }
 
-/* ========================================
-   ENHANCED STATUS BADGES
-   ======================================== */
+/* Modern Generate Report Button - Bottom Right Positioned */
+.expandedFieldActionBottomRight {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 25;
 
-/* Status Badges - Modern Design with Icons */
+  /* Button styling */
+  background: linear-gradient(135deg, 
+    rgba(59, 173, 229, 0.9) 0%, 
+    rgba(41, 128, 185, 0.9) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(59, 173, 229, 0.3);
+  border-radius: 12px;
+
+  /* Size and spacing */
+  padding: 10px 16px;
+  min-width: 140px;
+  height: 44px;
+
+  /* Typography */
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+
+  /* Layout */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  /* Interactions */
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Effects */
+  box-shadow: 
+    0 4px 16px rgba(59, 173, 229, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+
+  overflow: hidden;
+}
+
+/* Hover effects for bottom right button */
+.expandedFieldActionBottomRight:hover {
+  transform: translateY(-2px) scale(1.02);
+  background: linear-gradient(135deg, 
+    rgba(59, 173, 229, 1) 0%, 
+    rgba(41, 128, 185, 1) 100%);
+  border-color: rgba(59, 173, 229, 0.5);
+  box-shadow: 
+    0 8px 24px rgba(59, 173, 229, 0.3),
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.expandedFieldActionBottomRight:active {
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 
+    0 4px 16px rgba(59, 173, 229, 0.25),
+    0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Disabled state for bottom right button */
+.expandedFieldActionBottomRight.disabled {
+  background: linear-gradient(135deg, 
+    rgba(100, 116, 139, 0.8) 0%, 
+    rgba(71, 85, 105, 0.8) 100%);
+  border-color: rgba(100, 116, 139, 0.3);
+  cursor: not-allowed;
+  transform: none;
+  opacity: 0.7;
+}
+
+.expandedFieldActionBottomRight.disabled:hover {
+  transform: none;
+  background: linear-gradient(135deg, 
+    rgba(100, 116, 139, 0.8) 0%, 
+    rgba(71, 85, 105, 0.8) 100%);
+  box-shadow: 
+    0 4px 16px rgba(59, 173, 229, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Shimmer effect for bottom right button */
+.expandedFieldActionBottomRight::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  transition: left 0.6s ease;
+}
+
+.expandedFieldActionBottomRight:hover::before {
+  left: 100%;
+}
+
+/* Enhanced Bright & Sleek Status Badges - Ultra Modern Design */
+
 .statusBadgeModern {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  border-radius: 20px;
+  padding: 6px 14px;
+  border-radius: 12px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  border: 1px solid;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 85px;
+  justify-content: center;
   position: relative;
   overflow: hidden;
-  transition: all 0.3s ease;
-  min-width: 90px;
-  justify-content: center;
-  border: none;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-/* Status Badge - Open (Red) */
-.statusOpen {
-  background: var(--status-open-bg);
+/* Bright gradient overlay for depth */
+.statusBadgeModern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.05) 100%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Animated glow effect */
+.statusBadgeModern::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: inherit;
+  border-radius: inherit;
+  z-index: -1;
+  filter: blur(8px);
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.statusBadgeModern:hover::after {
+  opacity: 0.9;
+}
+
+/* OPEN Status - Bright Red with Energy */
+.statusBadgeModern.open {
+  background: linear-gradient(135deg, #ff4757 0%, #ff3838 50%, #ff6b35 100%);
   color: white;
-  box-shadow: var(--shadow-glow-red), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 71, 87, 0.6);
+  box-shadow: 
+    0 4px 16px rgba(255, 71, 87, 0.4),
+    0 0 20px rgba(255, 71, 87, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.statusOpen::before {
-  content: '●';
-  animation: pulse 2s infinite;
+.statusBadgeModern.open:hover {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 50%, #ff7961 100%);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 
+    0 8px 24px rgba(255, 71, 87, 0.5),
+    0 0 30px rgba(255, 71, 87, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
-.statusOpen:hover {
-  transform: translateY(-1px) scale(1.05);
-  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
-}
-
-/* Status Badge - Closed (Green) */
-.statusClosed {
-  background: var(--status-closed-bg);
+/* CLOSED Status - Bright Green with Success Glow */
+.statusBadgeModern.closed {
+  background: linear-gradient(135deg, #00c851 0%, #00bf63 50%, #1dd1a1 100%);
   color: white;
-  box-shadow: var(--shadow-glow-green), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border-color: rgba(0, 200, 81, 0.6);
+  box-shadow: 
+    0 4px 16px rgba(0, 200, 81, 0.4),
+    0 0 20px rgba(0, 200, 81, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.statusClosed::before {
-  content: '✓';
-  font-weight: bold;
+.statusBadgeModern.closed:hover {
+  background: linear-gradient(135deg, #00e676 0%, #00c853 50%, #69f0ae 100%);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 
+    0 8px 24px rgba(0, 200, 81, 0.5),
+    0 0 30px rgba(0, 200, 81, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
-.statusClosed:hover {
-  transform: translateY(-1px) scale(1.05);
-  box-shadow: 0 6px 20px rgba(81, 207, 102, 0.6);
+/* IN PROGRESS Status - Bright Orange with Dynamic Energy */
+.statusBadgeModern.inProgress {
+  background: linear-gradient(135deg, #ff8a00 0%, #ffb347 50%, #ffa726 100%);
+  color: white;
+  border-color: rgba(255, 138, 0, 0.6);
+  box-shadow: 
+    0 4px 16px rgba(255, 138, 0, 0.4),
+    0 0 20px rgba(255, 138, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-/* Status Badge - In Progress (Yellow/Orange) */
-.statusInProgress {
-  background: var(--status-progress-bg);
-  color: #1A1A1A;
-  box-shadow: 0 4px 15px rgba(255, 212, 59, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+.statusBadgeModern.inProgress:hover {
+  background: linear-gradient(135deg, #ffb74d 0%, #ffa726 50%, #ff9800 100%);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 
+    0 8px 24px rgba(255, 138, 0, 0.5),
+    0 0 30px rgba(255, 138, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
-.statusInProgress::before {
-  content: '⟳';
-  animation: spin 2s linear infinite;
-}
-
-.statusInProgress:hover {
-  transform: translateY(-1px) scale(1.05);
-  box-shadow: 0 6px 20px rgba(255, 212, 59, 0.6);
-}
-
-/* ========================================
-   ENHANCED CRITICALITY BADGES
-   ======================================== */
-
-/* Criticality Badges - Priority System Design */
+/* Enhanced Bright Criticality Badges */
 .criticalityBadgeModern {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 6px;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 10px;
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
+  border: 1px solid;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 80px;
+  justify-content: center;
   position: relative;
   overflow: hidden;
-  transition: all 0.3s ease;
-  min-width: 70px;
-  justify-content: center;
-  border: 2px solid transparent;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-/* High Criticality - Red with Warning Pattern */
+/* Bright gradient overlay for criticality */
+.criticalityBadgeModern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.05) 100%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* HIGH Criticality - Bright Red with Warning Icon */
 .criticalityHigh {
-  background: var(--criticality-high-bg);
-  background-image: repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 2px,
-    rgba(255, 255, 255, 0.1) 2px,
-    rgba(255, 255, 255, 0.1) 4px
-  );
+  background: linear-gradient(135deg, #e53e3e 0%, #c53030 50%, #fc8181 100%);
   color: white;
-  border-color: #FF6B6B;
-  box-shadow: 0 4px 15px rgba(255, 71, 87, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border-color: rgba(229, 62, 62, 0.6);
+  box-shadow: 
+    0 4px 14px rgba(229, 62, 62, 0.4),
+    0 0 18px rgba(229, 62, 62, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.criticalityHigh::before {
+.criticalityHigh::after {
   content: '⚠';
-  font-size: 0.8rem;
-  animation: shake 0.5s ease-in-out infinite alternate;
+  font-size: 0.65rem;
+  margin-left: 3px;
+  opacity: 0.9;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
 }
 
 .criticalityHigh:hover {
-  transform: translateY(-1px) scale(1.05);
-  box-shadow: 0 6px 20px rgba(255, 71, 87, 0.7);
+  background: linear-gradient(135deg, #fc8181 0%, #f56565 50%, #e53e3e 100%);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 
+    0 6px 20px rgba(229, 62, 62, 0.5),
+    0 0 25px rgba(229, 62, 62, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
-/* Medium Criticality - Orange/Yellow */
+/* MEDIUM Criticality - Bright Orange/Amber */
 .criticalityMedium {
-  background: var(--criticality-medium-bg);
+  background: linear-gradient(135deg, #ed8936 0%, #dd6b20 50%, #fbb040 100%);
   color: white;
-  border-color: #FFB74D;
-  box-shadow: var(--shadow-glow-orange), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border-color: rgba(237, 137, 54, 0.6);
+  box-shadow: 
+    0 4px 14px rgba(237, 137, 54, 0.4),
+    0 0 18px rgba(237, 137, 54, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.criticalityMedium::before {
+.criticalityMedium::after {
   content: '●';
-  color: #FFE0B2;
+  font-size: 0.55rem;
+  margin-left: 3px;
+  opacity: 0.9;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
 }
 
 .criticalityMedium:hover {
-  transform: translateY(-1px) scale(1.05);
-  box-shadow: 0 6px 20px rgba(255, 167, 38, 0.6);
+  background: linear-gradient(135deg, #fbb040 0%, #f6ad55 50%, #ed8936 100%);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 
+    0 6px 20px rgba(237, 137, 54, 0.5),
+    0 0 25px rgba(237, 137, 54, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
-/* Low Criticality - Blue/Green */
+/* LOW Criticality - Bright Blue/Cyan */
 .criticalityLow {
-  background: var(--criticality-low-bg);
+  background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 50%, #63b3ed 100%);
   color: white;
-  border-color: #64B5F6;
-  box-shadow: 0 4px 15px rgba(66, 165, 245, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border-color: rgba(49, 130, 206, 0.6);
+  box-shadow: 
+    0 4px 14px rgba(49, 130, 206, 0.4),
+    0 0 18px rgba(49, 130, 206, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.criticalityLow::before {
+.criticalityLow::after {
   content: '●';
-  color: #BBDEFB;
+  font-size: 0.55rem;
+  margin-left: 3px;
+  opacity: 0.9;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
 }
 
 .criticalityLow:hover {
-  transform: translateY(-1px) scale(1.05);
-  box-shadow: 0 6px 20px rgba(66, 165, 245, 0.6);
+  background: linear-gradient(135deg, #63b3ed 0%, #4299e1 50%, #3182ce 100%);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 
+    0 6px 20px rgba(49, 130, 206, 0.5),
+    0 0 25px rgba(49, 130, 206, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
-/* Alternative Minimalist Approach */
-.statusMinimal {
+/* Ultra Bright Alternative - Neon Style */
+.statusBadgeNeon {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 6px 14px;
+  border-radius: 8px;
   font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 2px solid;
+  transition: all 0.3s ease;
+  min-width: 85px;
+  justify-content: center;
+  position: relative;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.statusBadgeNeon.open {
+  color: #ff073a;
+  border-color: #ff073a;
+  box-shadow: 
+    0 0 20px rgba(255, 7, 58, 0.6),
+    inset 0 0 20px rgba(255, 7, 58, 0.1);
+  text-shadow: 0 0 10px rgba(255, 7, 58, 0.8);
+}
+
+.statusBadgeNeon.closed {
+  color: #39ff14;
+  border-color: #39ff14;
+  box-shadow: 
+    0 0 20px rgba(57, 255, 20, 0.6),
+    inset 0 0 20px rgba(57, 255, 20, 0.1);
+  text-shadow: 0 0 10px rgba(57, 255, 20, 0.8);
+}
+
+.statusBadgeNeon.inProgress {
+  color: #ff8c00;
+  border-color: #ff8c00;
+  box-shadow: 
+    0 0 20px rgba(255, 140, 0, 0.6),
+    inset 0 0 20px rgba(255, 140, 0, 0.1);
+  text-shadow: 0 0 10px rgba(255, 140, 0, 0.8);
+}
+
+.statusBadgeNeon:hover {
+  transform: scale(1.05);
+  filter: brightness(1.2);
+}
+
+/* Pulse Animation for Active States */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 
+      0 4px 16px currentColor,
+      0 0 20px currentColor;
+  }
+  50% {
+    box-shadow: 
+      0 6px 24px currentColor,
+      0 0 30px currentColor;
+  }
+}
+
+.statusBadgeModern.open,
+.criticalityHigh {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+/* Shimmer Effect for Premium Look */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.statusBadgeModern:hover::before,
+.criticalityBadgeModern:hover::before {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: shimmer 0.8s ease-out;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .statusBadgeModern,
+  .criticalityBadgeModern {
+    font-size: 0.65rem;
+    padding: 4px 10px;
+    min-width: 70px;
+    font-weight: 600;
+  }
+
+  .statusBadgeModern::after,
+  .criticalityBadgeModern::after {
+    font-size: 0.5rem;
+  }
+}
+
+/* Alternative Vibrant Glass Style */
+.statusBadgeGlass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.statusBadgeGlass.open {
+  color: #ff6b6b;
+  border-color: rgba(255, 107, 107, 0.5);
+  background: linear-gradient(135deg, 
+    rgba(255, 107, 107, 0.2) 0%, 
+    rgba(255, 71, 87, 0.1) 100%);
+}
+
+.statusBadgeGlass.closed {
+  color: #51cf66;
+  border-color: rgba(81, 207, 102, 0.5);
+  background: linear-gradient(135deg, 
+    rgba(81, 207, 102, 0.2) 0%, 
+    rgba(64, 192, 87, 0.1) 100%);
+}
+
+.statusBadgeGlass.inProgress {
+  color: #ffa726;
+  border-color: rgba(255, 167, 38, 0.5);
+  background: linear-gradient(135deg, 
+    rgba(255, 167, 38, 0.2) 0%, 
+    rgba(251, 140, 0, 0.1) 100%);
+}
+
+/* ALTERNATIVE: Ultra Modern Pill Style */
+.statusBadgePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
   font-weight: 500;
-  border-left: 3px solid;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border: none;
+  transition: all 0.2s ease;
+  min-width: 70px;
+  justify-content: center;
+  position: relative;
 }
 
-.statusMinimal.open {
-  background: rgba(255, 107, 107, 0.1);
-  border-left-color: #FF6B6B;
-  color: #FF6B6B;
+.statusBadgePill.open {
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
 }
 
-.statusMinimal.closed {
-  background: rgba(81, 207, 102, 0.1);
-  border-left-color: #51CF66;
-  color: #51CF66;
+.statusBadgePill.closed {
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
 }
 
-.statusMinimal.inProgress {
-  background: rgba(255, 212, 59, 0.1);
-  border-left-color: #FFD43B;
-  color: #FAB005;
+.statusBadgePill.inProgress {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
 }
 
-/* Dot Indicator Style */
-.statusDot {
+/* Status indicator dot */
+.statusBadgePill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-right: 2px;
+}
+
+/* ALTERNATIVE: Minimal with left border accent */
+.statusBadgeAccent {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.8rem;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-left: 3px solid;
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
 }
 
-.statusDot::before {
-  content: '';
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  box-shadow: 0 0 10px currentColor;
-  animation: glow 2s ease-in-out infinite alternate;
+.statusBadgeAccent.open {
+  border-left-color: #dc2626;
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.05);
 }
 
-.statusDot.open {
-  color: #FF6B6B;
+.statusBadgeAccent.closed {
+  border-left-color: #16a34a;
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.05);
 }
 
-.statusDot.closed {
-  color: #51CF66;
+.statusBadgeAccent.inProgress {
+  border-left-color: #d97706;
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.05);
 }
 
-.statusDot.inProgress {
-  color: #FFD43B;
+.statusBadgeAccent:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(2px);
+}
+
+/* Enhanced criticality with better visual hierarchy */
+.criticalityBadgeEnhanced {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  position: relative;
+  backdrop-filter: blur(8px);
+}
+
+.criticalityBadgeEnhanced.high {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+  color: #dc2626;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.criticalityBadgeEnhanced.medium {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05));
+  color: #d97706;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.criticalityBadgeEnhanced.low {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+  color: #2563eb;
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .statusBadgeModern,
+  .criticalityBadgeModern {
+    font-size: 0.65rem;
+    padding: 4px 8px;
+    min-width: 60px;
+  }
+
+  .statusBadgeModern::after,
+  .criticalityBadgeModern::after {
+    display: none;
+  }
 }
 
 /* Special augmented text fields */
@@ -722,6 +1128,10 @@
   scrollbar-width: thin;
   scrollbar-color: rgba(59, 173, 229, 0.3) transparent;
   max-width: 200px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .fileItemCompact {
@@ -730,15 +1140,18 @@
   gap: 6px;
   font-size: 0.65rem;
   color: var(--text-light);
-  padding: 2px 4px;
-  border-radius: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
   transition: background-color 0.2s ease;
   position: relative;
   overflow: hidden;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .fileItemCompact:hover {
-  background: rgba(59, 173, 229, 0.1);
+  background: rgba(59, 173, 229, 0.08);
+  border-color: rgba(59, 173, 229, 0.15);
 }
 
 .fileItemCompact::before {
@@ -781,9 +1194,9 @@
 .fileNameButton {
   background: none;
   border: none;
-  color: var(--blue-accent);
+  color: rgba(59, 173, 229, 0.9);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 0.7rem;
   text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -798,7 +1211,8 @@
 
 .fileNameButton:hover {
   text-decoration-color: var(--blue-accent);
-  color: #4FC3F7;
+  color: rgba(59, 173, 229, 1);
+  text-shadow: 0 0 8px rgba(59, 173, 229, 0.3);
 }
 
 .fileNameButton::after {
@@ -864,12 +1278,15 @@
 
 @media (max-width: 768px) {
   .expandedUniformGrid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px;
+    margin-bottom: 50px; /* More space for bottom button */
   }
 
   .expandedContentContainer {
-    padding: 10px 12px;
-    margin: 4px 12px 8px;
+    padding: 16px;
+    margin: 8px 12px 16px;
+    border-radius: 12px;
   }
 
   .expandedFieldAction {
@@ -878,6 +1295,19 @@
     font-size: 0.7rem;
     top: 12px;
     right: 12px;
+  }
+
+  .expandedFieldActionBottomRight {
+    bottom: 12px;
+    right: 12px;
+    min-width: 120px;
+    height: 40px;
+    padding: 8px 12px;
+    font-size: 0.75rem;
+  }
+
+  .expandedField {
+    padding: 10px 12px;
   }
 
   .statusBadgeModern,
@@ -2144,7 +2574,7 @@
 
 .dataTable tbody tr {
   background-color: var(--table-row-bg);
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .dataTable tbody tr:nth-child(even) {
@@ -2153,6 +2583,7 @@
 
 .dataTable tbody tr:hover {
   background-color: var(--table-row-hover-bg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .dataTable td {
@@ -2308,6 +2739,1003 @@
   .actionButton {
     font-size: 12px;
     padding: 6px 10px;
+  }
+}
+
+/* Enhanced Generate Report Button Styles */
+.expandedFieldAction {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+  width: 140px;
+  height: 40px;
+  padding: 0;
+  background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+  border: none;
+  border-radius: 20px;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 
+    0 4px 15px rgba(0, 210, 255, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.expandedFieldAction::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  transition: left 0.6s ease;
+}
+
+.expandedFieldAction:hover::before {
+  left: 100%;
+}
+
+.expandedFieldAction:active {
+  transform: translateY(-1px) scale(1.02);
+}
+
+.expandedFieldAction.disabled {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  opacity: 0.7;
+}
+
+.expandedFieldAction.disabled:hover {
+  transform: none;
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+}
+
+/* Alternative Button Styles */
+.expandedFieldActionPill {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50px;
+  padding: 8px 16px;
+  color: #00d2ff;
+  font-size: 0.7rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.expandedFieldActionPill:hover {
+  background: rgba(0, 210, 255, 0.1);
+  border-color: #00d2ff;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 40px rgba(0, 210, 255, 0.3);
+}
+
+.expandedFieldActionCorner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 20;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 0 12px 0 12px;
+  padding: 10px 14px;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.expandedFieldActionCorner:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+/* Enhanced Action Button Styles */
+.enhancedActionButton {
+  position: relative;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.enhancedActionButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+}
+
+.enhancedActionButton:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.enhancedActionButton:active {
+  transform: scale(0.95);
+}
+
+.enhancedActionButton.generate {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
+.enhancedActionButton.generate:hover {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.6);
+  box-shadow: 0 4px 15px rgba(34, 197, 94, 0.25);
+}
+
+.enhancedActionButton.edit {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+}
+
+.enhancedActionButton.edit:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.25);
+}
+
+.enhancedActionButton.delete {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.enhancedActionButton.delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.6);
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25);
+}
+
+.enhancedActionButton.generating {
+  background: rgba(34, 197, 94, 0.2);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Enhanced Badge Styles using Action Button Base */
+.enhancedActionButton.badgeStatus {
+  min-width: 85px;
+  height: 28px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 6px 10px;
+  cursor: default;
+  justify-content: center;
+}
+
+.enhancedActionButton.badgeCriticality {
+  min-width: 80px;
+  height: 28px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 5px 10px;
+  cursor: default;
+  justify-content: center;
+}
+
+/* Status Colors */
+.enhancedActionButton.statusOpen {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #dc2626;
+}
+
+.enhancedActionButton.statusClosed {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(22, 163, 74, 0.05));
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #16a34a;
+}
+
+.enhancedActionButton.statusProgress {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05));
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #d97706;
+}
+
+/* Criticality Colors */
+.enhancedActionButton.criticalityHigh {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #dc2626;
+}
+
+.enhancedActionButton.criticalityMedium {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05));
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #d97706;
+}
+
+.enhancedActionButton.criticalityLow {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #2563eb;
+}
+
+/* Small size for expanded content */
+.enhancedActionButton.badgeSmall {
+  min-width: 70px;
+  height: 24px;
+  font-size: 0.65rem;
+  padding: 4px 8px;
+}
+
+/* Remove hover effects for badges */
+.enhancedActionButton.badgeStatus:hover,
+.enhancedActionButton.badgeCriticality:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Report Progress Modal Styles */
+.reportProgressOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.reportProgressModal {
+  background: linear-gradient(145deg, #0a1725, #112032);
+  border: 1px solid rgba(244, 244, 244, 0.1);
+  border-radius: 12px;
+  max-width: 400px;
+  width: 100%;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: slideIn 0.3s ease-out;
+}
+
+.reportProgressHeader {
+  padding: 20px;
+  border-bottom: 1px solid rgba(244, 244, 244, 0.1);
+  background: linear-gradient(145deg, #132337, #1a2c42);
+}
+
+.reportProgressHeader h3 {
+  color: #f4f4f4;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reportProgressDefectId {
+  color: rgba(244, 244, 244, 0.6);
+  font-size: 14px;
+}
+
+.reportProgressContent {
+  padding: 24px;
+}
+
+.reportProgressBar {
+  width: 100%;
+  height: 8px;
+  background: rgba(244, 244, 244, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.reportProgressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #3bade5, #4fc3f7);
+  border-radius: 44px;
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+.reportProgressFill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: progressShine 2s infinite;
+}
+
+.reportProgressText {
+  text-align: center;
+  color: #f4f4f4;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.reportProgressFooter {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(244, 244, 244, 0.1);
+  background: rgba(11, 22, 35, 0.5);
+}
+
+.reportProgressClose {
+  width: 100%;
+  background: #22c55e;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.reportProgressClose:hover {
+  background: #16a34a;
+  transform: translateY(-1px);
+}
+
+/* Utility Classes */
+.textMuted {
+  color: rgba(244, 244, 244, 0.6);
+  font-style: italic;
+}
+
+.dateValue {
+  color: #f4f4f4;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.hiddenColumn {
+  display: none;
+}
+
+.truncateText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+  transition: color 0.2s ease;
+}
+
+.truncateText:hover {
+  color: #3bade5;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+.pulseIcon {
+  color: #fbbf24;
+  animation: pulse 2s infinite;
+}
+
+/* File List Styles */
+.filesListCompact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 100px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 173, 229, 0.3) transparent;
+  max-width: 200px;
+}
+
+.fileItemCompact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.65rem;
+  color: #f4f4f4;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.fileItemCompact:hover {
+  background: rgba(59, 173, 229, 0.1);
+}
+
+.fileIconCompact {
+  color: #3bade5;
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+}
+
+.fileNameButton {
+  background: none;
+  border: none;
+  color: #3bade5;
+  cursor: pointer;
+  font-size: 11px;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+  padding: 0;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  transition: all 0.2s ease;
+}
+
+.fileNameButton:hover {
+  text-decoration-color: #3bade5;
+  color: #4fc3f7;
+}
+
+.fileSizeCompact {
+  font-size: 10px;
+  color: rgba(244, 244, 244, 0.6);
+  flex-shrink: 0;
+}
+
+/* Status Badge Compact */
+.statusBadgeCompact {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.statusDotCompact {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.statusGreen {
+  background-color: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.statusGrey {
+  background-color: rgba(149, 165, 166, 0.15);
+  color: #95a5a6;
+  border: 1px solid rgba(149, 165, 166, 0.3);
+}
+
+/* Enhanced Table Header Styles */
+.enhancedTableHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, 
+    rgba(10, 20, 35, 0.95) 0%,
+    rgba(15, 25, 40, 0.95) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.enhancedTableTitle {
+  font-size: 1.3rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #f4f4f4 0%, rgba(244, 244, 244, 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.enhancedTableTitle::before {
+  content: '';
+  width: 3px;
+  height: 28px;
+  background: linear-gradient(to bottom, 
+    rgba(59, 173, 229, 0.8) 0%, 
+    rgba(59, 173, 229, 0.3) 100%);
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(59, 173, 229, 0.3);
+}
+
+.tableItemCount {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: rgba(244, 244, 244, 0.6);
+  background: rgba(244, 244, 244, 0.1);
+  padding: 4px 8px;
+  border-radius: 12px;
+  margin-left: 8px;
+}
+
+.enhancedTableActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.enhancedHeaderButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.enhancedHeaderButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  transition: left 0.5s ease;
+}
+
+.enhancedHeaderButton:hover::before {
+  left: 100%;
+}
+
+.enhancedHeaderButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.enhancedHeaderButton:active {
+  transform: translateY(0) scale(1);
+}
+
+/* .enhancedHeaderButton.export {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.8), rgba(5, 150, 105, 0.8));
+  border-color: rgba(16, 185, 129, 0.5);
+  color: white;
+}
+
+.enhancedHeaderButton.export:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 1), rgba(5, 150, 105, 1));
+  border-color: rgba(16, 185, 129, 0.7);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+} */
+/* Subtle Export Button Styles - Much more understated */
+
+.enhancedHeaderButton.export {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+  border-color: rgba(59, 130, 246, 0.25);
+  color: #3b82f6;
+  /* Subtle text shadow for better readability */
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.enhancedHeaderButton.export:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.08));
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #2563eb;
+  /* Very subtle glow on hover */
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+.enhancedHeaderButton.import {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+  border-color: rgba(59, 130, 246, 0.25);
+  color: #3b82f6;
+  /* Subtle text shadow for better readability */
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.enhancedHeaderButton.import:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.08));
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #2563eb;
+  /* Very subtle glow on hover */
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+/* .enhancedHeaderButton.import {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.8), rgba(126, 34, 206, 0.8));
+  border-color: rgba(147, 51, 234, 0.5);
+  color: white;
+}
+
+.enhancedHeaderButton.import:hover {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 1), rgba(126, 34, 206, 1));
+  border-color: rgba(147, 51, 234, 0.7);
+  box-shadow: 0 4px 15px rgba(147, 51, 234, 0.3);
+} */
+
+.enhancedHeaderButton.add {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+  border-color: rgba(59, 130, 246, 0.25);
+  color: #3b82f6;
+  /* Subtle text shadow for better readability */
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.enhancedHeaderButton.add:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.08));
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #2563eb;
+  /* Very subtle glow on hover */
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+/* Loading States */
+.enhancedLoadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  gap: 16px;
+  background: linear-gradient(145deg, 
+    rgba(15, 25, 40, 0.3) 0%,
+    rgba(20, 30, 45, 0.3) 100%);
+  border-radius: 16px;
+  margin: 40px;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.enhancedLoadingSpinner {
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+
+.enhancedLoadingSpinner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 4px solid rgba(244, 244, 244, 0.2);
+  border-top: 4px solid #3bade5;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.enhancedLoadingSpinner::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 2px solid transparent;
+  border-right: 2px solid #4fc3f7;
+  border-radius: 50%;
+  animation: spin 1.5s linear infinite reverse;
+}
+
+.enhancedLoadingText {
+  color: rgba(244, 244, 244, 0.8);
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.enhancedLoadingDots {
+  display: flex;
+  gap: 4px;
+}
+
+.enhancedLoadingDots span {
+  width: 8px;
+  height: 8px;
+  background: #3bade5;
+  border-radius: 50%;
+  animation: bounce 1.4s ease-in-out infinite both;
+}
+
+.enhancedLoadingDots span:nth-child(1) { 
+  animation-delay: -0.32s; 
+}
+
+.enhancedLoadingDots span:nth-child(2) { 
+  animation-delay: -0.16s; 
+}
+
+.enhancedLoadingDots span:nth-child(3) { 
+  animation-delay: 0s; 
+}
+
+/* Empty State */
+.enhancedEmptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  gap: 16px;
+  background: linear-gradient(145deg, 
+    rgba(15, 25, 40, 0.3) 0%,
+    rgba(20, 30, 45, 0.3) 100%);
+  border-radius: 16px;
+  margin: 40px;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.enhancedEmptyIcon {
+  width: 96px;
+  height: 96px;
+  background: linear-gradient(135deg, rgba(75, 85, 99, 0.8), rgba(55, 65, 81, 0.8));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(244, 244, 244, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.enhancedEmptyText {
+  text-align: center;
+  max-width: 300px;
+}
+
+.enhancedEmptyText h3 {
+  color: #f4f4f4;
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin: 0 0 8px 0;
+}
+
+.enhancedEmptyText p {
+  color: rgba(244, 244, 244, 0.6);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.enhancedEmptyAction {
+  background: rgba(59, 130, 246, 0.8);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.enhancedEmptyAction:hover {
+  background: rgba(59, 130, 246, 1);
+  transform: translateY(-1px);
+}
+
+/* Enhanced Pagination Container */
+.enhancedPaginationContainer {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  background: rgba(14, 30, 47, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(244, 244, 244, 0.1);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Expanded Content Styles */
+.expandedFieldLarge {
+  max-height: 80px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 173, 229, 0.3) transparent;
+}
+
+.expandedFieldLarge .expandedFieldValue {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #f4f4f4;
+}
+
+/* Animations */
+@keyframes progressShine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 5px currentColor; }
+  100% { box-shadow: 0 0 15px currentColor; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { 
+    box-shadow: 0 4px 15px rgba(255, 71, 87, 0.5);
+  }
+  50% { 
+    box-shadow: 0 4px 25px rgba(255, 71, 87, 0.8), 0 0 30px rgba(255, 71, 87, 0.3);
+  }
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  } 
+  40% {
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from {
+    transform: scale(0.9) translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Scrollbar Styles */
+.filesListCompact::-webkit-scrollbar,
+.expandedFieldLarge::-webkit-scrollbar {
+  width: 3px;
+}
+
+.filesListCompact::-webkit-scrollbar-track,
+.expandedFieldLarge::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.filesListCompact::-webkit-scrollbar-thumb,
+.expandedFieldLarge::-webkit-scrollbar-thumb {
+  background-color: rgba(59, 173, 229, 0.3);
+  border-radius: 2px;
+}
+
+.filesListCompact::-webkit-scrollbar-thumb:hover,
+.expandedFieldLarge::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(59, 173, 229, 0.5);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .statusBadgeModern,
+  .criticalityBadgeModern {
+    font-size: 0.65rem;
+    padding: 4px 8px;
+    min-width: 70px;
+  }
+
+  .expandedFieldAction {
+    width: 120px;
+    height: 36px;
+    font-size: 0.7rem;
+    top: 12px;
+    right: 12px;
+  }
+
+  .enhancedTableHeader {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .enhancedTableActions {
+    justify-content: center;
+  }
+
+  .enhancedHeaderButton {
+    font-size: 0.8rem;
+    padding: 8px 12px;
+  }
+
+  .filesListCompact {
+    max-width: 150px;
+  }
+
+  .fileNameButton {
+    max-width: 80px;
+    font-size: 10px;
   }
 }
 
@@ -2596,7 +4024,7 @@
   .actionButton {
     display: none;
   }
-  
+
   .statusBadgeModern,
   .criticalityBadgeModern {
     background: white !important;

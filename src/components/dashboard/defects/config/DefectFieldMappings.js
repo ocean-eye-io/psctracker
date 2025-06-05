@@ -239,7 +239,7 @@ export const DEFECT_FIELDS = {
       id: 'status',
       label: 'Status',
       dbField: 'Status',
-      width: '120px',
+      width: '110px',
       minWidth: '120px',
       priority: 1
     },
@@ -247,7 +247,7 @@ export const DEFECT_FIELDS = {
       id: 'criticality',
       label: 'Criticality',
       dbField: 'Criticality',
-      width: '120px',
+      width: '110px',
       minWidth: '120px',
       priority: 1
     },
