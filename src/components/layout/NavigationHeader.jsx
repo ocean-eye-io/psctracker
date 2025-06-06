@@ -1,38 +1,140 @@
-import React, { useState } from 'react';
-import { Ship, BarChart2, LogOut, Menu, X, Users } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+// src/components/layout/NavigationHeader.jsx
+import React, { useState, useEffect } from 'react';
+import { Home, BarChart2, FileText, LogOut, Users, Upload, Menu, X } from 'lucide-react'; 
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import Logo from '../Logo';
 import './NavigationStyles.css';
 
-const NavigationHeader = ({ activePage, userInfo }) => {
+// Module name mapping from database to navigation (in correct sequence)
+const MODULE_NAVIGATION_MAP = {
+  'PSC TRACKER': {
+    id: 'fleet',
+    label: 'Dashboard', 
+    icon: <Home size={20} />,
+    path: '/fleet',
+    order: 1
+  },
+  'DEFECTS REGISTER': {
+    id: 'defects',
+    label: 'Defects Register',
+    icon: <BarChart2 size={20} />,
+    path: '/defects',
+    order: 2
+  },
+  'PSC REPORTING': {
+    id: 'reporting',
+    label: 'PSC Reports',
+    icon: <FileText size={20} />,
+    path: '/reporting',
+    order: 3
+  },
+  'Files upload': {
+    id: 'files',
+    label: 'File Manager',
+    icon: <Upload size={20} />,
+    path: '/files',
+    order: 4
+  },
+  'ADMIN': {
+    id: 'admin',
+    label: 'Admin',
+    icon: <Users size={20} />,
+    path: '/admin',
+    order: 5
+  }
+};
+
+const ADMIN_API_URL = 'https://bavzk3zqphycvshhqklb72l4cu0cnisv.lambda-url.ap-south-1.on.aws';
+
+const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { signOut } = useAuth();
+  const [navItems, setNavItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { signOut, currentUser } = useAuth();
   const navigate = useNavigate();
 
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  // Fetch user's assigned modules
+  useEffect(() => {
+    if (currentUser?.userId) {
+      fetchUserModules(currentUser.userId);
+    }
+  }, [currentUser]);
 
-  // Check if user is admin (implement your actual RBAC logic here)
-  const isAdminUser = () => {
-    // Replace this with your actual admin check logic
-    return userInfo && userInfo.email && userInfo.email.includes('admin');
+  const fetchUserModules = async (userId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch(`${ADMIN_API_URL}/user/modules?user_id=${userId}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch user modules');
+      }
+      
+      // Transform database modules to navigation items (already sorted by database query)
+      const navigationItems = data
+        .map(module => {
+          const navConfig = MODULE_NAVIGATION_MAP[module.module_name];
+          if (!navConfig) {
+            console.warn(`No navigation configuration found for module: ${module.module_name}`);
+            return null;
+          }
+          return {
+            ...navConfig,
+            moduleId: module.module_id,
+            moduleName: module.module_name
+          };
+        })
+        .filter(Boolean); // Remove null entries
+      
+      setNavItems(navigationItems);
+      
+      // Notify parent component about modules loaded
+      if (onModulesLoaded) {
+        onModulesLoaded(navigationItems);
+      }
+      
+      if (navigationItems.length === 0) {
+        setError('No modules assigned to your account. Please contact your administrator.');
+      }
+    } catch (error) {
+      console.error('Error fetching user modules:', error);
+      setError(`Failed to load navigation: ${error.message}`);
+      setNavItems([]); // Show no navigation items on error
+      
+      // Notify parent component about no modules
+      if (onModulesLoaded) {
+        onModulesLoaded([]);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const navItems = [
-    { id: 'fleet', label: 'Dashboard', icon: <Ship size={20} />, path: '/fleet' },
-    { id: 'defects', label: 'Defects Register', icon: <BarChart2 size={20} />, path: '/defects' },
-    // Conditionally add Admin link only for admin users
-    { id: 'admin', label: 'Admin', icon: <Users size={20} />, path: '/admin' }
-  ];
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
 
   const handleNavClick = (id, e) => {
     e.preventDefault();
-    
-    const navItem = navItems.find(item => item.id === id);
-    if (navItem) {
-      navigate(navItem.path);
+
+    // Use the onNavigate prop if provided, otherwise navigate directly
+    if (onNavigate) {
+      onNavigate(id);
+    } else {
+      const item = navItems.find(item => item.id === id);
+      if (item) {
+        navigate(item.path);
+      }
     }
-    
-    if (sidebarOpen) setSidebarOpen(false);
+
+    // Close sidebar on mobile if it's open
+    if (sidebarOpen) {
+      setSidebarOpen(false);
+    }
   };
 
   const handleSignOut = async () => {
@@ -44,14 +146,15 @@ const NavigationHeader = ({ activePage, userInfo }) => {
     }
   };
 
-  // Get user's name from Cognito attributes or use a default
+  // Get user's name from userInfo or currentUser
   const getUserName = () => {
-    if (userInfo) {
-      if (userInfo.name) return userInfo.name;
-      if (userInfo.given_name && userInfo.family_name) {
-        return `${userInfo.given_name} ${userInfo.family_name}`;
+    const user = userInfo || currentUser;
+    if (user) {
+      if (user.name) return user.name;
+      if (user.given_name && user.family_name) {
+        return `${user.given_name} ${user.family_name}`;
       }
-      return userInfo.email || userInfo.username || 'User';
+      return user.email || user.username || 'User';
     }
     return 'User';
   };
@@ -67,6 +170,76 @@ const NavigationHeader = ({ activePage, userInfo }) => {
       .substring(0, 2);
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <header className="navigation-header">
+        <div className="brand-container">
+          <Logo width="70" height="70" className="brand-icon" id="nav-logo" />
+          <div className="brand-text">
+            <h1>FleetWatch</h1>
+            <div className="animated-wave"></div>
+          </div>
+        </div>
+        <nav className="desktop-nav">
+          <div className="nav-loading">Loading navigation...</div>
+        </nav>
+        <div className="user-profile">
+          <div className="user-avatar">{getUserInitials()}</div>
+          <div className="user-info">
+            <span className="user-name">{getUserName()}</span>
+          </div>
+          <button
+            className="logout-button"
+            onClick={handleSignOut}
+            aria-label="Sign out"
+          >
+            <LogOut size={20} />
+          </button>
+        </div>
+      </header>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <header className="navigation-header">
+        <div className="brand-container">
+          <Logo width="70" height="70" className="brand-icon" id="nav-logo" />
+          <div className="brand-text">
+            <h1>FleetWatch</h1>
+            <div className="animated-wave"></div>
+          </div>
+        </div>
+        <nav className="desktop-nav">
+          <div className="nav-error">
+            <span>{error}</span>
+            <button 
+              onClick={() => fetchUserModules(currentUser?.userId)}
+              className="retry-nav-button"
+            >
+              Retry
+            </button>
+          </div>
+        </nav>
+        <div className="user-profile">
+          <div className="user-avatar">{getUserInitials()}</div>
+          <div className="user-info">
+            <span className="user-name">{getUserName()}</span>
+          </div>
+          <button
+            className="logout-button"
+            onClick={handleSignOut}
+            aria-label="Sign out"
+          >
+            <LogOut size={20} />
+          </button>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <>
       {/* Mobile menu toggle */}
@@ -77,7 +250,7 @@ const NavigationHeader = ({ activePage, userInfo }) => {
       {/* Header */}
       <header className="navigation-header">
         <div className="brand-container">
-          <Ship size={28} className="brand-icon" />
+          <Logo width="70" height="70" className="brand-icon" id="nav-logo" />
           <div className="brand-text">
             <h1>FleetWatch</h1>
             <div className="animated-wave"></div>
@@ -86,18 +259,23 @@ const NavigationHeader = ({ activePage, userInfo }) => {
 
         {/* Desktop Navigation - centered */}
         <nav className="desktop-nav">
-          {navItems.map(item => (
-            <a
-              key={item.id}
-              href={item.path}
-              className={`nav-item ${activePage === item.id ? 'active' : ''}`}
-              onClick={e => handleNavClick(item.id, e)}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-              {activePage === item.id && <div className="active-indicator"></div>}
-            </a>
-          ))}
+          {navItems.length === 0 ? (
+            <div className="nav-empty">No navigation items available</div>
+          ) : (
+            navItems.map(item => (
+              <a
+                key={item.id}
+                href={item.path}
+                className={`nav-item ${activePage === item.id ? 'active' : ''}`}
+                onClick={(e) => handleNavClick(item.id, e)}
+                title={`${item.label} (${item.moduleName})`}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+                {activePage === item.id && <div className="active-indicator"></div>}
+              </a>
+            ))
+          )}
         </nav>
 
         {/* User profile area with logout */}
@@ -119,26 +297,31 @@ const NavigationHeader = ({ activePage, userInfo }) => {
       {/* Mobile Sidebar */}
       <aside className={`mobile-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <Ship size={24} />
+          <Logo width="24" height="24" />
           <h2>FleetWatch</h2>
         </div>
         <nav className="sidebar-nav">
-          {navItems.map(item => (
-            <a
-              key={item.id}
-              href={item.path}
-              className={`sidebar-nav-item ${activePage === item.id ? 'active' : ''}`}
-              onClick={e => handleNavClick(item.id, e)}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </a>
-          ))}
+          {navItems.length === 0 ? (
+            <div className="sidebar-nav-empty">No navigation items available</div>
+          ) : (
+            navItems.map(item => (
+              <a
+                key={item.id}
+                href={item.path}
+                className={`sidebar-nav-item ${activePage === item.id ? 'active' : ''}`}
+                onClick={(e) => handleNavClick(item.id, e)}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </a>
+            ))
+          )}
+
           {/* Add logout to mobile sidebar */}
           <a
             href="#"
             className="sidebar-nav-item logout-item"
-            onClick={e => {
+            onClick={(e) => {
               e.preventDefault();
               handleSignOut();
             }}
@@ -147,6 +330,7 @@ const NavigationHeader = ({ activePage, userInfo }) => {
             <span>Sign Out</span>
           </a>
         </nav>
+
         {/* User info in sidebar */}
         <div className="sidebar-user-info">
           <div className="user-avatar">{getUserInitials()}</div>
