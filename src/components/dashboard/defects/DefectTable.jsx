@@ -972,7 +972,7 @@ const DefectTable = ({
             {defects.length} {defects.length === 1 ? 'item' : 'items'}
           </span>
           {/* NEW: Permission status indicator */}
-          {roleName && (
+          {/* {roleName && (
             <span className={styles.tablePermissionBadge}>
               <Shield size={12} />
               {roleName}
@@ -983,7 +983,7 @@ const DefectTable = ({
               <Eye size={12} />
               Read Only
             </span>
-          )}
+          )} */}
         </h2>
         
         <div className={styles.enhancedTableActions}>

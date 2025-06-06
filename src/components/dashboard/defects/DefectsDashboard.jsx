@@ -558,25 +558,25 @@ const DefectsDashboard = () => {
   return (
     <div className={styles.dashboardContainer} onClick={closeAllDropdowns}>
       {/* Permission Status Banner */}
-      {isReadOnly() && (
+      {/* {isReadOnly() && (
         <div className={styles.permissionBanner}>
           <Eye size={16} />
           <span>Read-Only Mode - You can view but not modify defects</span>
           {roleName && <span className={styles.roleBadge}>{roleName}</span>}
         </div>
-      )}
+      )} */}
 
       {/* Main Filter Bar */}
       <div className={styles.filterBar}>
         <div className={styles.filterSectionLeft}>
           <h1 className={styles.dashboardTitle}>
             Defects
-            {roleName && (
+            {/* {roleName && (
               <span className={styles.roleIndicator}>
                 <Shield size={14} />
                 {roleName}
               </span>
-            )}
+            )} */}
           </h1>
           
           {/* Search Container */}

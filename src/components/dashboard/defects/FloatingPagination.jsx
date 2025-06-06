@@ -64,7 +64,7 @@ const FloatingPagination = ({
     padding: '3px 6px',
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '4px',
     boxShadow: `
       0 4px 20px rgba(0, 0, 0, 0.4),
       0 0 15px rgba(59, 173, 229, 0.1),
