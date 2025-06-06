@@ -743,8 +743,8 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
 
   // Memoized values for filter counts and dropdown options
   const uniquePorts = useMemo(() =>
-    [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))],
-    [allProcessedVessels]
+    [...new Set(filteredVessels.map(v => v.arrival_port).filter(Boolean))],
+    [filteredVessels]
   );
 
   const uniqueStatuses = useMemo(() =>
