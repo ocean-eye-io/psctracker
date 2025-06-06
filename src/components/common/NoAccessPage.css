@@ -117,6 +117,10 @@
   
   .no-access-actions {
     margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
   }
   
   .contact-admin-btn {
@@ -134,6 +138,8 @@
     align-items: center;
     gap: 8px;
     box-shadow: 0 4px 12px rgba(59, 173, 229, 0.3);
+    min-width: 200px;
+    justify-content: center;
   }
   
   .contact-admin-btn:hover {
@@ -142,8 +148,71 @@
     background: linear-gradient(135deg, #45B7E8, #32D77A);
   }
   
-  .contact-admin-btn:active {
+  .refresh-btn {
+    background: rgba(244, 244, 244, 0.1);
+    color: #f4f4f4;
+    border: 1px solid rgba(244, 244, 244, 0.2);
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 200px;
+    justify-content: center;
+  }
+  
+  .refresh-btn:hover {
+    background: rgba(244, 244, 244, 0.15);
+    border-color: rgba(244, 244, 244, 0.3);
+    transform: translateY(-1px);
+  }
+  
+  .logout-btn {
+    background: rgba(231, 76, 60, 0.1);
+    color: #E74C3C;
+    border: 1px solid rgba(231, 76, 60, 0.2);
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 200px;
+    justify-content: center;
+  }
+  
+  .logout-btn:hover {
+    background: rgba(231, 76, 60, 0.15);
+    border-color: rgba(231, 76, 60, 0.3);
+    transform: translateY(-1px);
+  }
+  
+  .contact-admin-btn:active,
+  .refresh-btn:active,
+  .logout-btn:active {
     transform: translateY(0);
+  }
+  
+  /* Responsive adjustments for buttons */
+  @media (max-width: 768px) {
+    .no-access-actions {
+      margin-top: 1.5rem;
+    }
+    
+    .contact-admin-btn,
+    .refresh-btn,
+    .logout-btn {
+      min-width: 180px;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+    }
   }
   
   /* Responsive Design */
