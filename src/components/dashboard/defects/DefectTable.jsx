@@ -3,12 +3,13 @@ import Table from '../../common/Table/Table';
 import FloatingPagination from './FloatingPagination';
 import { 
   Trash2, FileText, Download, Upload, Plus, Eye, X, RefreshCw, 
-  Zap, AlertTriangle, CheckCircle, Clock, AlertCircle 
+  Zap, AlertTriangle, CheckCircle, Clock, AlertCircle, Shield
 } from 'lucide-react';
 import { DEFECT_FIELDS } from './config/DefectFieldMappings';
 import fileService from './services/fileService';
 import reportService from './services/reportService';
 import { useToast } from '../../common/ui/ToastContext';
+import { usePermissions } from '../../../context/PermissionContext'; // NEW: Import permissions hook
 import styles from './defect.module.css';
 
 const PER_PAGE = 10;
@@ -281,15 +282,20 @@ const GenerateReportButton = ({
   onGenerate, 
   isGenerating, 
   variant = 'floating',
-  size = 'medium'
+  size = 'medium',
+  canGenerateReport = true // NEW: Permission prop
 }) => {
   const buttonProps = {
     onClick: (e) => {
       e.stopPropagation();
-      onGenerate(defect);
+      if (canGenerateReport) {
+        onGenerate(defect);
+      }
     },
-    disabled: isGenerating,
-    title: "Generate comprehensive defect report with all attachments"
+    disabled: isGenerating || !canGenerateReport,
+    title: !canGenerateReport 
+      ? "Report generation not permitted" 
+      : "Generate comprehensive defect report with all attachments"
   };
   
   const content = (
@@ -300,7 +306,7 @@ const GenerateReportButton = ({
         <FileText size={16} />
       )}
       <span>{isGenerating ? 'Generating...' : 'Generate Report'}</span>
-      {!isGenerating && (
+      {!isGenerating && canGenerateReport && (
         <Zap size={12} className={styles.pulseIcon} />
       )}
     </>
@@ -314,9 +320,11 @@ const GenerateReportButton = ({
     zIndex: 30,      // High z-index to float above everything
     
     // Styling
-    background: 'linear-gradient(135deg, rgba(59, 173, 229, 0.9) 0%, rgba(41, 128, 185, 0.9) 100%)',
+    background: canGenerateReport 
+      ? 'linear-gradient(135deg, rgba(59, 173, 229, 0.9) 0%, rgba(41, 128, 185, 0.9) 100%)'
+      : 'linear-gradient(135deg, rgba(107, 114, 128, 0.6) 0%, rgba(75, 85, 99, 0.6) 100%)',
     backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(59, 173, 229, 0.3)',
+    border: `1px solid ${canGenerateReport ? 'rgba(59, 173, 229, 0.3)' : 'rgba(107, 114, 128, 0.3)'}`,
     borderRadius: '12px',
     
     // Size
@@ -325,7 +333,7 @@ const GenerateReportButton = ({
     height: '44px',
     
     // Typography
-    color: 'white',
+    color: canGenerateReport ? 'white' : 'rgba(255, 255, 255, 0.6)',
     fontSize: '0.8rem',
     fontWeight: '600',
     letterSpacing: '0.3px',
@@ -337,33 +345,35 @@ const GenerateReportButton = ({
     gap: '8px',
     
     // Interactions
-    cursor: isGenerating ? 'not-allowed' : 'pointer',
+    cursor: (isGenerating || !canGenerateReport) ? 'not-allowed' : 'pointer',
     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
     
     // Effects
-    boxShadow: '0 4px 16px rgba(59, 173, 229, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15)',
-    opacity: isGenerating ? 0.7 : 1,
+    boxShadow: canGenerateReport 
+      ? '0 4px 16px rgba(59, 173, 229, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15)'
+      : '0 2px 8px rgba(0, 0, 0, 0.1)',
+    opacity: (isGenerating || !canGenerateReport) ? 0.7 : 1,
     
     // Ensure it doesn't affect layout
     pointerEvents: 'auto'
   };
   
-  const hoverStyle = {
+  const hoverStyle = canGenerateReport ? {
     transform: 'translateY(-2px) scale(1.02)',
     boxShadow: '0 8px 24px rgba(59, 173, 229, 0.3), 0 4px 16px rgba(0, 0, 0, 0.2)'
-  };
+  } : {};
   
   return (
     <button 
       {...buttonProps} 
       style={buttonStyle}
       onMouseEnter={(e) => {
-        if (!isGenerating) {
+        if (!isGenerating && canGenerateReport) {
           Object.assign(e.currentTarget.style, { ...buttonStyle, ...hoverStyle });
         }
       }}
       onMouseLeave={(e) => {
-        if (!isGenerating) {
+        if (!isGenerating && canGenerateReport) {
           Object.assign(e.currentTarget.style, buttonStyle);
         }
       }}
@@ -420,7 +430,7 @@ const DefectTable = ({
   currentUser,
   loading = false,
   emptyMessage = "No defects found",
-  permissions = { 
+  permissions: legacyPermissions = { // Legacy prop for backward compatibility
     actionPermissions: { 
       update: true, 
       delete: true, 
@@ -434,7 +444,48 @@ const DefectTable = ({
   onAddDefect,
   removeFilterBar = false
 }) => {
-  // Add these simple badge functions right inside your DefectTable component:
+  const { toast } = useToast();
+  
+  // NEW: Get permissions from context (takes precedence over props)
+  const {
+    canCreate,
+    canUpdate,
+    canDelete,
+    canExport,
+    canImport,
+    canGenerateReport,
+    isReadOnly,
+    roleName,
+    getPermissionStatus
+  } = usePermissions();
+
+  // Use context permissions or fall back to legacy props
+  const effectivePermissions = {
+    actionPermissions: {
+      create: canCreate() || legacyPermissions.actionPermissions.create,
+      update: canUpdate() || legacyPermissions.actionPermissions.update,
+      delete: canDelete() || legacyPermissions.actionPermissions.delete,
+      export: canExport() || legacyPermissions.actionPermissions.export,
+      import: canImport() || legacyPermissions.actionPermissions.import,
+      generateReport: canGenerateReport() || true // Default to true for report generation
+    }
+  };
+
+  console.log("DefectTable: Rendering with permissions:", {
+    contextPermissions: {
+      canCreate: canCreate(),
+      canUpdate: canUpdate(),
+      canDelete: canDelete(),
+      canExport: canExport(),
+      canImport: canImport(),
+      canGenerateReport: canGenerateReport(),
+      isReadOnly: isReadOnly()
+    },
+    effectivePermissions,
+    roleName
+  });
+
+  // Enhanced Badge Components with permission awareness
   const EnhancedStatusBadge = ({ status, size = 'medium' }) => {
     if (!status) return <span className={styles.textMuted}>-</span>;
 
@@ -456,7 +507,6 @@ const DefectTable = ({
     );
   };
 
-  // Simple inline Enhanced Criticality Badge
   const EnhancedCriticalityBadge = ({ criticality, size = 'medium' }) => {
     if (!criticality) return <span className={styles.textMuted}>-</span>;
 
@@ -489,7 +539,6 @@ const DefectTable = ({
     );
   };
 
-  const { toast } = useToast();
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   const [currentPage, setCurrentPage] = useState(1);
   const [previewFile, setPreviewFile] = useState(null);
@@ -541,9 +590,19 @@ const DefectTable = ({
     setPreviewDefectId(null);
   };
 
-  // Enhanced Report Generation Handler
+  // NEW: Enhanced Report Generation Handler with permission checks
   const handleGenerateReport = async (defect) => {
     console.log('Generate report button clicked for defect:', defect.id);
+    
+    // NEW: Check permissions first
+    if (!effectivePermissions.actionPermissions.generateReport) {
+      toast({
+        title: "Permission Denied",
+        description: "You don't have permission to generate reports.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!currentUser?.userId) {
       toast({
@@ -669,16 +728,13 @@ const DefectTable = ({
         headerClassName: shouldHideColumn(fieldId) ? styles.hiddenColumn : '',
         render: (value, rowData) => {
           if (fieldId === 'status') {
-            // CHANGE THIS LINE:
             return <EnhancedStatusBadge status={value} size="medium" />;
           }
         
           if (fieldId === 'criticality') {
-            // CHANGE THIS LINE:
             return <EnhancedCriticalityBadge criticality={value} size="medium" />;
           }
         
-          // ... rest of your existing render logic stays the same
           if (field.type === 'date') {
             return (
               <span className={styles.dateValue}>
@@ -696,7 +752,7 @@ const DefectTable = ({
       }))
   ), [windowWidth]);
 
-  // Enhanced actions configuration with improved button styling
+  // NEW: Enhanced actions configuration with permission-based button states
   const actions = useMemo(() => ({
     label: 'Actions',
     width: '140px',
@@ -718,9 +774,12 @@ const DefectTable = ({
             }}
             className={`${styles.enhancedActionButton} ${styles.generate} ${
               generatingReportForDefect === defect.id ? styles.generating : ''
-            }`}
-            title="Generate comprehensive defect report"
-            disabled={generatingReportForDefect === defect.id}
+            } ${!effectivePermissions.actionPermissions.generateReport ? styles.disabled : ''}`}
+            title={!effectivePermissions.actionPermissions.generateReport 
+              ? "Report generation not permitted" 
+              : "Generate comprehensive defect report"}
+            disabled={generatingReportForDefect === defect.id || !effectivePermissions.actionPermissions.generateReport}
+            data-tooltip={!effectivePermissions.actionPermissions.generateReport ? "Insufficient permissions" : undefined}
           >
             {generatingReportForDefect === defect.id ? (
               <RefreshCw size={16} className={styles.spinning} />
@@ -730,36 +789,45 @@ const DefectTable = ({
           </button>
           
           {/* Enhanced Edit Button */}
-          {permissions.actionPermissions.update && (
-            <button
-              onClick={e => { 
-                e.stopPropagation(); 
-                onEdit && onEdit(defect); 
-              }}
-              className={`${styles.enhancedActionButton} ${styles.edit}`}
-              title="Edit defect details"
-            >
-              <Eye size={16} />
-            </button>
-          )}
+          <button
+            onClick={e => { 
+              e.stopPropagation(); 
+              onEdit && onEdit(defect); 
+            }}
+            className={`${styles.enhancedActionButton} ${styles.edit} ${
+              !effectivePermissions.actionPermissions.update ? styles.disabled : ''
+            }`}
+            title={!effectivePermissions.actionPermissions.update 
+              ? "Edit not permitted" 
+              : (isReadOnly() ? "View defect details" : "Edit defect details")}
+            data-tooltip={!effectivePermissions.actionPermissions.update ? "Insufficient permissions" : undefined}
+          >
+            <Eye size={16} />
+          </button>
           
           {/* Enhanced Delete Button */}
-          {permissions.actionPermissions.delete && (
-            <button
-              onClick={e => { 
-                e.stopPropagation(); 
-                onDelete && onDelete(defect); 
-              }}
-              className={`${styles.enhancedActionButton} ${styles.delete}`}
-              title="Delete defect"
-            >
-              <Trash2 size={16} />
-            </button>
-          )}
+          <button
+            onClick={e => { 
+              e.stopPropagation(); 
+              if (effectivePermissions.actionPermissions.delete) {
+                onDelete && onDelete(defect);
+              }
+            }}
+            className={`${styles.enhancedActionButton} ${styles.delete} ${
+              !effectivePermissions.actionPermissions.delete ? styles.disabled : ''
+            }`}
+            title={!effectivePermissions.actionPermissions.delete 
+              ? "Delete not permitted" 
+              : "Delete defect"}
+            disabled={!effectivePermissions.actionPermissions.delete}
+            data-tooltip={!effectivePermissions.actionPermissions.delete ? "Insufficient permissions" : undefined}
+          >
+            <Trash2 size={16} />
+          </button>
         </div>
       );
     }
-  }), [permissions, onDelete, onEdit, handleGenerateReport, generatingReportForDefect]);
+  }), [effectivePermissions, onDelete, onEdit, handleGenerateReport, generatingReportForDefect, isReadOnly]);
 
   // Enhanced expanded content renderer with improved file display
   const renderExpandedContent = useCallback((defect) => {
@@ -806,7 +874,6 @@ const DefectTable = ({
       );
     };
 
-    // Update your renderFieldValue function - just change these two lines:
     const renderFieldValue = (fieldId, field, value) => {
       if (field.dbField === 'initial_files') {
         return <FileListCompact files={value || []} fileType="initial" defectId={defect.id} />;
@@ -817,16 +884,13 @@ const DefectTable = ({
       }
 
       if (fieldId === 'status') {
-        // CHANGE THIS LINE:
         return <EnhancedStatusBadge status={value} size="small" />;
       }
 
       if (fieldId === 'criticality') {
-        // CHANGE THIS LINE:
         return <EnhancedCriticalityBadge criticality={value} size="small" />;
       }
 
-      // ... rest of your existing renderFieldValue logic stays the same
       if (field.type === 'date') {
         return (
           <span className={styles.dateValue}>
@@ -891,10 +955,11 @@ const DefectTable = ({
           isGenerating={generatingReportForDefect === defect.id}
           variant="floating"
           size="medium"
+          canGenerateReport={effectivePermissions.actionPermissions.generateReport}
         />
       </div>
     );
-  }, [handleGenerateReport, generatingReportForDefect, handleFilePreview]);
+  }, [handleGenerateReport, generatingReportForDefect, handleFilePreview, effectivePermissions]);
 
   // Main render function with enhanced styling
   return (
@@ -906,44 +971,69 @@ const DefectTable = ({
           <span className={styles.tableItemCount}>
             {defects.length} {defects.length === 1 ? 'item' : 'items'}
           </span>
+          {/* NEW: Permission status indicator */}
+          {roleName && (
+            <span className={styles.tablePermissionBadge}>
+              <Shield size={12} />
+              {roleName}
+            </span>
+          )}
+          {isReadOnly() && (
+            <span className={styles.tableReadOnlyBadge}>
+              <Eye size={12} />
+              Read Only
+            </span>
+          )}
         </h2>
         
         <div className={styles.enhancedTableActions}>
-          {/* Enhanced Export Button */}
-          {permissions.actionPermissions.export && (
-            <button
-              onClick={onExport}
-              className={`${styles.enhancedHeaderButton} ${styles.export}`}
-              title="Export data to Excel"
-            >
-              <Download size={16} />
-              Export Excel
-            </button>
-          )}
+          {/* NEW: Enhanced Export Button with permission checks */}
+          <button
+            onClick={onExport}
+            className={`${styles.enhancedHeaderButton} ${styles.export} ${
+              !effectivePermissions.actionPermissions.export ? styles.disabled : ''
+            }`}
+            title={!effectivePermissions.actionPermissions.export 
+              ? "Export not permitted" 
+              : "Export data to Excel"}
+            disabled={!effectivePermissions.actionPermissions.export}
+            data-tooltip={!effectivePermissions.actionPermissions.export ? "Insufficient permissions" : undefined}
+          >
+            <Download size={16} />
+            Export Excel
+          </button>
           
-          {/* Enhanced Import Button */}
-          {permissions.actionPermissions.import && (
-            <button
-              onClick={onImport}
-              className={`${styles.enhancedHeaderButton} ${styles.import}`}
-              title="Import VIR Excel file"
-            >
-              <Upload size={16} />
-              Import VIR Excel
-            </button>
-          )}
+          {/* NEW: Enhanced Import Button with permission checks */}
+          <button
+            onClick={onImport}
+            className={`${styles.enhancedHeaderButton} ${styles.import} ${
+              !effectivePermissions.actionPermissions.import ? styles.disabled : ''
+            }`}
+            title={!effectivePermissions.actionPermissions.import 
+              ? "Import not permitted" 
+              : "Import VIR Excel file"}
+            disabled={!effectivePermissions.actionPermissions.import}
+            data-tooltip={!effectivePermissions.actionPermissions.import ? "Insufficient permissions" : undefined}
+          >
+            <Upload size={16} />
+            Import VIR Excel
+          </button>
           
-          {/* Enhanced Add Defect Button */}
-          {permissions.actionPermissions.create && (
-            <button
-              onClick={onAddDefect}
-              className={`${styles.enhancedHeaderButton} ${styles.add}`}
-              title="Add new defect"
-            >
-              <Plus size={16} />
-              Add Defect
-            </button>
-          )}
+          {/* NEW: Enhanced Add Defect Button with permission checks */}
+          <button
+            onClick={onAddDefect}
+            className={`${styles.enhancedHeaderButton} ${styles.add} ${
+              !effectivePermissions.actionPermissions.create ? styles.disabled : ''
+            }`}
+            title={!effectivePermissions.actionPermissions.create 
+              ? "Create not permitted" 
+              : "Add new defect"}
+            disabled={!effectivePermissions.actionPermissions.create}
+            data-tooltip={!effectivePermissions.actionPermissions.create ? "Insufficient permissions" : undefined}
+          >
+            <Plus size={16} />
+            Add Defect
+          </button>
         </div>
       </div>
 
@@ -969,6 +1059,10 @@ const DefectTable = ({
               {defects.length > 0 && (
                 <p>Try adjusting your search or filters</p>
               )}
+              {/* NEW: Permission-aware empty state */}
+              {defects.length === 0 && !effectivePermissions.actionPermissions.create && (
+                <p>Contact your administrator for permission to add defects</p>
+              )}
             </div>
             {defects.length > 0 && (
               <button 
@@ -976,6 +1070,16 @@ const DefectTable = ({
                 onClick={() => setCurrentPage(1)}
               >
                 Go to First Page
+              </button>
+            )}
+            {/* NEW: Add first defect button with permission check */}
+            {defects.length === 0 && effectivePermissions.actionPermissions.create && (
+              <button 
+                className={styles.enhancedEmptyAction}
+                onClick={onAddDefect}
+              >
+                <Plus size={16} />
+                Add First Defect
               </button>
             )}
           </div>
@@ -1021,6 +1125,31 @@ const DefectTable = ({
         message={reportMessage}
         defectId={generatingReportForDefect}
       />
+
+      {/* NEW: Permission Debug Info (Development Only) */}
+      {/* {process.env.NODE_ENV === 'development' && (
+        <div className={styles.debugPermissionInfo}>
+          <details>
+            <summary>Debug: Table Permissions</summary>
+            <pre>
+              {JSON.stringify({
+                contextPermissions: {
+                  canCreate: canCreate(),
+                  canUpdate: canUpdate(),
+                  canDelete: canDelete(),
+                  canExport: canExport(),
+                  canImport: canImport(),
+                  canGenerateReport: canGenerateReport(),
+                  isReadOnly: isReadOnly()
+                },
+                effectivePermissions,
+                roleName,
+                permissionStatus: getPermissionStatus()
+              }, null, 2)}
+            </pre>
+          </details>
+        </div>
+      )} */}
     </div>
   );
 };

@@ -1,22 +1,23 @@
 // src/components/dashboard/defects/DefectsDashboard.jsx
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Search, Filter, Download, RefreshCw, AlertTriangle } from 'lucide-react';
-import styles from './defect.module.css'; // Import the CSS module
+import { Search, Filter, Download, RefreshCw, AlertTriangle, Shield, Eye, Upload, Plus } from 'lucide-react';
+import styles from './defect.module.css';
 import DefectTable from './DefectTable';
 import CriticalityChart from './charts/CriticalityChart';
 import TotalDefectsChart from './charts/TotalDefectsChart';
 import defectService from './services/defectService';
 import DefectDialog from './DefectDialog';
 import { useAuth } from '../../../context/AuthContext';
+import { usePermissions } from '../../../context/PermissionContext';
 
 const DefectsDashboard = () => {
-  // State variables - ALL STATE AND HOOKS MUST BE DECLARED FIRST
+  // Core state variables
   const [defects, setDefects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [vessels, setVessels] = useState([]); // State to store user's assigned vessels
+  const [vessels, setVessels] = useState([]);
 
   // Filter state variables
   const [statusFilters, setStatusFilters] = useState([]);
@@ -29,44 +30,56 @@ const DefectsDashboard = () => {
   const [showSourceDropdown, setShowSourceDropdown] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
 
-  // Auth context to get current user's ID
+  // Auth and Permission contexts
   const { currentUser, loading: authLoading } = useAuth();
-  const userId = currentUser?.userId; // Get userId from auth context
+  const {
+    permissions,
+    loading: permissionsLoading,
+    error: permissionsError,
+    canCreate,
+    canRead,
+    canUpdate,
+    canDelete,
+    canExport,
+    canImport,
+    canGenerateReport,
+    isReadOnly,
+    hasWriteAccess,
+    getPermissionStatus,
+    roleName,
+    refreshPermissions
+  } = usePermissions();
 
-  // Permissions mock (for now, assume full permissions)
-  const permissions = useMemo(() => ({
-    actionPermissions: {
-      create: true,
-      update: true,
-      delete: true,
-      export: true,
-      import: true,
-      generateReport: true
-    },
-    fieldPermissions: {
-      // You can define field-level permissions here if needed
-      // e.g., target_date: { visible: true, editable: true }
-    }
-  }), []);
-
-  // Defect Dialog State
+  // Dialog state
   const [isDefectDialogOpen, setIsDefectDialogOpen] = useState(false);
   const [currentDefect, setCurrentDefect] = useState(null);
 
-  console.log("DefectsDashboard rendering. isDefectDialogOpen:", isDefectDialogOpen);
+  // User ID from auth context
+  const userId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
+
+  console.log("DefectsDashboard: Rendering with permissions:", {
+    permissions,
+    permissionStatus: getPermissionStatus(),
+    canCreate: canCreate(),
+    canUpdate: canUpdate(),
+    canDelete: canDelete(),
+    roleName
+  });
 
   // Fetch user's assigned vessels
   const fetchUserVessels = useCallback(async () => {
     if (!userId) {
-      console.log("User ID not available, skipping vessel fetch.");
+      console.log("DefectsDashboard: No user ID available, skipping vessel fetch");
       return;
     }
+
     try {
+      console.log("DefectsDashboard: Fetching user vessels for user:", userId);
       const assignedVessels = await defectService.getUserAssignedVessels(userId);
       setVessels(assignedVessels);
-      console.log("Fetched assigned vessels:", assignedVessels);
+      console.log("DefectsDashboard: Successfully fetched assigned vessels:", assignedVessels);
     } catch (err) {
-      console.error("Error fetching user's assigned vessels:", err);
+      console.error("DefectsDashboard: Error fetching user's assigned vessels:", err);
       setError("Failed to load assigned vessels.");
     }
   }, [userId]);
@@ -74,7 +87,7 @@ const DefectsDashboard = () => {
   // Fetch defects data from API
   const fetchDefects = useCallback(async () => {
     if (!userId) {
-      console.log("User ID not available, skipping defect fetch.");
+      console.log("DefectsDashboard: No user ID available, skipping defects fetch");
       setLoading(false);
       return;
     }
@@ -83,14 +96,13 @@ const DefectsDashboard = () => {
       setLoading(true);
       setError(null);
 
-      console.log("fetchDefects: Calling defectService.getAllDefects...");
+      console.log("DefectsDashboard: Fetching defects for user:", userId);
       const data = await defectService.getAllDefects(userId);
-      console.log('fetchDefects: Fetched defects data. Count:', data.length);
+      console.log('DefectsDashboard: Successfully fetched defects. Count:', data.length);
 
-      setDefects(data); // Set raw defects from API
-      console.log('fetchDefects: Defects state updated with new data.');
+      setDefects(data);
 
-      // Initialize filters with all available options based on the fetched data
+      // Initialize filters with all available options based on fetched data
       const uniqueStatusesFromData = [...new Set(data.map(d => d['Status']).filter(Boolean))];
       const uniqueCriticalitiesFromData = [...new Set(data.map(d => d.Criticality).filter(Boolean))].filter(c => c !== null && c !== undefined);
       const uniqueSourcesFromData = [...new Set(data.map(d => d.raised_by).filter(Boolean))];
@@ -99,27 +111,36 @@ const DefectsDashboard = () => {
       setCriticalityFilters(uniqueCriticalitiesFromData);
       setSourceFilters(uniqueSourcesFromData);
 
+      console.log('DefectsDashboard: Filters initialized with unique values from data');
+
     } catch (error) {
-      console.error('Error fetching defects:', error.message);
-      setError(`Failed to fetch data: ${error.message}. Please check the API connection.`);
+      console.error('DefectsDashboard: Error fetching defects:', error.message);
+      setError(`Failed to fetch defects: ${error.message}. Please check your connection and try again.`);
     } finally {
       setLoading(false);
-      console.log("fetchDefects: Loading set to false.");
     }
   }, [userId]);
 
-  // Initial data fetch for vessels and defects
+  // Initial data fetch - wait for auth and permissions to load
   useEffect(() => {
-    if (!authLoading && userId) {
-      console.log("useEffect: Initial fetch triggered.");
+    const shouldFetchData = !authLoading && !permissionsLoading && userId && canRead();
+    
+    if (shouldFetchData) {
+      console.log("DefectsDashboard: Initial data fetch triggered");
       fetchUserVessels();
       fetchDefects();
+    } else {
+      console.log("DefectsDashboard: Waiting for auth/permissions or insufficient read access", {
+        authLoading,
+        permissionsLoading,
+        userId: !!userId,
+        canRead: canRead()
+      });
     }
-  }, [authLoading, userId, fetchUserVessels, fetchDefects]);
+  }, [authLoading, permissionsLoading, userId, canRead, fetchUserVessels, fetchDefects]);
 
-  // Memoized filtered defects to prevent re-calculation on every render
+  // Memoized filtered defects
   const filteredDefects = useMemo(() => {
-    console.log("filteredDefects: Recalculating filtered defects. Current defects count:", defects.length);
     if (!defects.length) {
       return [];
     }
@@ -130,28 +151,22 @@ const DefectsDashboard = () => {
     const allUniqueCriticalities = [...new Set(defects.map(d => d.Criticality).filter(Boolean))].filter(c => c !== null && c !== undefined);
     const allUniqueSources = [...new Set(defects.map(d => d.raised_by).filter(Boolean))];
 
-    // Apply status filters if any selected (i.e., not all unique statuses are selected)
+    // Apply status filters
     if (statusFilters.length > 0 && statusFilters.length < allUniqueStatuses.length) {
-      results = results.filter(defect =>
-        statusFilters.includes(defect['Status'])
-      );
+      results = results.filter(defect => statusFilters.includes(defect['Status']));
     }
 
-    // Apply criticality filters if any selected
+    // Apply criticality filters
     if (criticalityFilters.length > 0 && criticalityFilters.length < allUniqueCriticalities.length) {
-      results = results.filter(defect =>
-        criticalityFilters.includes(defect.Criticality)
-      );
+      results = results.filter(defect => criticalityFilters.includes(defect.Criticality));
     }
 
-    // Apply source filters if any selected
+    // Apply source filters
     if (sourceFilters.length > 0 && sourceFilters.length < allUniqueSources.length) {
-      results = results.filter(defect =>
-        sourceFilters.includes(defect.raised_by)
-      );
+      results = results.filter(defect => sourceFilters.includes(defect.raised_by));
     }
 
-    // Apply search term if not empty
+    // Apply search term
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       results = results.filter(defect =>
@@ -160,15 +175,16 @@ const DefectsDashboard = () => {
         )
       );
     }
-    console.log("filteredDefects: Filtered results count:", results.length);
+
+    console.log("DefectsDashboard: Filtered defects count:", results.length);
     return results;
   }, [defects, searchTerm, statusFilters, criticalityFilters, sourceFilters]);
 
   // Reset all filters
   const resetFilters = useCallback(() => {
+    console.log("DefectsDashboard: Resetting all filters");
     setSearchTerm('');
 
-    // Reset filters to include all options based on current defects
     const uniqueStatusesFromDefects = [...new Set(defects.map(d => d['Status']).filter(Boolean))];
     const uniqueCriticalitiesFromDefects = [...new Set(defects.map(d => d.Criticality).filter(Boolean))].filter(c => c !== null && c !== undefined);
     const uniqueSourcesFromDefects = [...new Set(defects.map(d => d.raised_by).filter(Boolean))];
@@ -199,7 +215,7 @@ const DefectsDashboard = () => {
     }
   };
 
-  // Toggle a specific filter item
+  // Toggle individual filter items
   const toggleFilterItem = (type, item) => {
     switch(type) {
       case 'statuses':
@@ -228,21 +244,77 @@ const DefectsDashboard = () => {
     }
   };
 
-  // Export data to Excel
-  const handleExport = () => {
-    console.log('Exporting data to Excel...');
-    // Implement export logic here
-  };
+  // Export handler with permission check
+  const handleExport = useCallback(() => {
+    if (!canExport()) {
+      console.warn('DefectsDashboard: Export not allowed for current user');
+      setError('You do not have permission to export data.');
+      return;
+    }
 
-  // Table action handlers
-  const handleView = (defect) => {
-    console.log('View defect:', defect);
-    handleEditDefect(defect);
-  };
+    console.log('DefectsDashboard: Exporting data...');
+    
+    try {
+      // Get visible columns for export
+      const visibleColumns = Object.entries(DEFECT_FIELDS?.TABLE || {})
+        .filter(([_, field]) => !field.isAction)
+        .sort((a, b) => a[1].priority - b[1].priority);
+      
+      // Create CSV header
+      const header = visibleColumns.map(([_, field]) => field.label).join(',');
+      
+      // Create CSV rows
+      const rows = filteredDefects.map(defect => {
+        return visibleColumns.map(([_, field]) => {
+          const value = defect[field.dbField];
+          return value !== null && value !== undefined 
+            ? `"${String(value).replace(/"/g, '""')}"` 
+            : '';
+        }).join(',');
+      });
+      
+      // Combine header and rows
+      const csv = [header, ...rows].join('\n');
+      
+      // Create and download file
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `defects_export_${new Date().toISOString().slice(0,10)}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log('DefectsDashboard: Export completed successfully');
+    } catch (exportError) {
+      console.error('DefectsDashboard: Export failed:', exportError);
+      setError('Failed to export data. Please try again.');
+    }
+  }, [canExport, filteredDefects]);
 
-  // Handle Add Defect
+  // Import handler with permission check
+  const handleImport = useCallback(() => {
+    if (!canImport()) {
+      console.warn('DefectsDashboard: Import not allowed for current user');
+      setError('You do not have permission to import data.');
+      return;
+    }
+
+    console.log('DefectsDashboard: Import VIR Excel (placeholder)');
+    // TODO: Implement import functionality
+  }, [canImport]);
+
+  // Add defect handler with permission check
   const handleAddDefect = useCallback(() => {
-    console.log("1. handleAddDefect called!");
+    if (!canCreate()) {
+      console.warn('DefectsDashboard: Create permission not granted for current user');
+      setError('You do not have permission to add new defects.');
+      return;
+    }
+
+    console.log("DefectsDashboard: Adding new defect");
     setCurrentDefect({
       id: `temp-${Date.now()}`,
       vessel_id: vessels.length > 0 ? vessels[0].vessel_id : '',
@@ -257,97 +329,168 @@ const DefectsDashboard = () => {
       target_date: '',
       initial_files: [],
       completion_files: [],
-      raised_by: currentUser?.username || '',
+      raised_by: currentUser?.username || currentUser?.cognito_username || '',
       closure_comments: '',
       external_visibility: true,
       Comments: ''
     });
-    console.log("2. currentDefect set (inside handleAddDefect). Dialog will attempt to open.");
     setIsDefectDialogOpen(true);
-    console.log("3. setIsDefectDialogOpen(true) called.");
-  }, [vessels, currentUser]);
+  }, [vessels, currentUser, canCreate]);
 
-  // Handle Edit Defect
+  // Edit defect handler
   const handleEditDefect = useCallback((defect) => {
-    console.log("handleEditDefect called with defect:", defect);
+    console.log("DefectsDashboard: Editing defect:", defect.id);
+    console.log("DefectsDashboard: User permissions - canUpdate:", canUpdate(), "isReadOnly:", isReadOnly());
     setCurrentDefect(defect);
     setIsDefectDialogOpen(true);
-  }, []);
+  }, [canUpdate, isReadOnly]);
 
-  // Handle Save Defect (Add/Edit)
+  // View defect handler (same as edit but for clarity)
+  const handleViewDefect = useCallback((defect) => {
+    console.log("DefectsDashboard: Viewing defect:", defect.id);
+    handleEditDefect(defect);
+  }, [handleEditDefect]);
+
+  // Save defect handler with permission validation
   const handleSaveDefect = useCallback(async (updatedDefect) => {
     if (!userId) {
-      setError("User not authenticated. Cannot save defect.");
+      const errorMsg = "User not authenticated. Cannot save defect.";
+      console.error("DefectsDashboard:", errorMsg);
+      setError(errorMsg);
       return;
     }
+
+    const isNew = updatedDefect.id?.startsWith('temp-') || !updatedDefect.id;
+    
+    // Permission validation
+    if (isNew && !canCreate()) {
+      const errorMsg = "You don't have permission to create defects.";
+      console.error("DefectsDashboard:", errorMsg);
+      setError(errorMsg);
+      return;
+    }
+    
+    if (!isNew && !canUpdate()) {
+      const errorMsg = "You don't have permission to update defects.";
+      console.error("DefectsDashboard:", errorMsg);
+      setError(errorMsg);
+      return;
+    }
+
     try {
       setLoading(true);
-      const isNew = updatedDefect.id?.startsWith('temp-') || !updatedDefect.id;
+      setError(null);
 
       let savedDefect;
+      
       if (isNew) {
-        // Remove temp ID for creation
+        // Create new defect
         const newDefectData = { ...updatedDefect };
         if (newDefectData.id && newDefectData.id.startsWith('temp-')) {
           delete newDefectData.id;
         }
-        console.log('handleSaveDefect: Attempting to create defect with payload:', newDefectData);
+        
+        console.log('DefectsDashboard: Creating new defect');
         savedDefect = await defectService.createDefect(newDefectData, userId);
-        console.log('handleSaveDefect: Defect created successfully. Returned savedDefect:', savedDefect);
+        console.log('DefectsDashboard: Defect created successfully:', savedDefect?.id);
       } else {
-        savedDefect = { ...updatedDefect };
-        console.log('handleSaveDefect: Attempting to update defect with payload:', savedDefect);
-        savedDefect = await defectService.updateDefect(savedDefect.id, savedDefect, userId);
-        console.log('handleSaveDefect: Defect updated successfully. Returned savedDefect:', savedDefect);
+        // Update existing defect
+        console.log('DefectsDashboard: Updating existing defect:', updatedDefect.id);
+        savedDefect = await defectService.updateDefect(updatedDefect.id, updatedDefect, userId);
+        console.log('DefectsDashboard: Defect updated successfully');
       }
 
-      console.log('handleSaveDefect: Calling fetchDefects to refresh data...');
-      await fetchDefects(); // Re-fetch all defects to ensure data consistency and update UI
-      console.log('handleSaveDefect: fetchDefects completed.');
-
+      // Refresh defects data
+      await fetchDefects();
+      
+      // Close dialog
       setIsDefectDialogOpen(false);
       setCurrentDefect(null);
-      console.log('handleSaveDefect: Dialog closed and currentDefect cleared.');
-
+      
+      console.log('DefectsDashboard: Save operation completed successfully');
       return savedDefect;
+
     } catch (err) {
-      console.error('handleSaveDefect: Error saving defect:', err);
+      console.error('DefectsDashboard: Error saving defect:', err);
       setError(`Failed to save defect: ${err.message}. Please try again.`);
       throw err;
     } finally {
       setLoading(false);
-      console.log('handleSaveDefect: Loading set to false.');
     }
-  }, [fetchDefects, userId]);
+  }, [fetchDefects, userId, canCreate, canUpdate]);
 
-  const handleDelete = async (defect) => {
-    if (!userId) {
-      setError("User not authenticated. Cannot delete defect.");
+  // Delete defect handler with permission check
+  const handleDeleteDefect = useCallback(async (defect) => {
+    if (!canDelete()) {
+      const errorMsg = "You don't have permission to delete defects.";
+      console.error("DefectsDashboard:", errorMsg);
+      setError(errorMsg);
       return;
     }
-    if (window.confirm(`Are you sure you want to delete defect ID: ${defect.id}?`)) {
-      try {
-        setLoading(true);
-        await defectService.deleteDefect(defect.id, userId);
-        fetchDefects();
-      } catch (error) {
-        console.error('Error deleting defect:', error);
-        setError(`Failed to delete defect: ${error.message}. Please try again.`);
-      } finally {
-        setLoading(false);
-      }
+    
+    if (!userId) {
+      const errorMsg = "User not authenticated. Cannot delete defect.";
+      console.error("DefectsDashboard:", errorMsg);
+      setError(errorMsg);
+      return;
     }
-  };
+    
+    const confirmMessage = `Are you sure you want to delete defect ID: ${defect.id}?\n\nThis action cannot be undone.`;
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('DefectsDashboard: Deleting defect:', defect.id);
+      await defectService.deleteDefect(defect.id, userId);
+      
+      // Refresh defects data
+      await fetchDefects();
+      
+      console.log('DefectsDashboard: Defect deleted successfully');
+    } catch (error) {
+      console.error('DefectsDashboard: Error deleting defect:', error);
+      setError(`Failed to delete defect: ${error.message}. Please try again.`);
+    } finally {
+      setLoading(false);
+    }
+  }, [canDelete, userId, fetchDefects]);
 
   // Close all dropdowns when clicking elsewhere
-  const closeAllDropdowns = () => {
+  const closeAllDropdowns = useCallback(() => {
     setShowStatusDropdown(false);
     setShowCriticalityDropdown(false);
     setShowSourceDropdown(false);
     setShowSearch(false);
-  };
+  }, []);
 
-  // Get unique values for filter options (these are used for the dropdown options)
+  // Clear error handler
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  // Refresh data handler
+  const handleRefreshData = useCallback(async () => {
+    console.log('DefectsDashboard: Manual data refresh requested');
+    setError(null);
+    
+    try {
+      await Promise.all([
+        fetchDefects(),
+        fetchUserVessels(),
+        refreshPermissions()
+      ]);
+      console.log('DefectsDashboard: Manual refresh completed');
+    } catch (error) {
+      console.error('DefectsDashboard: Error during manual refresh:', error);
+      setError('Failed to refresh data. Please try again.');
+    }
+  }, [fetchDefects, fetchUserVessels, refreshPermissions]);
+
+  // Get unique values for filter dropdowns
   const uniqueStatuses = useMemo(() =>
     [...new Set(defects.map(d => d['Status']).filter(Boolean))],
     [defects]
@@ -363,13 +506,50 @@ const DefectsDashboard = () => {
     [defects]
   );
 
-  // Show loading state for the entire dashboard if auth is still loading or initial data is loading
-  if (authLoading || loading) {
+  // Loading state for entire dashboard
+  if (authLoading || permissionsLoading) {
     return (
       <div className={styles.dashboardContainer}>
         <div className={styles.loadingContainer}>
           <div className={styles.loadingSpinner}></div>
           <p>Loading dashboard...</p>
+          {authLoading && <small>Authenticating user...</small>}
+          {permissionsLoading && <small>Loading permissions...</small>}
+        </div>
+      </div>
+    );
+  }
+
+  // Permission error state
+  if (permissionsError) {
+    return (
+      <div className={styles.dashboardContainer}>
+        <div className={styles.errorContainer}>
+          <AlertTriangle size={24} />
+          <h2>Permission Error</h2>
+          <p>{permissionsError}</p>
+          <p>You may have limited access to defects functionality.</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className={styles.retryButton}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // No read access state
+  if (!canRead()) {
+    return (
+      <div className={styles.dashboardContainer}>
+        <div className={styles.errorContainer}>
+          <Shield size={24} />
+          <h2>Access Denied</h2>
+          <p>You don't have permission to view defects.</p>
+          <p>Please contact your administrator for access.</p>
+          {roleName && <p>Current role: <strong>{roleName}</strong></p>}
         </div>
       </div>
     );
@@ -377,10 +557,29 @@ const DefectsDashboard = () => {
 
   return (
     <div className={styles.dashboardContainer} onClick={closeAllDropdowns}>
-      {/* Filter Bar */}
+      {/* Permission Status Banner */}
+      {isReadOnly() && (
+        <div className={styles.permissionBanner}>
+          <Eye size={16} />
+          <span>Read-Only Mode - You can view but not modify defects</span>
+          {roleName && <span className={styles.roleBadge}>{roleName}</span>}
+        </div>
+      )}
+
+      {/* Main Filter Bar */}
       <div className={styles.filterBar}>
         <div className={styles.filterSectionLeft}>
-          <h1 className={styles.dashboardTitle}>Defects</h1>
+          <h1 className={styles.dashboardTitle}>
+            Defects
+            {roleName && (
+              <span className={styles.roleIndicator}>
+                <Shield size={14} />
+                {roleName}
+              </span>
+            )}
+          </h1>
+          
+          {/* Search Container */}
           <div className={styles.searchContainer}>
             <button
               className={styles.searchToggle}
@@ -388,6 +587,7 @@ const DefectsDashboard = () => {
                 e.stopPropagation();
                 setShowSearch(!showSearch);
               }}
+              title="Search defects"
             >
               <Search size={14} />
             </button>
@@ -407,10 +607,12 @@ const DefectsDashboard = () => {
           </div>
         </div>
 
+        {/* Filter Label */}
         <div className={styles.filterLabel}>
           <Filter size={14} />
         </div>
 
+        {/* Filter Chips */}
         <div className={styles.filterChips}>
           {/* Status Filter Dropdown */}
           <div className={styles.filterDropdownContainer} onClick={(e) => e.stopPropagation()}>
@@ -559,31 +761,57 @@ const DefectsDashboard = () => {
             )}
           </div>
 
-          {/* Reset Button */}
-          <button className={styles.resetButton} onClick={resetFilters}>
+          {/* Reset Filters Button */}
+          <button 
+            className={styles.resetButton} 
+            onClick={resetFilters}
+            title="Reset all filters"
+          >
             Reset
           </button>
         </div>
 
+        {/* Right Section Controls */}
         <div className={styles.filterSectionRight}>
-          <button className={`${styles.controlBtn} ${styles.refreshBtn}`} onClick={fetchDefects} title="Refresh data">
+          {/* Refresh Button */}
+          <button 
+            className={`${styles.controlBtn} ${styles.refreshBtn}`} 
+            onClick={handleRefreshData} 
+            title="Refresh data"
+            disabled={loading}
+          >
             <RefreshCw size={14} className={loading ? styles.spinning : ""} />
           </button>
 
-          <button className={`${styles.controlBtn} ${styles.exportBtn}`} title="Export data" onClick={handleExport}>
+          {/* Export Button */}
+          <button 
+            className={`${styles.controlBtn} ${styles.exportBtn} ${!canExport() ? styles.disabled : ''}`} 
+            title={canExport() ? "Export data to CSV" : "Export not permitted"}
+            onClick={handleExport}
+            disabled={!canExport() || loading}
+            data-tooltip={!canExport() ? "Insufficient permissions to export" : undefined}
+          >
             <Download size={14} />
           </button>
         </div>
       </div>
 
+      {/* Error Display */}
       {error && (
         <div className={styles.errorMessage}>
           <AlertTriangle size={16} />
           <span>{error}</span>
+          <button 
+            onClick={clearError}
+            className={styles.errorCloseButton}
+            title="Dismiss error"
+          >
+            ×
+          </button>
         </div>
       )}
 
-      {/* Charts Dashboard */}
+      {/* Dashboard Charts */}
       <div className={styles.dashboardCharts}>
         <div className={styles.dashboardCard}>
           <div className={styles.dashboardCardBody}>
@@ -601,10 +829,10 @@ const DefectsDashboard = () => {
         <div className={styles.dashboardCard}>
           <div className={styles.dashboardCardBody}>
             {loading ? (
-              <>
+              <div className={styles.chartLoading}>
                 <div className={styles.loadingSpinner}></div>
                 <span>Loading chart data...</span>
-              </>
+              </div>
             ) : (
               <CriticalityChart data={filteredDefects} />
             )}
@@ -612,33 +840,63 @@ const DefectsDashboard = () => {
         </div>
       </div>
 
-      {/* Equipment Defects Section */}
+      {/* Main Content Area - Defects Table */}
       <div className={styles.vesselTableWrapper}>
-        {loading ? (
+        {loading && defects.length === 0 ? (
           <div className={styles.loadingContainer}>
             <div className={styles.loadingSpinner}></div>
             <p>Loading defect data...</p>
           </div>
-        ) : filteredDefects.length === 0 ? (
+        ) : filteredDefects.length === 0 && defects.length > 0 ? (
           <div className={styles.noResults}>
-            <p>No defects match your current filters. Try adjusting your search or filters.</p>
-            <button className={styles.resetFilters} onClick={resetFilters}>
-              Reset Filters
+            <p>No defects match your current filters.</p>
+            <p>Try adjusting your search criteria or filters.</p>
+            <button 
+              className={styles.resetFilters} 
+              onClick={resetFilters}
+            >
+              Reset All Filters
             </button>
+          </div>
+        ) : defects.length === 0 ? (
+          <div className={styles.emptyState}>
+            <p>No defects found.</p>
+            {canCreate() ? (
+              <>
+                <p>Get started by adding your first defect.</p>
+                <button 
+                  className={styles.addFirstDefectBtn}
+                  onClick={handleAddDefect}
+                >
+                  <Plus size={16} />
+                  Add First Defect
+                </button>
+              </>
+            ) : (
+              <p>Contact your administrator if you believe this is incorrect.</p>
+            )}
           </div>
         ) : (
           <DefectTable
             defects={filteredDefects}
-            onView={handleView}
+            onView={handleViewDefect}
             onEdit={handleEditDefect}
-            onDelete={handleDelete}
+            onDelete={handleDeleteDefect}
             currentUser={currentUser}
             loading={loading}
             removeFilterBar={true}
             onAddDefect={handleAddDefect}
             permissions={permissions}
             onExport={handleExport}
-            onImport={() => console.log('Import VIR Excel (placeholder)')}
+            onImport={handleImport}
+            emptyMessage={
+              searchTerm || 
+              statusFilters.length < uniqueStatuses.length || 
+              criticalityFilters.length < uniqueCriticalities.length || 
+              sourceFilters.length < uniqueSources.length
+                ? "No defects match your search criteria"
+                : "No defects found"
+            }
           />
         )}
       </div>
@@ -647,7 +905,7 @@ const DefectsDashboard = () => {
       <DefectDialog
         isOpen={isDefectDialogOpen}
         onClose={() => {
-          console.log("DefectDialog onClose triggered.");
+          console.log("DefectsDashboard: Closing defect dialog");
           setIsDefectDialogOpen(false);
           setCurrentDefect(null);
         }}
@@ -657,8 +915,40 @@ const DefectsDashboard = () => {
         isNew={currentDefect?.id?.startsWith('temp-')}
         permissions={permissions}
         isExternal={false}
-        currentUser={currentUser} // Pass currentUser prop to DefectDialog
+        currentUser={currentUser}
+        isReadOnly={isReadOnly()}
+        canCreate={canCreate()}
+        canUpdate={canUpdate()}
       />
+
+      {/* Permission Status Debug Info (Remove in production) */}
+      {/* {process.env.NODE_ENV === 'development' && (
+        <div className={styles.debugInfo}>
+          <details>
+            <summary>Debug: Permission Info</summary>
+            <pre>
+              {JSON.stringify({
+                permissionStatus: getPermissionStatus(),
+                permissions: {
+                  canCreate: canCreate(),
+                  canRead: canRead(),
+                  canUpdate: canUpdate(),
+                  canDelete: canDelete(),
+                  canExport: canExport(),
+                  canImport: canImport(),
+                  canGenerateReport: canGenerateReport()
+                },
+                roleName,
+                isReadOnly: isReadOnly(),
+                hasWriteAccess: hasWriteAccess(),
+                userId,
+                defectsCount: defects.length,
+                filteredDefectsCount: filteredDefects.length
+              }, null, 2)}
+            </pre>
+          </details>
+        </div>
+      )} */}
     </div>
   );
 };

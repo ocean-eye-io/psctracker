@@ -1,12 +1,13 @@
-// DefectDialog.jsx - Phase 4 Enhanced with Auto-Report Generation on Save/Add
+// DefectDialog.jsx - Phase 4 Enhanced with Auto-Report Generation on Save/Add + RBAC
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Upload, FileText, X, Download, Trash2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Upload, FileText, X, Download, Trash2, AlertCircle, RefreshCw, Shield, Eye } from 'lucide-react';
 import { useToast } from '../../common/ui/ToastContext';
+import { usePermissions } from '../../../context/PermissionContext'; // NEW: Import permissions hook
 import { formatDateForInput, formatDateDisplay } from '../../../utils/dateUtils';
 import { DEFECT_FIELDS, FIELD_SECTIONS } from './config/DefectFieldMappings';
 import fileService from './services/fileService';
-import reportService from './services/reportService'; // PHASE 4: New report service
+import reportService from './services/reportService';
 import formStyles from '../../common/ui/form.module.css';
 
 // Import the dialog components
@@ -39,11 +40,30 @@ const DefectDialog = ({
   onSave,
   vessels = [],
   isNew,
-  permissions,
+  permissions: legacyPermissions, // Legacy prop for backward compatibility
   isExternal,
-  currentUser
+  currentUser,
+  isReadOnly: propIsReadOnly, // Legacy prop
+  canCreate: propCanCreate, // Legacy prop
+  canUpdate: propCanUpdate // Legacy prop
 }) => {
   const { toast } = useToast();
+  
+  // NEW: Get permissions from context (takes precedence over props)
+  const {
+    canCreate,
+    canUpdate,
+    canDelete,
+    isReadOnly,
+    roleName,
+    getPermissionStatus
+  } = usePermissions();
+
+  // Use context permissions or fall back to props
+  const effectiveCanCreate = canCreate() || propCanCreate;
+  const effectiveCanUpdate = canUpdate() || propCanUpdate;
+  const effectiveIsReadOnly = isReadOnly() || propIsReadOnly;
+
   const [initialFiles, setInitialFiles] = useState([]);
   const [closureFiles, setClosureFiles] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -58,7 +78,12 @@ const DefectDialog = ({
 
   const userId = currentUser?.id || currentUser?.userId;
 
-  console.log("DefectDialog component rendering. isOpen:", isOpen, "defect:", defect?.id);
+  console.log("DefectDialog component rendering. isOpen:", isOpen, "defect:", defect?.id, "permissions:", {
+    canCreate: effectiveCanCreate,
+    canUpdate: effectiveCanUpdate,
+    isReadOnly: effectiveIsReadOnly,
+    roleName
+  });
 
   // Initial form data structure
   const initialFormData = useCallback(() => ({
@@ -144,6 +169,12 @@ const DefectDialog = ({
 
   // Handle form field changes
   const handleChange = useCallback((e) => {
+    // NEW: Block changes if in read-only mode
+    if (effectiveIsReadOnly) {
+      console.log("DefectDialog: Change blocked - user in read-only mode");
+      return;
+    }
+
     const { name, value, type, checked } = e.target;
 
     setFormData(prev => {
@@ -160,7 +191,7 @@ const DefectDialog = ({
       return newState;
     });
     setIsDirty(true);
-  }, [vessels]);
+  }, [vessels, effectiveIsReadOnly]);
 
   // Function to check if field is visible
   const isFieldVisible = useCallback((fieldId) => {
@@ -169,6 +200,12 @@ const DefectDialog = ({
 
   // Function to handle silent mode change
   const handleSilentModeChange = async (checked) => {
+    // NEW: Block changes if in read-only mode
+    if (effectiveIsReadOnly) {
+      console.log("DefectDialog: Silent mode change blocked - user in read-only mode");
+      return;
+    }
+
     setFormData(prev => ({ ...prev, external_visibility: !checked }));
     setIsDirty(true);
     if (!isNew) {
@@ -180,10 +217,20 @@ const DefectDialog = ({
     }
   };
 
-  // Function to check if field is editable
+  // NEW: Function to check if field is editable based on permissions
   const isFieldEditable = useCallback((fieldId) => {
+    // Always allow editing in view mode if user has proper permissions
+    if (isNew && !effectiveCanCreate) {
+      return false; // Can't create new defects
+    }
+    if (!isNew && !effectiveCanUpdate) {
+      return false; // Can't update existing defects
+    }
+    if (effectiveIsReadOnly) {
+      return false; // User is in read-only mode
+    }
     return true;
-  }, []);
+  }, [isNew, effectiveCanCreate, effectiveCanUpdate, effectiveIsReadOnly]);
 
   // Function to get visible fields from section
   const getVisibleFields = useCallback(() => {
@@ -199,10 +246,22 @@ const DefectDialog = ({
       .sort((a, b) => a[1].displayOrder - b[1].displayOrder);
   }, [formData, isFieldVisible]);
 
-  // Function to check if save should be enabled
+  // NEW: Function to check if save should be enabled based on permissions
   const canSave = useCallback(() => {
+    if (saving || uploadingFiles || autoGeneratingReport) {
+      return false;
+    }
+    
+    if (isNew && !effectiveCanCreate) {
+      return false; // Can't create new defects
+    }
+    
+    if (!isNew && !effectiveCanUpdate) {
+      return false; // Can't update existing defects
+    }
+    
     return true;
-  }, []);
+  }, [isNew, effectiveCanCreate, effectiveCanUpdate, saving, uploadingFiles, autoGeneratingReport]);
 
   // Handle dialog close attempt
   const handleCloseAttempt = () => {
@@ -409,6 +468,17 @@ const DefectDialog = ({
 
   // File handling functions
   const handleInitialFileChange = (e) => {
+    // NEW: Block file changes if not editable
+    if (!isFieldEditable('initialFiles')) {
+      console.log("DefectDialog: File upload blocked - insufficient permissions");
+      toast({
+        title: "Permission Denied",
+        description: "You don't have permission to upload files",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const selectedFiles = Array.from(e.target.files);
     const validFiles = selectedFiles.filter(validateFile);
     setInitialFiles(prevFiles => [...prevFiles, ...validFiles]);
@@ -416,6 +486,17 @@ const DefectDialog = ({
   };
 
   const handleClosureFileChange = (e) => {
+    // NEW: Block file changes if not editable
+    if (!isFieldEditable('closureFiles')) {
+      console.log("DefectDialog: File upload blocked - insufficient permissions");
+      toast({
+        title: "Permission Denied",
+        description: "You don't have permission to upload files",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const selectedFiles = Array.from(e.target.files);
     const validFiles = selectedFiles.filter(validateFile);
     setClosureFiles(prevFiles => [...prevFiles, ...validFiles]);
@@ -423,11 +504,19 @@ const DefectDialog = ({
   };
 
   const removeInitialFile = (index) => {
+    // NEW: Block file removal if not editable
+    if (!isFieldEditable('initialFiles')) {
+      return;
+    }
     setInitialFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
     setIsDirty(true);
   };
 
   const removeClosureFile = (index) => {
+    // NEW: Block file removal if not editable
+    if (!isFieldEditable('closureFiles')) {
+      return;
+    }
     setClosureFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
     setIsDirty(true);
   };
@@ -456,6 +545,16 @@ const DefectDialog = ({
   };
 
   const handleDeleteExistingFile = async (file, fileType) => {
+    // NEW: Block file deletion if not editable
+    if (!isFieldEditable('fileManagement')) {
+      toast({
+        title: "Permission Denied",
+        description: "You don't have permission to delete files",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!userId || !formData.id) {
       toast({
         title: "Error",
@@ -559,6 +658,20 @@ const DefectDialog = ({
 
   // PHASE 4: Enhanced Save handler with auto-report generation
   const handleSave = async () => {
+    // NEW: Check permissions before saving
+    if (!canSave()) {
+      const message = isNew 
+        ? "You don't have permission to create defects" 
+        : "You don't have permission to update defects";
+      
+      toast({
+        title: "Permission Denied",
+        description: message,
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       console.log("DefectDialog: Starting PHASE 4 enhanced save operation...");
       setSaving(true);
@@ -825,18 +938,43 @@ const DefectDialog = ({
         <DialogContent
           onPointerDownOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
+          className={effectiveIsReadOnly ? formStyles.readOnlyContainer : ''}
         >
           <DialogHeader>
             <DialogTitle>
               {isNew ? 'Add New Defect' : 'Edit Defect'}
+              {/* NEW: Permission status indicator */}
+              {effectiveIsReadOnly && (
+                <span className={formStyles.readOnlyBadge}>
+                  <Eye size={14} />
+                  Read Only
+                </span>
+              )}
+              {roleName && (
+                <span className={formStyles.roleBadge}>
+                  <Shield size={12} />
+                  {roleName}
+                </span>
+              )}
             </DialogTitle>
             <DialogDescription id="dialog-description">
-              {isNew ? 'Create a new defect record with auto-report generation' : 'Edit existing defect details with report update'}
+              {effectiveIsReadOnly ? (
+                'Viewing defect details - you can view but not modify this defect'
+              ) : (
+                isNew ? 'Create a new defect record with auto-report generation' : 'Edit existing defect details with report update'
+              )}
             </DialogDescription>
           </DialogHeader>
 
           <DialogBody>
-            <div className={formStyles.formContainer}>
+            <div className={`${formStyles.formContainer} ${effectiveIsReadOnly ? formStyles.readOnly : ''}`}>
+              {/* NEW: Read-only overlay */}
+              {effectiveIsReadOnly && (
+                <div className={formStyles.readOnlyOverlay}>
+                  View Only
+                </div>
+              )}
+              
               {/* PHASE 4: Auto-report generation progress */}
               {renderAutoReportProgress()}
               
@@ -868,6 +1006,7 @@ const DefectDialog = ({
                                     }
                                   }}
                                   disabled={!isEditable}
+                                  readOnly={!isEditable}
                                   id={fieldId}
                                 />
                                 <span className={formStyles.checkboxText}>
@@ -891,7 +1030,7 @@ const DefectDialog = ({
                               <div className={formStyles.selectWrapper}>
                                 <select
                                   id={fieldId}
-                                  className={formStyles.formSelect}
+                                  className={`${formStyles.formSelect} ${!isEditable ? formStyles.readOnlyField : ''}`}
                                   name={field.dbField}
                                   value={formData?.[field.dbField] || ''}
                                   onChange={handleChange}
@@ -925,13 +1064,14 @@ const DefectDialog = ({
                               </label>
                               <textarea
                                 id={fieldId}
-                                className={formStyles.formTextarea}
+                                className={`${formStyles.formTextarea} ${!isEditable ? formStyles.readOnlyField : ''}`}
                                 name={field.dbField}
                                 value={formData?.[field.dbField] || ''}
                                 onChange={handleChange}
-                                placeholder={`Enter ${field.label.toLowerCase()}`}
+                                placeholder={!isEditable ? '' : `Enter ${field.label.toLowerCase()}`}
                                 required={field.required}
                                 disabled={!isEditable}
+                                readOnly={!isEditable}
                                 rows={field.rows || 3}
                               />
                             </div>
@@ -947,12 +1087,13 @@ const DefectDialog = ({
                                 <input
                                   id={fieldId}
                                   type="date"
-                                  className={formStyles.dateInput}
+                                  className={`${formStyles.dateInput} ${!isEditable ? formStyles.readOnlyField : ''}`}
                                   name={field.dbField}
                                   value={formatDateForInput(formData?.[field.dbField])}
                                   onChange={handleChange}
                                   required={field.required}
                                   disabled={!isEditable}
+                                  readOnly={!isEditable}
                                   aria-required={field.required}
                                 />
                                 <div className={formStyles.dateDisplay}>
@@ -977,20 +1118,25 @@ const DefectDialog = ({
                             <div key={fieldId} className={`${formStyles.formGroup} ${field.width === 'full' ? formStyles.fullWidth : ''}`}>
                               <label className={formStyles.formLabel}>
                                 {field.label}
+                                {!isEditable && (
+                                  <span className={formStyles.fieldNote}> (View Only)</span>
+                                )}
                               </label>
-                              <div className={formStyles.fileUploadContainer}>
-                                <label className={formStyles.fileUploadButton}>
-                                  <Upload className={formStyles.fileUploadIcon} />
-                                  <span>Upload {field.label} (Max 2MB: PDF, DOC, Images)</span>
-                                  <input
-                                    type="file"
-                                    multiple={field.multiple}
-                                    className={formStyles.hiddenFileInput}
-                                    onChange={handleFileChange}
-                                    accept={field.accept}
-                                    disabled={!isEditable || uploadingFiles}
-                                  />
-                                </label>
+                              <div className={`${formStyles.fileUploadContainer} ${!isEditable ? formStyles.readOnlyContainer : ''}`}>
+                                {isEditable && (
+                                  <label className={formStyles.fileUploadButton}>
+                                    <Upload className={formStyles.fileUploadIcon} />
+                                    <span>Upload {field.label} (Max 2MB: PDF, DOC, Images)</span>
+                                    <input
+                                      type="file"
+                                      multiple={field.multiple}
+                                      className={formStyles.hiddenFileInput}
+                                      onChange={handleFileChange}
+                                      accept={field.accept}
+                                      disabled={!isEditable || uploadingFiles}
+                                    />
+                                  </label>
+                                )}
 
                                 {/* Show newly selected files */}
                                 {currentFiles.length > 0 && (
@@ -1003,14 +1149,16 @@ const DefectDialog = ({
                                         <span className={formStyles.fileSize}>
                                           ({(file.size / 1024 / 1024).toFixed(2)} MB)
                                         </span>
-                                        <button
-                                          onClick={() => removeFileHandler(index)}
-                                          className={formStyles.fileRemoveButton}
-                                          disabled={!isEditable || uploadingFiles}
-                                          title="Remove file"
-                                        >
-                                          <X className={formStyles.fileRemoveIcon} />
-                                        </button>
+                                        {isEditable && (
+                                          <button
+                                            onClick={() => removeFileHandler(index)}
+                                            className={formStyles.fileRemoveButton}
+                                            disabled={!isEditable || uploadingFiles}
+                                            title="Remove file"
+                                          >
+                                            <X className={formStyles.fileRemoveIcon} />
+                                          </button>
+                                        )}
                                       </div>
                                     ))}
                                   </div>
@@ -1075,13 +1223,14 @@ const DefectDialog = ({
                               <input
                                 id={fieldId}
                                 type={field.type || 'text'}
-                                className={formStyles.formInput}
+                                className={`${formStyles.formInput} ${!isEditable ? formStyles.readOnlyField : ''}`}
                                 name={field.dbField}
                                 value={formData?.[field.dbField] || ''}
                                 onChange={handleChange}
-                                placeholder={`Enter ${field.label.toLowerCase()}`}
+                                placeholder={!isEditable ? '' : `Enter ${field.label.toLowerCase()}`}
                                 required={field.required}
                                 disabled={!isEditable}
+                                readOnly={!isEditable}
                                 aria-required={field.required}
                               />
                             </div>
@@ -1100,13 +1249,15 @@ const DefectDialog = ({
               disabled={saving || uploadingFiles || autoGeneratingReport}
               variant="cancel"
             >
-              Cancel
+              {effectiveIsReadOnly ? 'Close' : 'Cancel'}
             </DialogButton>
             {canSave() && (
               <DialogButton
                 onClick={handleSave}
-                disabled={saving || uploadingFiles || autoGeneratingReport}
+                disabled={!canSave()}
                 variant="save"
+                className={!canSave() ? formStyles.disabledButton : ''}
+                title={!canSave() ? 'Insufficient permissions to save' : ''}
               >
                 {saving ? 'Saving...' : 
                  uploadingFiles ? 'Uploading...' : 
@@ -1303,52 +1454,6 @@ const DefectDialog = ({
           font-size: 12px;
         }
 
-        /* Enhanced error states */
-        .upload-progress-item .progress-fill[style*="e74c3c"] {
-          box-shadow: 0 0 4px rgba(231, 76, 60, 0.4);
-        }
-
-        /* Loading animation */
-        @keyframes progressPulse {
-          0% { opacity: 0.6; }
-          50% { opacity: 1; }
-          100% { opacity: 0.6; }
-        }
-
-        .upload-progress-container:has(.progress-fill[style*="width: 0%"]) {
-          animation: progressPulse 2s ease-in-out infinite;
-        }
-
-        .auto-report-progress-container {
-          animation: progressPulse 2s ease-in-out infinite;
-        }
-
-        /* Success state */
-        .upload-progress-item:has(.progress-text:contains("100%")) {
-          background: rgba(46, 204, 113, 0.1);
-          border: 1px solid rgba(46, 204, 113, 0.2);
-        }
-
-        /* Error state */
-        .upload-progress-item:has(.progress-text:contains("Failed")) {
-          background: rgba(231, 76, 60, 0.1);
-          border: 1px solid rgba(231, 76, 60, 0.2);
-        }
-
-        /* Enhanced file upload error styling */
-        .file-upload-error {
-          margin-top: 12px;
-          padding: 12px;
-          background: rgba(231, 76, 60, 0.1);
-          border: 1px solid rgba(231, 76, 60, 0.2);
-          border-radius: 6px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          color: #e74c3c;
-          font-size: 13px;
-        }
-
         /* Spin animation for refresh icon */
         @keyframes spin {
           from { transform: rotate(0deg); }
@@ -1357,48 +1462,6 @@ const DefectDialog = ({
 
         .animate-spin {
           animation: spin 1s linear infinite;
-        }
-
-        /* Responsive design for mobile */
-        @media (max-width: 768px) {
-          .upload-progress-item,
-          .auto-report-progress-container {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 8px;
-          }
-
-          .file-name {
-            max-width: none;
-            text-align: center;
-          }
-
-          .progress-bar {
-            order: 2;
-          }
-
-          .progress-text {
-            order: 3;
-            text-align: center;
-            flex: 1;
-          }
-
-          .auto-report-progress-header {
-            justify-content: center;
-          }
-        }
-
-        /* Enhanced dialog overlay for report generation */
-        .dialog-content:has(.auto-report-progress-container) {
-          border: 2px solid rgba(46, 204, 113, 0.3);
-          box-shadow: 0 0 20px rgba(46, 204, 113, 0.2);
-        }
-
-        /* Disable pointer events during auto-report generation */
-        .form-container:has(.auto-report-progress-container) .form-section:not(:has(.auto-report-progress-container)) {
-          pointer-events: none;
-          opacity: 0.7;
-          filter: blur(1px);
         }
       `}</style>
     </>

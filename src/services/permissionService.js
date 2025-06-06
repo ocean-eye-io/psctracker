@@ -2,7 +2,8 @@
 
 class PermissionService {
     constructor() {
-      this.baseURL = process.env.REACT_APP_ADMIN_API_URL || 'https://your-api-gateway-url';
+      // Use your actual Lambda URL
+      this.baseURL = 'https://bavzk3zqphycvshhqklb72l4cu0cnisv.lambda-url.ap-south-1.on.aws';
       this.permissions = null;
       this.loading = false;
       this.error = null;

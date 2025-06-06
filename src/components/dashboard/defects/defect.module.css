@@ -3454,6 +3454,352 @@
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
 }
 
+/* Add these styles to your existing defect.module.css */
+
+/* Permission Banner for Read-Only Mode */
+.permissionBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.permissionBanner svg {
+  opacity: 0.8;
+}
+
+/* Role Badge in Permission Banner */
+.roleBadge {
+  background: rgba(59, 130, 246, 0.15);
+  color: #1d4ed8;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+/* Role Indicator in Dashboard Title */
+.roleIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 12px;
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.roleIndicator svg {
+  opacity: 0.8;
+}
+
+/* Disabled Button States */
+.controlBtn.disabled,
+.enhancedActionButton.disabled,
+.enhancedHeaderButton.disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: rgba(107, 114, 128, 0.1) !important;
+  color: rgba(107, 114, 128, 0.6) !important;
+  border-color: rgba(107, 114, 128, 0.2) !important;
+}
+
+.controlBtn.disabled:hover,
+.enhancedActionButton.disabled:hover,
+.enhancedHeaderButton.disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Enhanced disabled states for action buttons */
+.enhancedActionButton.disabled {
+  background: rgba(75, 85, 99, 0.1) !important;
+  border-color: rgba(75, 85, 99, 0.2) !important;
+  color: rgba(75, 85, 99, 0.4) !important;
+}
+
+.enhancedActionButton.disabled svg {
+  opacity: 1.0;
+}
+
+/* Permission Error Container */
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  color: #dc2626;
+  margin: 20px;
+}
+
+.errorContainer h2 {
+  margin: 12px 0 8px 0;
+  color: #dc2626;
+}
+
+.errorContainer p {
+  margin: 4px 0;
+  color: rgba(220, 38, 38, 0.8);
+}
+
+/* Read-Only Form States */
+.formInput:read-only,
+.formTextarea:read-only,
+.formSelect:disabled {
+  background: rgba(156, 163, 175, 0.1) !important;
+  border-color: rgba(156, 163, 175, 0.3) !important;
+  color: rgba(156, 163, 175, 0.8) !important;
+  cursor: not-allowed;
+}
+
+/* Read-Only Form Field Labels */
+.formGroup:has(.formInput:read-only) .formLabel::after,
+.formGroup:has(.formTextarea:read-only) .formLabel::after,
+.formGroup:has(.formSelect:disabled) .formLabel::after {
+  content: ' (Read Only)';
+  font-size: 11px;
+  color: rgba(107, 114, 128, 0.6);
+  font-weight: normal;
+  font-style: italic;
+}
+
+/* Permission Status Indicators */
+.permissionStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.permissionStatus.loading {
+  background: rgba(156, 163, 175, 0.1);
+  color: #6b7280;
+}
+
+.permissionStatus.readonly {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+}
+
+.permissionStatus.full {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+
+.permissionStatus.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+/* Permission Tooltip for Disabled Elements */
+.disabledTooltip {
+  position: relative;
+  cursor: not-allowed;
+}
+
+.disabledTooltip::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(17, 24, 39, 0.9);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 1000;
+  margin-bottom: 5px;
+}
+
+.disabledTooltip::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: rgba(17, 24, 39, 0.9);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 1000;
+  margin-bottom: 1px;
+}
+
+.disabledTooltip:hover::before,
+.disabledTooltip:hover::after {
+  opacity: 1;
+}
+
+/* Enhanced Action Button Permission States */
+.enhancedActionButton.edit.disabled {
+  background: rgba(59, 130, 246, 0.05) !important;
+  border-color: rgba(59, 130, 246, 0.1) !important;
+  color: rgba(59, 130, 246, 0.3) !important;
+}
+
+.enhancedActionButton.delete.disabled {
+  background: rgba(239, 68, 68, 0.05) !important;
+  border-color: rgba(239, 68, 68, 0.1) !important;
+  color: rgba(239, 68, 68, 0.3) !important;
+}
+
+.enhancedActionButton.generate.disabled {
+  background: rgba(59, 173, 229, 0.05) !important;
+  border-color: rgba(59, 173, 229, 0.1) !important;
+  color: rgba(59, 173, 229, 0.3) !important;
+}
+
+/* Loading Permission State */
+.permissionLoading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(156, 163, 175, 0.1);
+  border: 1px solid rgba(156, 163, 175, 0.2);
+  border-radius: 6px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.permissionLoading .loadingSpinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(156, 163, 175, 0.2);
+  border-top-color: #6b7280;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Permission-aware Form Container */
+.formContainer.readOnly {
+  position: relative;
+  opacity: 0.8;
+}
+
+.formContainer.readOnly::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(156, 163, 175, 0.05);
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Read-Only Mode Overlay */
+.readOnlyOverlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(59, 130, 246, 0.9);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Permission Badge in Table Headers */
+.tableHeaderPermission {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  opacity: 0.6;
+}
+
+/* Mobile Responsive Permission States */
+@media (max-width: 768px) {
+  .permissionBanner {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  
+  .roleIndicator {
+    display: none; /* Hide role indicator on mobile to save space */
+  }
+  
+  .roleBadge {
+    font-size: 11px;
+    padding: 1px 6px;
+  }
+  
+  .disabledTooltip::before {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+}
+
+/* Dark Mode Permission States (if using dark mode) */
+@media (prefers-color-scheme: dark) {
+  .permissionBanner {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.08));
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #60a5fa;
+  }
+  
+  .roleIndicator {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border-color: rgba(34, 197, 94, 0.3);
+  }
+  
+  .errorContainer {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #f87171;
+  }
+}
+
+/* Animation for Permission State Changes */
+.permissionTransition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Focus states for disabled elements */
+.controlBtn.disabled:focus,
+.enhancedActionButton.disabled:focus {
+  outline: 2px solid rgba(107, 114, 128, 0.3);
+  outline-offset: 2px;
+}
+
 /* Loading States */
 .enhancedLoadingContainer {
   display: flex;

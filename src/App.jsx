@@ -4,8 +4,9 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { Amplify } from 'aws-amplify';
 import awsConfig from './config/aws-config';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { ToastProvider } from './components/common/ui/ToastContext'; // Import ToastProvider
-import { Toaster } from 'react-hot-toast'; // <--- IMPORTANT: Import Toaster from react-hot-toast
+import { PermissionProvider } from './context/PermissionContext'; // NEW: Import Permission Provider
+import { ToastProvider } from './components/common/ui/ToastContext';
+import { Toaster } from 'react-hot-toast';
 
 import FloatingChatbot from './components/FloatingChatbot';
 
@@ -54,7 +55,7 @@ const getActivePageFromPath = (pathname) => {
   if (pathname.startsWith('/fleet')) return 'fleet';
   if (pathname.startsWith('/defects')) return 'defects';
   if (pathname.startsWith('/reporting')) return 'reporting';
-  if (pathname.startsWith('/admin')) return 'admin'; // ADDED: Admin route
+  if (pathname.startsWith('/admin')) return 'admin';
   return 'fleet'; // default
 };
 
@@ -80,76 +81,79 @@ const ProtectedLayout = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
-      <ToastProvider> {/* Wrap the entire application with ToastProvider */}
-        <BrowserRouter>
-          <FloatingChatbot />
-          <Routes>
-            {/* Auth Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/confirm-signup" element={<ConfirmSignUp />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+      {/* NEW: Permission Provider - Must be inside Auth Provider */}
+      <PermissionProvider>
+        <ToastProvider>
+          <BrowserRouter>
+            <FloatingChatbot />
+            <Routes>
+              {/* Auth Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/confirm-signup" element={<ConfirmSignUp />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
-            {/* Protected App Routes */}
-            <Route
-              path="/fleet"
-              element={
-                <ProtectedRoute>
-                  <ProtectedLayout>
-                    <FleetDashboard fieldMappings={fleetFieldMappings} />
-                  </ProtectedLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/defects"
-              element={
-                <ProtectedRoute>
-                  <ProtectedLayout>
-                    <DefectsDashboard />
-                  </ProtectedLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/reporting"
-              element={
-                <ProtectedRoute>
-                  <ProtectedLayout>
-                    <VesselReportingPage />
-                  </ProtectedLayout>
-                </ProtectedRoute>
-              }
-            />
-            {/* ADDED: Admin Route */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <ProtectedLayout>
-                    <AdminDashboard />
-                  </ProtectedLayout>
-                </ProtectedRoute>
-              }
-            />
+              {/* Protected App Routes */}
+              <Route
+                path="/fleet"
+                element={
+                  <ProtectedRoute>
+                    <ProtectedLayout>
+                      <FleetDashboard fieldMappings={fleetFieldMappings} />
+                    </ProtectedLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/defects"
+                element={
+                  <ProtectedRoute>
+                    <ProtectedLayout>
+                      <DefectsDashboard />
+                    </ProtectedLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reporting"
+                element={
+                  <ProtectedRoute>
+                    <ProtectedLayout>
+                      <VesselReportingPage />
+                    </ProtectedLayout>
+                  </ProtectedRoute>
+                }
+              />
+              {/* Admin Route */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <ProtectedLayout>
+                      <AdminDashboard />
+                    </ProtectedLayout>
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Default route: redirect to /fleet */}
-            <Route
-              path="/"
-              element={<Navigate to="/fleet" replace />}
-            />
+              {/* Default route: redirect to /fleet */}
+              <Route
+                path="/"
+                element={<Navigate to="/fleet" replace />}
+              />
 
-            {/* Catch-all: redirect to /fleet */}
-            <Route
-              path="*"
-              element={<Navigate to="/fleet" replace />}
-            />
-          </Routes>
-          {/* Render the react-hot-toast Toaster component */}
-          <Toaster position="top-right" /> {/* You can customize position and other props */}
-        </BrowserRouter>
-      </ToastProvider>
+              {/* Catch-all: redirect to /fleet */}
+              <Route
+                path="*"
+                element={<Navigate to="/fleet" replace />}
+              />
+            </Routes>
+            {/* Render the react-hot-toast Toaster component */}
+            <Toaster position="top-right" />
+          </BrowserRouter>
+        </ToastProvider>
+      </PermissionProvider>
     </AuthProvider>
   );
 }
