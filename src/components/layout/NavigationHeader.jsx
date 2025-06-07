@@ -1,7 +1,7 @@
 // src/components/layout/NavigationHeader.jsx
 import React, { useState, useEffect } from 'react';
 import { Home, BarChart2, FileText, LogOut, Users, Upload, Menu, X } from 'lucide-react'; 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Logo from '../Logo';
 import './NavigationStyles.css';
@@ -54,6 +54,7 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded })
   const [error, setError] = useState(null);
   const { signOut, currentUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Fetch user's assigned modules
   useEffect(() => {
@@ -114,26 +115,42 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded })
     }
   };
 
+  // Determine active page based on current location if activePage prop is not provided
+  const getCurrentPage = () => {
+    if (activePage) return activePage;
+    
+    const currentPath = location.pathname;
+    const currentItem = navItems.find(item => currentPath.startsWith(item.path));
+    return currentItem?.id || '';
+  };
+
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-  const handleNavClick = (id, e) => {
+  const handleNavClick = (item, e) => {
     e.preventDefault();
-
-    // Use the onNavigate prop if provided, otherwise navigate directly
-    if (onNavigate) {
-      onNavigate(id);
-    } else {
-      const item = navItems.find(item => item.id === id);
-      if (item) {
-        navigate(item.path);
-      }
-    }
+    
+    console.log('Navigation clicked:', item.id, item.path);
 
     // Close sidebar on mobile if it's open
     if (sidebarOpen) {
       setSidebarOpen(false);
+    }
+
+    // Always use React Router navigation
+    try {
+      navigate(item.path);
+      console.log('Navigated to:', item.path);
+    } catch (error) {
+      console.error('Navigation error:', error);
+      // Fallback to window.location if navigate fails
+      window.location.href = item.path;
+    }
+
+    // Call onNavigate callback if provided (for parent component state management)
+    if (onNavigate) {
+      onNavigate(item.id);
     }
   };
 
@@ -143,6 +160,8 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded })
       navigate('/login');
     } catch (error) {
       console.error('Sign out error:', error);
+      // Fallback navigation
+      window.location.href = '/login';
     }
   };
 
@@ -169,6 +188,8 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded })
       .toUpperCase()
       .substring(0, 2);
   };
+
+  const currentPageId = getCurrentPage();
 
   // Loading state
   if (loading) {
@@ -263,17 +284,17 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded })
             <div className="nav-empty">No navigation items available</div>
           ) : (
             navItems.map(item => (
-              <a
+              <button
                 key={item.id}
-                href={item.path}
-                className={`nav-item ${activePage === item.id ? 'active' : ''}`}
-                onClick={(e) => handleNavClick(item.id, e)}
+                className={`nav-item ${currentPageId === item.id ? 'active' : ''}`}
+                onClick={(e) => handleNavClick(item, e)}
                 title={`${item.label} (${item.moduleName})`}
+                type="button"
               >
                 {item.icon}
                 <span>{item.label}</span>
-                {activePage === item.id && <div className="active-indicator"></div>}
-              </a>
+                {currentPageId === item.id && <div className="active-indicator"></div>}
+              </button>
             ))
           )}
         </nav>
@@ -288,6 +309,7 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded })
             className="logout-button"
             onClick={handleSignOut}
             aria-label="Sign out"
+            type="button"
           >
             <LogOut size={20} />
           </button>
@@ -305,30 +327,27 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded })
             <div className="sidebar-nav-empty">No navigation items available</div>
           ) : (
             navItems.map(item => (
-              <a
+              <button
                 key={item.id}
-                href={item.path}
-                className={`sidebar-nav-item ${activePage === item.id ? 'active' : ''}`}
-                onClick={(e) => handleNavClick(item.id, e)}
+                className={`sidebar-nav-item ${currentPageId === item.id ? 'active' : ''}`}
+                onClick={(e) => handleNavClick(item, e)}
+                type="button"
               >
                 {item.icon}
                 <span>{item.label}</span>
-              </a>
+              </button>
             ))
           )}
 
           {/* Add logout to mobile sidebar */}
-          <a
-            href="#"
+          <button
             className="sidebar-nav-item logout-item"
-            onClick={(e) => {
-              e.preventDefault();
-              handleSignOut();
-            }}
+            onClick={handleSignOut}
+            type="button"
           >
             <LogOut size={20} />
             <span>Sign Out</span>
-          </a>
+          </button>
         </nav>
 
         {/* User info in sidebar */}
