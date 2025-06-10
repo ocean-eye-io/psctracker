@@ -229,20 +229,56 @@ const ProtectedLayout = ({ children }) => {
   );
 };
 
-// App Content Component (handles routing logic)
+
 const AppContent = () => {
+  const { currentUser, loading } = useAuth();
+
+  // Show loading while auth is being determined
+  if (loading) {
+    return <div className="loading-spinner">Loading...</div>;
+  }
+
   return (
     <Routes>
-      {/* Auth Routes */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<SignUp />} />
-      <Route path="/confirm-signup" element={<ConfirmSignUp />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
+      {/* Auth Routes - only accessible when NOT authenticated */}
+      <Route 
+        path="/login" 
+        element={!currentUser ? <Login /> : <Navigate to="/dashboard" replace />} 
+      />
+      <Route 
+        path="/signup" 
+        element={!currentUser ? <SignUp /> : <Navigate to="/dashboard" replace />} 
+      />
+      <Route 
+        path="/confirm-signup" 
+        element={!currentUser ? <ConfirmSignUp /> : <Navigate to="/dashboard" replace />} 
+      />
+      <Route 
+        path="/forgot-password" 
+        element={!currentUser ? <ForgotPassword /> : <Navigate to="/dashboard" replace />} 
+      />
+      <Route 
+        path="/reset-password" 
+        element={!currentUser ? <ResetPassword /> : <Navigate to="/dashboard" replace />} 
+      />
 
-      {/* Landing Route - determines where user should go based on their modules */}
+      {/* Root path: Redirect based on auth status */}
       <Route
         path="/"
+        element={
+          currentUser ? (
+            <ProtectedRoute>
+              <LandingPage />
+            </ProtectedRoute>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+
+      {/* Dashboard route - this is where LandingPage redirects to after determining user's modules */}
+      <Route
+        path="/dashboard"
         element={
           <ProtectedRoute>
             <LandingPage />
@@ -284,7 +320,6 @@ const AppContent = () => {
         }
       />
 
-      {/* Files Route (new module) */}
       <Route
         path="/files"
         element={
@@ -299,7 +334,7 @@ const AppContent = () => {
         }
       />
       
-      {/* Admin Route */}
+      {/* Admin Route - FIXED */}
       <Route
         path="/admin"
         element={
@@ -311,10 +346,12 @@ const AppContent = () => {
         }
       />
 
-      {/* Catch-all: redirect to landing page to determine appropriate module */}
+      {/* Catch-all: redirect based on auth status */}
       <Route
         path="*"
-        element={<Navigate to="/" replace />}
+        element={
+          currentUser ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />
+        }
       />
     </Routes>
   );
