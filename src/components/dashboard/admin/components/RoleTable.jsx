@@ -1,67 +1,44 @@
 // src/components/dashboards/admin/components/RoleTable.js
 import React from 'react';
+import styles from '../admin.module.css'; // Correct path for CSS Module
 
 const RoleTable = ({ roles, onEdit, onDelete }) => {
   if (!roles || roles.length === 0) {
-    return <p>No roles found.</p>;
+    return <p className={styles.emptyTableMessage}>No roles found.</p>; 
   }
 
-  const tableStyle = {
-    width: '100%',
-    borderCollapse: 'collapse',
-    marginTop: '20px',
-  };
-
-  const thTdStyle = {
-    border: '1px solid #ddd',
-    padding: '8px',
-    textAlign: 'left',
-  };
-
-  const thStyle = {
-    ...thTdStyle,
-    backgroundColor: '#f2f2f2',
-  };
-
-  const buttonStyle = {
-    padding: '5px 10px',
-    marginRight: '5px',
-    border: 'none',
-    borderRadius: '3px',
-    cursor: 'pointer',
-  };
-
-  const editButtonStyle = {
-    ...buttonStyle,
-    backgroundColor: '#28a745',
-    color: 'white',
-  };
-
-  const deleteButtonStyle = {
-    ...buttonStyle,
-    backgroundColor: '#dc3545',
-    color: 'white',
+  // Helper to render a checkmark or cross for boolean values
+  const renderBoolean = (value) => {
+    return value ? '✅' : '❌';
   };
 
   return (
-    <table style={tableStyle}>
+    <table className={styles.dataTable}> 
       <thead>
         <tr>
-          <th style={thStyle}>Role Name</th>
-          <th style={thStyle}>Description</th>
-          <th style={thStyle}>Permissions</th>
-          <th style={thStyle}>Actions</th>
+          <th><div className={styles.tableHeaderContent}>Role Name</div></th> 
+          <th><div className={styles.tableHeaderContent}>Description</div></th>
+          <th><div className={styles.tableHeaderContent}>Create</div></th>
+          <th><div className={styles.tableHeaderContent}>Read</div></th>
+          <th><div className={styles.tableHeaderContent}>Update</div></th>
+          <th><div className={styles.tableHeaderContent}>Delete</div></th>
+          <th className={styles.actionsCell}><div className={styles.tableHeaderContent}>Actions</div></th> 
         </tr>
       </thead>
       <tbody>
-        {roles.map(role => (
-          <tr key={role.role_id}>
-            <td style={thTdStyle}>{role.role_name}</td>
-            <td style={thTdStyle}>{role.description || 'N/A'}</td>
-            <td style={thTdStyle}>{role.assigned_permissions ? role.assigned_permissions.join(', ') : 'N/A'}</td>
-            <td style={thTdStyle}>
-              <button style={editButtonStyle} onClick={() => onEdit(role)}>Edit</button>
-              <button style={deleteButtonStyle} onClick={() => onDelete(role.role_id)}>Delete</button>
+        {roles.map((role) => (
+          <tr key={role.role_id} className={styles.dataRow}> 
+            <td><div className={styles.cellContent}>{role.role_name}</div></td> 
+            <td><div className={styles.cellContent}>{role.description || 'N/A'}</div></td>
+            <td><div className={styles.cellContent}>{renderBoolean(role.can_create)}</div></td>
+            <td><div className={styles.cellContent}>{renderBoolean(role.can_read)}</div></td>
+            <td><div className={styles.cellContent}>{renderBoolean(role.can_update)}</div></td>
+            <td><div className={styles.cellContent}>{renderBoolean(role.can_delete)}</div></td>
+            <td className={styles.actionsCell}> 
+              <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
+                <button className={styles.actionButton} onClick={() => onEdit(role)}>Edit</button> 
+                <button className={styles.actionButton} style={{ backgroundColor: 'rgba(255, 82, 82, 0.15)', borderColor: 'rgba(255, 82, 82, 0.3)', color: 'var(--negative-color)' }} onClick={() => onDelete(role.role_id)}>Delete</button>
+              </div>
             </td>
           </tr>
         ))}

@@ -86,6 +86,100 @@
   }
 }
 
+/* Add these styles to your NavigationStyles.css */
+
+/* Navigation Loading State */
+.nav-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(244, 244, 244, 0.6);
+  font-size: 14px;
+  padding: 12px 24px;
+  animation: pulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+
+/* Navigation Error State */
+.nav-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #E74C3C;
+  font-size: 14px;
+  padding: 12px 24px;
+  background: rgba(231, 76, 60, 0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(231, 76, 60, 0.2);
+}
+
+.retry-nav-button {
+  background: rgba(231, 76, 60, 0.2);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  color: #E74C3C;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-nav-button:hover {
+  background: rgba(231, 76, 60, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Navigation Empty State */
+.nav-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(244, 244, 244, 0.5);
+  font-size: 14px;
+  padding: 12px 24px;
+  font-style: italic;
+}
+
+/* Mobile Sidebar Empty State */
+.sidebar-nav-empty {
+  color: rgba(244, 244, 244, 0.5);
+  font-size: 14px;
+  padding: 12px 24px;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Enhanced nav-item with module tooltip support */
+.nav-item {
+  position: relative;
+}
+
+.nav-item:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  opacity: 0;
+  animation: fadeInTooltip 0.3s ease-in-out 0.5s forwards;
+}
+
+@keyframes fadeInTooltip {
+  from { opacity: 0; transform: translateX(-50%) translateY(5px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
 /* Desktop Navigation - FIXED TO CENTER IT */
 .desktop-nav {
   display: flex;

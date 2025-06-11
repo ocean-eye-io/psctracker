@@ -1,11 +1,13 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://6mfmavicpuezjic6mtwtbuw56e0pjysg.lambda-url.ap-south-1.on.aws';
+const API_BASE_URL = 'https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws';
 
 class VesselFlagService {
   async getUserVesselFlags(userId) {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/vessel-flags/user/${userId}`);
+      // ✅ FIX: URL encode the userId (email) to handle @ symbol
+      const encodedUserId = encodeURIComponent(userId);
+      const response = await axios.get(`${API_BASE_URL}/api/vessel-flags/user/${encodedUserId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching vessel flags:', error);
@@ -28,8 +30,8 @@ class VesselFlagService {
 
       const payload = {
         row_id: String(rowId),
-        user_id: String(userId),
-        flag_type: flagType.toLowerCase() // Ensure flag_type is the actual flag value
+        user_id: String(userId), // No need to encode here since it's in the request body
+        flag_type: flagType.toLowerCase()
       };
 
       console.log('Updating vessel flag with payload:', payload);
@@ -60,7 +62,7 @@ class VesselFlagService {
 
       const payload = {
         row_id: String(rowId),
-        user_id: String(userId)
+        user_id: String(userId) // No need to encode here since it's in the request body
       };
 
       console.log('Deleting vessel flag with payload:', payload);

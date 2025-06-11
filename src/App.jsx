@@ -1,18 +1,23 @@
 // src/App.jsx
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Amplify } from 'aws-amplify';
 import awsConfig from './config/aws-config';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { PermissionProvider } from './context/PermissionContext';
+import { ToastProvider } from './components/common/ui/ToastContext';
+import { Toaster } from 'react-hot-toast';
+
 import FloatingChatbot from './components/FloatingChatbot';
 
-
+// Components
 import NavigationHeader from './components/layout/NavigationHeader';
+import NoAccessPage from './components/common/NoAccessPage'; // NEW: No access page
 import FleetDashboard from './components/dashboard/fleet/FleetDashboard';
 import DefectsDashboard from './components/dashboard/defects/DefectsDashboard';
 import VesselReportingPage from './components/dashboard/reporting/VesselReportingPage';
-import AdminDashboard from './components/dashboard/admin/AdminDashboard'; // Import AdminDashboard
 import { fleetFieldMappings } from './components/dashboard/fleet/FleetFieldMappings';
+import AdminDashboard from './components/dashboard/admin/AdminDashboard'; 
 
 // Auth Components
 import Login from './components/auth/Login';
@@ -31,16 +36,133 @@ try {
   console.error("Error configuring Amplify:", error);
 }
 
-// Protected Route component
-const ProtectedRoute = ({ children }) => {
-  const { currentUser, loading } = useAuth();
+// Module mapping for navigation
+const MODULE_ROUTE_MAP = {
+  'PSC TRACKER': '/fleet',
+  'DEFECTS REGISTER': '/defects', 
+  'PSC REPORTING': '/reporting',
+  'Files upload': '/files',
+  'ADMIN': '/admin'
+};
+
+// Landing Page Component that redirects based on user modules
+const LandingPage = () => {
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
+  const [userModules, setUserModules] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (currentUser?.userId) {
+      fetchUserModules();
+    }
+  }, [currentUser]);
+
+  const fetchUserModules = async () => {
+    try {
+      const response = await fetch(`https://bavzk3zqphycvshhqklb72l4cu0cnisv.lambda-url.ap-south-1.on.aws/user/modules?user_id=${currentUser.userId}`);
+      const data = await response.json();
+      
+      if (response.ok && data.length > 0) {
+        setUserModules(data);
+        // Redirect to first module in sequence
+        const firstModuleRoute = MODULE_ROUTE_MAP[data[0].module_name];
+        if (firstModuleRoute) {
+          navigate(firstModuleRoute, { replace: true });
+        } else {
+          navigate('/fleet', { replace: true }); // fallback
+        }
+      } else {
+        setUserModules([]);
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Error fetching user modules:', error);
+      setUserModules([]);
+      setLoading(false);
+    }
+  };
 
   if (loading) {
+    return <div className="loading-spinner">Loading your workspace...</div>;
+  }
+
+  // Show no access page if user has no modules
+  if (userModules.length === 0) {
+    return <NoAccessPage />;
+  }
+
+  return <div className="loading-spinner">Redirecting...</div>;
+};
+
+// Enhanced Protected Route component with module checking
+const ProtectedRoute = ({ children, requiredModule = null }) => {
+  const { currentUser, loading } = useAuth();
+  const [userModules, setUserModules] = useState([]);
+  const [modulesLoading, setModulesLoading] = useState(true);
+  const [hasAccess, setHasAccess] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (currentUser?.userId) {
+      fetchUserModules();
+    }
+  }, [currentUser]);
+
+  const fetchUserModules = async () => {
+    try {
+      const response = await fetch(`https://bavzk3zqphycvshhqklb72l4cu0cnisv.lambda-url.ap-south-1.on.aws/user/modules?user_id=${currentUser.userId}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setUserModules(data);
+        
+        if (requiredModule) {
+          // Check if user has access to this specific module
+          const hasModuleAccess = data.some(module => 
+            MODULE_ROUTE_MAP[module.module_name] === requiredModule
+          );
+          
+          if (!hasModuleAccess && data.length > 0) {
+            // Redirect to first available module
+            const firstModuleRoute = MODULE_ROUTE_MAP[data[0].module_name] || '/fleet';
+            navigate(firstModuleRoute, { replace: true });
+            return;
+          }
+          
+          setHasAccess(hasModuleAccess || data.length === 0);
+        } else {
+          setHasAccess(true);
+        }
+      } else {
+        setUserModules([]);
+        setHasAccess(false);
+      }
+    } catch (error) {
+      console.error('Error fetching user modules:', error);
+      setUserModules([]);
+      setHasAccess(false);
+    } finally {
+      setModulesLoading(false);
+    }
+  };
+
+  if (loading || modulesLoading) {
     return <div className="loading-spinner">Loading...</div>;
   }
 
   if (!currentUser) {
     return <Navigate to="/login" />;
+  }
+
+  // If user has no modules at all, show no access page
+  if (userModules.length === 0) {
+    return <NoAccessPage />;
+  }
+
+  // If checking specific module access and user doesn't have it, they'll be redirected above
+  if (requiredModule && !hasAccess) {
+    return <div className="loading-spinner">Redirecting...</div>;
   }
 
   return children;
@@ -51,21 +173,54 @@ const getActivePageFromPath = (pathname) => {
   if (pathname.startsWith('/fleet')) return 'fleet';
   if (pathname.startsWith('/defects')) return 'defects';
   if (pathname.startsWith('/reporting')) return 'reporting';
-  if (pathname.startsWith('/admin')) return 'admin'; // Add admin path
+  if (pathname.startsWith('/admin')) return 'admin';
+  if (pathname.startsWith('/files')) return 'files';
   return 'fleet'; // default
 };
 
-// Layout for protected pages
+// Enhanced Layout for protected pages with module-aware navigation
 const ProtectedLayout = ({ children }) => {
   const { currentUser } = useAuth();
   const location = useLocation();
   const activePage = getActivePageFromPath(location.pathname);
+  const [userModules, setUserModules] = useState([]);
+  const [modulesLoading, setModulesLoading] = useState(true);
+
+  // Handle modules loaded callback from NavigationHeader
+  const handleModulesLoaded = (modules) => {
+    setUserModules(modules);
+    setModulesLoading(false);
+  };
+
+  // Handle navigation between modules
+  const handleNavigate = (pageId) => {
+    const module = userModules.find(m => {
+      // Map pageId to module names
+      const moduleMap = {
+        'fleet': 'PSC TRACKER',
+        'defects': 'DEFECTS REGISTER', 
+        'reporting': 'PSC REPORTING',
+        'files': 'Files upload',
+        'admin': 'ADMIN'
+      };
+      return m.module_name === moduleMap[pageId];
+    });
+    
+    if (module) {
+      const route = MODULE_ROUTE_MAP[module.module_name];
+      if (route) {
+        window.location.href = route;
+      }
+    }
+  };
 
   return (
     <div className="app">
       <NavigationHeader
         activePage={activePage}
         userInfo={currentUser}
+        onNavigate={handleNavigate}
+        onModulesLoaded={handleModulesLoaded}
       />
       <main className="app-content">
         {children}
@@ -74,75 +229,146 @@ const ProtectedLayout = ({ children }) => {
   );
 };
 
+
+const AppContent = () => {
+  const { currentUser, loading } = useAuth();
+
+  // Show loading while auth is being determined
+  if (loading) {
+    return <div className="loading-spinner">Loading...</div>;
+  }
+
+  return (
+    <Routes>
+      {/* Auth Routes - only accessible when NOT authenticated */}
+      <Route 
+        path="/login" 
+        element={!currentUser ? <Login /> : <Navigate to="/dashboard" replace />} 
+      />
+      <Route 
+        path="/signup" 
+        element={!currentUser ? <SignUp /> : <Navigate to="/dashboard" replace />} 
+      />
+      <Route 
+        path="/confirm-signup" 
+        element={!currentUser ? <ConfirmSignUp /> : <Navigate to="/dashboard" replace />} 
+      />
+      <Route 
+        path="/forgot-password" 
+        element={!currentUser ? <ForgotPassword /> : <Navigate to="/dashboard" replace />} 
+      />
+      <Route 
+        path="/reset-password" 
+        element={!currentUser ? <ResetPassword /> : <Navigate to="/dashboard" replace />} 
+      />
+
+      {/* Root path: Redirect based on auth status */}
+      <Route
+        path="/"
+        element={
+          currentUser ? (
+            <ProtectedRoute>
+              <LandingPage />
+            </ProtectedRoute>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+
+      {/* Dashboard route - this is where LandingPage redirects to after determining user's modules */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <LandingPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Protected App Routes with Module Access Control */}
+      <Route
+        path="/fleet"
+        element={
+          <ProtectedRoute requiredModule="/fleet">
+            <ProtectedLayout>
+              <FleetDashboard fieldMappings={fleetFieldMappings} />
+            </ProtectedLayout>
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/defects"
+        element={
+          <ProtectedRoute requiredModule="/defects">
+            <ProtectedLayout>
+              <DefectsDashboard />
+            </ProtectedLayout>
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/reporting"
+        element={
+          <ProtectedRoute requiredModule="/reporting">
+            <ProtectedLayout>
+              <VesselReportingPage />
+            </ProtectedLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/files"
+        element={
+          <ProtectedRoute requiredModule="/files">
+            <ProtectedLayout>
+              <div className="dashboard-container">
+                <h1>File Manager</h1>
+                <p>File management dashboard coming soon...</p>
+              </div>
+            </ProtectedLayout>
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Admin Route - FIXED */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute requiredModule="/admin">
+            <ProtectedLayout>
+              <AdminDashboard />
+            </ProtectedLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Catch-all: redirect based on auth status */}
+      <Route
+        path="*"
+        element={
+          currentUser ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />
+        }
+      />
+    </Routes>
+  );
+};
+
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <FloatingChatbot />
-        <Routes>
-          {/* Auth Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/confirm-signup" element={<ConfirmSignUp />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-
-          {/* Protected App Routes */}
-          <Route
-            path="/fleet"
-            element={
-              <ProtectedRoute>
-                <ProtectedLayout>
-                  <FleetDashboard fieldMappings={fleetFieldMappings} />
-                </ProtectedLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/defects"
-            element={
-              <ProtectedRoute>
-                <ProtectedLayout>
-                  <DefectsDashboard />
-                </ProtectedLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/reporting"
-            element={
-              <ProtectedRoute>
-                <ProtectedLayout>
-                  <VesselReportingPage />
-                </ProtectedLayout>
-              </ProtectedRoute>
-            }
-          />
-          {/* New Admin Route */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute>
-                <ProtectedLayout>
-                  <AdminDashboard />
-                </ProtectedLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Default route: redirect to /fleet */}
-          <Route
-            path="/"
-            element={<Navigate to="/fleet" replace />}
-          />
-
-          {/* Catch-all: redirect to /fleet */}
-          <Route
-            path="*"
-            element={<Navigate to="/fleet" replace />}
-          />
-        </Routes>
-      </BrowserRouter>
+      <PermissionProvider>
+        <ToastProvider>
+          <BrowserRouter>
+            <FloatingChatbot />
+            <AppContent />
+            <Toaster position="top-right" />
+          </BrowserRouter>
+        </ToastProvider>
+      </PermissionProvider>
     </AuthProvider>
   );
 }

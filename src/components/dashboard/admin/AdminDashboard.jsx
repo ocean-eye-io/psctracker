@@ -1,25 +1,30 @@
 // src/components/dashboards/admin/AdminDashboard.js
 import React, { useState } from 'react';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
-import 'react-tabs/style/react-tabs.css'; // Basic styling for react-tabs
 
 import UsersTab from './tabs/UsersTab';
 import RolesTab from './tabs/RolesTab';
 import PermissionsTab from './tabs/PermissionsTab';
 import VesselsTab from './tabs/VesselsTab';
+import ModulesTab from './tabs/ModulesTab';
+import UserVesselAssignmentsTab from './tabs/UserVesselAssignmentsTab'; // Import the new tab component
+
+import styles from './admin.module.css';
 
 const AdminDashboard = () => {
   const [tabIndex, setTabIndex] = useState(0);
 
   return (
-    <div className="admin-dashboard-container" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-      <h3 style={{ textAlign: 'center', marginBottom: '20px' }}>Admin Panel</h3>
-      <Tabs selectedIndex={tabIndex} onSelect={index => setTabIndex(index)}>
-        <TabList>
-          <Tab>Users</Tab>
-          <Tab>Roles</Tab>
-          <Tab>Permissions</Tab>
-          <Tab>Vessels</Tab>
+    <div className={styles.adminDashboardContainer}>
+      <h3 className={styles.adminDashboardHeader}>Admin Panel</h3>
+      <Tabs selectedIndex={tabIndex} onSelect={index => setTabIndex(index)} className={styles.adminTabsContainer}>
+        <TabList className={styles.tabNav}>
+          <Tab className={styles.tabButton} selectedClassName={styles.active}>Users</Tab>
+          <Tab className={styles.tabButton} selectedClassName={styles.active}>Roles</Tab>
+          <Tab className={styles.tabButton} selectedClassName={styles.active}>Permissions</Tab>
+          <Tab className={styles.tabButton} selectedClassName={styles.active}>Vessels</Tab>
+          <Tab className={styles.tabButton} selectedClassName={styles.active}>Modules</Tab>
+          <Tab className={styles.tabButton} selectedClassName={styles.active}>User-Vessel Assignments</Tab> {/* New Tab */}
         </TabList>
 
         <TabPanel>
@@ -33,6 +38,12 @@ const AdminDashboard = () => {
         </TabPanel>
         <TabPanel>
           <VesselsTab />
+        </TabPanel>
+        <TabPanel>
+          <ModulesTab />
+        </TabPanel>
+        <TabPanel>
+          <UserVesselAssignmentsTab /> {/* New Tab Panel */}
         </TabPanel>
       </Tabs>
     </div>

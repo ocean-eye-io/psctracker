@@ -1,0 +1,1605 @@
+/* src/components/dashboards/admin/admin.module.css */
+
+/* --- Global Variables (matching dashboard theme) --- */
+:root {
+    /* Color palette - matching tableStyles.css */
+    --primary-dark: #0a1725;
+    --secondary-dark: #112032;
+    --card-bg: #0e1e2f;
+    --card-dark: #0c1a29;
+    --table-row-hover-bg: #162d48;
+  
+    /* Text colors */
+    --text-light: #f4f4f4;
+    --text-muted: rgba(255, 255, 255, 0.6);
+  
+    /* Accent colors */
+    --blue-accent: #4DC3FF;
+    --primary-accent: #3BADE5;
+    --positive-color: #2EE086;
+    --negative-color: #FF5252;
+    --warning-color: #FFD426;
+  
+    /* Status colors */
+    --status-red: #E74C3C;
+    --status-yellow: #F1C40F;
+    --status-green: #2ECC71;
+    --status-grey: #95a5a6;
+  
+    /* Border and effects */
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --highlight-glow: rgba(77, 195, 255, 0.3);
+  
+    /* Sizing */
+    --border-radius-sm: 4px;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-size-small: 11px;
+    --font-size-normal: 12px;
+    --font-size-large: 14px;
+  
+    /* Z-index layers */
+    --z-index-dropdown: 1000;
+    --z-index-modal: 2000;
+
+    /* Responsive breakpoints */
+    --mobile-breakpoint: 480px;
+    --tablet-breakpoint: 768px;
+    --desktop-breakpoint: 1024px;
+    --large-desktop-breakpoint: 1440px;
+}
+
+/* Ensure html and body take full height */
+html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* --- General Layout for Admin Dashboard --- */
+.adminDashboardContainer {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: clamp(10px, 2vw, 20px);
+    background-color: var(--primary-dark);
+    color: var(--text-light);
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.adminDashboardHeader {
+    margin-bottom: clamp(10px, 2vh, 20px);
+    font-size: clamp(1.2rem, 4vw, 1.6rem);
+    color: var(--text-light);
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+}
+
+.adminTabsContainer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius-md);
+    box-shadow: 0 6px 16px var(--shadow-color);
+    border: 1px solid var(--border-subtle);
+    padding: clamp(8px, 2vw, 16px);
+    position: relative;
+    transform-style: preserve-3d;
+    perspective: 1000px;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.adminTabsContainer::before {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    border-radius: var(--border-radius-md);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* --- Responsive Tab Navigation --- */
+.tabNav {
+    display: flex;
+    margin-bottom: clamp(10px, 2vh, 20px);
+    border-bottom: 1px solid var(--border-subtle);
+    background: linear-gradient(180deg, #0a1725, #112032);
+    border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+    padding: clamp(4px, 1vw, 8px) clamp(4px, 1vw, 8px) 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    flex-shrink: 0;
+}
+
+.tabNav::-webkit-scrollbar {
+    display: none;
+}
+
+.tabButton {
+    padding: clamp(8px, 2vw, 10px) clamp(12px, 3vw, 16px);
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: clamp(12px, 2.5vw, 14px);
+    transition: all 0.25s ease;
+    border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+    min-width: fit-content;
+    flex-shrink: 0;
+}
+
+.tabButton::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(77, 195, 255, 0);
+    transform: scale(0);
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.tabButton:hover {
+    color: var(--text-light);
+    transform: translateY(-1px);
+}
+
+.tabButton:hover::before {
+    background: rgba(77, 195, 255, 0.1);
+    transform: scale(1);
+}
+
+.tabButton.active {
+    color: var(--blue-accent);
+    background: rgba(77, 195, 255, 0.1);
+    font-weight: 600;
+    border-bottom: 2px solid var(--blue-accent);
+}
+
+/* --- Responsive Data Table Styles --- */
+.dataTableContainer {
+    width: 100%;
+    padding: clamp(4px, 1vw, 8px);
+    box-sizing: border-box;
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.dataTableWrapper {
+    width: 100%;
+    overflow: auto;
+    border-radius: var(--border-radius-md);
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(77, 195, 255, 0.3) rgba(11, 22, 35, 0.5);
+    background: var(--card-bg);
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.dataTableWrapper::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.dataTableWrapper::-webkit-scrollbar-track {
+    background: rgba(11, 22, 35, 0.5);
+    border-radius: 3px;
+}
+
+.dataTableWrapper::-webkit-scrollbar-thumb {
+    background-color: rgba(77, 195, 255, 0.3);
+    border-radius: 3px;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+}
+
+.dataTableWrapper::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(77, 195, 255, 0.5);
+}
+
+.dataTable {
+    width: 100%;
+    min-width: clamp(600px, 80vw, 800px);
+    border-collapse: collapse;
+    color: var(--text-light);
+    font-family: 'Nunito', sans-serif;
+    font-size: clamp(11px, 2vw, 12px);
+    table-layout: auto;
+}
+
+.dataTable thead {
+    background: linear-gradient(180deg, #0a1725, #112032);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.dataTable th {
+    padding: clamp(6px, 1.5vw, 10px) clamp(8px, 2vw, 15px);
+    text-align: left;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: clamp(10px, 2vw, 12px);
+    color: var(--text-light);
+    height: clamp(32px, 5vh, 38px);
+    box-sizing: border-box;
+    vertical-align: middle;
+    position: relative;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dataTable th::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.05), 
+        rgba(255, 255, 255, 0.1), 
+        rgba(255, 255, 255, 0.05)
+    );
+}
+
+.dataTable th:hover {
+    background-color: rgba(77, 195, 255, 0.1);
+}
+
+.tableHeaderContent {
+    display: flex;
+    align-items: center;
+    gap: clamp(4px, 1vw, 6px);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: var(--border-radius-sm);
+    transition: all 0.2s ease;
+}
+
+.tableHeaderContent:hover {
+    background: rgba(77, 195, 255, 0.15);
+    transform: translateY(-1px);
+}
+
+.dataTable td {
+    padding: clamp(6px, 1vw, 8px) clamp(8px, 2vw, 15px);
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: clamp(10px, 2vw, 12px);
+    height: clamp(30px, 4vh, 36px);
+    box-sizing: border-box;
+    vertical-align: middle;
+    white-space: nowrap;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    position: relative;
+}
+
+.dataTable tbody tr {
+    transition: all 0.25s ease;
+    background-color: var(--card-bg);
+    position: relative;
+    transform-style: preserve-3d;
+    will-change: transform;
+}
+
+.dataTable tbody tr:nth-child(even) {
+    background-color: var(--card-dark);
+}
+
+.dataTable tbody tr:hover {
+    background: var(--table-row-hover-bg);
+    transform: translateY(-1px) scale(1.002);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    z-index: 5;
+}
+
+.dataTable tbody tr:hover td {
+    border-bottom-color: rgba(77, 195, 255, 0.2);
+}
+
+.dataTable .actionsCell {
+    text-align: center;
+    min-width: clamp(120px, 15vw, 180px);
+}
+
+.cellContent {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+    max-width: clamp(150px, 25vw, 250px);
+    word-break: break-word;
+}
+
+/* --- Responsive User-Vessel Assignment Styles --- */
+.userVesselAssignmentsTabContent {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+    gap: clamp(10px, 2vh, 20px);
+    height: 100%;
+    max-height: calc(100vh - 200px); /* Reserve space for header and margins */
+}
+
+.vesselAssignmentContainer {
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius-md);
+    padding: clamp(10px, 2vw, 20px);
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 4px 12px var(--shadow-color);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    max-height: calc(100vh - 250px); /* Ensure container doesn't exceed viewport */
+}
+
+.dualListBox {
+    display: flex;
+    flex-direction: row;
+    gap: clamp(10px, 2vw, 20px);
+    justify-content: center;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    max-height: calc(100vh - 350px); /* Reserve space for save button and padding */
+}
+
+.listColumn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--secondary-dark);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--border-radius-md);
+    padding: clamp(8px, 2vw, 15px);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+    min-width: 0;
+    max-width: 45%;
+}
+
+.listHeader {
+    font-size: clamp(14px, 2.5vw, 18px);
+    font-weight: 600;
+    color: var(--blue-accent);
+    margin: 0 0 clamp(8px, 1.5vh, 15px) 0;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.customDualListBoxColumn {
+    flex: 1;
+    min-width: 0;
+    max-width: 45%;
+    background-color: var(--secondary-dark);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--border-radius-md);
+    padding: clamp(8px, 2vw, 15px);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.customDualListBoxColumn h4 {
+    margin: 0 0 clamp(8px, 1.5vh, 15px) 0;
+    color: var(--blue-accent);
+    font-size: clamp(14px, 2.5vw, 18px);
+    font-weight: 600;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.customDualListBoxSearch {
+    width: 100%;
+    padding: clamp(6px, 1.5vw, 8px) clamp(8px, 2vw, 10px);
+    margin-bottom: clamp(6px, 1vh, 10px);
+    border: 1px solid rgba(59, 173, 229, 0.2);
+    border-radius: var(--border-radius-sm);
+    font-size: clamp(11px, 2vw, 13px);
+    box-sizing: border-box;
+    background-color: rgba(0, 0, 0, 0.3);
+    color: var(--text-light);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.customDualListBoxSearch:focus {
+    outline: none;
+    border-color: rgba(59, 173, 229, 0.4);
+    box-shadow: 0 0 0 2px rgba(59, 173, 229, 0.1);
+}
+
+.customDualListBoxList {
+    list-style: none;
+    padding: 5px;
+    margin: 0;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: clamp(150px, 25vh, 250px);
+    max-height: calc(100vh - 450px); /* Constrain list height to ensure save button visibility */
+    border: 2px solid rgba(59, 173, 229, 0.3);
+    border-radius: var(--border-radius-sm);
+    background-color: rgba(0, 0, 0, 0.4);
+    scrollbar-width: auto; /* Show scrollbar always */
+    scrollbar-color: rgba(77, 195, 255, 0.6) rgba(11, 22, 35, 0.8);
+    /* Force scrollbar to be visible */
+    scrollbar-gutter: stable;
+}
+
+.customDualListBoxList::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+    background: rgba(11, 22, 35, 0.8);
+}
+
+.customDualListBoxList::-webkit-scrollbar-track {
+    background: rgba(11, 22, 35, 0.8);
+    border-radius: 6px;
+    border: 1px solid rgba(59, 173, 229, 0.2);
+}
+
+.customDualListBoxList::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(77, 195, 255, 0.8), rgba(77, 195, 255, 0.6));
+    border-radius: 6px;
+    border: 1px solid rgba(77, 195, 255, 0.4);
+    box-shadow: 0 0 8px rgba(77, 195, 255, 0.3);
+}
+
+.customDualListBoxList::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(77, 195, 255, 1), rgba(77, 195, 255, 0.8));
+    box-shadow: 0 0 12px rgba(77, 195, 255, 0.5);
+}
+
+.customDualListBoxList::-webkit-scrollbar-thumb:active {
+    background: var(--blue-accent);
+}
+
+.customDualListBoxItem {
+    padding: clamp(8px, 1.5vw, 12px) clamp(10px, 2vw, 14px);
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    font-size: clamp(11px, 2vw, 13px);
+    color: var(--text-light);
+    transition: all 0.2s ease;
+    word-break: break-word;
+    min-height: 44px; /* Ensure adequate touch target */
+    box-sizing: border-box;
+}
+
+.customDualListBoxItem:last-child {
+    border-bottom: none;
+}
+
+.customDualListBoxItem:hover {
+    background-color: rgba(77, 195, 255, 0.15);
+    transform: translateX(2px);
+}
+
+.customDualListBoxItem.selected {
+    background-color: rgba(77, 195, 255, 0.25);
+    color: var(--blue-accent);
+    border: 1px solid var(--blue-accent);
+    border-left: 4px solid var(--blue-accent);
+    font-weight: 500;
+}
+
+.customDualListBoxItem input[type="checkbox"] {
+    margin-right: clamp(8px, 1.5vw, 12px);
+    transform: scale(clamp(1.1, 1.5vw, 1.3));
+    accent-color: var(--blue-accent);
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+/* Add visual indicator for scrollable content */
+.customDualListBoxColumn {
+    position: relative;
+}
+
+.customDualListBoxColumn::after {
+    content: '';
+    position: absolute;
+    bottom: 60px; /* Above the select all buttons */
+    right: 15px;
+    width: 20px;
+    height: 20px;
+    background: radial-gradient(circle, rgba(77, 195, 255, 0.6) 0%, transparent 70%);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.customDualListBoxColumn:hover::after {
+    opacity: 1;
+}
+
+.customDualListBoxControls {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(8px, 1.5vh, 15px);
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    flex-shrink: 0;
+    min-width: clamp(80px, 10vw, 120px);
+}
+
+.customDualListBoxControls button {
+    width: clamp(35px, 6vw, 45px);
+    height: clamp(35px, 6vw, 45px);
+    border-radius: 50%;
+    background-color: var(--blue-accent);
+    color: white;
+    border: none;
+    font-size: clamp(14px, 3vw, 20px);
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 2px 8px rgba(77, 195, 255, 0.2);
+    flex-shrink: 0;
+}
+
+.customDualListBoxControls button:hover:not(:disabled) {
+    background-color: #309fd6;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(77, 195, 255, 0.3);
+}
+
+.customDualListBoxControls button:disabled {
+    background-color: var(--status-grey);
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.actionButtons {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(8px, 1.5vh, 15px);
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    flex-shrink: 0;
+    min-width: clamp(80px, 10vw, 120px);
+}
+
+.moveButton {
+    width: clamp(80px, 12vw, 120px);
+    padding: clamp(6px, 1.5vw, 10px) 0;
+    text-align: center;
+    font-size: clamp(10px, 2vw, 12px);
+    font-weight: 600;
+    white-space: nowrap;
+    background-color: var(--blue-accent);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.moveButton:hover:not(:disabled) {
+    background-color: #309fd6;
+    transform: translateY(-1px);
+}
+
+.moveButton:disabled {
+    background-color: var(--status-grey);
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.customDualListBoxSelectAll {
+    margin-top: clamp(6px, 1vh, 10px);
+    display: flex;
+    justify-content: space-between;
+    gap: clamp(6px, 1vw, 10px);
+    flex-shrink: 0;
+}
+
+.customDualListBoxSelectAll button {
+    flex: 1;
+    padding: clamp(6px, 1vw, 8px) clamp(8px, 1.5vw, 12px);
+    font-size: clamp(9px, 1.5vw, 11px);
+    border-radius: var(--border-radius-sm);
+    background-color: rgba(77, 195, 255, 0.1);
+    color: var(--blue-accent);
+    border: 1px solid rgba(77, 195, 255, 0.2);
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    white-space: nowrap;
+}
+
+.customDualListBoxSelectAll button:hover {
+    background-color: rgba(77, 195, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+/* --- Form Actions Responsive --- */
+.formActions {
+    margin-top: clamp(15px, 3vh, 25px);
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    gap: clamp(8px, 2vw, 15px);
+    padding-top: clamp(10px, 2vh, 16px);
+    border-top: 1px solid rgba(59, 173, 229, 0.15);
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    background: var(--card-bg);
+    z-index: 10;
+    border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+}
+
+.formButton.saveButton {
+    background: var(--blue-accent);
+    border: 1px solid var(--blue-accent);
+    color: var(--text-light);
+    padding: clamp(8px, 2vw, 12px) clamp(16px, 4vw, 24px);
+    border-radius: var(--border-radius-md);
+    font-weight: 600;
+    font-size: clamp(12px, 2.5vw, 14px);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(77, 195, 255, 0.2);
+    cursor: pointer;
+    white-space: nowrap;
+    min-width: clamp(120px, 20vw, 160px);
+}
+
+.formButton.saveButton:hover {
+    background: #309fd6;
+    box-shadow: 0 6px 16px rgba(77, 195, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.submitButton {
+    background: rgba(59, 173, 229, 0.1);
+    border: 1px solid rgba(59, 173, 229, 0.3);
+    color: #3BADE5;
+    padding: clamp(6px, 1.5vw, 10px) clamp(12px, 3vw, 20px);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    font-size: clamp(11px, 2vw, 13px);
+    white-space: nowrap;
+}
+
+.submitButton:hover {
+    background: rgba(59, 173, 229, 0.2);
+    transform: translateY(-1px);
+}
+
+/* --- Status Indicators and Badges Responsive --- */
+.statusIndicator {
+    display: flex;
+    align-items: center;
+    gap: clamp(4px, 1vw, 6px);
+    padding: clamp(2px, 0.5vw, 3px) clamp(6px, 1.5vw, 8px);
+    border-radius: var(--border-radius-sm);
+    background: rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    font-size: clamp(9px, 1.5vw, 11px);
+    font-weight: 500;
+}
+
+.statusIndicator:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.statusDot {
+    width: clamp(5px, 1vw, 6px);
+    height: clamp(5px, 1vw, 6px);
+    min-width: clamp(5px, 1vw, 6px);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 4px currentColor;
+    flex-shrink: 0;
+}
+
+.badge {
+    font-weight: 600;
+    padding: clamp(1px, 0.5vw, 2px) clamp(4px, 1vw, 6px);
+    border-radius: var(--border-radius-sm);
+    display: inline-block;
+    font-size: clamp(9px, 1.5vw, 11px);
+    text-align: center;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+}
+
+.badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Action Button Responsive --- */
+.actionButton {
+    background: rgba(77, 195, 255, 0.1);
+    border: 1px solid rgba(77, 195, 255, 0.2);
+    border-radius: var(--border-radius-sm);
+    color: var(--blue-accent);
+    cursor: pointer;
+    padding: clamp(3px, 1vw, 5px) clamp(6px, 1.5vw, 10px);
+    display: inline-flex;
+    align-items: center;
+    gap: clamp(3px, 1vw, 6px);
+    transition: all 0.25s ease;
+    font-size: clamp(9px, 1.5vw, 11px);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    white-space: nowrap;
+    min-height: clamp(24px, 4vw, 32px);
+}
+
+.actionButton:hover {
+    background: rgba(77, 195, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.actionButton:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* --- Media Queries for Responsive Design --- */
+
+/* Mobile First - Small phones */
+@media (max-width: 480px) {
+    .customDualListBoxList {
+        min-height: 120px;
+        max-height: 160px;
+        border-width: 2px;
+        padding: 3px;
+    }
+
+    .customDualListBoxList::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    .customDualListBoxList::-webkit-scrollbar-thumb {
+        background: var(--blue-accent);
+        border-radius: 5px;
+    }
+
+    .dataTable {
+        min-width: 100%;
+        font-size: 10px;
+    }
+
+    .dataTable th,
+    .dataTable td {
+        padding: 4px 6px;
+        font-size: 10px;
+    }
+
+    .tabButton {
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+}
+
+/* Tablets - Portrait */
+@media (min-width: 481px) and (max-width: 768px) {
+    .adminDashboardContainer {
+        padding: 12px;
+        height: 100vh;
+        max-height: 100vh;
+    }
+
+    .adminTabsContainer {
+        max-height: calc(100vh - 80px);
+    }
+
+    .userVesselAssignmentsTabContent {
+        max-height: calc(100vh - 140px);
+    }
+
+    .vesselAssignmentContainer {
+        max-height: calc(100vh - 180px);
+    }
+
+    .dualListBox {
+        flex-direction: column;
+        gap: 20px;
+        max-height: calc(100vh - 300px);
+    }
+
+    .customDualListBoxColumn,
+    .listColumn {
+        max-width: 100%;
+        margin-bottom: 15px;
+        flex: none;
+        height: auto;
+    }
+
+    .customDualListBoxList {
+        min-height: 150px;
+        max-height: 180px;
+        border-width: 2px;
+        padding: 4px;
+    }
+
+    .customDualListBoxList::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    .customDualListBoxControls,
+    .actionButtons {
+        flex-direction: row;
+        justify-content: center;
+        width: 100%;
+        margin: 15px 0;
+        gap: 20px;
+        flex-shrink: 0;
+    }
+
+    .moveButton {
+        width: 120px;
+        min-width: 100px;
+    }
+
+    .formActions {
+        flex-direction: row;
+        justify-content: center;
+        position: sticky;
+        bottom: 0;
+        background: var(--card-bg);
+        z-index: 10;
+    }
+
+    .formButton.saveButton {
+        min-width: 150px;
+    }
+}
+
+/* Tablets - Landscape and Small Desktops */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .adminDashboardContainer {
+        height: 100vh;
+        max-height: 100vh;
+    }
+
+    .adminTabsContainer {
+        max-height: calc(100vh - 100px);
+    }
+
+    .userVesselAssignmentsTabContent {
+        max-height: calc(100vh - 160px);
+    }
+
+    .vesselAssignmentContainer {
+        max-height: calc(100vh - 200px);
+    }
+
+    .dualListBox {
+        flex-direction: row;
+        gap: 15px;
+        max-height: calc(100vh - 320px);
+    }
+
+    .customDualListBoxColumn,
+    .listColumn {
+        max-width: 42%;
+        min-width: 300px;
+    }
+
+    .customDualListBoxControls,
+    .actionButtons {
+        flex-direction: column;
+        margin: 0 10px;
+        min-width: 100px;
+    }
+
+    .customDualListBoxList {
+        min-height: 200px;
+        max-height: calc(100vh - 420px);
+    }
+
+    .moveButton {
+        width: 100px;
+    }
+
+    .formActions {
+        position: sticky;
+        bottom: 0;
+        background: var(--card-bg);
+        z-index: 10;
+    }
+}
+
+/* Large Desktops */
+@media (min-width: 1025px) and (max-width: 1440px) {
+    .adminDashboardContainer {
+        height: 100vh;
+        max-height: 100vh;
+    }
+
+    .adminTabsContainer {
+        max-height: calc(100vh - 120px);
+    }
+
+    .userVesselAssignmentsTabContent {
+        max-height: calc(100vh - 180px);
+    }
+
+    .vesselAssignmentContainer {
+        max-height: calc(100vh - 220px);
+    }
+
+    .dualListBox {
+        gap: 20px;
+        max-height: calc(100vh - 340px);
+    }
+
+    .customDualListBoxColumn,
+    .listColumn {
+        max-width: 45%;
+        min-width: 350px;
+    }
+
+    .customDualListBoxList {
+        min-height: 250px;
+        max-height: calc(100vh - 440px);
+    }
+
+    .customDualListBoxControls,
+    .actionButtons {
+        min-width: 120px;
+    }
+
+    .formActions {
+        position: sticky;
+        bottom: 0;
+        background: var(--card-bg);
+        z-index: 10;
+    }
+}
+
+/* Extra Large Screens */
+@media (min-width: 1441px) {
+    .adminDashboardContainer {
+        padding: 25px;
+        max-width: 1800px;
+        margin: 0 auto;
+        height: 100vh;
+        max-height: 100vh;
+    }
+
+    .adminTabsContainer {
+        max-height: calc(100vh - 140px);
+    }
+
+    .userVesselAssignmentsTabContent {
+        max-height: calc(100vh - 200px);
+    }
+
+    .vesselAssignmentContainer {
+        max-height: calc(100vh - 240px);
+    }
+
+    .dualListBox {
+        gap: 30px;
+        max-width: 1400px;
+        margin: 0 auto;
+        max-height: calc(100vh - 360px);
+    }
+
+    .customDualListBoxColumn,
+    .listColumn {
+        max-width: 600px;
+        min-width: 400px;
+    }
+
+    .customDualListBoxList {
+        min-height: 300px;
+        max-height: calc(100vh - 460px);
+    }
+
+    .customDualListBoxControls,
+    .actionButtons {
+        min-width: 140px;
+    }
+
+    .formButton.saveButton {
+        min-width: 200px;
+        padding: 15px 30px;
+        font-size: 16px;
+    }
+
+    .formActions {
+        position: sticky;
+        bottom: 0;
+        background: var(--card-bg);
+        z-index: 10;
+    }
+}
+
+/* Specific adjustments for landscape mobile orientation */
+@media (max-height: 500px) and (orientation: landscape) {
+    .adminDashboardHeader {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+
+    .customDualListBoxList {
+        min-height: 120px;
+        max-height: 180px;
+    }
+
+    .vesselAssignmentContainer {
+        padding: 10px;
+    }
+
+    .customDualListBoxColumn h4 {
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    .formActions {
+        margin-top: 10px;
+        padding-top: 8px;
+    }
+}
+
+/* High DPI displays adjustments */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .dataTable th,
+    .dataTable td {
+        font-size: 13px;
+    }
+
+    .customDualListBoxItem {
+        font-size: 13px;
+    }
+
+    .actionButton {
+        font-size: 12px;
+    }
+}
+
+/* --- Additional Utility Classes for Responsive Behavior --- */
+.flexGrowContainer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.scrollableContainer {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.centeredContent {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.responsiveGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: clamp(10px, 2vw, 20px);
+    padding: clamp(10px, 2vw, 20px);
+}
+
+/* Ensure buttons stack properly on very small screens */
+@media (max-width: 320px) {
+    .customDualListBoxSelectAll {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .customDualListBoxSelectAll button {
+        width: 100%;
+    }
+
+    .customDualListBoxControls,
+    .actionButtons {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .moveButton {
+        width: 100%;
+        min-width: auto;
+    }
+
+    .formButton.saveButton,
+    .submitButton { /* Added submitButton here for consistency */
+        padding: 10px 15px;
+        font-size: 12px;
+    }
+}
+
+/* --- Form Group Responsive Styles --- */
+.formGroup {
+    margin-bottom: clamp(10px, 2vh, 15px);
+}
+
+.formGroup label {
+    display: block;
+    margin-bottom: clamp(4px, 1vh, 8px);
+    font-weight: 500;
+    color: var(--text-light);
+    font-size: clamp(11px, 2vw, 13px);
+}
+
+.formGroup input[type="text"],
+.formGroup input[type="password"],
+.formGroup input[type="email"],
+.formGroup textarea,
+.formGroup select {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(59, 173, 229, 0.2);
+    padding: clamp(8px, 2vw, 12px);
+    color: var(--text-light);
+    border-radius: var(--border-radius-sm);
+    font-size: clamp(11px, 2vw, 13px);
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.formGroup input:focus,
+.formGroup textarea:focus,
+.formGroup select:focus {
+    outline: none;
+    border-color: rgba(59, 173, 229, 0.4);
+    box-shadow: 0 0 0 2px rgba(59, 173, 229, 0.1);
+}
+
+/* --- User Selector Responsive Styles --- */
+.userSelectorContainer {
+    position: relative;
+    width: 100%;
+    max-width: clamp(300px, 50vw, 500px);
+    margin: 0 auto;
+}
+
+/* Styles for the <select> element in UserSelector */
+.selectInput {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(59, 173, 229, 0.2);
+    padding: clamp(8px, 2vw, 12px);
+    color: var(--text-light);
+    border-radius: var(--border-radius-sm);
+    font-size: clamp(11px, 2vw, 13px);
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+    appearance: none; /* Remove default system styling for dropdown */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%20viewBox%3D%220%200%20292.4%20292.4%22%3E%3Cpath%20fill%3D%22%23f4f4f4%22%20d%3D%22M287%20197.1L159.1%2069.2c-3.7-3.7-9.7-3.7-13.4%200L5.4%20197.1c-3.7%203.7-3.7%209.7%200%2013.4l13.4%2013.4c3.9%203.9%2010.1%203.9%2014%200L146%20109.6l113.2%20113.2c3.9%203.9%2010.1%203.9%2014%200l13.4-13.4c3.7-3.7%203.7-9.7%200-13.4z%22%2F%3E%3C%2Fsvg%3E'); /* Custom arrow */
+    background-repeat: no-repeat;
+    background-position: right 10px top 50%;
+    background-size: 12px auto;
+    padding-right: 30px; /* Make space for the arrow */
+}
+
+.selectInput:focus {
+    outline: none;
+    border-color: rgba(59, 173, 229, 0.4);
+    box-shadow: 0 0 0 2px rgba(59, 173, 229, 0.1);
+}
+
+/* Styles for the <option> elements within the select */
+.selectInput option {
+    background-color: var(--secondary-dark); /* Background for options */
+    color: var(--text-light); /* Text color for options */
+    padding: 8px 12px; /* Padding for options */
+}
+
+.userDropdownList {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--border-radius-sm);
+    box-shadow: 0 4px 12px var(--shadow-color);
+    max-height: clamp(150px, 25vh, 250px);
+    overflow-y: auto;
+    z-index: var(--z-index-dropdown);
+    list-style: none;
+    padding: 0;
+    margin-top: 5px;
+}
+
+.userDropdownListItem {
+    padding: clamp(8px, 2vw, 12px);
+    cursor: pointer;
+    color: var(--text-light);
+    font-size: clamp(11px, 2vw, 13px);
+    transition: background-color 0.2s ease;
+    word-break: break-word;
+}
+
+.userDropdownListItem:hover {
+    background-color: var(--table-row-hover-bg);
+}
+
+.selectedUserDisplay {
+    margin-top: clamp(10px, 2vh, 15px);
+    padding: clamp(8px, 2vw, 15px);
+    background-color: rgba(77, 195, 255, 0.1);
+    border: 1px solid rgba(77, 195, 255, 0.2);
+    border-radius: var(--border-radius-md);
+    color: var(--blue-accent);
+    font-size: clamp(12px, 2.5vw, 14px);
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    word-break: break-word;
+}
+
+/* --- Empty States and Messages --- */
+.emptyTableMessage {
+    text-align: center;
+    padding: clamp(20px, 5vh, 40px) clamp(10px, 2vw, 20px);
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: clamp(12px, 2.5vw, 14px);
+}
+
+.noResults {
+    padding: clamp(8px, 2vw, 12px);
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+    font-size: clamp(11px, 2vw, 13px);
+}
+
+/* --- Modal Responsive Styles --- */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(2px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: var(--z-index-modal);
+    animation: fadeIn 0.2s ease-out;
+    padding: clamp(10px, 2vw, 20px);
+    box-sizing: border-box;
+}
+
+.modalContentBox {
+    background: linear-gradient(145deg, #0a1725, #112032);
+    padding: clamp(16px, 4vw, 24px);
+    border-radius: var(--border-radius-md);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(59, 173, 229, 0.2);
+    width: clamp(280px, 90vw, 600px);
+    max-width: 90vw;
+    max-height: 90vh;
+    color: var(--text-light);
+    animation: zoomIn 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: clamp(12px, 2vh, 16px);
+    margin-bottom: clamp(15px, 3vh, 20px);
+    border-bottom: 1px solid rgba(59, 173, 229, 0.15);
+    position: relative;
+    flex-shrink: 0;
+}
+
+.modalHeader h3 {
+    margin: 0;
+    font-size: clamp(16px, 3vw, 18px);
+    font-weight: 600;
+    color: #f4f4f4;
+}
+
+.closeButton {
+    background: rgba(244, 244, 244, 0.05);
+    border: none;
+    color: #f4f4f4;
+    width: clamp(28px, 5vw, 32px);
+    height: clamp(28px, 5vw, 32px);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: clamp(16px, 3vw, 20px);
+    line-height: 1;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.closeButton:hover {
+    background: rgba(244, 244, 244, 0.1);
+    transform: scale(1.05);
+}
+
+/* --- Print Styles --- */
+@media print {
+    .adminDashboardContainer {
+        height: auto;
+        overflow: visible;
+        padding: 0;
+        background: white;
+        color: black;
+    }
+
+    .adminTabsContainer {
+        box-shadow: none;
+        border: 1px solid #ccc;
+        background: white;
+    }
+
+    .tabNav {
+        display: none;
+    }
+
+    .dataTableWrapper {
+        overflow: visible;
+        max-height: none;
+        box-shadow: none;
+    }
+
+    .dataTable {
+        font-size: 10px;
+        min-width: auto;
+    }
+
+    .dataTable th,
+    .dataTable td {
+        padding: 4px 6px;
+        border: 1px solid #ccc;
+    }
+
+    .customDualListBoxControls,
+    .actionButtons,
+    .formActions {
+        display: none;
+    }
+}
+
+/* --- Accessibility Improvements --- */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Focus styles for accessibility */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--blue-accent);
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    :root {
+        --border-subtle: rgba(255, 255, 255, 0.3);
+        --text-muted: rgba(255, 255, 255, 0.8);
+    }
+}
+
+/* Add scroll indicator for better UX */
+.scrollIndicator {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 30px;
+    background: linear-gradient(to bottom, transparent, var(--blue-accent), transparent);
+    border-radius: 2px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.customDualListBoxColumn:hover .scrollIndicator {
+    opacity: 0.6;
+}
+
+/* Force scroll behavior for better visibility */
+.customDualListBoxList {
+    /* Force scrollbar to always show on Windows */
+    overflow-y: scroll !important;
+}
+
+/* For Firefox - make scrollbar more visible */
+@-moz-document url-prefix() {
+    .customDualListBoxList {
+        scrollbar-width: auto;
+        scrollbar-color: var(--blue-accent) rgba(11, 22, 35, 0.8);
+    }
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes zoomIn {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slideInFromTop {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideInFromBottom {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Apply animations to key elements */
+.vesselAssignmentContainer {
+    animation: slideInFromBottom 0.3s ease-out;
+}
+
+.customDualListBoxColumn {
+    animation: slideInFromTop 0.3s ease-out;
+}
+
+.formActions {
+    animation: fadeIn 0.5s ease-out 0.2s both;
+}
+
+/* Responsive adjustments for very small screens (e.g., 320px width) */
+@media (max-width: 320px) {
+    .adminDashboardContainer {
+        padding: 8px;
+    }
+
+    .adminTabsContainer {
+        padding: 8px;
+    }
+
+    .dualListBox {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .customDualListBoxColumn,
+    .listColumn {
+        max-width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .customDualListBoxControls,
+    .actionButtons {
+        flex-direction: row;
+        justify-content: space-around;
+        width: 100%;
+        margin: 10px 0;
+    }
+
+    .moveButton {
+        width: 45%;
+        min-width: 80px;
+    }
+
+    .customDualListBoxControls button {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+
+    .formActions {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .formButton.saveButton,
+    .submitButton {
+        width: 100%;
+        min-width: auto;
+    }
+}
+
+/* New styles for the UserSelector dropdown */
+.selectInput {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(59, 173, 229, 0.2);
+    padding: clamp(8px, 2vw, 12px);
+    color: var(--text-light);
+    border-radius: var(--border-radius-sm);
+    font-size: clamp(11px, 2vw, 13px);
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+    appearance: none; /* Remove default system styling for dropdown */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    /* Custom arrow for the dropdown */
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%20viewBox%3D%220%200%20292.4%20292.4%22%3E%3Cpath%20fill%3D%22%23f4f4f4%22%20d%3D%22M287%20197.1L159.1%2069.2c-3.7-3.7-9.7-3.7-13.4%200L5.4%20197.1c-3.7%203.7-3.7%209.7%200%2013.4l13.4%2013.4c3.9%203.9%2010.1%203.9%2014%200L146%20109.6l113.2%20113.2c3.9%203.9%2010.1%203.9%2014%200l13.4-13.4c3.7-3.7%203.7-9.7%200-13.4z%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 10px top 50%;
+    background-size: 12px auto;
+    padding-right: 30px; /* Make space for the arrow */
+}
+
+.selectInput:focus {
+    outline: none;
+    border-color: rgba(59, 173, 229, 0.4);
+    box-shadow: 0 0 0 2px rgba(59, 173, 229, 0.1);
+}
+
+.selectInput option {
+    background-color: var(--secondary-dark); /* Background for options */
+    color: var(--text-light); /* Text color for options */
+    padding: 8px 12px; /* Padding for options */
+}

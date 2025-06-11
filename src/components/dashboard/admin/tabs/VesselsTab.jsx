@@ -2,28 +2,37 @@
 import React, { useState, useEffect } from 'react';
 import VesselTable from '../components/VesselTable';
 import VesselForm from '../components/VesselForm';
-import { API_BASE_URL } from '../config'; // Updated import path
+import { API_BASE_URL } from '../config';
+import { useAuth } from '../../../../context/AuthContext';
+
+import styles from '../admin.module.css';
 
 const VesselsTab = () => {
   const [vessels, setVessels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showVesselForm, setShowVesselForm] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const [editingVessel, setEditingVessel] = useState(null);
+
+  const { currentUser, loading: authLoading, getSession } = useAuth();
 
   const fetchVessels = async () => {
     setLoading(true);
     setError(null);
     try {
-      const idToken = localStorage.getItem('idToken');
-      if (!idToken) throw new Error("Authentication token not found.");
+      if (!currentUser) {
+        throw new Error('No authenticated user found. Please log in.');
+      }
+      const session = getSession();
+      if (!session || !session.idToken) {
+        throw new Error('Authentication session or ID token not found.');
+      }
+      const idToken = session.idToken;
 
       const response = await fetch(`${API_BASE_URL}/admin/vessels`, {
-        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        }
+          'Authorization': `Bearer ${idToken}`,
+        },
       });
 
       if (!response.ok) {
@@ -42,30 +51,42 @@ const VesselsTab = () => {
   };
 
   useEffect(() => {
-    fetchVessels();
-  }, []);
+    if (!authLoading && currentUser) {
+      fetchVessels();
+    } else if (!authLoading && !currentUser) {
+      setError('Please log in to view and manage vessels.');
+      setLoading(false);
+      setVessels([]);
+    }
+  }, [currentUser, authLoading]);
 
-  const handleAddVessel = () => {
+  const handleAddVesselClick = () => {
     setEditingVessel(null);
-    setShowVesselForm(true);
+    setShowForm(true);
   };
 
   const handleEditVessel = (vessel) => {
     setEditingVessel(vessel);
-    setShowVesselForm(true);
+    setShowForm(true);
   };
 
   const handleDeleteVessel = async (vesselId) => {
-    if (!window.confirm('Are you sure you want to delete this vessel? This will also remove it from any user assignments.')) return;
+    if (!window.confirm('Are you sure you want to delete this vessel? This action cannot be undone.')) {
+      return;
+    }
 
     try {
-      const idToken = localStorage.getItem('idToken');
+      const session = getSession();
+      if (!session || !session.idToken) {
+        throw new Error('Authentication session or ID token not found.');
+      }
+      const idToken = session.idToken;
+
       const response = await fetch(`${API_BASE_URL}/admin/vessels/${vesselId}`, {
         method: 'DELETE',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        }
+          'Authorization': `Bearer ${idToken}`,
+        },
       });
 
       if (!response.ok) {
@@ -74,7 +95,7 @@ const VesselsTab = () => {
       }
 
       alert('Vessel deleted successfully!');
-      fetchVessels();
+      fetchVessels(); // Refresh the list
     } catch (err) {
       console.error("Error deleting vessel:", err);
       alert(`Error deleting vessel: ${err.message}`);
@@ -83,17 +104,25 @@ const VesselsTab = () => {
 
   const handleFormSubmit = async (vesselData) => {
     try {
-      const idToken = localStorage.getItem('idToken');
-      const method = editingVessel ? 'PUT' : 'POST';
-      const url = editingVessel ? `${API_BASE_URL}/admin/vessels/${editingVessel.vessel_id}` : `${API_BASE_URL}/admin/vessels`;
+      const session = getSession();
+      if (!session || !session.idToken) {
+        throw new Error('Authentication session or ID token not found.');
+      }
+      const idToken = session.idToken;
 
-      const response = await fetch(url, {
+      let response;
+      const method = editingVessel ? 'PUT' : 'POST';
+      const url = editingVessel
+        ? `${API_BASE_URL}/admin/vessels/${editingVessel.vessel_id}`
+        : `${API_BASE_URL}/admin/vessels`;
+
+      response = await fetch(url, {
         method: method,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
+          'Authorization': `Bearer ${idToken}`,
         },
-        body: JSON.stringify(vesselData)
+        body: JSON.stringify(vesselData),
       });
 
       if (!response.ok) {
@@ -102,32 +131,49 @@ const VesselsTab = () => {
       }
 
       alert(`Vessel ${editingVessel ? 'updated' : 'created'} successfully!`);
-      setShowVesselForm(false);
+      setShowForm(false);
       setEditingVessel(null);
-      fetchVessels();
+      fetchVessels(); // Refresh the list
     } catch (err) {
       console.error(`Error ${editingVessel ? 'updating' : 'creating'} vessel:`, err);
       alert(`Error ${editingVessel ? 'updating' : 'creating'} vessel: ${err.message}`);
     }
   };
 
-  return (
-    <div className="vessels-tab-content" style={{ marginTop: '20px' }}>
-      <h4>Manage Vessels</h4>
-      <button onClick={handleAddVessel} style={{ padding: '10px 15px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginBottom: '15px' }}>Add New Vessel</button>
+  if (authLoading || loading) {
+    return <p className={styles.emptyTableMessage}>Loading vessels...</p>;
+  }
 
-      {loading && <p>Loading vessels...</p>}
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+  if (error) {
+    return <p className={styles.emptyTableMessage} style={{ color: 'var(--negative-color)' }}>Error: {error}</p>;
+  }
+
+  if (!currentUser) {
+    return <p className={styles.emptyTableMessage}>Please log in to view and manage vessels.</p>;
+  }
+
+  return (
+    <div className={styles.dataTableContainer}>
+      <div style={{ padding: '15px', display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          onClick={handleAddVesselClick}
+          className={`${styles.defectActionBtn} ${styles.add}`}
+        >
+          Add New Vessel
+        </button>
+      </div>
 
       {!loading && !error && (
-        <VesselTable vessels={vessels} onEdit={handleEditVessel} onDelete={handleDeleteVessel} />
+        <div className={styles.dataTableWrapper}>
+          <VesselTable vessels={vessels} onEdit={handleEditVessel} onDelete={handleDeleteVessel} />
+        </div>
       )}
 
-      {showVesselForm && (
+      {showForm && (
         <VesselForm
           vessel={editingVessel}
           onSubmit={handleFormSubmit}
-          onClose={() => setShowVesselForm(false)}
+          onClose={() => setShowForm(false)}
         />
       )}
     </div>

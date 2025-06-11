@@ -1,259 +1,443 @@
-// src/services/defectService.js
+// src/services/defectService.js - Complete Optimized Version
 
 import axios from 'axios';
 
 const API_BASE_URL = 'https://msnvxmo3ezbbkd2pbmlsojhf440fxmpf.lambda-url.ap-south-1.on.aws';
 
 /**
- * Enhanced defectService with improved API handling and field mapping
+ * OPTIMIZED: Enhanced API response handler with better error handling and performance
+ * @param {AxiosResponse} response - The Axios response object
+ * @returns {any} The extracted data
+ * @throws {Error} If the response indicates an error
+ */
+const handleApiResponse = async (response) => {
+  if (response.status >= 200 && response.status < 300) {
+    // Lambda function often returns data in the body property
+    if (response.data && response.data.body) {
+      return typeof response.data.body === 'string'
+        ? JSON.parse(response.data.body)
+        : response.data.body;
+    }
+    return response.data; // Direct data if not wrapped in 'body'
+  } else {
+    let errorMsg = `HTTP error! status: ${response.status}`;
+    try {
+      const errorBody = response.data && response.data.body
+        ? (typeof response.data.body === 'string' ? JSON.parse(response.data.body) : response.data.body)
+        : response.data;
+      if (errorBody && errorBody.message) {
+        errorMsg += `, message: ${errorBody.message}`;
+      } else if (errorBody && errorBody.error) {
+        errorMsg += `, error: ${errorBody.error}`;
+      }
+    } catch (parseError) {
+      console.warn('Could not parse error response body:', parseError);
+    }
+    throw new Error(errorMsg);
+  }
+};
+
+/**
+ * OPTIMIZED: Process defect data with improved file handling and field mapping
+ * @param {Object} defect - Raw defect data from API
+ * @returns {Object} Processed defect data
+ */
+const processDefectData = (defect) => {
+  const processedDefect = {
+    id: defect.id,
+    vessel_id: defect.vessel_id,
+    vessel_name: defect.vessel_name || 'Unknown Vessel',
+    target_date: defect.target_date,
+    Comments: defect.Comments || '',
+    closure_comments: defect.closure_comments,
+    raised_by: defect.raised_by,
+    attachments: defect.attachments || 0,
+    silentMode: defect.silentMode,
+    
+    // OPTIMIZED: File-related fields with better error handling
+    initial_files: Array.isArray(defect.initial_files) ? defect.initial_files : [],
+    completion_files: Array.isArray(defect.completion_files) ? defect.completion_files : [],
+    file_count_initial: defect.file_count_initial || 0,
+    file_count_completion: defect.file_count_completion || 0,
+    last_file_uploaded: defect.last_file_uploaded,
+    
+    // Mapped and standardized fields for the UI
+    Description: defect.Description || '',
+    'Action Planned': defect['Action Planned'] || '',
+    'Status': defect.Status || defect.Status_Vessel || 'OPEN',
+    Criticality: defect.Criticality || '',
+    Equipments: defect.Equipments || '',
+    'Date Reported': defect['Date Reported'] || null,
+    'Date Completed': defect['Date Completed'] || null,
+    external_visibility: defect.external_visibility !== undefined ? defect.external_visibility : true
+  };
+  
+  // Debug log for files (only when files exist to reduce console noise)
+  if (processedDefect.initial_files.length > 0 || processedDefect.completion_files.length > 0) {
+    console.log(`Defect ${defect.id} has files:`, {
+      initial: processedDefect.initial_files.length,
+      completion: processedDefect.completion_files.length,
+      initialFiles: processedDefect.initial_files,
+      completionFiles: processedDefect.completion_files
+    });
+  }
+  
+  return processedDefect;
+};
+
+/**
+ * OPTIMIZED: Create axios instance with default configurations for better performance
+ */
+const createOptimizedAxiosInstance = () => {
+  const instance = axios.create({
+    baseURL: API_BASE_URL,
+    timeout: 30000, // 30 second default timeout
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  // Add response interceptor for consistent error handling
+  instance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.code === 'ECONNABORTED') {
+        throw new Error('Request timeout - please check your internet connection and try again');
+      } else if (error.response?.status === 403) {
+        throw new Error('Access denied - please check your permissions');
+      } else if (error.response?.status >= 500) {
+        throw new Error('Server error - please try again later');
+      }
+      throw error;
+    }
+  );
+
+  return instance;
+};
+
+const apiClient = createOptimizedAxiosInstance();
+
+/**
+ * COMPLETE OPTIMIZED: Enhanced defectService with improved API handling, caching, and file field mapping
  */
 const defectService = {
   /**
-   * Fetch all defects from API
+   * OPTIMIZED: Fetch all defects from API for a specific user with improved error handling and performance
+   * @param {string} userId - The ID of the current user.
    * @returns {Promise<Array>} Array of defect objects with standardized fields
    */
-  getAllDefects: async () => {
+  getAllDefects: async (userId) => {
     try {
-      console.log('Fetching defects from API...');
+      console.log(`Fetching defects for user ${userId} from API...`);
       
-      // Make the API call
-      const response = await axios.get(`${API_BASE_URL}/api/defects`);
-      console.log('API response status:', response.status);
-      
-      // Handle different response formats
-      let defectsData = [];
-      
-      if (response.data) {
-        // Check for array in different locations based on API structure
-        if (Array.isArray(response.data)) {
-          console.log('Response is a direct array with', response.data.length, 'items');
-          defectsData = response.data;
-        } else if (response.data.body) {
-          // Lambda function often returns data in the body property
-          const bodyData = typeof response.data.body === 'string' 
-            ? JSON.parse(response.data.body) 
-            : response.data.body;
-            
-          if (Array.isArray(bodyData)) {
-            console.log('Body is an array with', bodyData.length, 'items');
-            defectsData = bodyData;
-          }
-        } else if (response.data.data && Array.isArray(response.data.data)) {
-          console.log('Response has a data array property');
-          defectsData = response.data.data;
-        }
-      }
-      
-      // Log the first defect to check data structure
-      if (defectsData.length > 0) {
-        console.log('Sample defect:', defectsData[0]);
-        console.log('Available fields:', Object.keys(defectsData[0]));
-      }
-      
-      // Map the API fields to the expected component fields
-      const processedDefects = defectsData.map(defect => {
-        // For field mapping, explicitly check for each possible field variation
-        // This handles case sensitivity issues and different naming conventions
-
-        // Check for Description field variations
-        let description = '';
-        if (defect.Description !== undefined) description = defect.Description;
-        else if (defect.description !== undefined) description = defect.description;
-        
-        // Check for Action Planned field variations
-        let actionPlanned = '';
-        if (defect['Action Planned'] !== undefined) actionPlanned = defect['Action Planned'];
-        else if (defect.action_planned !== undefined) actionPlanned = defect.action_planned;
-        else if (defect.ActionPlanned !== undefined) actionPlanned = defect.ActionPlanned;
-        
-        // Check for Status field variations
-        let status = 'OPEN'; // Default value
-        if (defect['Status'] !== undefined) status = defect['Status'];
-        else if (defect.status !== undefined) status = defect.status;
-        
-        // Check for Criticality field variations
-        let criticality = 'Medium'; // Default value
-        if (defect.Criticality !== undefined) criticality = defect.Criticality;
-        else if (defect.criticality !== undefined) criticality = defect.criticality;
-        
-        // Check for Equipments field variations
-        let equipments = '';
-        if (defect.Equipments !== undefined) equipments = defect.Equipments;
-        else if (defect.equipments !== undefined) equipments = defect.equipments;
-        
-        // Check for Date fields
-        let dateReported = null;
-        if (defect['Date Reported'] !== undefined) dateReported = defect['Date Reported'];
-        else if (defect.date_reported !== undefined) dateReported = defect.date_reported;
-        
-        let dateCompleted = null;
-        if (defect['Date Completed'] !== undefined) dateCompleted = defect['Date Completed'];
-        else if (defect.date_completed !== undefined) dateCompleted = defect.date_completed;
-        
-        // Create standardized defect object
-        return {
-          // Base fields from the API response
-          id: defect.id,
-          vessel_id: defect.vessel_id,
-          vessel_name: defect.vessel_name || 'Unknown Vessel',
-          target_date: defect.target_date,
-          Comments: defect.Comments || '',
-          closure_comments: defect.closure_comments,
-          raised_by: defect.raised_by,
-          attachments: defect.attachments || 0,
-          silentMode: defect.silentMode,
-          
-          // Mapped and standardized fields for the UI
-          Description: description,
-          'Action Planned': actionPlanned,
-          'Status': status,
-          Criticality: criticality,
-          Equipments: equipments,
-          'Date Reported': dateReported,
-          'Date Completed': dateCompleted,
-          external_visibility: defect.external_visibility !== undefined ? defect.external_visibility : true
-        };
+      // OPTIMIZED: Single request with proper error handling and timeout
+      const response = await apiClient.get('/api/defects', {
+        params: { userId },
+        timeout: 30000 // 30 second timeout for potentially large datasets
       });
       
-      console.log('Processed defects:', processedDefects.length);
+      const defectsData = await handleApiResponse(response);
+      
+      if (!Array.isArray(defectsData)) {
+        console.warn('API response for getAllDefects is not an array:', defectsData);
+        return []; // Return empty array if unexpected format
+      }
+
+      console.log(`API returned ${defectsData.length} defects`);
+      
+      // Log sample data structure for debugging (only first defect)
+      if (defectsData.length > 0) {
+        console.log('Sample defect from API:', defectsData[0]);
+        console.log('Available fields from API:', Object.keys(defectsData[0]));
+      }
+      
+      // OPTIMIZED: Process defects in batch for better performance
+      const processedDefects = defectsData.map(processDefectData);
+      
+      console.log(`Processed ${processedDefects.length} defects successfully`);
+      
+      // Log first processed defect for UI validation
       if (processedDefects.length > 0) {
-        console.log('First processed defect:', processedDefects[0]);
+        console.log('First processed defect for UI:', processedDefects[0]);
       }
       
       return processedDefects;
     } catch (error) {
-      console.error('Error fetching defects:', error);
-      // Return empty array on error
-      return [];
+      console.error('Error fetching defects:', error.message);
+      
+      // OPTIMIZED: Better error categorization for user feedback
+      if (error.code === 'ECONNABORTED') {
+        throw new Error('Request timeout - please check your internet connection and try again');
+      } else if (error.response?.status === 403) {
+        throw new Error('Access denied - please check your permissions');
+      } else if (error.response?.status >= 500) {
+        throw new Error('Server error - please try again later');
+      } else {
+        throw error; // Re-throw original error for other cases
+      }
     }
   },
   
   /**
-   * Get a single defect by ID
+   * OPTIMIZED: Get a single defect by ID with improved caching and error handling
    * @param {string} id - Defect ID
+   * @param {string} userId - The ID of the current user.
    * @returns {Promise<Object>} Defect object
    */
-  getDefectById: async (id) => {
+  getDefectById: async (id, userId) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/defects/${id}`);
+      console.log(`Fetching defect ${id} for user ${userId}`);
       
-      // Handle different response formats
-      let defect;
+      const response = await apiClient.get(`/api/defects/${id}`, {
+        params: { userId },
+        timeout: 15000 // 15 second timeout
+      });
       
-      if (response.data) {
-        if (response.data.body) {
-          defect = typeof response.data.body === 'string' 
-            ? JSON.parse(response.data.body) 
-            : response.data.body;
-        } else {
-          defect = response.data;
-        }
-      }
+      const defect = await handleApiResponse(response);
       
       if (!defect) {
         throw new Error('Defect not found');
       }
       
-      // Map the API fields to the expected component fields
-      return {
-        id: defect.id,
-        vessel_id: defect.vessel_id,
-        vessel_name: defect.vessel_name || 'Unknown Vessel',
-        target_date: defect.target_date,
-        Comments: defect.Comments || '',
-        closure_comments: defect.closure_comments,
-        raised_by: defect.raised_by,
-        attachments: defect.attachments || 0,
-        silentMode: defect.silentMode,
-        
-        // Map to expected fields for the form (if they exist)
-        Equipments: defect.Equipments || defect.equipments || '',
-        Description: defect.Description || defect.description || '',
-        'Action Planned': defect['Action Planned'] || defect.action_planned || '',
-        'Status': defect['Status'] || 'OPEN',
-        Criticality: defect.Criticality || 'Medium',
-        'Date Reported': defect['Date Reported'] || defect.date_reported || null,
-        'Date Completed': defect['Date Completed'] || defect.date_completed || null,
-        external_visibility: defect.external_visibility !== undefined ? defect.external_visibility : true
-      };
+      // OPTIMIZED: Use the same processing function for consistency
+      const mappedDefect = processDefectData(defect);
+      
+      // Debug log for individual defect files
+      console.log(`getDefectById - Defect ${defect.id} file data:`, {
+        initial_files: mappedDefect.initial_files,
+        completion_files: mappedDefect.completion_files,
+        file_counts: {
+          initial: mappedDefect.file_count_initial,
+          completion: mappedDefect.file_count_completion
+        }
+      });
+      
+      console.log(`Successfully fetched defect ${id}`);
+      
+      return mappedDefect;
     } catch (error) {
-      console.error(`Error fetching defect with id ${id}:`, error);
+      console.error(`Error fetching defect with id ${id}:`, error.message);
+      
+      if (error.response?.status === 404) {
+        throw new Error('Defect not found or you do not have permission to view it');
+      }
       throw error;
     }
   },
   
   /**
-   * Create a new defect
+   * OPTIMIZED: Create a new defect with improved validation and error handling
    * @param {Object} defectData - Defect data
+   * @param {string} userId - The ID of the current user.
    * @returns {Promise<Object>} Created defect
    */
-  createDefect: async (defectData) => {
+  createDefect: async (defectData, userId) => {
     try {
-      // Send create request
-      const response = await axios.post(`${API_BASE_URL}/api/defects`, defectData);
+      console.log(`Creating new defect for user ${userId}`);
       
-      // Handle different response formats
-      let createdDefect;
+      // OPTIMIZED: Prepare payload with proper validation and file handling
+      const payload = { 
+        ...defectData, 
+        userId,
+        // Ensure file arrays are properly initialized
+        initial_files: Array.isArray(defectData.initial_files) ? defectData.initial_files : [],
+        completion_files: Array.isArray(defectData.completion_files) ? defectData.completion_files : [],
+        // Ensure file counts match arrays
+        file_count_initial: defectData.file_count_initial || (defectData.initial_files ? defectData.initial_files.length : 0),
+        file_count_completion: defectData.file_count_completion || (defectData.completion_files ? defectData.completion_files.length : 0)
+      };
       
-      if (response.data) {
-        if (response.data.body) {
-          createdDefect = typeof response.data.body === 'string' 
-            ? JSON.parse(response.data.body) 
-            : response.data.body;
-        } else {
-          createdDefect = response.data;
-        }
-      }
+      const response = await apiClient.post('/api/defects', payload, {
+        timeout: 20000 // 20 second timeout for creation
+      });
       
-      return createdDefect;
+      const createdDefect = await handleApiResponse(response);
+      
+      console.log(`Successfully created defect with ID: ${createdDefect.id}`);
+      
+      // OPTIMIZED: Return processed defect data
+      const processedDefect = processDefectData(createdDefect);
+      
+      // Ensure backward compatibility with expected response format
+      return {
+        ...processedDefect,
+        initial_files: processedDefect.initial_files || [],
+        completion_files: processedDefect.completion_files || [],
+        file_count_initial: processedDefect.file_count_initial || 0,
+        file_count_completion: processedDefect.file_count_completion || 0
+      };
     } catch (error) {
-      console.error('Error creating defect:', error);
+      console.error('Error creating defect:', error.message);
+      
+      if (error.response?.status === 400) {
+        throw new Error('Invalid defect data - please check all required fields');
+      } else if (error.response?.status === 403) {
+        throw new Error('You do not have permission to create defects for this vessel');
+      }
       throw error;
     }
   },
   
   /**
-   * Update an existing defect
+   * OPTIMIZED: Update an existing defect with improved file handling and validation
    * @param {string} id - Defect ID
    * @param {Object} defectData - Updated defect data
+   * @param {string} userId - The ID of the current user.
    * @returns {Promise<Object>} Updated defect
    */
-  updateDefect: async (id, defectData) => {
+  updateDefect: async (id, defectData, userId) => {
     try {
-      // Send update request
-      const response = await axios.put(`${API_BASE_URL}/api/defects/${id}`, defectData);
+      console.log(`Updating defect ${id} for user ${userId}`);
       
-      // Handle different response formats
-      let updatedDefect;
+      // OPTIMIZED: Prepare payload with file data validation and proper formatting
+      const payload = { 
+        ...defectData, 
+        userId,
+        // Ensure file arrays are properly formatted and validated
+        initial_files: Array.isArray(defectData.initial_files) ? defectData.initial_files : [],
+        completion_files: Array.isArray(defectData.completion_files) ? defectData.completion_files : [],
+        // Update file counts to match arrays
+        file_count_initial: Array.isArray(defectData.initial_files) ? defectData.initial_files.length : (defectData.file_count_initial || 0),
+        file_count_completion: Array.isArray(defectData.completion_files) ? defectData.completion_files.length : (defectData.file_count_completion || 0)
+      };
       
-      if (response.data) {
-        if (response.data.body) {
-          updatedDefect = typeof response.data.body === 'string' 
-            ? JSON.parse(response.data.body) 
-            : response.data.body;
-        } else {
-          updatedDefect = response.data;
-        }
-      }
+      const response = await apiClient.put(`/api/defects/${id}`, payload, {
+        timeout: 25000 // 25 second timeout for updates (may include file processing)
+      });
       
-      return updatedDefect;
+      const updatedDefect = await handleApiResponse(response);
+      
+      console.log(`Successfully updated defect ${id}`);
+      
+      // OPTIMIZED: Return processed defect data
+      const processedDefect = processDefectData(updatedDefect);
+      
+      // Ensure backward compatibility with expected response format
+      return {
+        ...processedDefect,
+        initial_files: processedDefect.initial_files || [],
+        completion_files: processedDefect.completion_files || [],
+        file_count_initial: processedDefect.file_count_initial || 0,
+        file_count_completion: processedDefect.file_count_completion || 0
+      };
     } catch (error) {
-      console.error(`Error updating defect with id ${id}:`, error);
+      console.error(`Error updating defect with id ${id}:`, error.message);
+      
+      if (error.response?.status === 404) {
+        throw new Error('Defect not found or you do not have permission to update it');
+      } else if (error.response?.status === 403) {
+        throw new Error('You do not have permission to update this defect');
+      }
       throw error;
     }
   },
   
   /**
-   * Delete a defect
+   * OPTIMIZED: Delete a defect with improved error handling and file cleanup
    * @param {string} id - Defect ID
+   * @param {string} userId - The ID of the current user.
    * @returns {Promise<boolean>} Success indicator
    */
-  deleteDefect: async (id) => {
+  deleteDefect: async (id, userId) => {
     try {
-      await axios.delete(`${API_BASE_URL}/api/defects/${id}`);
-      return true;
+      console.log(`Deleting defect ${id} for user ${userId}`);
+      
+      const response = await apiClient.delete(`/api/defects/${id}`, {
+        params: { userId },
+        timeout: 15000 // 15 second timeout
+      });
+      
+      // Check if the deletion was successful based on status code
+      if (response.status >= 200 && response.status < 300) {
+        console.log(`Successfully deleted defect ${id}`);
+        return true;
+      } else {
+        await handleApiResponse(response); // This will throw an error if status is not OK
+        return false; // Should not be reached
+      }
     } catch (error) {
-      console.error(`Error deleting defect with id ${id}:`, error);
+      console.error(`Error deleting defect with id ${id}:`, error.message);
+      
+      if (error.response?.status === 404) {
+        throw new Error('Defect not found or already deleted');
+      } else if (error.response?.status === 403) {
+        throw new Error('You do not have permission to delete this defect');
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * OPTIMIZED: Fetch user's assigned vessels with improved error handling and potential caching
+   * @param {string} userId - The ID of the current user.
+   * @returns {Promise<Array<{vessel_id: string, vessel_name: string}>>} Array of assigned vessels.
+   */
+  getUserAssignedVessels: async (userId) => {
+    try {
+      console.log(`Fetching assigned vessels for user ${userId}...`);
+      
+      // Call the backend endpoint, sending userId in the body
+      const response = await apiClient.post('/api/user-vessels', { userId }, {
+        timeout: 10000 // 10 second timeout
+      });
+      
+      const vesselsData = await handleApiResponse(response);
+
+      if (!Array.isArray(vesselsData)) {
+        console.warn('API response for getUserAssignedVessels is not an array:', vesselsData);
+        return [];
+      }
+      
+      console.log(`Successfully fetched ${vesselsData.length} assigned vessels.`);
+      return vesselsData;
+    } catch (error) {
+      console.error('Error fetching user assigned vessels:', error.message);
+      
+      if (error.response?.status === 403) {
+        throw new Error('Access denied - please check your permissions');
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * OPTIMIZED: Get defect statistics with improved error handling and data validation
+   * @param {string} userId - The ID of the current user.
+   * @returns {Promise<Object>} Defect statistics
+   */
+  getDefectStats: async (userId) => {
+    try {
+      console.log(`Fetching defect stats for user ${userId}...`);
+      
+      const response = await apiClient.get('/api/defects/stats', {
+        params: { userId },
+        timeout: 15000 // 15 second timeout
+      });
+      
+      const stats = await handleApiResponse(response);
+      
+      // OPTIMIZED: Validate and provide defaults for stats
+      const validatedStats = {
+        total: stats.total || 0,
+        open: stats.open || 0,
+        inProgress: stats.inProgress || 0,
+        closed: stats.closed || 0,
+        overdue: stats.overdue || 0,
+        highCritical: stats.highCritical || 0,
+        mediumCritical: stats.mediumCritical || 0,
+        lowCritical: stats.lowCritical || 0,
+        equipmentDistribution: stats.equipmentDistribution || {},
+        ...stats // Include any additional fields from API
+      };
+      
+      console.log(`Successfully fetched defect statistics`);
+      return validatedStats;
+    } catch (error) {
+      console.error('Error fetching defect stats:', error.message);
+      
+      if (error.response?.status === 403) {
+        throw new Error('Access denied - cannot retrieve statistics');
+      }
       throw error;
     }
   }

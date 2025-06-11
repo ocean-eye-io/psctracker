@@ -14,19 +14,18 @@ import CommentTooltip from '../../common/Table/CommentTooltip';
 import VesselFlagService from '../../../services/VesselFlagService';
 import { useAuth } from '../../../context/AuthContext';
 import ReactDOM from 'react-dom';
-import PropTypes from 'prop-types'; // Import PropTypes
+import PropTypes from 'prop-types';
 
 // Import EditableField from common/EditableField.jsx
-import EditableField from '../../common/EditableField/EditableField'; // Corrected import path
+import EditableField from '../../common/EditableField/EditableField';
 
-// Import FontAwesome icons for EditableField (if not already imported by EditableField itself)
 const VesselTable = ({
   vessels,
   onOpenRemarks,
   fieldMappings,
   onUpdateVessel,
-  onUpdateOverride, // New prop for ETA/ETB/ETD overrides
-  savingStates,     // New prop for saving states
+  onUpdateOverride,
+  savingStates,
 }) => {
   const tableRef = useRef(null);
   const headerRef = useRef(null);
@@ -57,6 +56,46 @@ const VesselTable = ({
 
   // State to track window size
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+  // Helper function to check if a date is in the past
+  const isDateInPast = useCallback((dateString) => {
+    if (!dateString) return false;
+    
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return false;
+      
+      const today = new Date();
+      // Reset time to start of day for accurate comparison
+      today.setHours(0, 0, 0, 0);
+      date.setHours(0, 0, 0, 0);
+      
+      return date < today;
+    } catch (error) {
+      return false;
+    }
+  }, []);
+
+  // Helper function to get days overdue
+  const getDaysOverdue = useCallback((dateString) => {
+    if (!dateString) return 0;
+    
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 0;
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      date.setHours(0, 0, 0, 0);
+      
+      const diffTime = today - date;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      return diffDays > 0 ? diffDays : 0;
+    } catch (error) {
+      return 0;
+    }
+  }, []);
 
   // Enhanced filter to ensure only one active entry per IMO (with highest ID)
   const filteredVessels = useMemo(() => {
@@ -927,10 +966,22 @@ const VesselTable = ({
             // Get ETA from either user_eta or original eta
             const etaValueForComparison = rowData.user_eta !== null && rowData.user_eta !== undefined ? rowData.user_eta : rowData.eta;
             const etaDate = etaValueForComparison ? new Date(etaValueForComparison) : null;
-
+            
+            
+            
             if (etbDate && etaDate && etbDate.getTime() < etaDate.getTime()) {
               isInvalidDate = true;
               validationMessage = `ETB cannot be before ETA. ETA is ${formatDateTime(etaValueForComparison, true)}`;
+            }
+          }
+
+          // NEW: Check if ETA is in the past
+          if (fieldId === 'eta') {
+            const isPastEta = isDateInPast(displayValue);
+            if (isPastEta && !isInvalidDate) {
+              const daysOverdue = getDaysOverdue(displayValue);
+              isInvalidDate = true;
+              validationMessage = `ETA is ${daysOverdue} day${daysOverdue === 1 ? '' : 's'} overdue`;
             }
           }
 
@@ -1172,6 +1223,7 @@ const VesselTable = ({
   };
 
   // Create expanded content renderer with responsive grid
+  
   const renderExpandedContent = (vessel) => {
     const expandedColumns = Object.entries(fieldMappings.EXPANDED)
       .sort((a, b) => a[1].priority - b[1].priority);
@@ -1202,7 +1254,6 @@ const VesselTable = ({
           let displayLabel = field.label;
 
           // Check for user overrides in expanded content as well
-          // Note: Lambda now returns user_eta, user_etb, user_etd as top-level properties
           if (fieldId === 'eta' && vessel.user_eta !== null && vessel.user_eta !== undefined) {
             value = vessel.user_eta;
           } else if (fieldId === 'etb' && vessel.user_etb !== null && vessel.user_etb !== undefined) {
@@ -1211,14 +1262,11 @@ const VesselTable = ({
             value = vessel.user_etd;
           }
 
-
           if (fieldId === 'departure_port' && field.combineWithCountry) {
             const port = value || '-';
             const country = vessel.departure_country || '';
 
-            // Combine them into a single display value
             if (country) {
-              // Format country code if needed
               let formattedCountry = country;
               if (country === 'AU' || country === 'au') {
                 formattedCountry = 'AUSTRALIA';
@@ -1228,7 +1276,6 @@ const VesselTable = ({
                 formattedCountry = formattedCountry.toUpperCase();
               }
 
-              // Combine port and country
               value = `${port}, ${formattedCountry}`;
             }
           }
@@ -1239,29 +1286,55 @@ const VesselTable = ({
           } else if (
             fieldId === 'etd' ||
             fieldId === 'atd' ||
-            fieldId === 'eta' || // Also format ETA/ETB in expanded view as datetime
+            fieldId === 'eta' ||
             fieldId === 'etb'
           ) {
             value = formatDateTime(value, true);
           }
 
-          // If value is a string and not empty, wrap it in a tooltip
-          const displayValue = (value !== null && value !== undefined && value !== '-')
-            ? (
+          // ✅ FIX: Extract key and create props without key
+          const expandedItemProps = {
+            label: field.label,
+            value: value || '-',
+            className: windowWidth < 768 ? 'mobile-expanded-item' : ''
+          };
+
+          // Check if this is ETA and it's in the past
+          if (fieldId === 'eta') {
+            const etaValue = vessel.user_eta !== null && vessel.user_eta !== undefined ? vessel.user_eta : vessel.eta;
+            const isPastEta = isDateInPast(etaValue);
+            
+            if (isPastEta) {
+              const daysOverdue = getDaysOverdue(etaValue);
+              expandedItemProps.className += ' past-eta-expanded';
+              
+              const displayValue = (
+                <TextTooltip text={`ETA is ${daysOverdue} day${daysOverdue === 1 ? '' : 's'} overdue`}>
+                  <span style={{ color: '#E74C3C', fontWeight: 'bold' }}>
+                    {value || '-'}
+                  </span>
+                </TextTooltip>
+              );
+              expandedItemProps.value = displayValue;
+            } else if (value !== null && value !== undefined && value !== '-') {
+              const displayValue = (
+                <TextTooltip text={String(value)}>
+                  {value}
+                </TextTooltip>
+              );
+              expandedItemProps.value = displayValue;
+            }
+          } else if (value !== null && value !== undefined && value !== '-') {
+            const displayValue = (
               <TextTooltip text={String(value)}>
                 {value}
               </TextTooltip>
-            )
-            : value;
+            );
+            expandedItemProps.value = displayValue;
+          }
 
-          return (
-            <ExpandedItem
-              key={fieldId}
-              label={field.label}
-              value={displayValue || '-'}
-              className={windowWidth < 768 ? 'mobile-expanded-item' : ''}
-            />
-          );
+          // ✅ FIX: Pass key directly, not in spread
+          return <ExpandedItem key={fieldId} {...expandedItemProps} />;
         })}
       </div>
     );
@@ -1420,6 +1493,12 @@ const VesselTable = ({
             align-items: center;
             justify-content: center;
           }
+
+          /* NEW: Styling for past ETA in expanded content */
+          .past-eta-expanded .expanded-value {
+            color: #E74C3C !important;
+            font-weight: bold !important;
+          }
         `}
       </style>
 
@@ -1440,10 +1519,10 @@ const VesselTable = ({
 VesselTable.propTypes = {
   vessels: PropTypes.arrayOf(PropTypes.object).isRequired,
   onOpenRemarks: PropTypes.func.isRequired,
-  fieldMappings: PropTypes.object.isRequired, // Changed to object as per your original code
+  fieldMappings: PropTypes.object.isRequired,
   onUpdateVessel: PropTypes.func.isRequired,
-  onUpdateOverride: PropTypes.func.isRequired, // New prop
-  savingStates: PropTypes.object.isRequired,   // New prop
+  onUpdateOverride: PropTypes.func.isRequired,
+  savingStates: PropTypes.object.isRequired,
 };
 
 export default VesselTable;

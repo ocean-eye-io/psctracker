@@ -1,0 +1,240 @@
+/* src/components/common/NoAccessPage.css */
+.no-access-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0c1a29 0%, #1a2f42 50%, #0e1e2f 100%);
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .no-access-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 30% 20%, rgba(59, 173, 229, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 70% 80%, rgba(46, 204, 113, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  
+  .no-access-content {
+    background: rgba(14, 30, 47, 0.8);
+    border-radius: 16px;
+    padding: 3rem;
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+    border: 1px solid rgba(244, 244, 244, 0.1);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    position: relative;
+    z-index: 1;
+  }
+  
+  .no-access-header {
+    margin-bottom: 2rem;
+  }
+  
+  .no-access-logo {
+    margin-bottom: 1rem;
+    opacity: 0.9;
+  }
+  
+  .no-access-header h1 {
+    color: #f4f4f4;
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+    background: linear-gradient(135deg, #3BADE5, #2ECC71);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .no-access-message {
+    color: #f4f4f4;
+  }
+  
+  .no-access-icon {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .no-access-icon svg {
+    color: rgba(244, 244, 244, 0.6);
+    background: rgba(244, 244, 244, 0.1);
+    padding: 1rem;
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+  }
+  
+  .no-access-message h2 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #f4f4f4;
+  }
+  
+  .no-access-message > p {
+    font-size: 1.1rem;
+    color: rgba(244, 244, 244, 0.8);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+  }
+  
+  .no-access-details {
+    background: rgba(244, 244, 244, 0.05);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(244, 244, 244, 0.1);
+  }
+  
+  .detail-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1rem;
+    color: rgba(244, 244, 244, 0.9);
+    font-size: 0.95rem;
+  }
+  
+  .detail-item:last-child {
+    margin-bottom: 0;
+  }
+  
+  .detail-item svg {
+    color: #3BADE5;
+    flex-shrink: 0;
+  }
+  
+  .no-access-actions {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .contact-admin-btn {
+    background: linear-gradient(135deg, #3BADE5, #2ECC71);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(59, 173, 229, 0.3);
+    min-width: 200px;
+    justify-content: center;
+  }
+  
+  .contact-admin-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(59, 173, 229, 0.4);
+    background: linear-gradient(135deg, #45B7E8, #32D77A);
+  }
+  
+  .refresh-btn {
+    background: rgba(244, 244, 244, 0.1);
+    color: #f4f4f4;
+    border: 1px solid rgba(244, 244, 244, 0.2);
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 200px;
+    justify-content: center;
+  }
+  
+  .refresh-btn:hover {
+    background: rgba(244, 244, 244, 0.15);
+    border-color: rgba(244, 244, 244, 0.3);
+    transform: translateY(-1px);
+  }
+  
+  .logout-btn {
+    background: rgba(231, 76, 60, 0.1);
+    color: #E74C3C;
+    border: 1px solid rgba(231, 76, 60, 0.2);
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 200px;
+    justify-content: center;
+  }
+  
+  .logout-btn:hover {
+    background: rgba(231, 76, 60, 0.15);
+    border-color: rgba(231, 76, 60, 0.3);
+    transform: translateY(-1px);
+  }
+  
+  .contact-admin-btn:active,
+  .refresh-btn:active,
+  .logout-btn:active {
+    transform: translateY(0);
+  }
+  
+  /* Responsive adjustments for buttons */
+  @media (max-width: 768px) {
+    .no-access-actions {
+      margin-top: 1.5rem;
+    }
+    
+    .contact-admin-btn,
+    .refresh-btn,
+    .logout-btn {
+      min-width: 180px;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+    }
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .no-access-container {
+      padding: 1rem;
+    }
+    
+    .no-access-content {
+      padding: 2rem;
+    }
+    
+    .no-access-header h1 {
+      font-size: 1.75rem;
+    }
+    
+    .no-access-message h2 {
+      font-size: 1.5rem;
+    }
+    
+    .no-access-logo {
+      width: 100px;
+      height: 100px;
+    }
+  }

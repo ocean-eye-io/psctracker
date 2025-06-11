@@ -1,3 +1,5 @@
+// src/context/AuthContext.js
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 
 const AuthContext = createContext(null);
@@ -9,12 +11,12 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // Load user session from localStorage on startup
   useEffect(() => {
     checkAuthStatus();
   }, []);
-  
+
   // Check if a user is already authenticated by checking localStorage
   const checkAuthStatus = async () => {
     setLoading(true);
@@ -22,12 +24,16 @@ export const AuthProvider = ({ children }) => {
       const sessionData = localStorage.getItem('auth_session');
       if (sessionData) {
         const session = JSON.parse(sessionData);
-        
+
         // Check if the token is expired
         const expiration = session.expiresAt;
         if (expiration && new Date() < new Date(expiration)) {
-          setCurrentUser(session.user);
-          
+          // Ensure userId is set when loading from localStorage
+          setCurrentUser({
+            ...session.user,
+            userId: session.user.userId || JSON.parse(atob(session.idToken.split('.')[1])).sub // Fallback if userId wasn't explicitly saved before
+          });
+
           // If token is about to expire, refresh it
           if (new Date() > new Date(expiration - 5 * 60 * 1000)) {
             refreshTokenSilently(session.refreshToken);
@@ -45,7 +51,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
-  
+
   // Refresh the token silently in the background
   const refreshTokenSilently = async (refreshToken) => {
     try {
@@ -60,31 +66,36 @@ export const AuthProvider = ({ children }) => {
           refreshToken: refreshToken
         })
       });
-      
+
       const data = await response.json();
-      
+
       if (data.AuthenticationResult) {
         const authResult = data.AuthenticationResult;
-        
-        // Update the session with new tokens
-        const user = JSON.parse(atob(authResult.IdToken.split('.')[1]));
-        
+
+        // Decode the JWT token payload
+        const userPayload = JSON.parse(atob(authResult.IdToken.split('.')[1]));
+
         // Calculate token expiration (default: 1 hour)
         const expiresAt = new Date();
         expiresAt.setSeconds(expiresAt.getSeconds() + authResult.ExpiresIn);
-        
+
         // Save to state and localStorage
         const session = {
-          user,
+          user: { // Structure the user object as needed
+            username: userPayload['cognito:username'] || userPayload.username,
+            email: userPayload.email,
+            userId: userPayload.sub, // <--- THIS IS THE ADDED LINE
+            // Add other claims you might need from userPayload
+          },
           idToken: authResult.IdToken,
           accessToken: authResult.AccessToken,
           refreshToken: authResult.RefreshToken || refreshToken,
           expiresAt: expiresAt.toISOString()
         };
-        
+
         localStorage.setItem('auth_session', JSON.stringify(session));
-        setCurrentUser(user);
-        return user;
+        setCurrentUser(session.user); // Set the structured user object
+        return session.user;
       } else {
         throw new Error('Failed to refresh token');
       }
@@ -95,7 +106,7 @@ export const AuthProvider = ({ children }) => {
       throw error;
     }
   };
-  
+
   // Handle NEW_PASSWORD_REQUIRED challenge
   const handleNewPasswordChallenge = async (username, password, session) => {
     try {
@@ -112,20 +123,20 @@ export const AuthProvider = ({ children }) => {
           newPassword: password // Using the same password
         })
       });
-      
+
       const data = await response.json();
-      
+
       if (data.error) {
         throw new Error(data.error);
       }
-      
+
       return data;
     } catch (err) {
       console.error('New password challenge error:', err);
       throw err;
     }
   };
-  
+
   // Sign in user
   const handleSignIn = async (username, password) => {
     setLoading(true);
@@ -143,19 +154,19 @@ export const AuthProvider = ({ children }) => {
           password
         })
       });
-      
+
       let data = await response.json();
-      
+
       if (data.error) {
         throw new Error(data.error);
       }
-      
+
       // Handle NEW_PASSWORD_REQUIRED challenge
       if (data.ChallengeName === 'NEW_PASSWORD_REQUIRED') {
         console.log('Received NEW_PASSWORD_REQUIRED challenge, responding automatically');
-        
+
         const challengeData = await handleNewPasswordChallenge(username, password, data.Session);
-        
+
         // Replace with challenge response data
         data = challengeData;
       } else if (data.ChallengeName) {
@@ -163,32 +174,37 @@ export const AuthProvider = ({ children }) => {
         console.log('Unhandled challenge type:', data.ChallengeName);
         throw new Error(`Authentication challenge required: ${data.ChallengeName}`);
       }
-      
+
       if (data.AuthenticationResult) {
         const authResult = data.AuthenticationResult;
-        
+
         // Decode the JWT token to get user info
-        const user = JSON.parse(atob(authResult.IdToken.split('.')[1]));
-        
+        const userPayload = JSON.parse(atob(authResult.IdToken.split('.')[1]));
+
         // Calculate token expiration
         const expiresAt = new Date();
         expiresAt.setSeconds(expiresAt.getSeconds() + authResult.ExpiresIn);
-        
+
         // Save username for token refreshes
         localStorage.setItem('auth_username', username);
-        
+
         // Save to state and localStorage
         const session = {
-          user,
+          user: { // Structure the user object as needed
+            username: userPayload['cognito:username'] || userPayload.username,
+            email: userPayload.email,
+            userId: userPayload.sub, // <--- THIS IS THE ADDED LINE
+            // Add other claims you might need from userPayload
+          },
           idToken: authResult.IdToken,
           accessToken: authResult.AccessToken,
           refreshToken: authResult.RefreshToken,
           expiresAt: expiresAt.toISOString()
         };
-        
+
         localStorage.setItem('auth_session', JSON.stringify(session));
-        setCurrentUser(user);
-        return user;
+        setCurrentUser(session.user); // Set the structured user object
+        return session.user;
       } else {
         throw new Error('Authentication failed');
       }
@@ -200,7 +216,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
-  
+
   // Sign up user
   const handleSignUp = async (username, password, email) => {
     setLoading(true);
@@ -218,13 +234,13 @@ export const AuthProvider = ({ children }) => {
           email
         })
       });
-      
+
       const data = await response.json();
-      
+
       if (data.error) {
         throw new Error(data.error);
       }
-      
+
       return data;
     } catch (err) {
       setError(err.message || 'Failed to sign up');
@@ -233,7 +249,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
-  
+
   // Confirm sign up
   const handleConfirmSignUp = async (username, code) => {
     setLoading(true);
@@ -250,13 +266,13 @@ export const AuthProvider = ({ children }) => {
           code
         })
       });
-      
+
       const data = await response.json();
-      
+
       if (data.error) {
         throw new Error(data.error);
       }
-      
+
       return data;
     } catch (err) {
       setError(err.message || 'Failed to confirm sign up');
@@ -265,7 +281,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
-  
+
   // Sign out user
   const handleSignOut = async () => {
     setLoading(true);
@@ -283,7 +299,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
-  
+
   // Forgot password
   const handleForgotPassword = async (username) => {
     setLoading(true);
@@ -299,13 +315,13 @@ export const AuthProvider = ({ children }) => {
           username
         })
       });
-      
+
       const data = await response.json();
-      
+
       if (data.error) {
         throw new Error(data.error);
       }
-      
+
       return data;
     } catch (err) {
       setError(err.message || 'Failed to send reset code');
@@ -314,7 +330,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
-  
+
   // Reset password with confirmation code
   const handleResetPassword = async (username, code, newPassword) => {
     setLoading(true);
@@ -332,13 +348,13 @@ export const AuthProvider = ({ children }) => {
           newPassword
         })
       });
-      
+
       const data = await response.json();
-      
+
       if (data.error) {
         throw new Error(data.error);
       }
-      
+
       return data;
     } catch (err) {
       setError(err.message || 'Failed to reset password');
@@ -347,7 +363,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
-  
+
   // Get current session tokens
   const getSession = () => {
     const sessionData = localStorage.getItem('auth_session');
@@ -356,13 +372,13 @@ export const AuthProvider = ({ children }) => {
     }
     return null;
   };
-  
+
   // Helper to get access token for API calls
   const getAccessToken = () => {
     const session = getSession();
     return session ? session.accessToken : null;
   };
-  
+
   const value = {
     currentUser,
     loading,
@@ -377,7 +393,7 @@ export const AuthProvider = ({ children }) => {
     getSession,
     getAccessToken
   };
-  
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
