@@ -1223,7 +1223,6 @@ const VesselTable = ({
   };
 
   // Create expanded content renderer with responsive grid
-  
   const renderExpandedContent = (vessel) => {
     const expandedColumns = Object.entries(fieldMappings.EXPANDED)
       .sort((a, b) => a[1].priority - b[1].priority);
@@ -1254,6 +1253,7 @@ const VesselTable = ({
           let displayLabel = field.label;
 
           // Check for user overrides in expanded content as well
+          // Note: Lambda now returns user_eta, user_etb, user_etd as top-level properties
           if (fieldId === 'eta' && vessel.user_eta !== null && vessel.user_eta !== undefined) {
             value = vessel.user_eta;
           } else if (fieldId === 'etb' && vessel.user_etb !== null && vessel.user_etb !== undefined) {
@@ -1262,11 +1262,14 @@ const VesselTable = ({
             value = vessel.user_etd;
           }
 
+
           if (fieldId === 'departure_port' && field.combineWithCountry) {
             const port = value || '-';
             const country = vessel.departure_country || '';
 
+            // Combine them into a single display value
             if (country) {
+              // Format country code if needed
               let formattedCountry = country;
               if (country === 'AU' || country === 'au') {
                 formattedCountry = 'AUSTRALIA';
@@ -1276,6 +1279,7 @@ const VesselTable = ({
                 formattedCountry = formattedCountry.toUpperCase();
               }
 
+              // Combine port and country
               value = `${port}, ${formattedCountry}`;
             }
           }
@@ -1286,14 +1290,15 @@ const VesselTable = ({
           } else if (
             fieldId === 'etd' ||
             fieldId === 'atd' ||
-            fieldId === 'eta' ||
+            fieldId === 'eta' || // Also format ETA/ETB in expanded view as datetime
             fieldId === 'etb'
           ) {
             value = formatDateTime(value, true);
           }
 
-          // ✅ FIX: Extract key and create props without key
-          const expandedItemProps = {
+          // NEW: Add styling for past ETA in expanded content
+          let expandedItemProps = {
+            key: fieldId,
             label: field.label,
             value: value || '-',
             className: windowWidth < 768 ? 'mobile-expanded-item' : ''
@@ -1308,6 +1313,7 @@ const VesselTable = ({
               const daysOverdue = getDaysOverdue(etaValue);
               expandedItemProps.className += ' past-eta-expanded';
               
+              // Wrap the value with tooltip for expanded content too
               const displayValue = (
                 <TextTooltip text={`ETA is ${daysOverdue} day${daysOverdue === 1 ? '' : 's'} overdue`}>
                   <span style={{ color: '#E74C3C', fontWeight: 'bold' }}>
@@ -1317,6 +1323,7 @@ const VesselTable = ({
               );
               expandedItemProps.value = displayValue;
             } else if (value !== null && value !== undefined && value !== '-') {
+              // If value is a string and not empty, wrap it in a tooltip
               const displayValue = (
                 <TextTooltip text={String(value)}>
                   {value}
@@ -1325,6 +1332,7 @@ const VesselTable = ({
               expandedItemProps.value = displayValue;
             }
           } else if (value !== null && value !== undefined && value !== '-') {
+            // If value is a string and not empty, wrap it in a tooltip
             const displayValue = (
               <TextTooltip text={String(value)}>
                 {value}
@@ -1333,8 +1341,7 @@ const VesselTable = ({
             expandedItemProps.value = displayValue;
           }
 
-          // ✅ FIX: Pass key directly, not in spread
-          return <ExpandedItem key={fieldId} {...expandedItemProps} />;
+          return <ExpandedItem {...expandedItemProps} />;
         })}
       </div>
     );

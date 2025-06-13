@@ -151,14 +151,12 @@ export const DEFECT_FIELDS = {
       section: 'dates',
       displayOrder: 11,
       width: 'half',
-      // MODIFIED: Added optional chaining
-      // conditionalRequired: (values) => values?.status === 'CLOSED'
-      conditionalDisplay: (values) => values?.Status === 'CLOSED'
+      conditionalRequired: (values) => values.status === 'CLOSED'
     },
     targetDate: {
       id: 'targetDate',
       label: 'Target Date',
-      dbField: 'target_date',
+      dbField: 'target_date', 
       type: 'date',
       required: true,
       section: 'dates',
@@ -171,13 +169,12 @@ export const DEFECT_FIELDS = {
       dbField: 'closure_comments',
       type: 'textarea',
       required: false,
-      section: 'dates',
+      section: 'closure',
       displayOrder: 12,
       width: 'full',
       rows: 3,
-      
-      conditionalDisplay: (values) => values?.Status === 'CLOSED',
-      
+      conditionalDisplay: (values) => values?.status === 'CLOSED' || values?.['Status (Vessel)'] === 'CLOSED',
+      conditionalRequired: (values) => values?.status === 'CLOSED' || values?.['Status (Vessel)'] === 'CLOSED'
     },
     initialFiles: {
       id: 'initialFiles',
@@ -204,8 +201,7 @@ export const DEFECT_FIELDS = {
       accept: '.pdf,.doc,.docx,.jpg,.jpeg,.png',
       maxSize: 2 * 1024 * 1024, // 2MB
       multiple: true,
-      // MODIFIED: Added optional chaining
-      conditionalDisplay: (values) => values?.Status === 'CLOSED'
+      conditionalDisplay: (values) => values.status === 'CLOSED'
     }
   },
 
@@ -239,7 +235,7 @@ export const DEFECT_FIELDS = {
       id: 'status',
       label: 'Status',
       dbField: 'Status',
-      width: '110px',
+      width: '120px',
       minWidth: '120px',
       priority: 1
     },
@@ -247,7 +243,7 @@ export const DEFECT_FIELDS = {
       id: 'criticality',
       label: 'Criticality',
       dbField: 'Criticality',
-      width: '110px',
+      width: '120px',
       minWidth: '120px',
       priority: 1
     },
@@ -333,8 +329,7 @@ export const DEFECT_FIELDS = {
       label: 'Completed',
       dbField: 'Date Completed',
       priority: 4,
-      type: 'date',
-      //conditionalDisplay: (values) => values?.status === 'CLOSED'
+      type: 'date'
     },
     initialFiles: {
       id: 'initialFiles',
@@ -348,9 +343,8 @@ export const DEFECT_FIELDS = {
       label: 'Closure Comments',
       dbField: 'closure_comments',
       priority: 6,
-      section: 'dates',
-      // MODIFIED: Added optional chaining
-      //conditionalDisplay: (values) => values?.status === 'CLOSED'
+      section: 'closure',
+      conditionalDisplay: (values) => values.status === 'CLOSED'
     },
     completionFiles: {
       id: 'completionFiles',
@@ -358,8 +352,7 @@ export const DEFECT_FIELDS = {
       dbField: 'completion_files',
       priority: 7,
       section: 'files',
-      // MODIFIED: Added optional chaining
-      //conditionalDisplay: (values) => values?.status === 'CLOSED'
+      conditionalDisplay: (values) => values.status === 'CLOSED'
     },
     raisedBy: {
       id: 'raisedBy',
@@ -399,8 +392,7 @@ export const FIELD_SECTIONS = {
     id: 'closure',
     label: 'Closure Details',
     order: 4,
-    // MODIFIED: Added optional chaining
-    conditionalDisplay: (values) => values?.status === 'CLOSED'
+    conditionalDisplay: (values) => values.status === 'CLOSED'
   },
   files: {
     id: 'files',

@@ -1,6 +1,6 @@
 // src/components/layout/NavigationHeader.jsx
 import React, { useState, useEffect } from 'react';
-import { Home, BarChart2, FileText, LogOut, Users, Upload, Menu, X } from 'lucide-react'; 
+import { Home, BarChart2, FileText, LogOut, Users, Upload, Menu, X, FolderOpen } from 'lucide-react'; 
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Logo from '../Logo';
@@ -36,12 +36,19 @@ const MODULE_NAVIGATION_MAP = {
     path: '/files',
     order: 4
   },
+  'Upload Circulars': {
+    id: 'circulars',
+    label: 'Upload Circulars',
+    icon: <FolderOpen size={20} />,
+    path: '/circulars',
+    order: 5
+  },
   'ADMIN': {
     id: 'admin',
     label: 'Admin',
     icon: <Users size={20} />,
     path: '/admin',
-    order: 5
+    order: 6
   }
 };
 
