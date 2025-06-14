@@ -9,15 +9,21 @@ import './NoAccessPage.css';
 const NoAccessPage = () => {
   const { signOut, currentUser } = useAuth();
   const navigate = useNavigate();
+  const [isSigningOut, setIsSigningOut] = React.useState(false);
 
   const handleSignOut = async () => {
+    if (isSigningOut) return; // Prevent multiple clicks
+    
+    setIsSigningOut(true);
     try {
       await signOut();
       navigate('/login');
     } catch (error) {
       console.error('Sign out error:', error);
-      // Even if signout fails, redirect to login
-      navigate('/login');
+      // Even if navigate fails, guarantee redirect
+      window.location.href = '/login';
+    } finally {
+      setIsSigningOut(false);
     }
   };
 
@@ -77,10 +83,12 @@ const NoAccessPage = () => {
             <button 
               className="logout-btn"
               onClick={handleSignOut}
+              disabled={isSigningOut}
               title="Sign out to try a different account"
+              aria-label="Sign out from current account"
             >
               <LogOut size={16} />
-              Sign Out
+              {isSigningOut ? 'Signing Out...' : 'Sign Out'}
             </button>
           </div>
         </div>

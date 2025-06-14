@@ -19,6 +19,11 @@ import PropTypes from 'prop-types';
 // Import EditableField from common/EditableField.jsx
 import EditableField from '../../common/EditableField/EditableField';
 
+// Add these imports at the top
+import PortDocumentIcon from '../../common/Table/PortDocumentIcon';
+import DocumentModal from '../../common/DocumentModal/DocumentModal';
+import portMappingService from '../../../services/PortMappingService';
+
 const VesselTable = ({
   vessels,
   onOpenRemarks,
@@ -57,19 +62,27 @@ const VesselTable = ({
   // State to track window size
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
+  // Add these state variables after your existing state
+  const [documentModalOpen, setDocumentModalOpen] = useState(false);
+  const [selectedPortId, setSelectedPortId] = useState(null);
+  const [selectedPortName, setSelectedPortName] = useState('');
+  const [selectedPortDocumentCount, setSelectedPortDocumentCount] = useState(0);
+  const [enrichedVessels, setEnrichedVessels] = useState([]);
+  const [vesselEnrichmentLoading, setVesselEnrichmentLoading] = useState(true);
+
   // Helper function to check if a date is in the past
   const isDateInPast = useCallback((dateString) => {
     if (!dateString) return false;
-    
+
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return false;
-      
+
       const today = new Date();
       // Reset time to start of day for accurate comparison
       today.setHours(0, 0, 0, 0);
       date.setHours(0, 0, 0, 0);
-      
+
       return date < today;
     } catch (error) {
       return false;
@@ -79,32 +92,50 @@ const VesselTable = ({
   // Helper function to get days overdue
   const getDaysOverdue = useCallback((dateString) => {
     if (!dateString) return 0;
-    
+
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return 0;
-      
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       date.setHours(0, 0, 0, 0);
-      
+
       const diffTime = today - date;
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
+
       return diffDays > 0 ? diffDays : 0;
     } catch (error) {
       return 0;
     }
   }, []);
 
-  // Enhanced filter to ensure only one active entry per IMO (with highest ID)
+  // Add these handlers after your existing functions
+  const handleOpenDocuments = useCallback((portId, portName, documentCount) => {
+    setSelectedPortId(portId);
+    setSelectedPortName(portName);
+    setSelectedPortDocumentCount(documentCount);
+    setDocumentModalOpen(true);
+  }, []);
+
+  const handleCloseDocuments = useCallback(() => {
+    setDocumentModalOpen(false);
+    setSelectedPortId(null);
+    setSelectedPortName('');
+    setSelectedPortDocumentCount(0);
+  }, []);
+
+  // Replace your existing filteredVessels useMemo with this:
   const filteredVessels = useMemo(() => {
+    // Use enriched vessels for filtering logic
+    const vesselsToFilter = enrichedVessels.length > 0 ? enrichedVessels : vessels;
+
     // Separate active and inactive vessels
     const activeVessels = [];
     const inactiveVessels = [];
 
     // First separate vessels by active status
-    vessels.forEach(vessel => {
+    vesselsToFilter.forEach(vessel => {
       // Normalize status check to handle different case formats
       const status = vessel.status?.toLowerCase?.();
       const isActive = status === 'active';
@@ -155,7 +186,7 @@ const VesselTable = ({
     const result = [...activeVesselsByImo.values(), ...inactiveVessels];
 
     return result;
-  }, [vessels]);
+  }, [enrichedVessels, vessels]); // Update dependency
 
   const ColumnFilterDropdown = ({ isOpen, dropdownName, children }) => {
     if (!isOpen) return null;
@@ -330,6 +361,32 @@ const VesselTable = ({
       setFlagsLoading(false);
     }
   }, [vessels, userId]);
+
+  // Add this useEffect after your existing effects
+  useEffect(() => {
+    const enrichVesselData = async () => {
+      try {
+        setVesselEnrichmentLoading(true);
+
+        // Enrich vessels with port IDs and document counts
+        const enriched = await portMappingService.enrichVesselData(vessels);
+        setEnrichedVessels(enriched);
+      } catch (error) {
+        console.error('Error enriching vessel data:', error);
+        // Fallback to original vessels if enrichment fails
+        setEnrichedVessels(vessels);
+      } finally {
+        setVesselEnrichmentLoading(false);
+      }
+    };
+
+    if (vessels.length > 0) {
+      enrichVesselData();
+    } else {
+      setEnrichedVessels([]);
+      setVesselEnrichmentLoading(false);
+    }
+  }, [vessels]);
 
   // Basic filter for handover date
   const dateFilteredVessels = useMemo(() => {
@@ -966,9 +1023,9 @@ const VesselTable = ({
             // Get ETA from either user_eta or original eta
             const etaValueForComparison = rowData.user_eta !== null && rowData.user_eta !== undefined ? rowData.user_eta : rowData.eta;
             const etaDate = etaValueForComparison ? new Date(etaValueForComparison) : null;
-            
-            
-            
+
+
+
             if (etbDate && etaDate && etbDate.getTime() < etaDate.getTime()) {
               isInvalidDate = true;
               validationMessage = `ETB cannot be before ETA. ETA is ${formatDateTime(etaValueForComparison, true)}`;
@@ -1100,12 +1157,26 @@ const VesselTable = ({
           );
         }
 
+        // In your getTableColumns() function, find the arrival_port rendering and replace it with:
         if (fieldId === 'arrival_port') {
-          const upperCaseValue = (value || '-').toUpperCase(); // Convert to uppercase
+          const upperCaseValue = (value || '-').toUpperCase();
+
           return (
-            <TextTooltip text={upperCaseValue}>
-              <span className="arrival-port">{upperCaseValue}</span>
-            </TextTooltip>
+            <div className="arrival-port-cell">
+              <TextTooltip text={upperCaseValue}>
+                <span className="arrival-port">{upperCaseValue}</span>
+              </TextTooltip>
+
+              {/* Add document icon if port has documents or is available in system */}
+              {value && (
+                <PortDocumentIcon
+                  portName={value}
+                  onOpenDocuments={handleOpenDocuments}
+                  size={16}
+                  className="port-doc-icon"
+                />
+              )}
+            </div>
           );
         }
 
@@ -1308,11 +1379,11 @@ const VesselTable = ({
           if (fieldId === 'eta') {
             const etaValue = vessel.user_eta !== null && vessel.user_eta !== undefined ? vessel.user_eta : vessel.eta;
             const isPastEta = isDateInPast(etaValue);
-            
+
             if (isPastEta) {
               const daysOverdue = getDaysOverdue(etaValue);
               expandedItemProps.className += ' past-eta-expanded';
-              
+
               // Wrap the value with tooltip for expanded content too
               const displayValue = (
                 <TextTooltip text={`ETA is ${daysOverdue} day${daysOverdue === 1 ? '' : 's'} overdue`}>
@@ -1436,6 +1507,12 @@ const VesselTable = ({
             .mobile-expanded-item {
               padding: 8px !important;
             }
+
+            .arrival-port-cell {
+              display: flex;
+              align-items: center;
+              gap: 4px;
+            }
           }
 
           /* Tablet Styles */
@@ -1456,6 +1533,12 @@ const VesselTable = ({
               text-overflow: ellipsis;
               display: inline-block;
             }
+
+            .arrival-port-cell {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+            }
           }
 
           /* Small Desktop Styles */
@@ -1466,6 +1549,12 @@ const VesselTable = ({
 
             .hidden-column {
               display: none !important;
+            }
+
+            .arrival-port-cell {
+              display: flex;
+              align-items: center;
+              gap: 6px;
             }
           }
 
@@ -1506,6 +1595,23 @@ const VesselTable = ({
             color: #E74C3C !important;
             font-weight: bold !important;
           }
+
+          /* Styling for arrival port cell with document icon */
+          .arrival-port-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px; /* Adjust gap as needed */
+          }
+
+          .port-doc-icon {
+            cursor: pointer;
+            color: #3498DB; /* Example color for the icon */
+            transition: color 0.2s ease-in-out;
+          }
+
+          .port-doc-icon:hover {
+            color: #2980B9; /* Darker shade on hover */
+          }
         `}
       </style>
 
@@ -1518,6 +1624,15 @@ const VesselTable = ({
         defaultSortKey="eta"
         defaultSortDirection="desc"
         className={`vessel-data-table ${filterActive ? 'filtered-table' : ''}`}
+      />
+
+      {/* Add this just before the closing </div> of your return statement */}
+      <DocumentModal
+        isOpen={documentModalOpen}
+        onClose={handleCloseDocuments}
+        portId={selectedPortId}
+        portName={selectedPortName}
+        initialDocumentCount={selectedPortDocumentCount}
       />
     </div>
   );
