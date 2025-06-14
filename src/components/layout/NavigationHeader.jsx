@@ -1,373 +1,290 @@
 // src/components/layout/NavigationHeader.jsx
-import React, { useState, useEffect } from 'react';
-import { Home, BarChart2, FileText, LogOut, Users, Upload, Menu, X, FolderOpen } from 'lucide-react'; 
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import Logo from '../Logo';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useLocation, Link } from 'react-router-dom';
+import { 
+  Ship, 
+  Menu, 
+  X, 
+  LogOut, 
+  Home,
+  Settings,
+  BarChart3,
+  AlertTriangle,
+  Users,
+  FileText,
+  Calendar,
+  MapPin
+} from 'lucide-react';
 import './NavigationStyles.css';
 
-// Module name mapping from database to navigation (in correct sequence)
-const MODULE_NAVIGATION_MAP = {
-  'PSC TRACKER': {
-    id: 'fleet',
-    label: 'Dashboard', 
-    icon: <Home size={20} />,
-    path: '/fleet',
-    order: 1
+// Navigation configuration
+const NAVIGATION_CONFIG = [
+  {
+    id: 'dashboard',
+    label: 'Dashboard',
+    path: '/dashboard',
+    icon: Home,
+    tooltip: 'Main Dashboard'
   },
-  'DEFECTS REGISTER': {
+  {
+    id: 'vessels',
+    label: 'Vessels',
+    path: '/vessels',
+    icon: Ship,
+    tooltip: 'Vessel Management'
+  },
+  {
     id: 'defects',
-    label: 'Defects Register',
-    icon: <BarChart2 size={20} />,
+    label: 'Defects',
     path: '/defects',
-    order: 2
+    icon: AlertTriangle,
+    tooltip: 'Equipment Defects'
   },
-  'PSC REPORTING': {
-    id: 'reporting',
-    label: 'PSC Reports',
-    icon: <FileText size={20} />,
-    path: '/reporting',
-    order: 3
+  {
+    id: 'analytics',
+    label: 'Analytics',
+    path: '/analytics',
+    icon: BarChart3,
+    tooltip: 'Data Analytics'
   },
-  'Files upload': {
-    id: 'files',
-    label: 'File Manager',
-    icon: <Upload size={20} />,
-    path: '/files',
-    order: 4
+  {
+    id: 'crew',
+    label: 'Crew',
+    path: '/crew',
+    icon: Users,
+    tooltip: 'Crew Management'
   },
-  'Upload Circulars': {
-    id: 'circulars',
-    label: 'Upload Circulars',
-    icon: <FolderOpen size={20} />,
-    path: '/circulars',
-    order: 5
+  {
+    id: 'reports',
+    label: 'Reports',
+    path: '/reports',
+    icon: FileText,
+    tooltip: 'Reports & Documents'
   },
-  'ADMIN': {
-    id: 'admin',
-    label: 'Admin',
-    icon: <Users size={20} />,
-    path: '/admin',
-    order: 6
+  {
+    id: 'schedule',
+    label: 'Schedule',
+    path: '/schedule',
+    icon: Calendar,
+    tooltip: 'Scheduling'
+  },
+  {
+    id: 'settings',
+    label: 'Settings',
+    path: '/settings',
+    icon: Settings,
+    tooltip: 'System Settings'
   }
-};
+];
 
-const ADMIN_API_URL = 'https://bavzk3zqphycvshhqklb72l4cu0cnisv.lambda-url.ap-south-1.on.aws';
-
-const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [navItems, setNavItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const { signOut, currentUser } = useAuth();
-  const navigate = useNavigate();
+const NavigationHeader = ({ 
+  user = { name: 'John Doe', role: 'Admin', initials: 'JD' },
+  navigationItems = NAVIGATION_CONFIG, // Accept user-specific navigation items
+  onLogout,
+  currentModule = 'dashboard'
+}) => {
   const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Fetch user's assigned modules
+  // Check if we're on mobile
   useEffect(() => {
-    if (currentUser?.userId) {
-      fetchUserModules(currentUser.userId);
-    }
-  }, [currentUser]);
-
-  const fetchUserModules = async (userId) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await fetch(`${ADMIN_API_URL}/user/modules?user_id=${userId}`);
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch user modules');
-      }
-      
-      // Transform database modules to navigation items (already sorted by database query)
-      const navigationItems = data
-        .map(module => {
-          const navConfig = MODULE_NAVIGATION_MAP[module.module_name];
-          if (!navConfig) {
-            console.warn(`No navigation configuration found for module: ${module.module_name}`);
-            return null;
-          }
-          return {
-            ...navConfig,
-            moduleId: module.module_id,
-            moduleName: module.module_name
-          };
-        })
-        .filter(Boolean); // Remove null entries
-      
-      setNavItems(navigationItems);
-      
-      // Notify parent component about modules loaded
-      if (onModulesLoaded) {
-        onModulesLoaded(navigationItems);
-      }
-      
-      if (navigationItems.length === 0) {
-        setError('No modules assigned to your account. Please contact your administrator.');
-      }
-    } catch (error) {
-      console.error('Error fetching user modules:', error);
-      setError(`Failed to load navigation: ${error.message}`);
-      setNavItems([]); // Show no navigation items on error
-      
-      // Notify parent component about no modules
-      if (onModulesLoaded) {
-        onModulesLoaded([]);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Determine active page based on current location if activePage prop is not provided
-  const getCurrentPage = () => {
-    if (activePage) return activePage;
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 991);
+    };
     
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Close mobile menu on escape key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('keydown', handleEscape);
+      // Prevent body scroll when menu is open
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
+
+  // Determine active navigation item
+  const activeNavItem = useMemo(() => {
     const currentPath = location.pathname;
-    const currentItem = navItems.find(item => currentPath.startsWith(item.path));
-    return currentItem?.id || '';
-  };
+    return navigationItems.find(item => 
+      currentPath.startsWith(item.path) || 
+      (currentPath === '/' && item.id === 'dashboard')
+    )?.id || 'dashboard';
+  }, [location.pathname, navigationItems]);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
+  // Handle mobile menu toggle
+  const toggleMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen(prev => !prev);
+  }, []);
 
-  const handleNavClick = (item, e) => {
-    e.preventDefault();
-    
-    console.log('Navigation clicked:', item.id, item.path);
-
-    // Close sidebar on mobile if it's open
-    if (sidebarOpen) {
-      setSidebarOpen(false);
+  // Handle logout
+  const handleLogout = useCallback(() => {
+    if (onLogout) {
+      onLogout();
+    } else {
+      // Default logout behavior
+      console.log('Logout clicked');
+      // You might want to clear localStorage, redirect, etc.
     }
+  }, [onLogout]);
 
-    // Always use React Router navigation
-    try {
-      navigate(item.path);
-      console.log('Navigated to:', item.path);
-    } catch (error) {
-      console.error('Navigation error:', error);
-      // Fallback to window.location if navigate fails
-      window.location.href = item.path;
-    }
-
-    // Call onNavigate callback if provided (for parent component state management)
-    if (onNavigate) {
-      onNavigate(item.id);
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      navigate('/login');
-    } catch (error) {
-      console.error('Sign out error:', error);
-      // Fallback navigation
-      window.location.href = '/login';
-    }
-  };
-
-  // Get user's name from userInfo or currentUser
-  const getUserName = () => {
-    const user = userInfo || currentUser;
-    if (user) {
-      if (user.name) return user.name;
-      if (user.given_name && user.family_name) {
-        return `${user.given_name} ${user.family_name}`;
+  // Render navigation items
+  const renderNavItems = useCallback((isSidebar = false) => {
+    return navigationItems.map((item) => {
+      const IconComponent = item.icon;
+      const isActive = activeNavItem === item.id;
+      
+      if (isSidebar) {
+        return (
+          <Link
+            key={item.id}
+            to={item.path}
+            className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
+            title={item.tooltip}
+          >
+            <IconComponent size={18} />
+            <span>{item.label}</span>
+          </Link>
+        );
       }
-      return user.email || user.username || 'User';
-    }
-    return 'User';
-  };
 
-  // Get user's initials for avatar
-  const getUserInitials = () => {
-    const name = getUserName();
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  };
-
-  const currentPageId = getCurrentPage();
-
-  // Loading state
-  if (loading) {
-    return (
-      <header className="navigation-header">
-        <div className="brand-container">
-          <Logo width="70" height="70" className="brand-icon" id="nav-logo" />
-          <div className="brand-text">
-            <h1>FleetWatch</h1>
-            <div className="animated-wave"></div>
-          </div>
-        </div>
-        <nav className="desktop-nav">
-          <div className="nav-loading">Loading navigation...</div>
-        </nav>
-        <div className="user-profile">
-          <div className="user-avatar">{getUserInitials()}</div>
-          <div className="user-info">
-            <span className="user-name">{getUserName()}</span>
-          </div>
-          <button
-            className="logout-button"
-            onClick={handleSignOut}
-            aria-label="Sign out"
-          >
-            <LogOut size={20} />
-          </button>
-        </div>
-      </header>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <header className="navigation-header">
-        <div className="brand-container">
-          <Logo width="70" height="70" className="brand-icon" id="nav-logo" />
-          <div className="brand-text">
-            <h1>FleetWatch</h1>
-            <div className="animated-wave"></div>
-          </div>
-        </div>
-        <nav className="desktop-nav">
-          <div className="nav-error">
-            <span>{error}</span>
-            <button 
-              onClick={() => fetchUserModules(currentUser?.userId)}
-              className="retry-nav-button"
-            >
-              Retry
-            </button>
-          </div>
-        </nav>
-        <div className="user-profile">
-          <div className="user-avatar">{getUserInitials()}</div>
-          <div className="user-info">
-            <span className="user-name">{getUserName()}</span>
-          </div>
-          <button
-            className="logout-button"
-            onClick={handleSignOut}
-            aria-label="Sign out"
-          >
-            <LogOut size={20} />
-          </button>
-        </div>
-      </header>
-    );
-  }
+      return (
+        <Link
+          key={item.id}
+          to={item.path}
+          className={`nav-item ${isActive ? 'active' : ''}`}
+          title={item.tooltip}
+        >
+          <IconComponent />
+          <span>{item.label}</span>
+          {isActive && <div className="active-indicator" />}
+        </Link>
+      );
+    });
+  }, [activeNavItem, navigationItems]);
 
   return (
     <>
-      {/* Mobile menu toggle */}
-      <button className="mobile-menu-toggle" onClick={toggleSidebar}>
-        {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
-
-      {/* Header */}
       <header className="navigation-header">
+        {/* Mobile Menu Toggle */}
+        {isMobile && (
+          <button
+            className="mobile-menu-toggle"
+            onClick={toggleMobileMenu}
+            aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isMobileMenuOpen}
+          >
+            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        )}
+
+        {/* Brand/Logo */}
         <div className="brand-container">
-          <Logo width="70" height="70" className="brand-icon" id="nav-logo" />
+          <Ship className="brand-icon" />
           <div className="brand-text">
             <h1>FleetWatch</h1>
             <div className="animated-wave"></div>
           </div>
         </div>
 
-        {/* Desktop Navigation - centered */}
-        <nav className="desktop-nav">
-          {navItems.length === 0 ? (
-            <div className="nav-empty">No navigation items available</div>
-          ) : (
-            navItems.map(item => (
-              <button
-                key={item.id}
-                className={`nav-item ${currentPageId === item.id ? 'active' : ''}`}
-                onClick={(e) => handleNavClick(item, e)}
-                title={`${item.label} (${item.moduleName})`}
-                type="button"
-              >
-                {item.icon}
-                <span>{item.label}</span>
-                {currentPageId === item.id && <div className="active-indicator"></div>}
-              </button>
-            ))
-          )}
-        </nav>
+        {/* Desktop Navigation */}
+        {!isMobile && (
+          <nav className="desktop-nav" role="navigation" aria-label="Main navigation">
+            {renderNavItems()}
+          </nav>
+        )}
 
-        {/* User profile area with logout */}
+        {/* User Profile */}
         <div className="user-profile">
-          <div className="user-avatar">{getUserInitials()}</div>
-          <div className="user-info">
-            <span className="user-name">{getUserName()}</span>
+          <div className="user-avatar" title={`${user.name} - ${user.role}`}>
+            {user.initials || user.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
           </div>
+          {!isMobile && (
+            <div className="user-info">
+              <span className="user-name">{user.name}</span>
+              <span className="user-role">{user.role}</span>
+            </div>
+          )}
           <button
             className="logout-button"
-            onClick={handleSignOut}
-            aria-label="Sign out"
-            type="button"
+            onClick={handleLogout}
+            title="Logout"
+            aria-label="Logout"
           >
-            <LogOut size={20} />
+            <LogOut />
           </button>
         </div>
       </header>
 
       {/* Mobile Sidebar */}
-      <aside className={`mobile-sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <div className="sidebar-header">
-          <Logo width="24" height="24" />
-          <h2>FleetWatch</h2>
-        </div>
-        <nav className="sidebar-nav">
-          {navItems.length === 0 ? (
-            <div className="sidebar-nav-empty">No navigation items available</div>
-          ) : (
-            navItems.map(item => (
-              <button
-                key={item.id}
-                className={`sidebar-nav-item ${currentPageId === item.id ? 'active' : ''}`}
-                onClick={(e) => handleNavClick(item, e)}
-                type="button"
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </button>
-            ))
+      {isMobile && (
+        <>
+          {isMobileMenuOpen && (
+            <div 
+              className="sidebar-backdrop" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              aria-hidden="true"
+            />
           )}
-
-          {/* Add logout to mobile sidebar */}
-          <button
-            className="sidebar-nav-item logout-item"
-            onClick={handleSignOut}
-            type="button"
+          <aside 
+            className={`mobile-sidebar ${isMobileMenuOpen ? 'open' : ''}`}
+            aria-hidden={!isMobileMenuOpen}
           >
-            <LogOut size={20} />
-            <span>Sign Out</span>
-          </button>
-        </nav>
+            <div className="sidebar-header">
+              <Ship className="brand-icon" size={24} />
+              <h2>FleetWatch</h2>
+            </div>
+            
+            <nav className="sidebar-nav" role="navigation" aria-label="Mobile navigation">
+              {renderNavItems(true)}
+              
+              {/* Logout in sidebar */}
+              <button
+                className="sidebar-nav-item logout-item"
+                onClick={handleLogout}
+                title="Logout"
+              >
+                <LogOut size={18} />
+                <span>Logout</span>
+              </button>
+            </nav>
 
-        {/* User info in sidebar */}
-        <div className="sidebar-user-info">
-          <div className="user-avatar">{getUserInitials()}</div>
-          <div>
-            <div className="user-name">{getUserName()}</div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Backdrop for mobile */}
-      {sidebarOpen && <div className="sidebar-backdrop" onClick={toggleSidebar}></div>}
+            {/* User info in sidebar */}
+            <div className="sidebar-user-info">
+              <div className="user-avatar">
+                {user.initials || user.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+              </div>
+              <div className="user-info">
+                <span className="user-name">{user.name}</span>
+                <span className="user-role">{user.role}</span>
+              </div>
+            </div>
+          </aside>
+        </>
+      )}
     </>
   );
 };
