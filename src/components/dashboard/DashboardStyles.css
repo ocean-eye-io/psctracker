@@ -186,7 +186,7 @@
   border: 1px solid var(--border-subtle);
   border-radius: 4px;
   height: 34px;
-  width: 34px;
+  width: 12px;
   color: var(--text-light);
   cursor: pointer;
   transition: var(--transition-standard);
@@ -208,9 +208,9 @@
   display: flex;
   align-items: center;
   background: var(--card-bg);
-  padding: 12px 24px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 24px;
+  margin-bottom: 2px;
   flex-wrap: wrap;
   gap: 10px;
 }
