@@ -1,4 +1,3 @@
-// src/components/common/DocumentModal/DocumentModal.jsx
 import React, { useState, useEffect } from 'react';
 import { 
   X, 
@@ -8,9 +7,7 @@ import {
   Loader2, 
   AlertCircle,
   RefreshCw,
-  Calendar,
-  User,
-  HardDrive
+  Trash2
 } from 'lucide-react';
 
 const DocumentModal = ({ 
@@ -121,39 +118,35 @@ const DocumentModal = ({
     }
   };
 
-  const formatFileSize = (bytes) => {
-    if (!bytes) return 'Unknown size';
+  const handleDelete = async (document) => {
+    const actionId = `delete-${document.id}`;
     
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Unknown date';
+    if (!window.confirm(`Are you sure you want to delete "${document.original_file_name}"?`)) {
+      return;
+    }
     
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+      setActionLoading(prev => new Set([...prev, actionId]));
+      
+      const response = await fetch(`${API_BASE_URL}/api/documents/${document.id}`, {
+        method: 'DELETE'
       });
-    } catch {
-      return 'Invalid date';
-    }
-  };
-
-  const getFileTypeIcon = (fileType) => {
-    switch (fileType?.toLowerCase()) {
-      case 'pdf':
-        return <FileText style={{ color: '#ef4444' }} size={20} />;
-      case 'docx':
-      case 'doc':
-        return <FileText style={{ color: '#3b82f6' }} size={20} />;
-      default:
-        return <FileText style={{ color: '#6b7280' }} size={20} />;
+      
+      if (!response.ok) {
+        throw new Error(`Failed to delete document: ${response.status}`);
+      }
+      
+      // Remove document from local state
+      setDocuments(prev => prev.filter(doc => doc.id !== document.id));
+    } catch (err) {
+      console.error('Error deleting document:', err);
+      alert(`Error deleting document: ${err.message}`);
+    } finally {
+      setActionLoading(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(actionId);
+        return newSet;
+      });
     }
   };
 
@@ -171,7 +164,7 @@ const DocumentModal = ({
               Documents for {portName}
             </h2>
             <p style={subtitleStyle}>
-              {loading ? 'Loading...' : `${documents.length} document${documents.length === 1 ? '' : 's'} available`}
+              {loading ? 'Loading...' : `${documents.length} document${documents.length === 1 ? '' : 's'}`}
             </p>
           </div>
           
@@ -208,46 +201,30 @@ const DocumentModal = ({
             </div>
           ) : documents.length === 0 ? (
             <div style={emptyStateStyle}>
-              <FileText size={48} style={{ color: '#9ca3af' }} />
+              <FileText size={48} style={{ color: '#6b7280' }} />
               <h3 style={emptyTitleStyle}>No documents found</h3>
               <p style={emptyTextStyle}>No documents have been uploaded for this port yet.</p>
             </div>
           ) : (
-            <div style={documentsGridStyle}>
-              {documents.map((doc) => (
-                <div key={doc.id} style={documentCardStyle}>
-                  <div style={documentHeaderStyle}>
-                    <div style={fileIconStyle}>
-                      {getFileTypeIcon(doc.file_type)}
+            <div style={documentsListStyle}>
+              {documents.map((doc, index) => (
+                <div key={doc.id} style={documentItemStyle}>
+                  <div style={documentContentStyle}>
+                    <div style={fileIconContainerStyle}>
+                      <FileText size={18} style={{ color: '#3bade5' }} />
                     </div>
-                    <div style={fileInfoStyle}>
-                      <h4 style={fileNameStyle} title={doc.original_file_name}>
+                    <div style={fileNameContainerStyle}>
+                      <span style={fileNameStyle} title={doc.original_file_name}>
                         {doc.original_file_name}
-                      </h4>
-                      <div style={fileMetadataStyle}>
-                        <span style={metadataItemStyle}>
-                          <HardDrive size={12} />
-                          {formatFileSize(doc.file_size)}
-                        </span>
-                        <span style={metadataItemStyle}>
-                          <Calendar size={12} />
-                          {formatDate(doc.upload_date)}
-                        </span>
-                        {doc.uploaded_by && (
-                          <span style={metadataItemStyle}>
-                            <User size={12} />
-                            {doc.uploaded_by}
-                          </span>
-                        )}
-                      </div>
+                      </span>
                     </div>
                   </div>
                   
-                  <div style={documentActionsStyle}>
+                  <div style={actionsContainerStyle}>
                     <button
                       onClick={() => handleView(doc)}
                       disabled={isActionLoading(`view-${doc.id}`)}
-                      style={viewButtonStyle}
+                      style={actionButtonStyle}
                       title="View document"
                     >
                       {isActionLoading(`view-${doc.id}`) ? (
@@ -255,13 +232,12 @@ const DocumentModal = ({
                       ) : (
                         <Eye size={16} />
                       )}
-                      View
                     </button>
                     
                     <button
                       onClick={() => handleDownload(doc)}
                       disabled={isActionLoading(`download-${doc.id}`)}
-                      style={downloadButtonStyle}
+                      style={actionButtonStyle}
                       title="Download document"
                     >
                       {isActionLoading(`download-${doc.id}`) ? (
@@ -269,7 +245,19 @@ const DocumentModal = ({
                       ) : (
                         <Download size={16} />
                       )}
-                      Download
+                    </button>
+                    
+                    <button
+                      onClick={() => handleDelete(doc)}
+                      disabled={isActionLoading(`delete-${doc.id}`)}
+                      style={{...actionButtonStyle, ...deleteButtonStyle}}
+                      title="Delete document"
+                    >
+                      {isActionLoading(`delete-${doc.id}`) ? (
+                        <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                      ) : (
+                        <Trash2 size={16} />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -282,7 +270,7 @@ const DocumentModal = ({
   );
 };
 
-// Styles as JavaScript objects
+// Styles
 const overlayStyle = {
   position: 'fixed',
   top: 0,
@@ -301,9 +289,9 @@ const modalStyle = {
   background: '#0e1e2f',
   borderRadius: '12px',
   boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)',
-  maxWidth: '800px',
+  maxWidth: '600px',
   width: '100%',
-  maxHeight: '80vh',
+  maxHeight: '70vh',
   display: 'flex',
   flexDirection: 'column',
   border: '1px solid rgba(244, 244, 244, 0.1)'
@@ -369,8 +357,7 @@ const closeButtonStyle = {
 const contentStyle = {
   flex: 1,
   overflowY: 'auto',
-  padding: '24px',
-  minHeight: '200px'
+  padding: '16px 24px 24px'
 };
 
 const loadingStateStyle = {
@@ -410,8 +397,8 @@ const emptyTitleStyle = {
 };
 
 const emptyTextStyle = {
-  margin: '16px 0 0',
-  fontSize: '16px'
+  margin: '0',
+  fontSize: '14px'
 };
 
 const retryButtonStyle = {
@@ -426,101 +413,85 @@ const retryButtonStyle = {
   transition: 'background 0.2s ease'
 };
 
-const documentsGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-  gap: '16px'
-};
-
-const documentCardStyle = {
-  background: 'rgba(244, 244, 244, 0.05)',
-  border: '1px solid rgba(244, 244, 244, 0.1)',
-  borderRadius: '8px',
-  padding: '16px',
-  transition: 'all 0.2s ease'
-};
-
-const documentHeaderStyle = {
+const documentsListStyle = {
   display: 'flex',
-  gap: '12px',
-  marginBottom: '16px'
+  flexDirection: 'column',
+  gap: '8px'
 };
 
-const fileIconStyle = {
-  flexShrink: 0,
+const documentItemStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  background: 'rgba(244, 244, 244, 0.03)',
+  border: '1px solid rgba(244, 244, 244, 0.08)',
+  borderRadius: '8px',
+  padding: '12px 16px',
+  transition: 'all 0.2s ease',
+  ':hover': {
+    background: 'rgba(244, 244, 244, 0.06)',
+    borderColor: 'rgba(59, 173, 229, 0.2)'
+  }
+};
+
+const documentContentStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+  flex: 1,
+  minWidth: 0
+};
+
+const fileIconContainerStyle = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  width: '40px',
-  height: '40px',
-  background: 'rgba(244, 244, 244, 0.1)',
-  borderRadius: '6px'
+  width: '32px',
+  height: '32px',
+  background: 'rgba(59, 173, 229, 0.1)',
+  borderRadius: '6px',
+  flexShrink: 0
 };
 
-const fileInfoStyle = {
+const fileNameContainerStyle = {
   flex: 1,
   minWidth: 0
 };
 
 const fileNameStyle = {
-  margin: '0 0 8px',
   color: '#f4f4f4',
   fontSize: '14px',
   fontWeight: 500,
+  display: 'block',
   whiteSpace: 'nowrap',
   overflow: 'hidden',
   textOverflow: 'ellipsis'
 };
 
-const fileMetadataStyle = {
+const actionsContainerStyle = {
   display: 'flex',
-  flexDirection: 'column',
   gap: '4px',
-  fontSize: '12px',
-  color: 'rgba(244, 244, 244, 0.6)'
+  flexShrink: 0
 };
 
-const metadataItemStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '4px'
-};
-
-const documentActionsStyle = {
-  display: 'flex',
-  gap: '8px'
-};
-
-const viewButtonStyle = {
-  background: 'rgba(34, 197, 94, 0.1)',
-  border: '1px solid rgba(34, 197, 94, 0.2)',
-  color: '#22c55e',
-  padding: '8px 12px',
-  borderRadius: '6px',
+const actionButtonStyle = {
+  background: 'transparent',
+  border: '1px solid rgba(244, 244, 244, 0.1)',
+  color: 'rgba(244, 244, 244, 0.7)',
   cursor: 'pointer',
-  fontSize: '12px',
+  padding: '8px',
+  borderRadius: '6px',
+  transition: 'all 0.2s ease',
   display: 'flex',
   alignItems: 'center',
-  gap: '6px',
-  transition: 'all 0.2s ease',
-  flex: 1,
-  justifyContent: 'center'
+  justifyContent: 'center',
+  width: '36px',
+  height: '36px'
 };
 
-const downloadButtonStyle = {
-  background: 'rgba(59, 173, 229, 0.1)',
-  border: '1px solid rgba(59, 173, 229, 0.2)',
-  color: '#3bade5',
-  padding: '8px 12px',
-  borderRadius: '6px',
-  cursor: 'pointer',
-  fontSize: '12px',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '6px',
-  transition: 'all 0.2s ease',
-  flex: 1,
-  justifyContent: 'center'
+const deleteButtonStyle = {
+  color: '#ef4444',
+  borderColor: 'rgba(239, 68, 68, 0.2)'
 };
 
 export default DocumentModal;
