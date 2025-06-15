@@ -1,50 +1,58 @@
 // src/components/dashboard/fleet/ActiveFiltersDisplay.jsx
 import React from 'react';
+import styles from './ActiveFiltersDisplay.module.css';
 
-const ActiveFiltersDisplay = ({ 
-  portFilter, 
-  timelineFilter, 
-  onClearPortFilter, 
+const ActiveFiltersDisplay = ({
+  portFilter,
+  timelineFilter,
+  onClearPortFilter,
   onClearTimelineFilter,
-  onClearAllFilters 
+  onClearAllFilters
 }) => {
   // Don't render if no filters are active
   if (!portFilter && !timelineFilter) {
     return null;
   }
-  
+
   return (
-    <div className="active-filters-container">
-      {portFilter && (
-        <div className="filter-badge filter-badge-port">
-          <span>Port: {portFilter}</span>
-          <button 
-            className="clear-filter-btn"
-            onClick={onClearPortFilter}
-          >
-            ✕
-          </button>
-        </div>
-      )}
-      
-      {timelineFilter && (
-        <div className="filter-badge filter-badge-timeline">
-          <span>Arrival: {timelineFilter}</span>
-          <button 
-            className="clear-filter-btn"
-            onClick={onClearTimelineFilter}
-          >
-            ✕
-          </button>
-        </div>
-      )}
+    <div className={styles.activeFiltersContainer}>
+      <div className={styles.filterBadgesWrapper}>
+        {portFilter && (
+          <div className={`${styles.filterBadge} ${styles.filterBadgePort}`}>
+            <span className={styles.filterLabel}>Port:</span>
+            <span className={styles.filterValue}>{portFilter}</span>
+            <button
+              className={styles.clearFilterBtn}
+              onClick={onClearPortFilter}
+              aria-label="Clear port filter"
+            >
+              ×
+            </button>
+          </div>
+        )}
+        
+        {timelineFilter && (
+          <div className={`${styles.filterBadge} ${styles.filterBadgeTimeline}`}>
+            <span className={styles.filterLabel}>Arrival:</span>
+            <span className={styles.filterValue}>{timelineFilter}</span>
+            <button
+              className={styles.clearFilterBtn}
+              onClick={onClearTimelineFilter}
+              aria-label="Clear timeline filter"
+            >
+              ×
+            </button>
+          </div>
+        )}
+      </div>
       
       {(portFilter || timelineFilter) && (
-        <button 
-          className="clear-all-filters-btn"
+        <button
+          className={styles.clearAllFiltersBtn}
           onClick={onClearAllFilters}
         >
-          Clear All Chart Filters
+          <span className={styles.clearAllText}>Clear All</span>
+          <span className={styles.clearAllTextFull}>Clear All Chart Filters</span>
         </button>
       )}
     </div>
