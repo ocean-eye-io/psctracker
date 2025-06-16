@@ -18,7 +18,8 @@ import DefectsDashboard from './components/dashboard/defects/DefectsDashboard';
 import VesselReportingPage from './components/dashboard/reporting/VesselReportingPage';
 import { fleetFieldMappings } from './components/dashboard/fleet/FleetFieldMappings';
 import AdminDashboard from './components/dashboard/admin/AdminDashboard'; 
-
+// Add this import at the top of your App.jsx
+import DocumentsDashboard from './components/dashboard/Portcirculars/DocumentsDashboard';
 // Auth Components
 import Login from './components/auth/Login';
 import SignUp from './components/auth/SignUp';
@@ -320,15 +321,19 @@ const AppContent = () => {
         }
       />
 
+
       <Route
         path="/files"
         element={
           <ProtectedRoute requiredModule="/files">
             <ProtectedLayout>
-              <div className="dashboard-container">
-                <h1>File Manager</h1>
-                <p>File management dashboard coming soon...</p>
-              </div>
+              <DocumentsDashboard 
+                apiBaseUrl="https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws/"
+                currentUser={{
+                  name: currentUser?.name || currentUser?.username || currentUser?.email || 'User',
+                  id: currentUser?.userId || currentUser?.sub
+                }}
+              />
             </ProtectedLayout>
           </ProtectedRoute>
         }

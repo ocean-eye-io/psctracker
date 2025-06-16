@@ -1,8 +1,18 @@
 // src/components/layout/NavigationHeader.jsx
-import React, { useState, useEffect } from 'react';
-import { Home, BarChart2, FileText, LogOut, Users, Upload, Menu, X } from 'lucide-react'; 
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { 
+  Home, 
+  BarChart2, 
+  FileText, 
+  LogOut, 
+  Users, 
+  Upload, 
+  Menu, 
+  X, 
+  FolderOpen 
+} from 'lucide-react';
 import Logo from '../Logo';
 import './NavigationStyles.css';
 
@@ -36,12 +46,19 @@ const MODULE_NAVIGATION_MAP = {
     path: '/files',
     order: 4
   },
+  'Upload Circulars': {
+    id: 'circulars',
+    label: 'Upload Circulars',
+    icon: <FolderOpen size={20} />,
+    path: '/circulars',
+    order: 5
+  },
   'ADMIN': {
     id: 'admin',
     label: 'Admin',
     icon: <Users size={20} />,
     path: '/admin',
-    order: 5
+    order: 6
   }
 };
 
@@ -52,9 +69,24 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded })
   const [navItems, setNavItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  
   const { signOut, currentUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Check if we're on mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 991);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Fetch user's assigned modules
   useEffect(() => {
@@ -62,6 +94,43 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded })
       fetchUserModules(currentUser.userId);
     }
   }, [currentUser]);
+
+  // Close dropdowns and sidebar when route changes
+  useEffect(() => {
+    setSidebarOpen(false);
+    setShowUserDropdown(false);
+  }, [location.pathname]);
+
+  // Handle escape key and click outside
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        setSidebarOpen(false);
+        setShowUserDropdown(false);
+      }
+    };
+
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.user-profile')) {
+        setShowUserDropdown(false);
+      }
+    };
+
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    document.addEventListener('keydown', handleEscape);
+    document.addEventListener('click', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('click', handleClickOutside);
+      document.body.style.overflow = 'unset';
+    };
+  }, [sidebarOpen]);
 
   const fetchUserModules = async (userId) => {
     try {
@@ -116,19 +185,19 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded })
   };
 
   // Determine active page based on current location if activePage prop is not provided
-  const getCurrentPage = () => {
+  const getCurrentPage = useCallback(() => {
     if (activePage) return activePage;
     
     const currentPath = location.pathname;
     const currentItem = navItems.find(item => currentPath.startsWith(item.path));
     return currentItem?.id || '';
-  };
+  }, [activePage, location.pathname, navItems]);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
+  const toggleSidebar = useCallback(() => {
+    setSidebarOpen(prev => !prev);
+  }, []);
 
-  const handleNavClick = (item, e) => {
+  const handleNavClick = useCallback((item, e) => {
     e.preventDefault();
     
     console.log('Navigation clicked:', item.id, item.path);
@@ -152,9 +221,10 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded })
     if (onNavigate) {
       onNavigate(item.id);
     }
-  };
+  }, [sidebarOpen, navigate, onNavigate]);
 
-  const handleSignOut = async () => {
+  const handleSignOut = useCallback(async () => {
+    setShowUserDropdown(false);
     try {
       await signOut();
       navigate('/login');
@@ -163,10 +233,16 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded })
       // Fallback navigation
       window.location.href = '/login';
     }
-  };
+  }, [signOut, navigate]);
+
+  // Handle user dropdown toggle
+  const toggleUserDropdown = useCallback((e) => {
+    e.stopPropagation();
+    setShowUserDropdown(prev => !prev);
+  }, []);
 
   // Get user's name from userInfo or currentUser
-  const getUserName = () => {
+  const getUserName = useCallback(() => {
     const user = userInfo || currentUser;
     if (user) {
       if (user.name) return user.name;
@@ -176,10 +252,10 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded })
       return user.email || user.username || 'User';
     }
     return 'User';
-  };
+  }, [userInfo, currentUser]);
 
   // Get user's initials for avatar
-  const getUserInitials = () => {
+  const getUserInitials = useCallback(() => {
     const name = getUserName();
     return name
       .split(' ')
@@ -187,9 +263,58 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded })
       .join('')
       .toUpperCase()
       .substring(0, 2);
-  };
+  }, [getUserName]);
+
+  // Get user role
+  const getUserRole = useCallback(() => {
+    const user = userInfo || currentUser;
+    return user?.role || user?.userRole || 'User';
+  }, [userInfo, currentUser]);
 
   const currentPageId = getCurrentPage();
+
+  // Render navigation items
+  const renderNavItems = useCallback((isSidebar = false) => {
+    if (navItems.length === 0) {
+      return isSidebar ? (
+        <div className="sidebar-nav-empty">No navigation items available</div>
+      ) : (
+        <div className="nav-empty">No navigation items available</div>
+      );
+    }
+
+    return navItems.map(item => {
+      const isActive = currentPageId === item.id;
+      
+      if (isSidebar) {
+        return (
+          <button
+            key={item.id}
+            className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
+            onClick={(e) => handleNavClick(item, e)}
+            type="button"
+          >
+            {React.cloneElement(item.icon, { size: 18 })}
+            <span>{item.label}</span>
+          </button>
+        );
+      }
+
+      return (
+        <button
+          key={item.id}
+          className={`nav-item ${isActive ? 'active' : ''}`}
+          onClick={(e) => handleNavClick(item, e)}
+          title={`${item.label} (${item.moduleName})`}
+          type="button"
+        >
+          {React.cloneElement(item.icon, { size: 20 })}
+          <span>{item.label}</span>
+          {isActive && <div className="active-indicator"></div>}
+        </button>
+      );
+    });
+  }, [navItems, currentPageId, handleNavClick]);
 
   // Loading state
   if (loading) {
@@ -206,17 +331,9 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded })
           <div className="nav-loading">Loading navigation...</div>
         </nav>
         <div className="user-profile">
-          <div className="user-avatar">{getUserInitials()}</div>
-          <div className="user-info">
-            <span className="user-name">{getUserName()}</span>
+          <div className="user-avatar-container">
+            <div className="user-avatar">{getUserInitials()}</div>
           </div>
-          <button
-            className="logout-button"
-            onClick={handleSignOut}
-            aria-label="Sign out"
-          >
-            <LogOut size={20} />
-          </button>
         </div>
       </header>
     );
@@ -245,17 +362,9 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded })
           </div>
         </nav>
         <div className="user-profile">
-          <div className="user-avatar">{getUserInitials()}</div>
-          <div className="user-info">
-            <span className="user-name">{getUserName()}</span>
+          <div className="user-avatar-container">
+            <div className="user-avatar">{getUserInitials()}</div>
           </div>
-          <button
-            className="logout-button"
-            onClick={handleSignOut}
-            aria-label="Sign out"
-          >
-            <LogOut size={20} />
-          </button>
         </div>
       </header>
     );
@@ -264,9 +373,16 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded })
   return (
     <>
       {/* Mobile menu toggle */}
-      <button className="mobile-menu-toggle" onClick={toggleSidebar}>
-        {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
+      {isMobile && (
+        <button 
+          className="mobile-menu-toggle" 
+          onClick={toggleSidebar}
+          aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={sidebarOpen}
+        >
+          {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      )}
 
       {/* Header */}
       <header className="navigation-header">
@@ -279,88 +395,87 @@ const NavigationHeader = ({ activePage, onNavigate, userInfo, onModulesLoaded })
         </div>
 
         {/* Desktop Navigation - centered */}
-        <nav className="desktop-nav">
-          {navItems.length === 0 ? (
-            <div className="nav-empty">No navigation items available</div>
-          ) : (
-            navItems.map(item => (
-              <button
-                key={item.id}
-                className={`nav-item ${currentPageId === item.id ? 'active' : ''}`}
-                onClick={(e) => handleNavClick(item, e)}
-                title={`${item.label} (${item.moduleName})`}
-                type="button"
-              >
-                {item.icon}
-                <span>{item.label}</span>
-                {currentPageId === item.id && <div className="active-indicator"></div>}
-              </button>
-            ))
-          )}
-        </nav>
+        {!isMobile && (
+          <nav className="desktop-nav" role="navigation" aria-label="Main navigation">
+            {renderNavItems()}
+          </nav>
+        )}
 
-        {/* User profile area with logout */}
+        {/* User profile area with dropdown */}
         <div className="user-profile">
-          <div className="user-avatar">{getUserInitials()}</div>
-          <div className="user-info">
-            <span className="user-name">{getUserName()}</span>
-          </div>
-          <button
-            className="logout-button"
-            onClick={handleSignOut}
-            aria-label="Sign out"
-            type="button"
+          {/* Avatar with dropdown */}
+          <div 
+            className="user-avatar-container"
+            onClick={toggleUserDropdown}
           >
-            <LogOut size={20} />
-          </button>
+            <div className="user-avatar" title={getUserName()}>
+              {getUserInitials()}
+            </div>
+            
+            {/* User Dropdown - Only show on desktop when clicked */}
+            {!isMobile && showUserDropdown && (
+              <div className="user-dropdown">
+                <div className="user-dropdown-content">
+                  <div className="user-dropdown-name">{getUserName()}</div>
+                </div>
+                <hr className="user-dropdown-divider" />
+                <button
+                  className="user-dropdown-item logout-item"
+                  onClick={handleSignOut}
+                >
+                  <LogOut size={16} />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
       {/* Mobile Sidebar */}
-      <aside className={`mobile-sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <div className="sidebar-header">
-          <Logo width="24" height="24" />
-          <h2>FleetWatch</h2>
-        </div>
-        <nav className="sidebar-nav">
-          {navItems.length === 0 ? (
-            <div className="sidebar-nav-empty">No navigation items available</div>
-          ) : (
-            navItems.map(item => (
+      {isMobile && (
+        <>
+          {sidebarOpen && (
+            <div 
+              className="sidebar-backdrop" 
+              onClick={() => setSidebarOpen(false)}
+              aria-hidden="true"
+            />
+          )}
+          <aside 
+            className={`mobile-sidebar ${sidebarOpen ? 'open' : ''}`}
+            aria-hidden={!sidebarOpen}
+          >
+            <div className="sidebar-header">
+              <Logo width="24" height="24" />
+              <h2>FleetWatch</h2>
+            </div>
+            
+            <nav className="sidebar-nav" role="navigation" aria-label="Mobile navigation">
+              {renderNavItems(true)}
+              
+              {/* Add logout to mobile sidebar */}
               <button
-                key={item.id}
-                className={`sidebar-nav-item ${currentPageId === item.id ? 'active' : ''}`}
-                onClick={(e) => handleNavClick(item, e)}
+                className="sidebar-nav-item logout-item"
+                onClick={handleSignOut}
                 type="button"
               >
-                {item.icon}
-                <span>{item.label}</span>
+                <LogOut size={18} />
+                <span>Sign Out</span>
               </button>
-            ))
-          )}
+            </nav>
 
-          {/* Add logout to mobile sidebar */}
-          <button
-            className="sidebar-nav-item logout-item"
-            onClick={handleSignOut}
-            type="button"
-          >
-            <LogOut size={20} />
-            <span>Sign Out</span>
-          </button>
-        </nav>
-
-        {/* User info in sidebar */}
-        <div className="sidebar-user-info">
-          <div className="user-avatar">{getUserInitials()}</div>
-          <div>
-            <div className="user-name">{getUserName()}</div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Backdrop for mobile */}
-      {sidebarOpen && <div className="sidebar-backdrop" onClick={toggleSidebar}></div>}
+            {/* User info in sidebar */}
+            <div className="sidebar-user-info">
+              <div className="user-avatar">{getUserInitials()}</div>
+              <div className="user-info">
+                <span className="user-name">{getUserName()}</span>
+                <span className="user-role">{getUserRole()}</span>
+              </div>
+            </div>
+          </aside>
+        </>
+      )}
     </>
   );
 };

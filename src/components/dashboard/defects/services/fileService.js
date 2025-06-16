@@ -1,14 +1,14 @@
-// src/services/fileService.js - Phase 2 Enhanced Version with Full Backwards Compatibility
+// src/services/fileService.js - Complete Secure Version with All Fixes
 import axios from 'axios';
 
 const API_BASE_URL = 'https://msnvxmo3ezbbkd2pbmlsojhf440fxmpf.lambda-url.ap-south-1.on.aws';
 
 // ==========================================
-// PHASE 2: ENHANCED CORE UTILITIES
+// SECURE CORE UTILITIES
 // ==========================================
 
 /**
- * Enhanced API response handler with better error handling and performance
+ * Enhanced API response handler with better error handling
  * @param {AxiosResponse} response - The Axios response object
  * @returns {any} The extracted data
  * @throws {Error} If the response indicates an error
@@ -40,13 +40,16 @@ const handleApiResponse = async (response) => {
 };
 
 /**
- * Get current user ID with fallback logic
+ * SECURE: Get current user ID with proper authentication validation
  * @returns {string} Current user ID
+ * @throws {Error} If user is not authenticated
  */
 const getCurrentUserId = () => {
-  return localStorage.getItem('userId') || 
-         sessionStorage.getItem('userId') || 
-         '41338d4a-2001-708b-6b94-a3a3d0c54bbe';
+  const userId = localStorage.getItem('userId') || sessionStorage.getItem('userId');
+  if (!userId) {
+    throw new Error('User not authenticated - userId not found');
+  }
+  return userId;
 };
 
 /**
@@ -87,17 +90,16 @@ const createOptimizedFileAxiosInstance = () => {
 const fileApiClient = createOptimizedFileAxiosInstance();
 
 // ==========================================
-// PHASE 2: BANDWIDTH DETECTION & STRATEGY SELECTION
+// SAFE BANDWIDTH DETECTION & STRATEGY SELECTION
 // ==========================================
 
 class FileUploadOptimizer {
   constructor() {
     this.config = {
-      maxConcurrentUploads: 3,
+      maxConcurrentUploads: 2, // Conservative default
       batchThreshold: 6,
       parallelThreshold: 2,
-      bandwidthTestSize: 50 * 1024,
-      bandwidthTimeout: 5000,
+      connectionTimeout: 5000,
       retryAttempts: 3,
       retryDelay: 1000
     };
@@ -105,16 +107,18 @@ class FileUploadOptimizer {
     this.bandwidthCache = {
       speed: null,
       timestamp: null,
-      ttl: 5 * 60 * 1000
+      ttl: 5 * 60 * 1000 // 5 minutes cache
     };
   }
 
   /**
-   * PHASE 2: Detect bandwidth with simple speed test
+   * SAFE: Conservative connection quality detection using simple connectivity test
    * @returns {Promise<string>} Connection quality: 'fast', 'medium', 'slow'
    */
   async detectBandwidth() {
     const now = Date.now();
+    
+    // Check cache first
     if (this.bandwidthCache.speed && 
         this.bandwidthCache.timestamp && 
         (now - this.bandwidthCache.timestamp) < this.bandwidthCache.ttl) {
@@ -122,77 +126,103 @@ class FileUploadOptimizer {
     }
 
     try {
-      // Simple bandwidth test using a small file
+      // Simple connectivity test using the existing API
       const testStart = performance.now();
-      const testData = new Uint8Array(this.config.bandwidthTestSize);
-      const testBlob = new Blob([testData]);
       
-      // Simulate upload timing
-      await new Promise(resolve => setTimeout(resolve, 100));
+      const response = await fetch(`${API_BASE_URL}/api/health`, {
+        method: 'HEAD',
+        signal: AbortSignal.timeout(this.config.connectionTimeout)
+      });
+      
       const testEnd = performance.now();
-      
-      const duration = testEnd - testStart;
-      const speedMbps = (this.config.bandwidthTestSize * 8) / (duration * 1000); // Mbps
+      const latency = testEnd - testStart;
       
       let quality;
-      if (speedMbps > 10) quality = 'fast';
-      else if (speedMbps > 2) quality = 'medium';
-      else quality = 'slow';
+      if (!response.ok) {
+        quality = 'slow'; // Server issues, be very conservative
+      } else if (latency < 150) {
+        quality = 'medium'; // Good latency, but stay conservative
+      } else if (latency < 500) {
+        quality = 'medium';
+      } else {
+        quality = 'slow';
+      }
       
+      // Cache the result
       this.bandwidthCache = {
         speed: quality,
         timestamp: now
       };
       
-      console.log(`Bandwidth detected: ${quality} (${speedMbps.toFixed(2)} Mbps)`);
+      console.log(`Connection quality: ${quality} (${latency.toFixed(0)}ms response time)`);
       return quality;
+      
     } catch (error) {
-      console.warn('Bandwidth detection failed, using conservative setting:', error);
-      return 'medium'; // Conservative default
+      console.warn('Connection test failed, using conservative setting:', error);
+      
+      // Cache conservative default to avoid repeated failed tests
+      this.bandwidthCache = {
+        speed: 'slow',
+        timestamp: now
+      };
+      
+      return 'slow';
     }
   }
 
   /**
-   * PHASE 2: Choose optimal upload strategy
+   * CONSERVATIVE: More conservative upload strategy selection
    * @param {File[]} files - Files to upload
-   * @returns {Promise<string>} Strategy: 'single', 'parallel', 'batch'
+   * @returns {Promise<string>} Strategy: 'single', 'parallel', 'sequential'
    */
   async chooseUploadStrategy(files) {
     const fileCount = files.length;
     
-    // Single file - use optimized single upload
+    // Single file - always use single upload
     if (fileCount === 1) {
       return 'single';
     }
     
-    // 2-5 files - use parallel with bandwidth consideration
-    if (fileCount <= 5) {
-      const bandwidth = await this.detectBandwidth();
-      if (bandwidth === 'slow') {
-        return 'sequential'; // Fallback for poor connections
-      }
-      return 'parallel';
-    }
+    // For multiple files, check connection quality
+    const connectionQuality = await this.detectBandwidth();
     
-    // 6+ files - use batch processing
-    return 'batch';
+    if (fileCount <= 3) {
+      // Small batches: use parallel only on medium+ connections
+      return connectionQuality === 'medium' ? 'parallel' : 'sequential';
+    } else if (fileCount <= 5) {
+      // Medium batches: be more conservative
+      return connectionQuality === 'medium' ? 'parallel' : 'sequential';
+    } else {
+      // Large batches: always use sequential to be safe
+      return 'sequential';
+    }
   }
 }
 
 const uploadOptimizer = new FileUploadOptimizer();
 
 // ==========================================
-// PHASE 2: ENHANCED UPLOAD METHODS
+// SECURE UPLOAD METHODS
 // ==========================================
 
 /**
- * PHASE 2: Upload single file with enhanced error handling and performance
+ * SECURE: Upload single file with enhanced security and error handling
  */
 const uploadSingleFileOptimized = async (file, defectId, uploadType, userId, onProgress) => {
   try {
-    console.log(`Starting optimized upload for file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+    // Validate user authentication
+    if (!userId) {
+      throw new Error('User authentication required for file upload');
+    }
+
+    // Validate defect ID
+    if (!defectId || typeof defectId !== 'string' || defectId.startsWith('temp-')) {
+      throw new Error('Invalid defect ID - cannot upload to temporary or invalid defect');
+    }
+
+    console.log(`Starting secure upload for file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
     
-    onProgress?.(10, 'Getting upload URL...');
+    onProgress?.(10, 'Authenticating and getting upload URL...');
     
     const uploadUrlResponse = await fileApiClient.post(
       `/api/defects/${defectId}/upload-url`,
@@ -209,9 +239,13 @@ const uploadSingleFileOptimized = async (file, defectId, uploadType, userId, onP
     const uploadData = await handleApiResponse(uploadUrlResponse);
     const { uploadUrl, fileId, s3Key } = uploadData;
     
-    console.log(`Got upload URL for file: ${file.name}, fileId: ${fileId}`);
+    if (!uploadUrl || !fileId || !s3Key) {
+      throw new Error('Invalid upload response from server - missing required fields');
+    }
     
-    onProgress?.(30, 'Uploading to S3...');
+    console.log(`Got secure upload URL for file: ${file.name}, fileId: ${fileId}`);
+    
+    onProgress?.(30, 'Uploading to secure storage...');
     
     const s3Response = await axios.put(uploadUrl, file, {
       headers: {
@@ -230,10 +264,10 @@ const uploadSingleFileOptimized = async (file, defectId, uploadType, userId, onP
     });
     
     if (s3Response.status !== 200) {
-      throw new Error(`S3 upload failed with status: ${s3Response.status}`);
+      throw new Error(`Secure storage upload failed with status: ${s3Response.status}`);
     }
     
-    console.log(`Successfully uploaded to S3: ${file.name}`);
+    console.log(`Successfully uploaded to secure storage: ${file.name}`);
     
     onProgress?.(90, 'Confirming upload...');
     
@@ -281,9 +315,18 @@ const uploadSingleFileOptimized = async (file, defectId, uploadType, userId, onP
 };
 
 /**
- * PHASE 2: Upload multiple files with parallel processing and controlled concurrency
+ * SECURE: Upload multiple files with enhanced security and controlled concurrency
  */
 const uploadFilesParallel = async (defectId, files, uploadType = 'initial', onProgress = null) => {
+  // Validate authentication first
+  let userId;
+  try {
+    userId = getCurrentUserId();
+  } catch (authError) {
+    throw new Error(`Authentication required for file upload: ${authError.message}`);
+  }
+
+  // Validate defect ID
   if (!defectId || typeof defectId !== 'string') {
     throw new Error(`Invalid defectId for parallel upload: ${defectId}`);
   }
@@ -292,23 +335,18 @@ const uploadFilesParallel = async (defectId, files, uploadType = 'initial', onPr
     throw new Error(`Cannot upload files with invalid defect ID: ${defectId}`);
   }
 
-  const userId = getCurrentUserId();
-  if (!userId) {
-    throw new Error('User ID is required for file upload');
-  }
-
   const uploadedFiles = [];
   const errors = [];
   const fileArray = Array.from(files);
 
-  console.log(`Starting parallel upload of ${fileArray.length} files for defect ${defectId}`);
+  console.log(`Starting secure parallel upload of ${fileArray.length} files for defect ${defectId}`);
 
   try {
-    // PHASE 2: Controlled concurrency based on bandwidth
-    const bandwidth = await uploadOptimizer.detectBandwidth();
-    const concurrency = bandwidth === 'fast' ? 3 : bandwidth === 'medium' ? 2 : 1;
+    // Conservative concurrency based on connection quality
+    const connectionQuality = await uploadOptimizer.detectBandwidth();
+    const concurrency = connectionQuality === 'medium' ? 2 : 1; // More conservative
     
-    console.log(`Using ${concurrency} concurrent uploads based on ${bandwidth} connection`);
+    console.log(`Using ${concurrency} concurrent uploads based on ${connectionQuality} connection`);
 
     const chunks = [];
     for (let i = 0; i < fileArray.length; i += concurrency) {
@@ -322,7 +360,7 @@ const uploadFilesParallel = async (defectId, files, uploadType = 'initial', onPr
             throw new Error('Invalid file object');
           }
 
-          console.log(`Starting upload for file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+          console.log(`Starting secure upload for file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
 
           const uploadUrlResponse = await fileApiClient.post(`/api/defects/${defectId}/upload-url`, {
             fileName: file.name,
@@ -339,7 +377,7 @@ const uploadFilesParallel = async (defectId, files, uploadType = 'initial', onPr
             throw new Error('Invalid upload response from server');
           }
 
-          console.log(`Got upload URL for file: ${file.name}, fileId: ${fileId}`);
+          console.log(`Got secure upload URL for file: ${file.name}, fileId: ${fileId}`);
 
           if (onProgress) onProgress(file, 0);
 
@@ -356,7 +394,7 @@ const uploadFilesParallel = async (defectId, files, uploadType = 'initial', onPr
             }
           });
 
-          console.log(`Successfully uploaded to S3: ${file.name}`);
+          console.log(`Successfully uploaded to secure storage: ${file.name}`);
 
           const confirmData = {
             fileId,
@@ -399,7 +437,7 @@ const uploadFilesParallel = async (defectId, files, uploadType = 'initial', onPr
       });
     }
 
-    console.log(`Parallel upload completed: ${uploadedFiles.length} successful, ${errors.length} failed`);
+    console.log(`Secure parallel upload completed: ${uploadedFiles.length} successful, ${errors.length} failed`);
     
     return {
       success: uploadedFiles.length > 0,
@@ -410,15 +448,23 @@ const uploadFilesParallel = async (defectId, files, uploadType = 'initial', onPr
     };
 
   } catch (error) {
-    console.error('Error in parallel file upload:', error);
-    throw new Error(`Parallel upload failed: ${error.message}`);
+    console.error('Error in secure parallel file upload:', error);
+    throw new Error(`Secure parallel upload failed: ${error.message}`);
   }
 };
 
 /**
- * PHASE 2: Smart upload method that automatically chooses the best strategy
+ * SECURE: Smart upload method with proper switch statement scoping and enhanced security
  */
 const uploadFilesOptimized = async (files, defectId, uploadType = 'initial', userId, onProgress) => {
+  // Validate authentication
+  let authenticatedUserId;
+  try {
+    authenticatedUserId = userId || getCurrentUserId();
+  } catch (authError) {
+    throw new Error(`Authentication required: ${authError.message}`);
+  }
+
   // Normalize input
   const fileArray = Array.isArray(files) ? files : [files];
   
@@ -435,29 +481,27 @@ const uploadFilesOptimized = async (files, defectId, uploadType = 'initial', use
     throw new Error(`Invalid defectId: ${defectId}`);
   }
 
-  if (!userId) {
-    throw new Error('User ID is required');
-  }
-
   try {
-    // PHASE 2: Choose optimal strategy
+    // Choose optimal strategy with conservative settings
     const strategy = await uploadOptimizer.chooseUploadStrategy(fileArray);
-    console.log(`Using upload strategy: ${strategy} for ${fileArray.length} files`);
+    console.log(`Using secure upload strategy: ${strategy} for ${fileArray.length} files`);
 
+    // FIXED: Proper switch statement with scoped variables
     switch (strategy) {
-      case 'single':
-        // Single file upload
+      case 'single': {
+        // Single file upload - scoped variables
         const result = await uploadSingleFileOptimized(
           fileArray[0], 
           defectId, 
           uploadType, 
-          userId, 
+          authenticatedUserId, 
           onProgress
         );
         return [result];
+      }
 
-      case 'parallel':
-        // Parallel upload for 2-5 files
+      case 'parallel': {
+        // Parallel upload for small batches - scoped variables
         const parallelResult = await uploadFilesParallel(
           defectId, 
           fileArray, 
@@ -478,16 +522,36 @@ const uploadFilesOptimized = async (files, defectId, uploadType = 'initial', use
         } else {
           throw new Error(`Failed to upload files: ${parallelResult.errors.map(e => e.error).join(', ')}`);
         }
+      }
 
-      case 'batch':
-        // Batch upload for 6+ files (currently same as parallel, but prepared for future batch endpoint)
-        console.log('Using batch strategy (currently parallel with higher concurrency)');
-        return await uploadFilesOptimized(fileArray, defectId, uploadType, userId, onProgress);
+      case 'batch': {
+        // Batch upload - scoped variables (currently same as parallel, prepared for future)
+        console.log('Using batch strategy (currently parallel with controlled concurrency)');
+        const batchResult = await uploadFilesParallel(
+          defectId, 
+          fileArray, 
+          uploadType, 
+          (file, progress) => {
+            if (onProgress) {
+              const fileIndex = fileArray.findIndex(f => f.name === file.name);
+              onProgress(progress, `Batch uploading ${file.name}...`, fileIndex);
+            }
+          }
+        );
+        
+        if (batchResult.success) {
+          if (onProgress) {
+            onProgress(100, `Successfully batch uploaded ${batchResult.totalUploaded} files`);
+          }
+          return batchResult.files;
+        } else {
+          throw new Error(`Failed to batch upload files: ${batchResult.errors.map(e => e.error).join(', ')}`);
+        }
+      }
 
-      case 'sequential':
-      default:
-        // Fallback to sequential for poor connections
-        console.log('Using sequential fallback strategy');
+      default: {
+        // Sequential upload for maximum reliability - scoped variables
+        console.log('Using sequential upload strategy for maximum reliability');
         const sequentialResults = [];
         
         for (let i = 0; i < fileArray.length; i++) {
@@ -505,7 +569,7 @@ const uploadFilesOptimized = async (files, defectId, uploadType = 'initial', use
               file,
               defectId,
               uploadType,
-              userId,
+              authenticatedUserId,
               fileProgressCallback
             );
             
@@ -521,42 +585,49 @@ const uploadFilesOptimized = async (files, defectId, uploadType = 'initial', use
         }
         
         return sequentialResults;
+      }
     }
   } catch (error) {
-    console.error('Error in optimized file upload:', error);
+    console.error('Error in secure optimized file upload:', error);
     throw error;
   }
 };
 
 // ==========================================
-// MAIN FILE SERVICE OBJECT (BACKWARDS COMPATIBLE)
+// COMPLETE SECURE FILE SERVICE
 // ==========================================
 
 const fileService = {
   /**
-   * BACKWARDS COMPATIBLE: Upload multiple files (maintains original signature)
-   * Now with PHASE 2 optimizations that automatically choose the best strategy
+   * SECURE: Upload multiple files with authentication validation
+   * Maintains backwards compatibility while adding security
    */
   uploadFiles: async (files, defectId, uploadType = 'initial', userId, onProgress) => {
-    // PHASE 2: Use optimized upload with automatic strategy selection
-    return await uploadFilesOptimized(files, defectId, uploadType, userId, onProgress);
+    // Validate authentication at the service level
+    let authenticatedUserId;
+    try {
+      authenticatedUserId = userId || getCurrentUserId();
+    } catch (authError) {
+      throw new Error(`Upload failed - authentication required: ${authError.message}`);
+    }
+
+    return await uploadFilesOptimized(files, defectId, uploadType, authenticatedUserId, onProgress);
   },
 
-  // ==========================================
-  // EXISTING METHODS (Maintained for backwards compatibility)
-  // ==========================================
-
   /**
-   * Get download URL for a file
+   * SECURE: Get download URL with authentication validation
    */
   getDownloadUrl: async (defectId, fileId, userId) => {
     try {
+      // Validate authentication
+      const authenticatedUserId = userId || getCurrentUserId();
+      
       console.log(`Getting download URL for file ${fileId} in defect ${defectId}`);
       
       const response = await fileApiClient.get(
         `/api/defects/${defectId}/files/${fileId}/url`,
         {
-          params: { userId },
+          params: { userId: authenticatedUserId },
           timeout: 15000
         }
       );
@@ -565,22 +636,28 @@ const fileService = {
       console.log(`Successfully retrieved download URL for file ${fileId}`);
       return downloadData;
     } catch (error) {
+      if (error.message.includes('authentication required')) {
+        throw error; // Re-throw authentication errors as-is
+      }
       console.error(`Error getting download URL for file ${fileId}:`, error);
       throw new Error(`Failed to get download URL: ${error.message}`);
     }
   },
 
   /**
-   * Delete a file
+   * SECURE: Delete a file with authentication validation
    */
   deleteFile: async (defectId, fileId, userId) => {
     try {
+      // Validate authentication
+      const authenticatedUserId = userId || getCurrentUserId();
+      
       console.log(`Deleting file ${fileId} from defect ${defectId}`);
       
       const response = await fileApiClient.delete(
         `/api/defects/${defectId}/files/${fileId}`,
         {
-          params: { userId },
+          params: { userId: authenticatedUserId },
           timeout: 20000
         }
       );
@@ -589,22 +666,28 @@ const fileService = {
       console.log(`Successfully deleted file: ${fileId}`);
       return true;
     } catch (error) {
+      if (error.message.includes('authentication required')) {
+        throw error; // Re-throw authentication errors as-is
+      }
       console.error(`Error deleting file ${fileId}:`, error);
       throw new Error(`Failed to delete file: ${error.message}`);
     }
   },
 
   /**
-   * List all files for a defect
+   * SECURE: List all files for a defect with authentication validation
    */
   listFiles: async (defectId, userId) => {
     try {
+      // Validate authentication
+      const authenticatedUserId = userId || getCurrentUserId();
+      
       console.log(`Listing files for defect ${defectId}`);
       
       const response = await fileApiClient.get(
         `/api/defects/${defectId}/files`,
         {
-          params: { userId },
+          params: { userId: authenticatedUserId },
           timeout: 15000
         }
       );
@@ -623,20 +706,25 @@ const fileService = {
       console.log(`Successfully listed files for defect ${defectId}: ${validatedData.totalFiles} total files`);
       return validatedData;
     } catch (error) {
+      if (error.message.includes('authentication required')) {
+        throw error; // Re-throw authentication errors as-is
+      }
       console.error(`Error listing files for defect ${defectId}:`, error);
       throw new Error(`Failed to list files: ${error.message}`);
     }
   },
 
   /**
-   * BACKWARDS COMPATIBLE: Download a file (maintains original signature)
+   * SECURE: Download a file with authentication validation
    */
   downloadFile: async (defectId, fileId, fileName, userId) => {
     try {
-      const userIdToUse = userId || getCurrentUserId();
+      // Validate authentication
+      const authenticatedUserId = userId || getCurrentUserId();
+      
       console.log(`Starting download for file: ${fileName} (ID: ${fileId})`);
       
-      const downloadData = await fileService.getDownloadUrl(defectId, fileId, userIdToUse);
+      const downloadData = await fileService.getDownloadUrl(defectId, fileId, authenticatedUserId);
       
       const link = document.createElement('a');
       link.href = downloadData.downloadUrl;
@@ -654,30 +742,36 @@ const fileService = {
       console.log(`Successfully initiated download for: ${fileName}`);
       
     } catch (error) {
+      if (error.message.includes('authentication required')) {
+        throw error; // Re-throw authentication errors as-is
+      }
       console.error(`Error downloading file ${fileName}:`, error);
       throw new Error(`Failed to download file: ${error.message}`);
     }
   },
 
   // ==========================================
-  // PHASE 2: NEW OPTIMIZED METHODS
+  // NEW SECURE METHODS
   // ==========================================
 
   /**
-   * PHASE 2: Modern parallel upload API with enhanced performance
+   * SECURE: Modern parallel upload API with authentication
    */
-  uploadFilesParallel: uploadFilesParallel,
-
-  /**
-   * PHASE 2: Single file upload with modern API
-   */
-  uploadSingleFile: async (defectId, file, uploadType = 'initial', onProgress = null) => {
-    const userId = getCurrentUserId();
-    return await uploadSingleFileOptimized(file, defectId, uploadType, userId, onProgress);
+  uploadFilesParallel: async (defectId, files, uploadType = 'initial', onProgress = null) => {
+    // Authentication validation happens inside the method
+    return await uploadFilesParallel(defectId, files, uploadType, onProgress);
   },
 
   /**
-   * PHASE 2: Smart upload with automatic strategy selection
+   * SECURE: Single file upload with authentication
+   */
+  uploadSingleFile: async (defectId, file, uploadType = 'initial', onProgress = null) => {
+    const authenticatedUserId = getCurrentUserId(); // Will throw if not authenticated
+    return await uploadSingleFileOptimized(file, defectId, uploadType, authenticatedUserId, onProgress);
+  },
+
+  /**
+   * SECURE: Smart upload with automatic strategy selection and authentication
    */
   uploadFilesOptimized: uploadFilesOptimized,
 
@@ -691,7 +785,17 @@ const fileService = {
   validateFile: (file, options = {}) => {
     const {
       maxSize = 10 * 1024 * 1024,
-      allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+      allowedTypes = [
+        'image/jpeg', 
+        'image/png', 
+        'image/gif', 
+        'application/pdf', 
+        'application/msword', 
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ]
     } = options;
 
     if (!file) {
@@ -699,11 +803,17 @@ const fileService = {
     }
 
     if (file.size > maxSize) {
-      return { valid: false, error: `File size ${(file.size / 1024 / 1024).toFixed(2)}MB exceeds maximum allowed size ${(maxSize / 1024 / 1024).toFixed(2)}MB` };
+      return { 
+        valid: false, 
+        error: `File size ${(file.size / 1024 / 1024).toFixed(2)}MB exceeds maximum allowed size ${(maxSize / 1024 / 1024).toFixed(2)}MB` 
+      };
     }
 
     if (!allowedTypes.includes(file.type)) {
-      return { valid: false, error: `File type ${file.type} is not allowed` };
+      return { 
+        valid: false, 
+        error: `File type ${file.type} is not allowed. Allowed types: ${allowedTypes.join(', ')}` 
+      };
     }
 
     return { valid: true };
@@ -718,6 +828,41 @@ const fileService = {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  },
+
+  /**
+   * Check if user is authenticated
+   */
+  isAuthenticated: () => {
+    try {
+      getCurrentUserId();
+      return true;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  /**
+   * Get connection quality for UI display
+   */
+  getConnectionQuality: async () => {
+    try {
+      return await uploadOptimizer.detectBandwidth();
+    } catch (error) {
+      console.warn('Could not detect connection quality:', error);
+      return 'unknown';
+    }
+  },
+
+  /**
+   * Clear bandwidth cache (useful for testing different conditions)
+   */
+  clearBandwidthCache: () => {
+    uploadOptimizer.bandwidthCache = {
+      speed: null,
+      timestamp: null,
+      ttl: 5 * 60 * 1000
+    };
   }
 };
 

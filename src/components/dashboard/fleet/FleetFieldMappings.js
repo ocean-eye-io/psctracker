@@ -33,7 +33,7 @@ export const fleetFieldMappings = {
     // },
     event_type: {
       dbField: 'event_type',
-      label: 'Position',
+      label: 'Event Type',
       priority: 4,
       width: '110px'
     },
@@ -68,7 +68,7 @@ export const fleetFieldMappings = {
     },
     etd: {
       dbField: 'etd',
-      label: 'ETD (LT)',
+      label: 'ETD',
       priority: 11,
       width: '170px',
       type: 'datetime'

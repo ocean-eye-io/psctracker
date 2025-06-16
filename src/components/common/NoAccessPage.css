@@ -1,240 +1,600 @@
 /* src/components/common/NoAccessPage.css */
 .no-access-container {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #0c1a29 0%, #1a2f42 50%, #0e1e2f 100%);
-    padding: 2rem;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .no-access-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(circle at 30% 20%, rgba(59, 173, 229, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 70% 80%, rgba(46, 204, 113, 0.1) 0%, transparent 50%);
-    pointer-events: none;
-  }
-  
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0c1a29 0%, #1a2f42 50%, #0e1e2f 100%);
+  padding: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.no-access-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 30% 20%, rgba(59, 173, 229, 0.1) 0%, transparent 50%),
+              radial-gradient(circle at 70% 80%, rgba(46, 204, 113, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.no-access-content {
+  background: rgba(14, 30, 47, 0.8);
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+  border: 1px solid rgba(244, 244, 244, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  position: relative;
+  z-index: 1;
+  margin: 1rem;
+}
+
+.no-access-header {
+  margin-bottom: 1.5rem;
+}
+
+.no-access-logo {
+  margin-bottom: 1rem;
+  opacity: 0.9;
+  width: 100px;
+  height: 100px;
+  max-width: 100%;
+  height: auto;
+}
+
+.no-access-header h1 {
+  color: #f4f4f4;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #3BADE5, #2ECC71);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+}
+
+.no-access-message {
+  color: #f4f4f4;
+}
+
+.no-access-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.no-access-icon svg {
+  color: rgba(244, 244, 244, 0.6);
+  background: rgba(244, 244, 244, 0.1);
+  padding: 0.75rem;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+}
+
+.no-access-message h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #f4f4f4;
+  line-height: 1.3;
+}
+
+.no-access-message > p {
+  font-size: 1rem;
+  color: rgba(244, 244, 244, 0.8);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.no-access-details {
+  background: rgba(244, 244, 244, 0.05);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(244, 244, 244, 0.1);
+}
+
+.detail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 0.75rem;
+  color: rgba(244, 244, 244, 0.9);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.detail-item svg {
+  color: #3BADE5;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.no-access-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.contact-admin-btn {
+  background: linear-gradient(135deg, #3BADE5, #2ECC71);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(59, 173, 229, 0.3);
+  width: 100%;
+  max-width: 250px;
+  justify-content: center;
+  min-height: 44px;
+}
+
+.contact-admin-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 173, 229, 0.4);
+  background: linear-gradient(135deg, #45B7E8, #32D77A);
+}
+
+.refresh-btn {
+  background: rgba(244, 244, 244, 0.1);
+  color: #f4f4f4;
+  border: 1px solid rgba(244, 244, 244, 0.2);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 250px;
+  justify-content: center;
+  min-height: 40px;
+}
+
+.refresh-btn:hover {
+  background: rgba(244, 244, 244, 0.15);
+  border-color: rgba(244, 244, 244, 0.3);
+  transform: translateY(-1px);
+}
+
+.logout-btn {
+  background: rgba(231, 76, 60, 0.1);
+  color: #E74C3C;
+  border: 1px solid rgba(231, 76, 60, 0.2);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 250px;
+  justify-content: center;
+  min-height: 40px;
+}
+
+.logout-btn:hover {
+  background: rgba(231, 76, 60, 0.15);
+  border-color: rgba(231, 76, 60, 0.3);
+  transform: translateY(-1px);
+}
+
+.logout-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.contact-admin-btn:active,
+.refresh-btn:active,
+.logout-btn:active {
+  transform: translateY(0);
+}
+
+/* Large Desktop Screens (1200px+) */
+@media (min-width: 1200px) {
   .no-access-content {
-    background: rgba(14, 30, 47, 0.8);
-    border-radius: 16px;
     padding: 3rem;
-    text-align: center;
-    max-width: 500px;
-    width: 100%;
-    border: 1px solid rgba(244, 244, 244, 0.1);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(10px);
-    position: relative;
-    z-index: 1;
-  }
-  
-  .no-access-header {
-    margin-bottom: 2rem;
-  }
-  
-  .no-access-logo {
-    margin-bottom: 1rem;
-    opacity: 0.9;
+    max-width: 550px;
   }
   
   .no-access-header h1 {
-    color: #f4f4f4;
-    font-size: 2rem;
-    font-weight: 700;
-    margin: 0;
-    background: linear-gradient(135deg, #3BADE5, #2ECC71);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-size: 2.25rem;
   }
   
-  .no-access-message {
-    color: #f4f4f4;
+  .no-access-message h2 {
+    font-size: 1.875rem;
   }
   
-  .no-access-icon {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 1.5rem;
+  .no-access-message > p {
+    font-size: 1.125rem;
+  }
+  
+  .no-access-logo {
+    width: 120px;
+    height: 120px;
   }
   
   .no-access-icon svg {
-    color: rgba(244, 244, 244, 0.6);
-    background: rgba(244, 244, 244, 0.1);
-    padding: 1rem;
-    border-radius: 50%;
     width: 80px;
     height: 80px;
+    padding: 1rem;
+  }
+  
+  .no-access-details {
+    padding: 1.5rem;
+  }
+  
+  .detail-item {
+    font-size: 1rem;
+  }
+}
+
+/* Desktop Screens (992px - 1199px) */
+@media (min-width: 992px) and (max-width: 1199px) {
+  .no-access-content {
+    padding: 2.5rem;
+  }
+  
+  .no-access-header h1 {
+    font-size: 2rem;
   }
   
   .no-access-message h2 {
     font-size: 1.75rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    color: #f4f4f4;
   }
   
-  .no-access-message > p {
-    font-size: 1.1rem;
-    color: rgba(244, 244, 244, 0.8);
-    margin-bottom: 2rem;
-    line-height: 1.6;
+  .no-access-logo {
+    width: 110px;
+    height: 110px;
   }
   
-  .no-access-details {
-    background: rgba(244, 244, 244, 0.05);
-    border-radius: 8px;
+  .no-access-icon svg {
+    width: 70px;
+    height: 70px;
+  }
+}
+
+/* Tablet Screens (768px - 991px) */
+@media (min-width: 768px) and (max-width: 991px) {
+  .no-access-container {
     padding: 1.5rem;
-    margin-bottom: 2rem;
-    border: 1px solid rgba(244, 244, 244, 0.1);
+  }
+  
+  .no-access-content {
+    padding: 2rem;
+    max-width: 480px;
+  }
+  
+  .no-access-header h1 {
+    font-size: 1.875rem;
+  }
+  
+  .no-access-message h2 {
+    font-size: 1.625rem;
+  }
+  
+  .no-access-logo {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .no-access-icon svg {
+    width: 65px;
+    height: 65px;
   }
   
   .detail-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 1rem;
-    color: rgba(244, 244, 244, 0.9);
     font-size: 0.95rem;
   }
   
-  .detail-item:last-child {
-    margin-bottom: 0;
+  .contact-admin-btn,
+  .refresh-btn,
+  .logout-btn {
+    max-width: 280px;
+  }
+}
+
+/* Small Tablet/Large Mobile (576px - 767px) */
+@media (min-width: 576px) and (max-width: 767px) {
+  .no-access-container {
+    padding: 1rem;
   }
   
-  .detail-item svg {
-    color: #3BADE5;
-    flex-shrink: 0;
+  .no-access-content {
+    padding: 1.5rem;
+    max-width: 400px;
+    margin: 0.5rem;
+  }
+  
+  .no-access-header {
+    margin-bottom: 1.25rem;
+  }
+  
+  .no-access-header h1 {
+    font-size: 1.625rem;
+  }
+  
+  .no-access-message h2 {
+    font-size: 1.375rem;
+  }
+  
+  .no-access-message > p {
+    font-size: 0.95rem;
+    margin-bottom: 1.25rem;
+  }
+  
+  .no-access-logo {
+    width: 90px;
+    height: 90px;
+  }
+  
+  .no-access-icon svg {
+    width: 55px;
+    height: 55px;
+    padding: 0.625rem;
+  }
+  
+  .no-access-details {
+    padding: 0.875rem;
+    margin-bottom: 1.25rem;
+  }
+  
+  .detail-item {
+    font-size: 0.875rem;
+    gap: 8px;
   }
   
   .no-access-actions {
-    margin-top: 2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    align-items: center;
+    gap: 0.625rem;
   }
   
   .contact-admin-btn {
-    background: linear-gradient(135deg, #3BADE5, #2ECC71);
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 4px 12px rgba(59, 173, 229, 0.3);
-    min-width: 200px;
-    justify-content: center;
+    padding: 9px 18px;
+    font-size: 0.875rem;
   }
   
-  .contact-admin-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(59, 173, 229, 0.4);
-    background: linear-gradient(135deg, #45B7E8, #32D77A);
-  }
-  
-  .refresh-btn {
-    background: rgba(244, 244, 244, 0.1);
-    color: #f4f4f4;
-    border: 1px solid rgba(244, 244, 244, 0.2);
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 200px;
-    justify-content: center;
-  }
-  
-  .refresh-btn:hover {
-    background: rgba(244, 244, 244, 0.15);
-    border-color: rgba(244, 244, 244, 0.3);
-    transform: translateY(-1px);
-  }
-  
+  .refresh-btn,
   .logout-btn {
-    background: rgba(231, 76, 60, 0.1);
-    color: #E74C3C;
-    border: 1px solid rgba(231, 76, 60, 0.2);
-    padding: 10px 20px;
-    border-radius: 6px;
+    padding: 7px 14px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Mobile Screens (320px - 575px) */
+@media (max-width: 575px) {
+  .no-access-container {
+    padding: 0.75rem;
+    min-height: 100vh;
+    min-height: 100dvh; /* Use dynamic viewport height if supported */
+  }
+  
+  .no-access-content {
+    padding: 1.25rem;
+    border-radius: 12px;
+    margin: 0;
+    min-width: 0; /* Allow content to shrink */
+  }
+  
+  .no-access-header {
+    margin-bottom: 1rem;
+  }
+  
+  .no-access-header h1 {
+    font-size: 1.5rem;
+    line-height: 1.1;
+  }
+  
+  .no-access-message h2 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.2;
+  }
+  
+  .no-access-message > p {
     font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 200px;
-    justify-content: center;
+    margin-bottom: 1rem;
+    line-height: 1.5;
   }
   
+  .no-access-logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 0.75rem;
+  }
+  
+  .no-access-icon {
+    margin-bottom: 0.75rem;
+  }
+  
+  .no-access-icon svg {
+    width: 50px;
+    height: 50px;
+    padding: 0.5rem;
+  }
+  
+  .no-access-details {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border-radius: 6px;
+  }
+  
+  .detail-item {
+    font-size: 0.8rem;
+    gap: 6px;
+    margin-bottom: 0.625rem;
+    align-items: flex-start;
+  }
+  
+  .detail-item span {
+    word-break: break-word;
+  }
+  
+  .no-access-actions {
+    margin-top: 1rem;
+    gap: 0.5rem;
+  }
+  
+  .contact-admin-btn,
+  .refresh-btn,
+  .logout-btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    max-width: none;
+    width: 100%;
+    min-height: 42px;
+  }
+  
+  .contact-admin-btn {
+    gap: 5px;
+  }
+  
+  .refresh-btn,
+  .logout-btn {
+    gap: 5px;
+  }
+}
+
+/* Extra Small Mobile (below 360px) */
+@media (max-width: 359px) {
+  .no-access-container {
+    padding: 0.5rem;
+  }
+  
+  .no-access-content {
+    padding: 1rem;
+    border-radius: 8px;
+  }
+  
+  .no-access-header h1 {
+    font-size: 1.375rem;
+  }
+  
+  .no-access-message h2 {
+    font-size: 1.125rem;
+  }
+  
+  .no-access-message > p {
+    font-size: 0.85rem;
+  }
+  
+  .no-access-logo {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .no-access-icon svg {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .detail-item {
+    font-size: 0.75rem;
+  }
+  
+  .contact-admin-btn,
+  .refresh-btn,
+  .logout-btn {
+    font-size: 0.75rem;
+    padding: 7px 10px;
+  }
+}
+
+/* Landscape Orientation for Mobile */
+@media (max-width: 767px) and (orientation: landscape) {
+  .no-access-container {
+    padding: 0.5rem;
+  }
+  
+  .no-access-content {
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 1rem;
+  }
+  
+  .no-access-header {
+    margin-bottom: 0.75rem;
+  }
+  
+  .no-access-logo {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 0.5rem;
+  }
+  
+  .no-access-icon {
+    margin-bottom: 0.5rem;
+  }
+  
+  .no-access-icon svg {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .no-access-details {
+    padding: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .no-access-actions {
+    margin-top: 0.75rem;
+    gap: 0.4rem;
+  }
+}
+
+/* High DPI/Retina Display Adjustments */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .no-access-content {
+    border-width: 0.5px;
+  }
+  
+  .no-access-details {
+    border-width: 0.5px;
+  }
+}
+
+/* Reduced Motion for Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .contact-admin-btn,
+  .refresh-btn,
+  .logout-btn {
+    transition: none;
+  }
+  
+  .contact-admin-btn:hover,
+  .refresh-btn:hover,
   .logout-btn:hover {
-    background: rgba(231, 76, 60, 0.15);
-    border-color: rgba(231, 76, 60, 0.3);
-    transform: translateY(-1px);
+    transform: none;
   }
-  
-  .contact-admin-btn:active,
-  .refresh-btn:active,
-  .logout-btn:active {
-    transform: translateY(0);
-  }
-  
-  /* Responsive adjustments for buttons */
-  @media (max-width: 768px) {
-    .no-access-actions {
-      margin-top: 1.5rem;
-    }
-    
-    .contact-admin-btn,
-    .refresh-btn,
-    .logout-btn {
-      min-width: 180px;
-      padding: 10px 16px;
-      font-size: 0.9rem;
-    }
-  }
-  
-  /* Responsive Design */
-  @media (max-width: 768px) {
-    .no-access-container {
-      padding: 1rem;
-    }
-    
-    .no-access-content {
-      padding: 2rem;
-    }
-    
-    .no-access-header h1 {
-      font-size: 1.75rem;
-    }
-    
-    .no-access-message h2 {
-      font-size: 1.5rem;
-    }
-    
-    .no-access-logo {
-      width: 100px;
-      height: 100px;
-    }
-  }
+}

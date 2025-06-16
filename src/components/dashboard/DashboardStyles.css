@@ -12,7 +12,7 @@
   --warning-color: #F1C40F;
   --success-color: #2ECC71;
   --danger-color: #E74C3C;
-  --header-height: 70px;
+  --header-height: 40px;
   --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   --hover-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
   --card-radius: 8px;
@@ -186,7 +186,7 @@
   border: 1px solid var(--border-subtle);
   border-radius: 4px;
   height: 34px;
-  width: 34px;
+  width: 12px;
   color: var(--text-light);
   cursor: pointer;
   transition: var(--transition-standard);
@@ -208,9 +208,9 @@
   display: flex;
   align-items: center;
   background: var(--card-bg);
-  padding: 12px 24px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 24px;
+  margin-bottom: 2px;
   flex-wrap: wrap;
   gap: 10px;
 }
