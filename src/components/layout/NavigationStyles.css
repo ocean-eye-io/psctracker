@@ -188,8 +188,8 @@ header.navigation-header,
 .user-avatar {
   background: linear-gradient(135deg, #4FC3F7, #29B6F6);
   color: #FFFFFF;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
