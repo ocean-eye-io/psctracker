@@ -1,9 +1,9 @@
-// DefectDialog.jsx - Phase 4 Enhanced with Auto-Report Generation on Save/Add + RBAC
+// DefectDialog.jsx - Fixed version with proper conditional field display
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Upload, FileText, X, Download, Trash2, AlertCircle, RefreshCw, Shield, Eye } from 'lucide-react';
 import { useToast } from '../../common/ui/ToastContext';
-import { usePermissions } from '../../../context/PermissionContext'; // NEW: Import permissions hook
+import { usePermissions } from '../../../context/PermissionContext';
 import { formatDateForInput, formatDateDisplay } from '../../../utils/dateUtils';
 import { DEFECT_FIELDS, FIELD_SECTIONS } from './config/DefectFieldMappings';
 import fileService from './services/fileService';
@@ -40,16 +40,15 @@ const DefectDialog = ({
   onSave,
   vessels = [],
   isNew,
-  permissions: legacyPermissions, // Legacy prop for backward compatibility
+  permissions: legacyPermissions,
   isExternal,
   currentUser,
-  isReadOnly: propIsReadOnly, // Legacy prop
-  canCreate: propCanCreate, // Legacy prop
-  canUpdate: propCanUpdate // Legacy prop
+  isReadOnly: propIsReadOnly,
+  canCreate: propCanCreate,
+  canUpdate: propCanUpdate
 }) => {
   const { toast } = useToast();
   
-  // NEW: Get permissions from context (takes precedence over props)
   const {
     canCreate,
     canUpdate,
@@ -71,19 +70,11 @@ const DefectDialog = ({
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   
-  // PHASE 4: Auto-report generation states
   const [autoGeneratingReport, setAutoGeneratingReport] = useState(false);
   const [reportProgress, setReportProgress] = useState(0);
   const [reportMessage, setReportMessage] = useState('');
 
   const userId = currentUser?.id || currentUser?.userId;
-
-  console.log("DefectDialog component rendering. isOpen:", isOpen, "defect:", defect?.id, "permissions:", {
-    canCreate: effectiveCanCreate,
-    canUpdate: effectiveCanUpdate,
-    isReadOnly: effectiveIsReadOnly,
-    roleName
-  });
 
   // Initial form data structure
   const initialFormData = useCallback(() => ({
@@ -116,11 +107,6 @@ const DefectDialog = ({
       const initialFilesData = defect.initial_files || [];
       const completionFilesData = defect.completion_files || [];
 
-      console.log("DefectDialog: Loading existing files:", {
-        initialFiles: initialFilesData,
-        completionFiles: completionFilesData
-      });
-
       setFormData({
         id: defect.id || '',
         vessel_id: defect.vessel_id || '',
@@ -146,7 +132,6 @@ const DefectDialog = ({
       setIsDirty(false);
       setUploadingFiles(false);
       
-      // PHASE 4: Reset report generation states
       setAutoGeneratingReport(false);
       setReportProgress(0);
       setReportMessage('');
@@ -160,7 +145,6 @@ const DefectDialog = ({
       setIsDirty(false);
       setUploadingFiles(false);
       
-      // PHASE 4: Reset report generation states
       setAutoGeneratingReport(false);
       setReportProgress(0);
       setReportMessage('');
@@ -169,7 +153,6 @@ const DefectDialog = ({
 
   // Handle form field changes
   const handleChange = useCallback((e) => {
-    // NEW: Block changes if in read-only mode
     if (effectiveIsReadOnly) {
       console.log("DefectDialog: Change blocked - user in read-only mode");
       return;
@@ -193,14 +176,18 @@ const DefectDialog = ({
     setIsDirty(true);
   }, [vessels, effectiveIsReadOnly]);
 
-  // Function to check if field is visible
-  const isFieldVisible = useCallback((fieldId) => {
+  // Function to check if field is visible - FIXED TO PROPERLY CHECK CONDITIONAL DISPLAY
+  const isFieldVisible = useCallback((fieldId, field) => {
+    // Check if field has conditional display function
+    if (field.conditionalDisplay) {
+      // Pass current formData to the conditional display function
+      return field.conditionalDisplay(formData);
+    }
     return true;
-  }, []);
+  }, [formData]); // Added formData as dependency
 
   // Function to handle silent mode change
   const handleSilentModeChange = async (checked) => {
-    // NEW: Block changes if in read-only mode
     if (effectiveIsReadOnly) {
       console.log("DefectDialog: Silent mode change blocked - user in read-only mode");
       return;
@@ -217,47 +204,43 @@ const DefectDialog = ({
     }
   };
 
-  // NEW: Function to check if field is editable based on permissions
+  // Function to check if field is editable based on permissions
   const isFieldEditable = useCallback((fieldId) => {
-    // Always allow editing in view mode if user has proper permissions
     if (isNew && !effectiveCanCreate) {
-      return false; // Can't create new defects
+      return false;
     }
     if (!isNew && !effectiveCanUpdate) {
-      return false; // Can't update existing defects
+      return false;
     }
     if (effectiveIsReadOnly) {
-      return false; // User is in read-only mode
+      return false;
     }
     return true;
   }, [isNew, effectiveCanCreate, effectiveCanUpdate, effectiveIsReadOnly]);
 
-  // Function to get visible fields from section
+  // Function to get visible fields from section - FIXED TO PROPERLY CHECK VISIBILITY
   const getVisibleFields = useCallback(() => {
     const allFields = Object.entries(DEFECT_FIELDS.DIALOG);
     return allFields
       .filter(([fieldId, field]) => {
-        if (!isFieldVisible(fieldId)) return false;
-        if (field.conditionalDisplay && !field.conditionalDisplay(formData)) {
-          return false;
-        }
-        return true;
+        // Use the corrected isFieldVisible function
+        return isFieldVisible(fieldId, field);
       })
       .sort((a, b) => a[1].displayOrder - b[1].displayOrder);
   }, [formData, isFieldVisible]);
 
-  // NEW: Function to check if save should be enabled based on permissions
+  // Function to check if save should be enabled based on permissions
   const canSave = useCallback(() => {
     if (saving || uploadingFiles || autoGeneratingReport) {
       return false;
     }
     
     if (isNew && !effectiveCanCreate) {
-      return false; // Can't create new defects
+      return false;
     }
     
     if (!isNew && !effectiveCanUpdate) {
-      return false; // Can't update existing defects
+      return false;
     }
     
     return true;
@@ -280,7 +263,6 @@ const DefectDialog = ({
     console.log("DefectDialog: Confirmed close, proceeding with onClose.");
     setShowConfirmClose(false);
     
-    // PHASE 4: Cancel auto-report generation if in progress
     if (autoGeneratingReport) {
       setAutoGeneratingReport(false);
       setReportProgress(0);
@@ -312,13 +294,10 @@ const DefectDialog = ({
       }
     }
 
+    // FIXED: Check required fields including conditional ones
     const visibleFields = Object.entries(DEFECT_FIELDS.DIALOG)
       .filter(([fieldId, field]) => {
-        if (!isFieldVisible(fieldId)) return false;
-        if (field.conditionalDisplay && !field.conditionalDisplay(defectData)) {
-          return false;
-        }
-        return true;
+        return isFieldVisible(fieldId, field);
       })
       .filter(([_, field]) => {
         if (field.required) return true;
@@ -393,8 +372,6 @@ const DefectDialog = ({
 
     try {
       console.log(`Starting Phase 2 optimized upload of ${files.length} ${uploadType} files`);
-      console.log('Current defect ID (passed):', defectId);
-      console.log('Files to upload:', files);
 
       if (!defectId || defectId.startsWith('temp-')) {
         throw new Error('Cannot upload files: Invalid or temporary defect ID. Please save the defect first.');
@@ -404,8 +381,6 @@ const DefectDialog = ({
         throw new Error('Cannot upload files: User ID is required');
       }
 
-      console.log('Using Phase 2 optimized fileService.uploadFiles with smart strategy selection');
-      
       const uploadedFiles = await fileService.uploadFiles(
         Array.from(files),
         defectId,
@@ -468,7 +443,6 @@ const DefectDialog = ({
 
   // File handling functions
   const handleInitialFileChange = (e) => {
-    // NEW: Block file changes if not editable
     if (!isFieldEditable('initialFiles')) {
       console.log("DefectDialog: File upload blocked - insufficient permissions");
       toast({
@@ -486,7 +460,6 @@ const DefectDialog = ({
   };
 
   const handleClosureFileChange = (e) => {
-    // NEW: Block file changes if not editable
     if (!isFieldEditable('closureFiles')) {
       console.log("DefectDialog: File upload blocked - insufficient permissions");
       toast({
@@ -504,7 +477,6 @@ const DefectDialog = ({
   };
 
   const removeInitialFile = (index) => {
-    // NEW: Block file removal if not editable
     if (!isFieldEditable('initialFiles')) {
       return;
     }
@@ -513,7 +485,6 @@ const DefectDialog = ({
   };
 
   const removeClosureFile = (index) => {
-    // NEW: Block file removal if not editable
     if (!isFieldEditable('closureFiles')) {
       return;
     }
@@ -545,7 +516,6 @@ const DefectDialog = ({
   };
 
   const handleDeleteExistingFile = async (file, fileType) => {
-    // NEW: Block file deletion if not editable
     if (!isFieldEditable('fileManagement')) {
       toast({
         title: "Permission Denied",
@@ -592,7 +562,7 @@ const DefectDialog = ({
     }
   };
 
-  // PHASE 4: Auto-generate report after successful save
+  // Auto-generate report after successful save
   const autoGenerateReport = async (savedDefectData, wasNewDefect) => {
     console.log(`PHASE 4: Starting auto-report generation for ${wasNewDefect ? 'new' : 'updated'} defect ${savedDefectData.id}`);
     
@@ -601,13 +571,11 @@ const DefectDialog = ({
     setReportMessage('Preparing report generation...');
 
     try {
-      // Small delay to ensure UI updates
       await new Promise(resolve => setTimeout(resolve, 500));
       
       setReportMessage('Generating comprehensive report...');
       setReportProgress(20);
 
-      // PHASE 4: Use auto-generation method (no download, just create/update)
       const reportResult = await reportService.autoGenerateReportOnSave(
         savedDefectData,
         userId,
@@ -619,14 +587,12 @@ const DefectDialog = ({
 
       console.log('PHASE 4: Auto-report generation result:', reportResult);
 
-      // Show success message
       if (reportResult.success) {
         toast({
           title: "Defect Saved Successfully",
           description: `${reportResult.message}. Use "Generate Report" button to download.`,
         });
       } else {
-        // Report generation failed, but defect save succeeded
         toast({
           title: "Defect Saved",
           description: `${reportResult.message}. You can try generating the report manually later.`,
@@ -634,7 +600,6 @@ const DefectDialog = ({
         });
       }
 
-      // Keep auto-generation indicator for a moment
       setTimeout(() => {
         setAutoGeneratingReport(false);
         setReportProgress(0);
@@ -648,7 +613,6 @@ const DefectDialog = ({
       setReportProgress(0);
       setReportMessage('');
 
-      // Don't show error for auto-generation failure - defect save was successful
       toast({
         title: "Defect Saved",
         description: "Defect saved successfully. Report generation can be done manually later.",
@@ -656,9 +620,8 @@ const DefectDialog = ({
     }
   };
 
-  // PHASE 4: Enhanced Save handler with auto-report generation
+  // Enhanced Save handler with auto-report generation
   const handleSave = async () => {
-    // NEW: Check permissions before saving
     if (!canSave()) {
       const message = isNew 
         ? "You don't have permission to create defects" 
@@ -688,14 +651,13 @@ const DefectDialog = ({
         return;
       }
 
-      // File upload logic - same as before
+      // File upload logic
       const hasNewFiles = initialFiles.length > 0 || closureFiles.length > 0;
       let uploadedInitialFiles = [];
       let uploadedClosureFiles = [];
       let defectToUse = updatedDefectData;
       let actualDefectId = defectToUse.id;
 
-      // For new defects with files, create defect first
       if (isNew && hasNewFiles) {
         console.log("DefectDialog: Creating defect first to get ID for file upload...");
         try {
@@ -782,23 +744,20 @@ const DefectDialog = ({
       setUploadProgress({});
       setIsDirty(false);
 
-      // PHASE 4: Auto-generate report after successful save
+      // Auto-generate report after successful save
       if (savedDefect && savedDefect.id) {
         console.log("PHASE 4: Starting auto-report generation...");
         
-        // Don't await this - let it run in background
         autoGenerateReport(savedDefect, isNew).catch(error => {
           console.error('PHASE 4: Background auto-report generation failed:', error);
         });
       } else {
-        // Manual success message if no auto-report generation
         toast({
           title: "Success",
           description: isNew ? "Defect added successfully" : "Changes saved successfully",
         });
       }
 
-      // Close dialog after successful save (auto-report runs in background)
       onClose();
 
     } catch (error) {
@@ -814,12 +773,12 @@ const DefectDialog = ({
     }
   };
 
-  // Check if closure file upload should be displayed
+  // Check if closure file upload should be displayed - FIXED FUNCTION
   const shouldShowClosureFiles = () => {
     return formData && (formData['Status'] === 'CLOSED' || formData['Status (Vessel)'] === 'CLOSED');
   };
 
-  // Group fields by section
+  // Group fields by section - FIXED TO USE UPDATED VISIBILITY CHECK
   const groupedFields = getVisibleFields().reduce((acc, [fieldId, field]) => {
     const sectionId = field.section || 'basic';
     if (!acc[sectionId]) {
@@ -829,9 +788,11 @@ const DefectDialog = ({
     return acc;
   }, {});
 
+  // FIXED: Update sorted sections to properly check conditional display for sections
   const sortedSections = Object.entries(FIELD_SECTIONS)
     .sort(([, a], [, b]) => a.order - b.order)
     .filter(([sectionId, section]) => {
+      // Check if section has conditional display and evaluate it with current formData
       if (section.conditionalDisplay && !section.conditionalDisplay(formData)) {
         return false;
       }
@@ -891,7 +852,7 @@ const DefectDialog = ({
     );
   };
 
-  // PHASE 4: Auto-report generation progress rendering
+  // Auto-report generation progress rendering
   const renderAutoReportProgress = () => {
     if (!autoGeneratingReport) return null;
 
@@ -922,6 +883,9 @@ const DefectDialog = ({
     );
   };
 
+  console.log('Current formData.Status:', formData.Status);
+  console.log('Sorted sections:', sortedSections.map(([id, section]) => ({ id, label: section.label })));
+
   return (
     <>
       {/* Main Dialog */}
@@ -943,7 +907,6 @@ const DefectDialog = ({
           <DialogHeader>
             <DialogTitle>
               {isNew ? 'Add New Defect' : 'Edit Defect'}
-              {/* NEW: Permission status indicator */}
               {effectiveIsReadOnly && (
                 <span className={formStyles.readOnlyBadge}>
                   <Eye size={14} />
@@ -968,14 +931,12 @@ const DefectDialog = ({
 
           <DialogBody>
             <div className={`${formStyles.formContainer} ${effectiveIsReadOnly ? formStyles.readOnly : ''}`}>
-              {/* NEW: Read-only overlay */}
               {effectiveIsReadOnly && (
                 <div className={formStyles.readOnlyOverlay}>
                   View Only
                 </div>
               )}
               
-              {/* PHASE 4: Auto-report generation progress */}
               {renderAutoReportProgress()}
               
               {sortedSections.map(([sectionId, section]) => (
@@ -1110,7 +1071,8 @@ const DefectDialog = ({
                           const removeFileHandler = isInitialFilesField ? removeInitialFile : removeClosureFile;
                           const existingFiles = formData?.[field.dbField] || [];
 
-                          if (!isInitialFilesField && !shouldShowClosureFiles()) {
+                          // FIXED: Use the field's conditionalDisplay function directly instead of shouldShowClosureFiles
+                          if (field.conditionalDisplay && !field.conditionalDisplay(formData)) {
                             return null;
                           }
 
@@ -1200,10 +1162,8 @@ const DefectDialog = ({
                                   </div>
                                 )}
 
-                                {/* Show upload progress */}
                                 {renderUploadProgress()}
 
-                                {/* Enhanced error state for upload failures */}
                                 {Object.values(uploadProgress).some(p => p === -1) && (
                                   <div className={formStyles.fileUploadError}>
                                     <AlertCircle size={16} />
@@ -1305,9 +1265,9 @@ const DefectDialog = ({
         </Dialog>
       )}
 
-      {/* PHASE 4: Enhanced CSS styles */}
+      {/* Enhanced CSS styles */}
       <style jsx>{`
-        /* Upload progress styles - same as before */
+        /* Upload progress styles */
         .upload-progress-container {
           margin: 16px 0;
           padding: 16px;
@@ -1390,7 +1350,7 @@ const DefectDialog = ({
           font-weight: 500;
         }
 
-        /* PHASE 4: Auto-report generation progress styles */
+        /* Auto-report generation progress styles */
         .auto-report-progress-container {
           margin: 16px 0;
           padding: 16px;
