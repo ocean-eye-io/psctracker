@@ -1,4 +1,5 @@
 // src/dashboard/defects/config/defectFieldMappings.js
+// CORRECTED VERSION with proper conditional field references
 
 export const DEFECT_FIELDS = {
   // Dialog Fields
@@ -11,7 +12,7 @@ export const DEFECT_FIELDS = {
       required: true,
       section: 'basic',
       displayOrder: 1,
-      width: 'full', // w-full
+      width: 'full',
     },
     equipment: {
       id: 'equipment',
@@ -151,7 +152,11 @@ export const DEFECT_FIELDS = {
       section: 'dates',
       displayOrder: 11,
       width: 'half',
-      conditionalRequired: (values) => values.status === 'CLOSED'
+      // FIXED: Use the correct field name that matches your formData
+      conditionalRequired: (values) => {
+        console.log('dateCompleted conditionalRequired check:', values?.Status);
+        return values?.Status === 'CLOSED';
+      }
     },
     targetDate: {
       id: 'targetDate',
@@ -173,8 +178,20 @@ export const DEFECT_FIELDS = {
       displayOrder: 12,
       width: 'full',
       rows: 3,
-      conditionalDisplay: (values) => values?.status === 'CLOSED' || values?.['Status (Vessel)'] === 'CLOSED',
-      conditionalRequired: (values) => values?.status === 'CLOSED' || values?.['Status (Vessel)'] === 'CLOSED'
+      // FIXED: Use the correct field name that matches your formData structure
+      conditionalDisplay: (values) => {
+        console.log('closureComments conditionalDisplay - values:', values);
+        console.log('closureComments conditionalDisplay - Status:', values?.Status);
+        const result = values?.Status === 'CLOSED';
+        console.log('closureComments conditionalDisplay - result:', result);
+        return result;
+      },
+      conditionalRequired: (values) => {
+        console.log('closureComments conditionalRequired - values:', values);
+        const result = values?.Status === 'CLOSED';
+        console.log('closureComments conditionalRequired - result:', result);
+        return result;
+      }
     },
     initialFiles: {
       id: 'initialFiles',
@@ -195,17 +212,24 @@ export const DEFECT_FIELDS = {
       dbField: 'completion_files',
       type: 'file',
       required: false,
-      section: 'files',
+      section: 'files', // CHANGED: Move to files section instead of closure
       displayOrder: 14,
       width: 'full',
       accept: '.pdf,.doc,.docx,.jpg,.jpeg,.png',
       maxSize: 2 * 1024 * 1024, // 2MB
       multiple: true,
-      conditionalDisplay: (values) => values.status === 'CLOSED'
+      // FIXED: Use the correct field name that matches your formData structure
+      conditionalDisplay: (values) => {
+        console.log('completionFiles conditionalDisplay - values:', values);
+        console.log('completionFiles conditionalDisplay - Status:', values?.Status);
+        const result = values?.Status === 'CLOSED';
+        console.log('completionFiles conditionalDisplay - result:', result);
+        return result;
+      }
     }
   },
 
-  // Table Fields
+  // Table Fields (unchanged)
   TABLE: {
     expandToggle: {
       id: 'expandToggle',
@@ -215,14 +239,6 @@ export const DEFECT_FIELDS = {
       priority: 1,
       isAction: true
     },
-    // index: {
-    //   id: 'index',
-    //   label: '#',
-    //   dbField: 'id',
-    //   width: '60px',
-    //   minWidth: '60px',
-    //   priority: 1
-    // },
     vessel: {
       id: 'vessel',
       label: 'Vessel',
@@ -301,7 +317,7 @@ export const DEFECT_FIELDS = {
     }
   },
 
-  // Expanded View Fields (Additional fields shown in expanded row)
+  // Expanded View Fields (updated with conditional display)
   EXPANDED: {
     description: {
       id: 'description',
@@ -344,7 +360,8 @@ export const DEFECT_FIELDS = {
       dbField: 'closure_comments',
       priority: 6,
       section: 'closure',
-      conditionalDisplay: (values) => values.status === 'CLOSED'
+      // FIXED: Use the correct field name
+      conditionalDisplay: (values) => values?.Status === 'CLOSED'
     },
     completionFiles: {
       id: 'completionFiles',
@@ -352,7 +369,8 @@ export const DEFECT_FIELDS = {
       dbField: 'completion_files',
       priority: 7,
       section: 'files',
-      conditionalDisplay: (values) => values.status === 'CLOSED'
+      // FIXED: Use the correct field name
+      conditionalDisplay: (values) => values?.Status === 'CLOSED'
     },
     raisedBy: {
       id: 'raisedBy',
@@ -392,7 +410,14 @@ export const FIELD_SECTIONS = {
     id: 'closure',
     label: 'Closure Details',
     order: 4,
-    conditionalDisplay: (values) => values.status === 'CLOSED'
+    // FIXED: Use the correct field name that matches your formData structure
+    conditionalDisplay: (values) => {
+      console.log('closure section conditionalDisplay - values:', values);
+      console.log('closure section conditionalDisplay - Status:', values?.Status);
+      const result = values?.Status === 'CLOSED';
+      console.log('closure section conditionalDisplay - result:', result);
+      return result;
+    }
   },
   files: {
     id: 'files',
@@ -401,7 +426,7 @@ export const FIELD_SECTIONS = {
   }
 };
 
-// DB to API field mapping to ensure consistent naming across the application
+// DB to API field mapping (unchanged)
 export const DB_TO_API_FIELD_MAP = {
   'id': 'id',
   'vessel_id': 'vessel_id',
@@ -450,4 +475,25 @@ export const mapApiToDbFields = (data) => {
     result[dbField] = value;
   });
   return result;
+};
+
+// DEBUG: Export a test function to verify conditional logic
+export const testConditionalLogic = (formData) => {
+  console.log('=== TESTING CONDITIONAL LOGIC ===');
+  console.log('Input formData:', formData);
+  
+  const closureCommentsField = DEFECT_FIELDS.DIALOG.closureComments;
+  const completionFilesField = DEFECT_FIELDS.DIALOG.completionFiles;
+  const closureSection = FIELD_SECTIONS.closure;
+  
+  const results = {
+    closureCommentsVisible: closureCommentsField.conditionalDisplay(formData),
+    completionFilesVisible: completionFilesField.conditionalDisplay(formData),
+    closureSectionVisible: closureSection.conditionalDisplay(formData)
+  };
+  
+  console.log('Test results:', results);
+  console.log('=== END TEST ===');
+  
+  return results;
 };

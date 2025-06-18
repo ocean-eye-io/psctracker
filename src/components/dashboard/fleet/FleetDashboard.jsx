@@ -335,20 +335,52 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       }
     };
 
+    // Debug: Find SDTR FAITH in raw data
+    const sdtrFaithRaw = data.find(v => v.vessel_name === "SDTR FAITH");
+    if (sdtrFaithRaw) {
+      console.log('SDTR FAITH found in raw data:', {
+        id: sdtrFaithRaw.id,
+        vessel_name: sdtrFaithRaw.vessel_name,
+        imo_no: sdtrFaithRaw.imo_no,
+        status: sdtrFaithRaw.status,
+        current_status: sdtrFaithRaw.current_status,
+        report_date: sdtrFaithRaw.report_date,
+        rds_load_date: sdtrFaithRaw.rds_load_date
+      });
+    } else {
+      console.log('SDTR FAITH NOT FOUND in raw data');
+    }
+
     // Master filter to remove vessels with invalid IMO numbers and empty vessel names
     const vesselsWithValidData = data.filter(vessel => {
       const imoNo = vessel.imo_no;
       const vesselName = vessel.vessel_name;
 
-      return imoNo &&
+      const isValid = imoNo &&
         imoNo !== "-" &&
         Number.isInteger(Number(imoNo)) &&
         !String(imoNo).includes('.') &&
         vesselName &&
         vesselName !== "-";
+
+      // Debug: Log if SDTR FAITH fails this filter
+      if (vessel.vessel_name === "SDTR FAITH" && !isValid) {
+        console.log('SDTR FAITH FAILED valid data filter:', {
+          imoNo,
+          vesselName,
+          isValidImo: imoNo && imoNo !== "-" && Number.isInteger(Number(imoNo)) && !String(imoNo).includes('.'),
+          isValidName: vesselName && vesselName !== "-"
+        });
+      }
+
+      return isValid;
     });
 
     console.log('Vessels with valid IMO and vessel names:', vesselsWithValidData.length);
+
+    // Debug: Check if SDTR FAITH survived the valid data filter
+    const sdtrFaithValid = vesselsWithValidData.find(v => v.vessel_name === "SDTR FAITH");
+    console.log('SDTR FAITH after valid data filter:', sdtrFaithValid ? 'FOUND' : 'NOT FOUND');
 
     // Find the latest rds_load_date
     const allLoadDates = vesselsWithValidData
@@ -373,12 +405,36 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
           vessel.rds_load_date &&
           new Date(vessel.rds_load_date).getTime() === latestLoadDate.getTime();
 
+        // Debug: Log SDTR FAITH's active status check
+        if (vessel.vessel_name === "SDTR FAITH") {
+          console.log('SDTR FAITH active status check:', {
+            status: vessel.status,
+            rds_load_date: vessel.rds_load_date,
+            parsed_rds_load_date: new Date(vessel.rds_load_date),
+            latest_load_date: latestLoadDate,
+            rds_matches_latest: vessel.rds_load_date && new Date(vessel.rds_load_date).getTime() === latestLoadDate.getTime(),
+            isActive
+          });
+        }
+
         // Check report date recency
         let hasRecentReport = false;
         if (vessel.report_date) {
           const reportDate = parseDate(vessel.report_date);
           if (reportDate) {
             hasRecentReport = reportDate >= twoMonthsAgo;
+
+            // Debug: Log SDTR FAITH's report date check
+            if (vessel.vessel_name === "SDTR FAITH") {
+              console.log('SDTR FAITH report date check:', {
+                report_date: vessel.report_date,
+                parsed_report_date: reportDate,
+                two_months_ago: twoMonthsAgo,
+                hasRecentReport,
+                days_diff: Math.floor((new Date() - reportDate) / (1000 * 60 * 60 * 24))
+              });
+            }
+
             if (!hasRecentReport) {
               console.debug('Vessel excluded due to old report date:', {
                 vessel: vessel.vessel_name,
@@ -387,18 +443,51 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
               });
             }
           }
+        } else {
+          // Debug: Log if SDTR FAITH has no report date
+          if (vessel.vessel_name === "SDTR FAITH") {
+            console.log('SDTR FAITH has no report_date');
+          }
         }
 
-        return isActive && hasRecentReport;
+        const finalResult = isActive && hasRecentReport;
+
+        // Debug: Log final result for SDTR FAITH
+        if (vessel.vessel_name === "SDTR FAITH") {
+          console.log('SDTR FAITH final active filter result:', {
+            isActive,
+            hasRecentReport,
+            finalResult
+          });
+        }
+
+        return finalResult;
       }) : [];
 
     // Inactive vessels: all with status="Inactive"
-    const inactiveVessels = vesselsWithValidData.filter(vessel =>
-      vessel.status === "Inactive"
-    );
+    const inactiveVessels = vesselsWithValidData.filter(vessel => {
+      const isInactive = vessel.status === "Inactive";
+
+      // Debug: Check if SDTR FAITH is considered inactive
+      if (vessel.vessel_name === "SDTR FAITH") {
+        console.log('SDTR FAITH inactive check:', {
+          status: vessel.status,
+          isInactive
+        });
+      }
+
+      return isInactive;
+    });
 
     console.log('Active vessels from latest load date (with recent reports):', activeVessels.length);
     console.log('Inactive vessels (all dates):', inactiveVessels.length);
+
+    // Debug: Final check - is SDTR FAITH in either list?
+    const sdtrFaithActive = activeVessels.find(v => v.vessel_name === "SDTR FAITH");
+    const sdtrFaithInactive = inactiveVessels.find(v => v.vessel_name === "SDTR FAITH");
+
+    console.log('SDTR FAITH in active vessels:', sdtrFaithActive ? 'YES' : 'NO');
+    console.log('SDTR FAITH in inactive vessels:', sdtrFaithInactive ? 'YES' : 'NO');
 
     // Enhance vessel data with calculated fields
     const enhanceVessel = (vessel, isActive = true) => {
@@ -1320,6 +1409,11 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       />
     </div>
   );
+};
+
+FleetDashboard.propTypes = {
+  onOpenInstructions: PropTypes.func.isRequired,
+  fieldMappings: PropTypes.object.isRequired,
 };
 
 export default FleetDashboard;
