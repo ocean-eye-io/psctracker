@@ -741,7 +741,7 @@
   bottom: 0;
   background: rgba(11, 22, 35, 0.85);
   display: flex;
-  flex-direction: column; /* Added for text below spinner */
+  flex-direction: column; /*Added for text below spinner */
   justify-content: center;
   align-items: center;
   z-index: 10;
@@ -752,10 +752,20 @@
   gap: 10px; /* Added gap between spinner and text */
 }
 
-.loading-spinner {
+/* .loading-spinner {
   position: relative;
+
   width: 30px;
   height: 30px;
+} */
+
+.loading-spinner { 
+position: fixed; 
+top: 50%; 
+left: 50%; 
+/* transform: translate(-50%, -50%);  */
+z-index: 9999; 
+background: rgba(14, 30, 47, 0.95); 
 }
 
 .loading-spinner::before,
