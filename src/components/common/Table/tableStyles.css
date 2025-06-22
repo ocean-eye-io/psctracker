@@ -1342,7 +1342,7 @@
 }
 
 .tooltip-body {
-  padding: 10px 0;
+  padding: 6px 0;
   max-height: 300px;
   overflow-y: auto;
   scrollbar-width: thin;

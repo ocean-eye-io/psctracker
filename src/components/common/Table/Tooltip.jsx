@@ -73,13 +73,13 @@ export const Tooltip = ({ title, content, children }) => {
         >
           {title && (
             <div style={{
-              padding: '8px 12px',
+              padding: '4px 6px',
               background: 'linear-gradient(180deg, #1a3652, #0f2337)',
               borderBottom: '1px solid rgba(77, 195, 255, 0.2)'
             }}>
               <h3 style={{
                 margin: 0,
-                fontSize: '13px',
+                fontSize: '12px',
                 fontWeight: 600,
                 color: '#fff'
               }}>{title}</h3>
