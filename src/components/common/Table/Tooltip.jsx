@@ -87,7 +87,7 @@ export const Tooltip = ({ title, content, children }) => {
           )}
           
           <div style={{
-            padding: '8px 12px',
+            padding: '4px 6px',
             maxHeight: '250px',
             overflowY: 'auto',
             fontSize: '11px',
@@ -118,7 +118,7 @@ export const VesselDetailsTooltip = ({ vessel, children }) => {
                 <div key={index} style={{ 
                   display: 'grid',
                   gridTemplateColumns: '90px 1fr',
-                  gridGap: '4px',
+                  gridGap: '2px',
                   marginBottom: index < vessel.tooltipDetails.length - 1 ? '6px' : 0,
                   borderBottom: index < vessel.tooltipDetails.length - 1 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
                   paddingBottom: index < vessel.tooltipDetails.length - 1 ? '6px' : 0
