@@ -68,7 +68,7 @@ export const fleetFieldMappings = {
     },
     etd: {
       dbField: 'etd',
-      label: 'ETD',
+      label: 'ETD (LT)',
       priority: 11,
       width: '170px',
       type: 'datetime'
