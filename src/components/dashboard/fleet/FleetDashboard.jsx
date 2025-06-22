@@ -1274,7 +1274,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
           {loading ? (
             <div className="chart-loading">
               <div className="loading-spinner"></div>
-              <span>Loading chart data...</span>
+              {/* <span>Loading chart data...</span> */}
             </div>
           ) : (
             // <ArrivalsByPortChart
@@ -1298,7 +1298,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
           {loading ? (
             <div className="chart-loading">
               <div className="loading-spinner"></div>
-              <span>Loading chart data...</span>
+              {/* <span>Loading chart data...</span> */}
             </div>
           ) : (
             // <ArrivalTimelineChart
