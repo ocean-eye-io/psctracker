@@ -98,7 +98,7 @@ const OverrideInfoPopover = ({
       onClick={(e) => e.stopPropagation()} // Prevent clicks inside from closing
     >
       <div className={styles.popoverHeader}>
-        <h4>Date Update Details</h4>
+        <h4>Update Details</h4>
         <button onClick={onClose} className={styles.closePopoverBtn}>
           <FontAwesomeIcon icon={faTimes} />
         </button>
