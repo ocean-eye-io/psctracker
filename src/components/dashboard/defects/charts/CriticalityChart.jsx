@@ -154,7 +154,7 @@ const CriticalityChart = ({ data = [] }) => {
 
 const styles = {
   container: {
-    padding: '16px',
+    padding: '4px',
     backgroundColor: 'rgba(14, 30, 47, 0.5)',
     borderRadius: '12px',
     border: '1px solid rgba(244, 244, 244, 0.05)',

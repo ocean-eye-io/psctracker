@@ -98,17 +98,17 @@ const OverrideInfoPopover = ({
       onClick={(e) => e.stopPropagation()} // Prevent clicks inside from closing
     >
       <div className={styles.popoverHeader}>
-        <h4>Override Details</h4>
+        <h4>Update Details</h4>
         <button onClick={onClose} className={styles.closePopoverBtn}>
           <FontAwesomeIcon icon={faTimes} />
         </button>
       </div>
       <div className={styles.popoverContent}>
-        <p><strong>Your Value:</strong> {formatDisplayValue(currentValue, type)}</p>
-        <p><strong>System Value:</strong> {formatDisplayValue(originalValue, type)}</p>
+        <p><strong>Updated Date:</strong> {formatDisplayValue(currentValue, type)}</p>
+        <p><strong>Reported Date:</strong> {formatDisplayValue(originalValue, type)}</p>
         {originalValue !== currentValue && (
           <button onClick={onResetToOriginal} className={styles.resetOverrideBtn}>
-            <FontAwesomeIcon icon={faRedo} /> Reset to System Value
+            <FontAwesomeIcon icon={faRedo} /> Reset to Reported Date
           </button>
         )}
       </div>

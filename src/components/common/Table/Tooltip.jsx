@@ -73,13 +73,13 @@ export const Tooltip = ({ title, content, children }) => {
         >
           {title && (
             <div style={{
-              padding: '8px 12px',
+              padding: '4px 6px',
               background: 'linear-gradient(180deg, #1a3652, #0f2337)',
               borderBottom: '1px solid rgba(77, 195, 255, 0.2)'
             }}>
               <h3 style={{
                 margin: 0,
-                fontSize: '13px',
+                fontSize: '12px',
                 fontWeight: 600,
                 color: '#fff'
               }}>{title}</h3>
@@ -87,7 +87,7 @@ export const Tooltip = ({ title, content, children }) => {
           )}
           
           <div style={{
-            padding: '8px 12px',
+            padding: '4px 6px',
             maxHeight: '250px',
             overflowY: 'auto',
             fontSize: '11px',
@@ -106,22 +106,75 @@ export const VesselDetailsTooltip = ({ vessel, children }) => {
   // Check if we have tooltipDetails from the enhanced vessel object
   const hasTooltipDetails = vessel.tooltipDetails && vessel.tooltipDetails.length > 0;
   
+  // Debug: Log the vessel object to see what fields are available
+  console.log('Vessel object in tooltip:', vessel);
+  console.log('Available vessel fields:', Object.keys(vessel));
+  console.log('vessel_type value:', vessel.vessel_type);
+  console.log('tooltipDetails:', vessel.tooltipDetails);
+  
   return (
     <Tooltip
       title={(vessel.vessel_name || 'Unknown Vessel').toUpperCase()}
       content={
         <>
           {hasTooltipDetails ? (
-            // Render the enhanced tooltip details if available
+            // If we have tooltipDetails, use them but also add vessel_type if it's missing
             <div>
-              {vessel.tooltipDetails.map((detail, index) => (
+              {/* First, show IMO if available */}
+              {vessel.tooltipDetails.find(detail => detail.label.toLowerCase() === 'imo') && (
+                <div style={{ 
+                  display: 'grid',
+                  gridTemplateColumns: '90px 1fr',
+                  gridGap: '2px',
+                  marginBottom: '6px',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                  paddingBottom: '6px'
+                }}>
+                  <div style={{
+                    fontWeight: 600,
+                    color: 'rgba(255, 255, 255, 0.9)'
+                  }}>
+                    IMO
+                  </div>
+                  <div>
+                    {vessel.tooltipDetails.find(detail => detail.label.toLowerCase() === 'imo')?.value || 'Unknown'}
+                  </div>
+                </div>
+              )}
+              
+              {/* Add vessel type if it exists and is not already in tooltipDetails */}
+              {vessel.vessel_type && !vessel.tooltipDetails.find(detail => detail.label.toLowerCase().includes('type')) && (
+                <div style={{ 
+                  display: 'grid',
+                  gridTemplateColumns: '90px 1fr',
+                  gridGap: '2px',
+                  marginBottom: '6px',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                  paddingBottom: '6px'
+                }}>
+                  <div style={{
+                    fontWeight: 600,
+                    color: 'rgba(255, 255, 255, 0.9)'
+                  }}>
+                    TYPE
+                  </div>
+                  <div>
+                    {vessel.vessel_type}
+                  </div>
+                </div>
+              )}
+              
+              {/* Then show the rest of the tooltip details (excluding IMO since we already showed it) */}
+              {vessel.tooltipDetails
+                .filter(detail => detail.label.toLowerCase() !== 'imo')
+                .map((detail, index) => (
                 <div key={index} style={{ 
                   display: 'grid',
                   gridTemplateColumns: '90px 1fr',
-                  gridGap: '4px',
-                  marginBottom: index < vessel.tooltipDetails.length - 1 ? '6px' : 0,
-                  borderBottom: index < vessel.tooltipDetails.length - 1 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
-                  paddingBottom: index < vessel.tooltipDetails.length - 1 ? '6px' : 0
+                  gridGap: '2px',
+                  marginBottom: index < vessel.tooltipDetails.length - 2 ? '6px' : 0,
+                  borderBottom: index < vessel.tooltipDetails.length - 2 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
+                  paddingBottom: index < vessel.tooltipDetails.length - 2 ? '6px' : 0
                 }}>
                   <div style={{
                     fontWeight: 600,
@@ -138,7 +191,7 @@ export const VesselDetailsTooltip = ({ vessel, children }) => {
               ))}
             </div>
           ) : (
-            // Fallback to the original display
+            // Fallback to the original display with vessel type added
             <>
               <div style={{ 
                 display: 'grid',
@@ -156,6 +209,25 @@ export const VesselDetailsTooltip = ({ vessel, children }) => {
                 </div>
                 <div>
                   {vessel.imo_no || 'Unknown'}
+                </div>
+              </div>
+              
+              <div style={{ 
+                display: 'grid',
+                gridTemplateColumns: '90px 1fr',
+                gridGap: '4px',
+                marginBottom: '6px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                paddingBottom: '6px'
+              }}>
+                <div style={{
+                  fontWeight: 600,
+                  color: 'rgba(255, 255, 255, 0.9)'
+                }}>
+                  TYPE
+                </div>
+                <div>
+                  {vessel.vessel_type || vessel.type || vessel.vesselType || 'Not available'}
                 </div>
               </div>
               

@@ -2378,8 +2378,8 @@
 }
 
 .dashboardCardBody {
-  padding: 8px;
-  min-height: 260px;
+  padding: 4px;
+  min-height: 220px;
   height: auto;
   max-height: calc(100% - 16px);
   display: flex;
@@ -3945,15 +3945,15 @@
 /* Enhanced Pagination Container */
 .enhancedPaginationContainer {
   position: absolute;
-  bottom: 16px;
+  bottom: -8px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 30;
   background: rgba(14, 30, 47, 0.95);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(244, 244, 244, 0.1);
+  /*border: 1px solid rgba(244, 244, 244, 0.1);*/
   border-radius: 12px;
-  padding: 8px;
+  padding: 0px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 

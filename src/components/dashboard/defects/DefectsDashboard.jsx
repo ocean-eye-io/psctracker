@@ -818,7 +818,7 @@ const DefectsDashboard = () => {
             {loading ? (
               <div className={styles.chartLoading}>
                 <div className={styles.loadingSpinner}></div>
-                <span>Loading chart data...</span>
+                {/* <span>Loading chart data...</span> */}
               </div>
             ) : (
               <TotalDefectsChart data={filteredDefects} />
@@ -831,7 +831,7 @@ const DefectsDashboard = () => {
             {loading ? (
               <div className={styles.chartLoading}>
                 <div className={styles.loadingSpinner}></div>
-                <span>Loading chart data...</span>
+                {/* <span>Loading chart data...</span> */}
               </div>
             ) : (
               <CriticalityChart data={filteredDefects} />
