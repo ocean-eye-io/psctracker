@@ -79,8 +79,54 @@ const EditableField = ({ value, onSave, type = 'text', placeholder = 'N/A', isSa
     }
   };
 
+  // Helper function to format datetime-local without timezone conversion
+  const formatDatetimeLocal = (val) => {
+    if (!val) return placeholder;
+    
+    // If it's already in the correct format (YYYY-MM-DDTHH:mm), use it as-is
+    if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(val)) {
+      // Extract the datetime part and format for display
+      const [datePart, timePart] = val.split('T');
+      const [year, month, day] = datePart.split('-');
+      const [hour, minute] = timePart.split(':');
+      
+      // Create a display format without timezone conversion
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthName = months[parseInt(month) - 1];
+      
+      return `${monthName} ${parseInt(day)}, ${year}, ${hour}:${minute}`;
+    }
+    
+    // For other formats, try to parse but handle timezone carefully
+    try {
+      const date = new Date(val);
+      if (isNaN(date.getTime())) return String(val);
+      
+      // Convert to local datetime string without timezone shift
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hour = String(date.getHours()).padStart(2, '0');
+      const minute = String(date.getMinutes()).padStart(2, '0');
+      
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthName = months[parseInt(month) - 1];
+      
+      return `${monthName} ${parseInt(day)}, ${year}, ${hour}:${minute}`;
+    } catch (error) {
+      return String(val);
+    }
+  };
+
   const formatDisplayValue = (val, fieldType) => {
     if (!val) return placeholder;
+
+    // Handle datetime-local separately to prevent timezone conversion
+    if (fieldType === 'datetime-local') {
+      return formatDatetimeLocal(val);
+    }
 
     try {
       const date = new Date(val);
@@ -88,15 +134,6 @@ const EditableField = ({ value, onSave, type = 'text', placeholder = 'N/A', isSa
 
       if (fieldType === 'date') {
         return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-      } else if (fieldType === 'datetime-local') {
-        return date.toLocaleString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        });
       }
     } catch (error) {
       return String(val);
