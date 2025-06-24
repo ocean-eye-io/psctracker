@@ -1,0 +1,363 @@
+// src/components/dashboard/reporting/VesselReportingTable.jsx
+import React, { useMemo } from 'react';
+import { 
+  CheckCircle, 
+  Clock, 
+  AlertTriangle, 
+  XCircle,
+  FileText,
+  Calendar
+} from 'lucide-react';
+import {
+  Table,
+  StatusIndicator,
+  TableBadge,
+  ExpandedItem
+} from '../../common/Table';
+import PropTypes from 'prop-types';
+
+const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
+  // Helper function to format dates
+  const formatDateTime = (dateString, includeTime = false) => {
+    if (!dateString) return '-';
+
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return dateString;
+
+      if (includeTime) {
+        return date.toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+      } else {
+        return date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+      }
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  // Helper function to get checklist status display
+  const getChecklistStatusDisplay = (status) => {
+    switch (status) {
+      case 'completed':
+        return {
+          icon: <CheckCircle size={16} />,
+          label: 'Completed',
+          variant: 'success',
+          color: '#2ECC71'
+        };
+      case 'in_progress':
+        return {
+          icon: <Clock size={16} />,
+          label: 'In Progress',
+          variant: 'warning',
+          color: '#F39C12'
+        };
+      case 'pending':
+        return {
+          icon: <AlertTriangle size={16} />,
+          label: 'Pending',
+          variant: 'warning',
+          color: '#F1C40F'
+        };
+      case 'not_started':
+        return {
+          icon: <XCircle size={16} />,
+          label: 'Not Started',
+          variant: 'danger',
+          color: '#E74C3C'
+        };
+      default:
+        return {
+          icon: <XCircle size={16} />,
+          label: 'Unknown',
+          variant: 'info',
+          color: '#95A5A6'
+        };
+    }
+  };
+
+  // Get status color for vessel status
+  const getStatusColor = (status) => {
+    if (!status) return '#f4f4f4';
+
+    if (status === "At Sea") {
+      return '#3498DB';
+    } else if (status === "At Port") {
+      return '#2ECC71';
+    } else if (status === "At Anchor") {
+      return '#F1C40F';
+    } else {
+      return '#f4f4f4';
+    }
+  };
+
+  // Convert field mappings to table columns
+  const getTableColumns = () => {
+    return Object.entries(fieldMappings.TABLE)
+      .filter(([_, field]) => !field.isAction)
+      .sort((a, b) => a[1].priority - b[1].priority)
+      .map(([fieldId, field]) => ({
+        field: field.dbField,
+        label: field.label,
+        width: field.width,
+        minWidth: field.minWidth,
+        sortable: true,
+        render: (value, rowData) => {
+          // Vessel name column
+          if (fieldId === 'vessel_name') {
+            return (
+              <div className="vessel-name-cell">
+                <span className="vessel-name" title={`IMO: ${rowData.imo_no || 'N/A'}`}>
+                  {(value || '-').toUpperCase()}
+                </span>
+              </div>
+            );
+          }
+
+          // Status column
+          if (fieldId === 'event_type') {
+            return (
+              <StatusIndicator
+                status={value}
+                color={getStatusColor(value)}
+              />
+            );
+          }
+
+          // Checklist status column
+          if (fieldId === 'checklistStatus') {
+            const statusDisplay = getChecklistStatusDisplay(value);
+            return (
+              <div className="checklist-status-cell">
+                <TableBadge variant={statusDisplay.variant}>
+                  <div className="status-badge-content">
+                    {statusDisplay.icon}
+                    <span>{statusDisplay.label}</span>
+                  </div>
+                </TableBadge>
+              </div>
+            );
+          }
+
+          // ETA column with special formatting
+          if (fieldId === 'eta') {
+            const etaValue = rowData.user_eta || value;
+            const formattedValue = formatDateTime(etaValue, true);
+            
+            // Check if ETA is in the past
+            const isOverdue = etaValue && new Date(etaValue) < new Date();
+            
+            return (
+              <div className={`eta-cell ${isOverdue ? 'overdue' : ''}`}>
+                {isOverdue && <AlertTriangle size={14} className="overdue-icon" />}
+                <span 
+                  className={isOverdue ? 'overdue-text' : ''}
+                  title={formattedValue}
+                >
+                  {formattedValue}
+                </span>
+              </div>
+            );
+          }
+
+          // ETB column
+          if (fieldId === 'etb') {
+            const etbValue = rowData.user_etb || value;
+            const formattedValue = formatDateTime(etbValue, true);
+            return (
+              <span title={formattedValue}>
+                {formattedValue}
+              </span>
+            );
+          }
+
+          // Arrival port column
+          if (fieldId === 'arrival_port') {
+            const upperCaseValue = (value || '-').toUpperCase();
+            return (
+              <span className="arrival-port" title={upperCaseValue}>
+                {upperCaseValue}
+              </span>
+            );
+          }
+
+          // Days to go column
+          if (fieldId === 'daysToGo' && typeof value === 'number') {
+            const formattedValue = value.toFixed(1);
+            const isUrgent = value <= 5;
+            return (
+              <div className={`days-to-go ${isUrgent ? 'urgent' : ''}`}>
+                <Calendar size={14} />
+                <span title={`${formattedValue} days remaining`}>
+                  {formattedValue}
+                </span>
+              </div>
+            );
+          }
+
+          // Default date formatting
+          if (field.type === 'date') {
+            const formattedValue = formatDateTime(value, false);
+            return (
+              <span title={formattedValue}>
+                {formattedValue}
+              </span>
+            );
+          }
+
+          // Default text rendering
+          if (value !== null && value !== undefined && value !== '-') {
+            const stringValue = String(value);
+            return (
+              <span title={stringValue}>
+                {stringValue}
+              </span>
+            );
+          }
+
+          return '-';
+        }
+      }));
+  };
+
+  // Create expanded content renderer
+  const renderExpandedContent = (vessel) => {
+    const expandedColumns = Object.entries(fieldMappings.EXPANDED)
+      .sort((a, b) => a[1].priority - b[1].priority);
+
+    return (
+      <div className="expanded-grid reporting-expanded">
+        {expandedColumns.map(([fieldId, field]) => {
+          let value = vessel[field.dbField];
+
+          // Check for user overrides
+          if (fieldId === 'eta' && vessel.user_eta) {
+            value = vessel.user_eta;
+          } else if (fieldId === 'etb' && vessel.user_etb) {
+            value = vessel.user_etb;
+          } else if (fieldId === 'etd' && vessel.user_etd) {
+            value = vessel.user_etd;
+          }
+
+          // Format dates
+          if (field.type === 'date' || ['eta', 'etb', 'etd'].includes(fieldId)) {
+            value = formatDateTime(value, true);
+          }
+
+          // Special handling for checklist status
+          if (fieldId === 'checklistStatus') {
+            const statusDisplay = getChecklistStatusDisplay(value);
+            return (
+              <ExpandedItem
+                key={fieldId}
+                label={field.label}
+                value={
+                  <div className="expanded-checklist-status">
+                    {statusDisplay.icon}
+                    <span style={{ color: statusDisplay.color }}>
+                      {statusDisplay.label}
+                    </span>
+                  </div>
+                }
+              />
+            );
+          }
+
+          return (
+            <ExpandedItem
+              key={fieldId}
+              label={field.label}
+              value={value || '-'}
+            />
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Actions column for reporting-specific actions
+  const actions = {
+    label: 'Actions',
+    width: '120px',
+    content: (vessel) => (
+      <div className="reporting-actions">
+        <button
+          className="action-button reporting-action"
+          onClick={() => {
+            console.log('View checklist for vessel:', vessel);
+            // TODO: Implement checklist view/edit functionality
+          }}
+          aria-label="View vessel checklist"
+        >
+          <FileText size={16} />
+          <span>Checklist</span>
+        </button>
+      </div>
+    )
+  };
+
+  // Sort vessels by priority (overdue ETAs first, then by ETA)
+  const sortedVessels = useMemo(() => {
+    return [...vessels].sort((a, b) => {
+      const aEta = a.user_eta || a.eta;
+      const bEta = b.user_eta || b.eta;
+      
+      if (!aEta && !bEta) return 0;
+      if (!aEta) return 1;
+      if (!bEta) return -1;
+
+      const aDate = new Date(aEta);
+      const bDate = new Date(bEta);
+      const now = new Date();
+
+      // Check if dates are overdue
+      const aOverdue = aDate < now;
+      const bOverdue = bDate < now;
+
+      // Overdue vessels first
+      if (aOverdue && !bOverdue) return -1;
+      if (!aOverdue && bOverdue) return 1;
+
+      // Within same overdue status, sort by date
+      return aDate - bDate;
+    });
+  }, [vessels]);
+
+  return (
+    <div className="vessel-reporting-table">
+      <Table
+        data={sortedVessels}
+        columns={getTableColumns()}
+        expandedContent={renderExpandedContent}
+        actions={actions}
+        uniqueIdField="uniqueKey"
+        defaultSortKey="eta"
+        defaultSortDirection="asc"
+        className="reporting-vessel-table"
+      />
+    </div>
+  );
+};
+
+VesselReportingTable.propTypes = {
+  vessels: PropTypes.arrayOf(PropTypes.object).isRequired,
+  fieldMappings: PropTypes.object.isRequired,
+  loading: PropTypes.bool
+};
+
+VesselReportingTable.defaultProps = {
+  loading: false
+};
+
+export default VesselReportingTable;

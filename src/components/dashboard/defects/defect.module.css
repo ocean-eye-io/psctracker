@@ -122,7 +122,7 @@
   --shadow-glow-green: 0 4px 15px rgba(81, 207, 102, 0.4);
   --shadow-glow-orange: 0 4px 15px rgba(255, 167, 38, 0.4);
 }
-
+ 
 /* Animations */
 @keyframes spinAnimation {
   0% { transform: rotate(0deg); }
@@ -738,10 +738,10 @@
   background: linear-gradient(135deg, #e53e3e 0%, #c53030 50%, #fc8181 100%);
   color: white;
   border-color: rgba(229, 62, 62, 0.6);
-  box-shadow: 
+  /* box-shadow: 
     0 4px 14px rgba(229, 62, 62, 0.4),
     0 0 18px rgba(229, 62, 62, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.2); */
 }
 
 .criticalityHigh::after {
@@ -755,10 +755,10 @@
 .criticalityHigh:hover {
   background: linear-gradient(135deg, #fc8181 0%, #f56565 50%, #e53e3e 100%);
   transform: translateY(-1px) scale(1.02);
-  box-shadow: 
+  /* box-shadow: 
     0 6px 20px rgba(229, 62, 62, 0.5),
     0 0 25px rgba(229, 62, 62, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    inset 0 1px 0 rgba(255, 255, 255, 0.3); */
 }
 
 /* MEDIUM Criticality - Bright Orange/Amber */
@@ -766,10 +766,10 @@
   background: linear-gradient(135deg, #ed8936 0%, #dd6b20 50%, #fbb040 100%);
   color: white;
   border-color: rgba(237, 137, 54, 0.6);
-  box-shadow: 
+  /* box-shadow: 
     0 4px 14px rgba(237, 137, 54, 0.4),
     0 0 18px rgba(237, 137, 54, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.2); */
 }
 
 .criticalityMedium::after {
@@ -783,10 +783,10 @@
 .criticalityMedium:hover {
   background: linear-gradient(135deg, #fbb040 0%, #f6ad55 50%, #ed8936 100%);
   transform: translateY(-1px) scale(1.02);
-  box-shadow: 
+  /* box-shadow: 
     0 6px 20px rgba(237, 137, 54, 0.5),
     0 0 25px rgba(237, 137, 54, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    inset 0 1px 0 rgba(255, 255, 255, 0.3); */
 }
 
 /* LOW Criticality - Bright Blue/Cyan */
@@ -794,10 +794,10 @@
   background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 50%, #63b3ed 100%);
   color: white;
   border-color: rgba(49, 130, 206, 0.6);
-  box-shadow: 
+  /* box-shadow: 
     0 4px 14px rgba(49, 130, 206, 0.4),
     0 0 18px rgba(49, 130, 206, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.2); */
 }
 
 .criticalityLow::after {
@@ -811,10 +811,10 @@
 .criticalityLow:hover {
   background: linear-gradient(135deg, #63b3ed 0%, #4299e1 50%, #3182ce 100%);
   transform: translateY(-1px) scale(1.02);
-  box-shadow: 
+  /* box-shadow: 
     0 6px 20px rgba(49, 130, 206, 0.5),
     0 0 25px rgba(49, 130, 206, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    inset 0 1px 0 rgba(255, 255, 255, 0.3); */
 }
 
 /* Ultra Bright Alternative - Neon Style */
@@ -1174,8 +1174,7 @@
   left: 100%;
 }
 
-/* src/components/dashboard/defects/defect.module.css - PART 2 OF 2 */
-/* Continuing from Part 1... */
+
 
 .fileIconCompact {
   color: var(--blue-accent);
@@ -3150,8 +3149,8 @@
 
 .dateValue {
   color: #f4f4f4;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.875rem;
+  /* font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; */
+  font-size: 11px;
   background: rgba(255, 255, 255, 0.05);
   padding: 2px 6px;
   border-radius: 4px;
@@ -4382,4 +4381,486 @@
     color: black !important;
     border: 1px solid black !important;
   }
+} /* ========================================
+   SUBTLE BADGE VARIANTS - Very Understated
+   ======================================== */
+
+/* Default Subtle Variant - Similar to your reference image */
+.statusBadgeSubtle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border: 1px solid;
+  transition: all 0.2s ease;
+  min-width: 75px;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(4px);
+}
+
+.statusBadgeSubtle.open {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: rgba(239, 68, 68, 0.9);
+}
+
+.statusBadgeSubtle.closed {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.2);
+  color: rgba(34, 197, 94, 0.9);
+}
+
+.statusBadgeSubtle.inProgress {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.2);
+  color: rgba(245, 158, 11, 0.9);
+}
+
+.statusBadgeSubtle:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Criticality Subtle Variant */
+.criticalityBadgeSubtle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border: 1px solid;
+  transition: all 0.2s ease;
+  min-width: 70px;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(4px);
+}
+
+.criticalityBadgeSubtle.criticalityHigh {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: rgba(239, 68, 68, 0.9);
+}
+
+.criticalityBadgeSubtle.criticalityMedium {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.2);
+  color: rgba(245, 158, 11, 0.9);
+}
+
+.criticalityBadgeSubtle.criticalityLow {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.2);
+  color: rgba(59, 130, 246, 0.9);
+}
+
+.criticalityBadgeSubtle:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================
+   MINIMAL VARIANT - Even More Subtle
+   ======================================== */
+
+.statusBadgeMinimal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  border: none;
+  transition: all 0.2s ease;
+  min-width: 70px;
+  position: relative;
+}
+
+.statusBadgeMinimal::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.statusBadgeMinimal.open {
+  background: rgba(239, 68, 68, 0.05);
+  color: rgba(239, 68, 68, 0.8);
+  padding-left: 12px;
+}
+
+.statusBadgeMinimal.closed {
+  background: rgba(34, 197, 94, 0.05);
+  color: rgba(34, 197, 94, 0.8);
+  padding-left: 12px;
+}
+
+.statusBadgeMinimal.inProgress {
+  background: rgba(245, 158, 11, 0.05);
+  color: rgba(245, 158, 11, 0.8);
+  padding-left: 12px;
+}
+
+.criticalityBadgeMinimal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  border: none;
+  transition: all 0.2s ease;
+  min-width: 65px;
+  position: relative;
+}
+
+.criticalityBadgeMinimal::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.criticalityBadgeMinimal.criticalityHigh {
+  background: rgba(239, 68, 68, 0.05);
+  color: rgba(239, 68, 68, 0.8);
+  padding-left: 12px;
+}
+
+.criticalityBadgeMinimal.criticalityMedium {
+  background: rgba(245, 158, 11, 0.05);
+  color: rgba(245, 158, 11, 0.8);
+  padding-left: 12px;
+}
+
+.criticalityBadgeMinimal.criticalityLow {
+  background: rgba(59, 130, 246, 0.05);
+  color: rgba(59, 130, 246, 0.8);
+  padding-left: 12px;
+}
+
+/* ========================================
+   UPDATED PILL VARIANT - More Subtle
+   ======================================== */
+
+.statusBadgePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border: none;
+  transition: all 0.2s ease;
+  min-width: 75px;
+  justify-content: center;
+  position: relative;
+}
+
+.statusBadgePill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-right: 2px;
+  opacity: 0.8;
+}
+
+.statusBadgePill.open {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+
+.statusBadgePill.closed {
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+}
+
+.statusBadgePill.inProgress {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+
+.criticalityBadgePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 18px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border: none;
+  transition: all 0.2s ease;
+  min-width: 70px;
+  justify-content: center;
+}
+
+.criticalityBadgePill::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-right: 2px;
+  opacity: 0.8;
+}
+
+.criticalityBadgePill.criticalityHigh {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+
+.criticalityBadgePill.criticalityMedium {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+
+.criticalityBadgePill.criticalityLow {
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+}
+
+/* ========================================
+   UPDATED ACCENT VARIANT - Left Border Style
+   ======================================== */
+
+.statusBadgeAccent {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-left: 3px solid;
+  background: rgba(255, 255, 255, 0.03);
+  transition: all 0.2s ease;
+  min-width: 75px;
+  backdrop-filter: blur(6px);
+}
+
+.statusBadgeAccent.open {
+  border-left-color: #dc2626;
+  color: rgba(220, 38, 38, 0.9);
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.statusBadgeAccent.closed {
+  border-left-color: #16a34a;
+  color: rgba(22, 163, 74, 0.9);
+  background: rgba(34, 197, 94, 0.06);
+}
+
+.statusBadgeAccent.inProgress {
+  border-left-color: #d97706;
+  color: rgba(217, 119, 6, 0.9);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.statusBadgeAccent:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateX(2px);
+}
+
+.criticalityBadgeAccent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-left: 3px solid;
+  background: rgba(255, 255, 255, 0.03);
+  transition: all 0.2s ease;
+  min-width: 70px;
+  backdrop-filter: blur(6px);
+}
+
+.criticalityBadgeAccent.criticalityHigh {
+  border-left-color: #dc2626;
+  color: rgba(220, 38, 38, 0.9);
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.criticalityBadgeAccent.criticalityMedium {
+  border-left-color: #d97706;
+  color: rgba(217, 119, 6, 0.9);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.criticalityBadgeAccent.criticalityLow {
+  border-left-color: #2563eb;
+  color: rgba(37, 99, 235, 0.9);
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.criticalityBadgeAccent:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateX(2px);
+}
+
+/* ========================================
+   SUBTLE ACTION BUTTONS
+   ======================================== */
+
+.enhancedActionButton {
+  position: relative;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(4px);
+}
+
+.enhancedActionButton:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.enhancedActionButton:active {
+  transform: scale(0.98);
+}
+
+.enhancedActionButton.generate {
+  background: rgba(34, 197, 94, 0.06);
+  border-color: rgba(34, 197, 94, 0.2);
+  color: rgba(34, 197, 94, 0.9);
+}
+
+.enhancedActionButton.generate:hover {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15);
+}
+
+.enhancedActionButton.edit {
+  background: rgba(59, 130, 246, 0.06);
+  border-color: rgba(59, 130, 246, 0.2);
+  color: rgba(59, 130, 246, 0.9);
+}
+
+.enhancedActionButton.edit:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+.enhancedActionButton.delete {
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: rgba(239, 68, 68, 0.9);
+}
+
+.enhancedActionButton.delete:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+}
+
+.enhancedActionButton.generating {
+  background: rgba(34, 197, 94, 0.1);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.enhancedActionButton.disabled {
+  background: rgba(75, 85, 99, 0.06) !important;
+  border-color: rgba(75, 85, 99, 0.2) !important;
+  color: rgba(75, 85, 99, 0.4) !important;
+  cursor: not-allowed;
+}
+
+.enhancedActionButton.disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 768px) {
+  .statusBadgeSubtle,
+  .statusBadgePill,
+  .statusBadgeAccent,
+  .statusBadgeMinimal {
+    font-size: 0.65rem;
+    padding: 3px 6px;
+    min-width: 65px;
+  }
+
+  .criticalityBadgeSubtle,
+  .criticalityBadgePill,
+  .criticalityBadgeAccent,
+  .criticalityBadgeMinimal {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    min-width: 60px;
+  }
+}
+
+/* Remove bright animations from subtle variants */
+.statusBadgeSubtle,
+.statusBadgePill,
+.statusBadgeAccent,
+.statusBadgeMinimal,
+.criticalityBadgeSubtle,
+.criticalityBadgePill,
+.criticalityBadgeAccent,
+.criticalityBadgeMinimal {
+  animation: none;
+}
+
+.statusBadgeSubtle:hover,
+.statusBadgePill:hover,
+.statusBadgeAccent:hover,
+.statusBadgeMinimal:hover,
+.criticalityBadgeSubtle:hover,
+.criticalityBadgePill:hover,
+.criticalityBadgeAccent:hover,
+.criticalityBadgeMinimal:hover {
+  animation: none;
 }
