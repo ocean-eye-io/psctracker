@@ -6,7 +6,7 @@ import styles from './defect.module.css';
 const statusOptions = ['OPEN', 'IN PROGRESS', 'CLOSED'];
 const criticalityOptions = ['High', 'Medium', 'Low'];
 
-const FilterBox = ({ field, value, options, label, onUpdate }) => {
+const FilterBox = ({ field, value, options, label, onUpdate, showCount = true }) => {
   // Calculate the display text - just show the label, count goes in superscript badge
   const getDisplayText = () => {
     return label;
@@ -27,7 +27,7 @@ const FilterBox = ({ field, value, options, label, onUpdate }) => {
         }}
       />
       {/* Filter count badge as superscript */}
-      {value.length > 0 && (
+      {showCount && value.length > 0 && (
         <span className={styles.filterCount}>
           {value.length}
         </span>
@@ -41,10 +41,13 @@ const DefectFilterBar = ({
   onFilterStatus,
   onFilterCriticality,
   onFilterSource,
+  onFilterVessel, // New vessel filter handler
   statusFilter = [],
   criticalityFilter = [],
   sourceFilter = [],
+  vesselFilter = [], // New vessel filter state
   sourceOptions = [],
+  vesselOptions = [], // New vessel options from assigned vessels
   onExport,
   onImport,
   onAddDefect,
@@ -57,6 +60,9 @@ const DefectFilterBar = ({
     const timer = setTimeout(() => onSearch(searchValue), 300);
     return () => clearTimeout(timer);
   }, [searchValue, onSearch]);
+
+  // Format vessel options for display (vessel_name)
+  const formattedVesselOptions = vesselOptions.map(vessel => vessel.vessel_name || vessel.name);
 
   return (
     <div className={styles.filterBar}>
@@ -88,6 +94,18 @@ const DefectFilterBar = ({
       </div>
 
       {/* Filters - Match Fleet Dashboard with superscript counts */}
+      
+      {/* Vessel Filter - New addition */}
+      {vesselOptions.length > 0 && (
+        <FilterBox
+          field="vessel"
+          value={vesselFilter}
+          options={formattedVesselOptions}
+          label="All Vessels"
+          onUpdate={onFilterVessel}
+        />
+      )}
+
       <FilterBox
         field="status"
         value={statusFilter}
@@ -95,6 +113,7 @@ const DefectFilterBar = ({
         label="All Statuses"
         onUpdate={onFilterStatus}
       />
+      
       <FilterBox
         field="criticality"
         value={criticalityFilter}
@@ -102,6 +121,7 @@ const DefectFilterBar = ({
         label="All Criticality"
         onUpdate={onFilterCriticality}
       />
+      
       {sourceOptions.length > 0 && (
         <FilterBox
           field="source"
@@ -113,7 +133,10 @@ const DefectFilterBar = ({
       )}
 
       {/* Reset Button - Match Fleet "Clear Filters" */}
-      {(statusFilter.length > 0 || criticalityFilter.length > 0 || sourceFilter.length > 0) && (
+      {(statusFilter.length > 0 || 
+        criticalityFilter.length > 0 || 
+        sourceFilter.length > 0 || 
+        vesselFilter.length > 0) && (
         <button 
           onClick={onReset}
           className={styles.resetButton}

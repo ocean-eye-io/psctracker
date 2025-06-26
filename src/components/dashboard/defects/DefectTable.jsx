@@ -706,6 +706,14 @@ const DefectTable = ({
             return <CriticalityBadge criticality={value} variant="pill" size="medium" />;
           }
         
+          if (fieldId === 'vesselName' || field.dbField === 'vessel_name' || fieldId === 'vessel') {
+            return (
+              <span className={styles.vesselName}>
+                {value ? String(value).toUpperCase() : <span className={styles.textMuted}>-</span>}
+              </span>
+            );
+          }  
+
           if (field.type === 'date') {
             return (
               <span className={styles.dateValue}>
@@ -726,8 +734,8 @@ const DefectTable = ({
   // NEW: Enhanced actions configuration with permission-based button states
   const actions = useMemo(() => ({
     label: 'Actions',
-    width: '140px',
-    minWidth: '140px',
+    width: '80px',
+    minWidth: '80px',
     content: (defect) => {
       const actionsContainerStyle = {
         display: 'flex',
@@ -738,7 +746,7 @@ const DefectTable = ({
       return (
         <div style={actionsContainerStyle}>
           {/* Enhanced Generate Report Button */}
-          <button
+          {/* <button
             onClick={e => { 
               e.stopPropagation(); 
               handleGenerateReport(defect); 
@@ -757,10 +765,10 @@ const DefectTable = ({
             ) : (
               <FileText size={16} />
             )}
-          </button>
+          </button> */}
           
           {/* Enhanced Edit Button */}
-          <button
+          {/* <button
             onClick={e => { 
               e.stopPropagation(); 
               onEdit && onEdit(defect); 
@@ -774,7 +782,7 @@ const DefectTable = ({
             data-tooltip={!effectivePermissions.actionPermissions.update ? "Insufficient permissions" : undefined}
           >
             <Eye size={16} />
-          </button>
+          </button> */}
           
           {/* Enhanced Delete Button */}
           <button

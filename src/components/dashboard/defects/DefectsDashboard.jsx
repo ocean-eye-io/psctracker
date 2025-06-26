@@ -23,11 +23,13 @@ const DefectsDashboard = () => {
   const [statusFilters, setStatusFilters] = useState([]);
   const [criticalityFilters, setCriticalityFilters] = useState([]);
   const [sourceFilters, setSourceFilters] = useState([]);
+  const [vesselFilters, setVesselFilters] = useState([]); // Add this line
 
   // Dropdown visibility state
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showCriticalityDropdown, setShowCriticalityDropdown] = useState(false);
   const [showSourceDropdown, setShowSourceDropdown] = useState(false);
+  const [showVesselDropdown, setShowVesselDropdown] = useState(false); // Add this line
   const [showSearch, setShowSearch] = useState(false);
 
   // Auth and Permission contexts
@@ -106,10 +108,12 @@ const DefectsDashboard = () => {
       const uniqueStatusesFromData = [...new Set(data.map(d => d['Status']).filter(Boolean))];
       const uniqueCriticalitiesFromData = [...new Set(data.map(d => d.Criticality).filter(Boolean))].filter(c => c !== null && c !== undefined);
       const uniqueSourcesFromData = [...new Set(data.map(d => d.raised_by).filter(Boolean))];
+      const uniqueVesselsFromData = [...new Set(data.map(d => d.vessel_name).filter(Boolean))]; // Add this line
 
       setStatusFilters(uniqueStatusesFromData);
       setCriticalityFilters(uniqueCriticalitiesFromData);
       setSourceFilters(uniqueSourcesFromData);
+      setVesselFilters(uniqueVesselsFromData); // Add this line
 
       console.log('DefectsDashboard: Filters initialized with unique values from data');
 
@@ -150,6 +154,12 @@ const DefectsDashboard = () => {
     const allUniqueStatuses = [...new Set(defects.map(d => d['Status']).filter(Boolean))];
     const allUniqueCriticalities = [...new Set(defects.map(d => d.Criticality).filter(Boolean))].filter(c => c !== null && c !== undefined);
     const allUniqueSources = [...new Set(defects.map(d => d.raised_by).filter(Boolean))];
+    const allUniqueVessels = [...new Set(defects.map(d => d.vessel_name).filter(Boolean))]; // Add this line
+
+    // Apply vessel filters (Add this section)
+    if (vesselFilters.length > 0 && vesselFilters.length < allUniqueVessels.length) {
+      results = results.filter(defect => vesselFilters.includes(defect.vessel_name));
+    }
 
     // Apply status filters
     if (statusFilters.length > 0 && statusFilters.length < allUniqueStatuses.length) {
@@ -178,7 +188,7 @@ const DefectsDashboard = () => {
 
     console.log("DefectsDashboard: Filtered defects count:", results.length);
     return results;
-  }, [defects, searchTerm, statusFilters, criticalityFilters, sourceFilters]);
+  }, [defects, searchTerm, statusFilters, criticalityFilters, sourceFilters, vesselFilters]); // Add vesselFilters to dependencies
 
   // Reset all filters
   const resetFilters = useCallback(() => {
@@ -188,10 +198,12 @@ const DefectsDashboard = () => {
     const uniqueStatusesFromDefects = [...new Set(defects.map(d => d['Status']).filter(Boolean))];
     const uniqueCriticalitiesFromDefects = [...new Set(defects.map(d => d.Criticality).filter(Boolean))].filter(c => c !== null && c !== undefined);
     const uniqueSourcesFromDefects = [...new Set(defects.map(d => d.raised_by).filter(Boolean))];
+    const uniqueVesselsFromDefects = [...new Set(defects.map(d => d.vessel_name).filter(Boolean))]; // Add this line
 
     setStatusFilters(uniqueStatusesFromDefects);
     setCriticalityFilters(uniqueCriticalitiesFromDefects);
     setSourceFilters(uniqueSourcesFromDefects);
+    setVesselFilters(uniqueVesselsFromDefects); // Add this line
   }, [defects]);
 
   // Toggle all items in a filter group
@@ -199,6 +211,7 @@ const DefectsDashboard = () => {
     const allUniqueStatuses = [...new Set(defects.map(d => d['Status']).filter(Boolean))];
     const allUniqueCriticalities = [...new Set(defects.map(d => d.Criticality).filter(Boolean))].filter(c => c !== null && c !== undefined);
     const allUniqueSources = [...new Set(defects.map(d => d.raised_by).filter(Boolean))];
+    const allUniqueVessels = [...new Set(defects.map(d => d.vessel_name).filter(Boolean))]; // Add this line
 
     switch(type) {
       case 'statuses':
@@ -209,6 +222,9 @@ const DefectsDashboard = () => {
         break;
       case 'sources':
         setSourceFilters(sourceFilters.length === allUniqueSources.length ? [] : allUniqueSources);
+        break;
+      case 'vessels': // Add this case
+        setVesselFilters(vesselFilters.length === allUniqueVessels.length ? [] : allUniqueVessels);
         break;
       default:
         break;
@@ -234,6 +250,13 @@ const DefectsDashboard = () => {
         break;
       case 'sources':
         setSourceFilters(prevFilters =>
+          prevFilters.includes(item)
+            ? prevFilters.filter(i => i !== item)
+            : [...prevFilters, item]
+        );
+        break;
+      case 'vessels': // Add this case
+        setVesselFilters(prevFilters =>
           prevFilters.includes(item)
             ? prevFilters.filter(i => i !== item)
             : [...prevFilters, item]
@@ -464,6 +487,7 @@ const DefectsDashboard = () => {
     setShowStatusDropdown(false);
     setShowCriticalityDropdown(false);
     setShowSourceDropdown(false);
+    setShowVesselDropdown(false); // Add this line
     setShowSearch(false);
   }, []);
 
@@ -503,6 +527,11 @@ const DefectsDashboard = () => {
 
   const uniqueSources = useMemo(() =>
     [...new Set(defects.map(d => d.raised_by).filter(Boolean))],
+    [defects]
+  );
+
+  const uniqueVessels = useMemo(() =>
+    [...new Set(defects.map(d => d.vessel_name).filter(Boolean))],
     [defects]
   );
 
@@ -614,6 +643,56 @@ const DefectsDashboard = () => {
 
         {/* Filter Chips */}
         <div className={styles.filterChips}>
+          {/* Vessel Filter Dropdown - Add this FIRST in the filterChips section */}
+          <div className={styles.filterDropdownContainer} onClick={(e) => e.stopPropagation()}>
+            <button
+              className={`${styles.filterDropdownButton} ${showVesselDropdown ? styles.active : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowVesselDropdown(!showVesselDropdown);
+                setShowStatusDropdown(false);
+                setShowCriticalityDropdown(false);
+                setShowSourceDropdown(false);
+              }}
+            >
+              All Vessels
+              <span className={styles.filterCount}>{vesselFilters.length}/{uniqueVessels.length}</span>
+            </button>
+
+            {showVesselDropdown && (
+              <div className={styles.filterDropdownContent}>
+                <div className={styles.filterDropdownHeader}>
+                  <h4>Filter by Vessel</h4>
+                  <button className={styles.selectAllBtn} onClick={() => toggleAllItems('vessels')}>
+                    {vesselFilters.length === uniqueVessels.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+                <div className={styles.filterDropdownItems}>
+                  {uniqueVessels.map(vessel => (
+                    <div key={vessel} className={styles.filterCheckboxItem}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={vesselFilters.includes(vessel)}
+                          onChange={() => toggleFilterItem('vessels', vessel)}
+                        />
+                        <span>{vessel}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <div className={styles.filterDropdownFooter}>
+                  <button
+                    className={styles.applyBtn}
+                    onClick={() => setShowVesselDropdown(false)}
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Status Filter Dropdown */}
           <div className={styles.filterDropdownContainer} onClick={(e) => e.stopPropagation()}>
             <button
@@ -623,6 +702,7 @@ const DefectsDashboard = () => {
                 setShowStatusDropdown(!showStatusDropdown);
                 setShowCriticalityDropdown(false);
                 setShowSourceDropdown(false);
+                setShowVesselDropdown(false);
               }}
             >
               All Statuses
@@ -672,6 +752,7 @@ const DefectsDashboard = () => {
                 setShowCriticalityDropdown(!showCriticalityDropdown);
                 setShowStatusDropdown(false);
                 setShowSourceDropdown(false);
+                setShowVesselDropdown(false);
               }}
             >
               All Criticality
@@ -721,6 +802,7 @@ const DefectsDashboard = () => {
                 setShowSourceDropdown(!showSourceDropdown);
                 setShowStatusDropdown(false);
                 setShowCriticalityDropdown(false);
+                setShowVesselDropdown(false);
               }}
             >
               All Sources
@@ -762,13 +844,19 @@ const DefectsDashboard = () => {
           </div>
 
           {/* Reset Filters Button */}
-          <button 
-            className={styles.resetButton} 
-            onClick={resetFilters}
-            title="Reset all filters"
-          >
-            Reset
-          </button>
+          {(searchTerm || 
+            statusFilters.length < uniqueStatuses.length || 
+            criticalityFilters.length < uniqueCriticalities.length || 
+            sourceFilters.length < uniqueSources.length ||
+            vesselFilters.length < uniqueVessels.length) && ( // Add this line
+            <button 
+              className={styles.resetButton} 
+              onClick={resetFilters}
+              title="Reset all filters"
+            >
+              Reset
+            </button>
+          )}
         </div>
 
         {/* Right Section Controls */}
@@ -893,7 +981,8 @@ const DefectsDashboard = () => {
               searchTerm || 
               statusFilters.length < uniqueStatuses.length || 
               criticalityFilters.length < uniqueCriticalities.length || 
-              sourceFilters.length < uniqueSources.length
+              sourceFilters.length < uniqueSources.length ||
+              vesselFilters.length < uniqueVessels.length // Add this line
                 ? "No defects match your search criteria"
                 : "No defects found"
             }
