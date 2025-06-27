@@ -1,12 +1,23 @@
 // src/components/dashboard/reporting/VesselReportingPage.jsx
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  RefreshCw, 
-  Ship, 
-  Filter
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  RefreshCw,
+  Ship,
+  Filter,
+  Search,
+  Calendar,
+  AlertTriangle,
+  Download,
+  Eye,
+  FileText,
+  Shield,
+  Clock
 } from 'lucide-react';
 import VesselReportingTable from './VesselReportingTable';
 import { reportingFieldMappings } from './ReportingFieldMappings';
+import vesselReportingService from '../../../services/vesselReportingService';
+import { useAuth } from '../../../context/AuthContext';
+import { usePermissions } from '../../../context/PermissionContext';
 import '../DashboardStyles.css';
 
 const VesselReportingPage = () => {
@@ -15,269 +26,463 @@ const VesselReportingPage = () => {
   const [filteredVessels, setFilteredVessels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Filter state variables
   const [voyageStatusFilter, setVoyageStatusFilter] = useState('All Voyages');
-  const [showVoyageStatusDropdown, setShowVoyageStatusDropdown] = useState(false);
+  const [vesselNameFilters, setVesselNameFilters] = useState([]);
+  const [checklistStatusFilters, setChecklistStatusFilters] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
-  // User context - Replace with actual user authentication
-  // For now, let's show all vessels for testing, but in production this should come from auth context
-  const currentUser = {
-    id: 'user123', // This should come from your auth context
-    vesselAssignments: [], // Empty array means show all vessels for now
-    role: 'vessel_user',
-    showAllVessels: true // Temporary flag for testing
-  };
+  // Dropdown visibility state
+  const [showVoyageStatusDropdown, setShowVoyageStatusDropdown] = useState(false);
+  const [showVesselNameDropdown, setShowVesselNameDropdown] = useState(false);
+  const [showChecklistStatusDropdown, setShowChecklistStatusDropdown] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+
+  // Auth and Permission contexts
+  const { currentUser, loading: authLoading } = useAuth();
+  const {
+    permissions,
+    loading: permissionsLoading,
+    error: permissionsError,
+    canRead,
+    canExport,
+    isReadOnly,
+    getPermissionStatus,
+    roleName,
+    refreshPermissions
+  } = usePermissions();
 
   // Store processed data by status for filter operations
   const [activeVessels, setActiveVessels] = useState([]);
   const [inactiveVessels, setInactiveVessels] = useState([]);
   const [allProcessedVessels, setAllProcessedVessels] = useState([]);
+  const [userAssignments, setUserAssignments] = useState([]);
 
-  // API endpoint
-  const BASE_API_URL = 'https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws';
-  const VESSELS_WITH_OVERRIDES_API_URL = `${BASE_API_URL}/api/vessels-with-overrides`;
+  // User ID from auth context
+  const userId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
 
-  // Function to determine checklist status
-  const getChecklistStatus = (vessel) => {
-    if (vessel.checklist_received) {
-      const checklistValue = normalizeChecklistValue(vessel.checklist_received);
-      if (checklistValue === 'Submitted') return 'completed';
-      if (checklistValue === 'Acknowledged') return 'in_progress';
-      return 'pending';
-    }
-    return 'not_started';
-  };
+  console.log("VesselReportingPage: Rendering with permissions:", {
+    permissions,
+    permissionStatus: getPermissionStatus(),
+    canRead: canRead(),
+    canExport: canExport(),
+    roleName,
+    userId
+  });
 
-  // Function to normalize checklist value
-  const normalizeChecklistValue = (value) => {
-    if (value === null || value === undefined) return "Pending";
-    if (typeof value === 'boolean') return value ? 'Submitted' : 'Pending';
-    if (typeof value === 'string') {
-      const validValues = ["Pending", "Acknowledged", "Submitted"];
-      if (validValues.includes(value)) return value;
-      if (value.toLowerCase() === 'true') return 'Submitted';
-      if (value.toLowerCase() === 'false') return 'Pending';
-    }
-    return "Pending";
-  };
-
-  // Filter vessels based on user assignments
-  const filterVesselsByUser = (vessels) => {
-    // For testing purposes, if showAllVessels is true or vesselAssignments is empty, show all vessels
-    if (currentUser.showAllVessels || currentUser.vesselAssignments.length === 0) {
-      console.log('Showing all vessels for user (testing mode)');
-      return vessels;
-    }
-    
-    // In production, filter by assigned vessels
-    return vessels.filter(vessel => {
-      // Check if the vessel is assigned to the current user
-      const isAssigned = currentUser.vesselAssignments.includes(vessel.imo_no.toString());
-      if (isAssigned) {
-        console.log(`Vessel ${vessel.vessel_name} (${vessel.imo_no}) is assigned to user`);
-      }
-      return isAssigned;
-    });
-  };
-
-  // Process vessels data (focusing on user's assigned vessels)
-  const processVesselsData = useCallback((data) => {
-    console.log('Raw data received for reporting:', data.length, 'rows');
-
-    // Helper function for date parsing
-    const parseDate = (dateString) => {
-      if (!dateString) return null;
-      try {
-        const date = new Date(dateString);
-        return !isNaN(date.getTime()) ? date : null;
-      } catch (e) {
-        return null;
-      }
-    };
-
-    // Filter vessels with valid data
-    const vesselsWithValidData = data.filter(vessel => {
-      const imoNo = vessel.imo_no;
-      const vesselName = vessel.vessel_name;
-
-      return imoNo &&
-        imoNo !== "-" &&
-        Number.isInteger(Number(imoNo)) &&
-        !String(imoNo).includes('.') &&
-        vesselName &&
-        vesselName !== "-";
-    });
-
-    console.log('Vessels with valid data for reporting:', vesselsWithValidData.length);
-
-    // Filter by user assignments
-    const userVessels = filterVesselsByUser(vesselsWithValidData);
-    console.log('User assigned vessels:', userVessels.length);
-    
-    // Debug: Show some sample IMO numbers from the data
-    if (userVessels.length === 0 && !currentUser.showAllVessels) {
-      console.log('No vessels assigned. Sample IMO numbers from data:', 
-        vesselsWithValidData.slice(0, 5).map(v => ({ vessel: v.vessel_name, imo: v.imo_no }))
-      );
-      console.log('User assignments:', currentUser.vesselAssignments);
-    }
-
-    // Find the latest rds_load_date
-    const allLoadDates = userVessels
-      .map(v => parseDate(v.rds_load_date))
-      .filter(date => date !== null);
-
-    const latestLoadDate = allLoadDates.length ?
-      new Date(Math.max(...allLoadDates.map(d => d.getTime()))) : null;
-
-    // Calculate the date 2 months ago for report_date filtering
-    const twoMonthsAgo = new Date();
-    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
-
-    // Active vessels processing
-    const activeVessels = latestLoadDate ?
-      userVessels.filter(vessel => {
-        const isActive = vessel.status === "Active" &&
-          vessel.rds_load_date &&
-          new Date(vessel.rds_load_date).getTime() === latestLoadDate.getTime();
-
-        let hasRecentReport = false;
-        if (vessel.report_date) {
-          const reportDate = parseDate(vessel.report_date);
-          if (reportDate) {
-            hasRecentReport = reportDate >= twoMonthsAgo;
-          }
-        }
-
-        return isActive && hasRecentReport;
-      }) : [];
-
-    // Inactive vessels: all with status="Inactive"
-    const inactiveVessels = userVessels.filter(vessel => vessel.status === "Inactive");
-
-    console.log('Active user vessels:', activeVessels.length);
-    console.log('Inactive user vessels:', inactiveVessels.length);
-
-    // Enhance vessel data with calculated fields
-    const enhanceVessel = (vessel, isActive = true) => {
-      const etaDate = parseDate(vessel.eta);
-
-      let days_to_go = 0;
-      if (etaDate) {
-        const currentDate = new Date();
-        const timeDiff = etaDate.getTime() - currentDate.getTime();
-        days_to_go = Math.max(0, Math.round(timeDiff / (1000 * 3600 * 24) * 10) / 10);
-      }
-
-      const checklistStatus = getChecklistStatus(vessel);
-      
-      return {
-        ...vessel,
-        etaDate,
-        days_to_go,
-        uniqueKey: `vessel-${vessel.imo_no}-${vessel.id}`,
-        checklistStatus,
-        isReportingReady: checklistStatus !== 'not_started',
-        isActiveVessel: isActive
-      };
-    };
-
-    // Process both active and inactive vessels
-    const enhancedActiveVessels = activeVessels.map(v => enhanceVessel(v, true));
-    const enhancedInactiveVessels = inactiveVessels.map(v => enhanceVessel(v, false));
-
-    // Return the processed data without setting state here
-    return {
-      activeVessels: enhancedActiveVessels,
-      inactiveVessels: enhancedInactiveVessels,
-      allVessels: [...enhancedActiveVessels, ...enhancedInactiveVessels]
-    };
-  }, []);
-
-  // Fetch vessel data
+  // Fetch vessel data using the service
   const fetchVesselData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    if (!userId) {
+      console.log("VesselReportingPage: No user ID available, skipping vessel fetch");
+      setLoading(false);
+      return;
+    }
 
     try {
-      const response = await fetch(VESSELS_WITH_OVERRIDES_API_URL);
+      setLoading(true);
+      setError(null);
 
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
+      console.log('VesselReportingPage: Fetching vessels for user:', userId);
+      const data = await vesselReportingService.getVesselsForUser(userId);
 
-      const data = await response.json();
-      console.log('API Response data for reporting:', data.length, 'rows');
-
-      const processedData = processVesselsData(data);
-      console.log('Processed data for reporting:', processedData.allVessels.length);
+      console.log('VesselReportingPage: Successfully fetched vessel data:', {
+        total: data.allVessels.length,
+        active: data.activeVessels.length,
+        inactive: data.inactiveVessels.length,
+        assignments: data.userAssignments.length
+      });
 
       // Set all the state at once to avoid multiple re-renders
-      setActiveVessels(processedData.activeVessels);
-      setInactiveVessels(processedData.inactiveVessels);
-      setAllProcessedVessels(processedData.allVessels);
-      setVessels(processedData.allVessels);
-      setFilteredVessels(processedData.allVessels);
+      setActiveVessels(data.activeVessels);
+      setInactiveVessels(data.inactiveVessels);
+      setAllProcessedVessels(data.allVessels);
+      setVessels(data.allVessels);
+      setFilteredVessels(data.allVessels);
+      setUserAssignments(data.userAssignments);
+
+      // Initialize filters with all available options
+      const uniqueVesselNames = [...new Set(data.allVessels.map(v => v.vessel_name).filter(Boolean))];
+      const uniqueChecklistStatuses = [...new Set(data.allVessels.map(v => v.checklistStatus).filter(Boolean))];
+
+      setVesselNameFilters(uniqueVesselNames);
+      setChecklistStatusFilters(uniqueChecklistStatuses);
       setLastUpdated(new Date());
+
     } catch (err) {
-      console.error('Error fetching vessel data for reporting:', err);
-      setError('Failed to load vessel data. Please try again later.');
+      console.error('VesselReportingPage: Error fetching vessel data:', err);
+      setError(`Failed to load vessel data: ${err.message}. Please try again later.`);
       setVessels([]);
       setFilteredVessels([]);
       setActiveVessels([]);
       setInactiveVessels([]);
       setAllProcessedVessels([]);
+      setUserAssignments([]);
     } finally {
       setLoading(false);
     }
-  }, [processVesselsData, VESSELS_WITH_OVERRIDES_API_URL]);
+  }, [userId]);
 
-  // Load data on component mount
+  // Initial data fetch - wait for auth and permissions to load
   useEffect(() => {
-    fetchVesselData();
-  }, [fetchVesselData]);
+    const shouldFetchData = !authLoading && !permissionsLoading && userId && canRead();
 
-  // Apply voyage status filter when it changes
-  useEffect(() => {
-    if (allProcessedVessels.length === 0) return;
+    if (shouldFetchData) {
+      console.log("VesselReportingPage: Initial data fetch triggered");
+      fetchVesselData();
+    } else {
+      console.log("VesselReportingPage: Waiting for auth/permissions or insufficient read access", {
+        authLoading,
+        permissionsLoading,
+        userId: !!userId,
+        canRead: canRead()
+      });
+      setLoading(false);
+    }
+  }, [authLoading, permissionsLoading, userId, canRead, fetchVesselData]);
+
+  // Get unique values for filters
+  const uniqueVesselNames = useMemo(() =>
+    [...new Set(allProcessedVessels.map(v => v.vessel_name).filter(Boolean))],
+    [allProcessedVessels]
+  );
+
+  const uniqueChecklistStatuses = useMemo(() =>
+    [...new Set(allProcessedVessels.map(v => v.checklistStatus).filter(Boolean))],
+    [allProcessedVessels]
+  );
+
+  // Filtered vessels based on all criteria
+  const filteredData = useMemo(() => {
+    if (allProcessedVessels.length === 0) return [];
 
     let baseVessels = [];
 
+    // Apply voyage status filter
     if (voyageStatusFilter === 'Current Voyages') {
       baseVessels = activeVessels;
     } else if (voyageStatusFilter === 'Past Voyages') {
       baseVessels = inactiveVessels;
-    } else { // 'All Voyages'
+    } else {
       baseVessels = allProcessedVessels;
     }
 
-    setFilteredVessels(baseVessels);
-  }, [voyageStatusFilter, activeVessels, inactiveVessels, allProcessedVessels]);
+    let results = [...baseVessels];
 
-  // Close dropdown when clicking elsewhere
-  const closeAllDropdowns = () => {
-    setShowVoyageStatusDropdown(false);
+    // Apply vessel name filters
+    if (vesselNameFilters.length > 0 && vesselNameFilters.length < uniqueVesselNames.length) {
+      results = results.filter(vessel => vesselNameFilters.includes(vessel.vessel_name));
+    }
+
+    // Apply checklist status filters
+    if (checklistStatusFilters.length > 0 && checklistStatusFilters.length < uniqueChecklistStatuses.length) {
+      results = results.filter(vessel => checklistStatusFilters.includes(vessel.checklistStatus));
+    }
+
+    // Apply search term
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      results = results.filter(vessel =>
+        Object.values(vessel).some(value =>
+          value && String(value).toLowerCase().includes(term)
+        )
+      );
+    }
+
+    return results;
+  }, [
+    allProcessedVessels,
+    activeVessels,
+    inactiveVessels,
+    voyageStatusFilter,
+    vesselNameFilters,
+    checklistStatusFilters,
+    searchTerm,
+    uniqueVesselNames,
+    uniqueChecklistStatuses
+  ]);
+
+  // Update filtered vessels when filters change
+  useEffect(() => {
+    setFilteredVessels(filteredData);
+  }, [filteredData]);
+
+  // Toggle filter items
+  const toggleFilterItem = (type, item) => {
+    switch (type) {
+      case 'vesselNames':
+        setVesselNameFilters(prevFilters =>
+          prevFilters.includes(item)
+            ? prevFilters.filter(i => i !== item)
+            : [...prevFilters, item]
+        );
+        break;
+      case 'checklistStatuses':
+        setChecklistStatusFilters(prevFilters =>
+          prevFilters.includes(item)
+            ? prevFilters.filter(i => i !== item)
+            : [...prevFilters, item]
+        );
+        break;
+      default:
+        break;
+    }
   };
+
+  // Toggle all items in a filter group
+  const toggleAllItems = (type) => {
+    switch (type) {
+      case 'vesselNames':
+        setVesselNameFilters(vesselNameFilters.length === uniqueVesselNames.length ? [] : uniqueVesselNames);
+        break;
+      case 'checklistStatuses':
+        setChecklistStatusFilters(checklistStatusFilters.length === uniqueChecklistStatuses.length ? [] : uniqueChecklistStatuses);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Reset all filters
+  const resetFilters = useCallback(() => {
+    console.log('Resetting all filters');
+    setSearchTerm('');
+    setVoyageStatusFilter('All Voyages');
+    setVesselNameFilters(uniqueVesselNames);
+    setChecklistStatusFilters(uniqueChecklistStatuses);
+  }, [uniqueVesselNames, uniqueChecklistStatuses]);
+
+  // Export filtered data with permission check
+  const handleExport = useCallback(() => {
+    if (!canExport()) {
+      console.warn('VesselReportingPage: Export not allowed for current user');
+      setError('You do not have permission to export data.');
+      return;
+    }
+
+    try {
+      console.log('VesselReportingPage: Exporting filtered vessel data');
+      vesselReportingService.exportToCsv(filteredVessels, reportingFieldMappings);
+    } catch (exportError) {
+      console.error('VesselReportingPage: Export failed:', exportError);
+      setError('Failed to export data. Please try again.');
+    }
+  }, [canExport, filteredVessels]);
+
+  // Refresh data handler
+  const handleRefreshData = useCallback(async () => {
+    console.log('VesselReportingPage: Manual data refresh requested');
+    setError(null);
+
+    try {
+      await Promise.all([
+        fetchVesselData(),
+        refreshPermissions()
+      ]);
+      console.log('VesselReportingPage: Manual refresh completed');
+    } catch (error) {
+      console.error('VesselReportingPage: Error during manual refresh:', error);
+      setError('Failed to refresh data. Please try again.');
+    }
+  }, [fetchVesselData, refreshPermissions]);
+
+  // Close all dropdowns when clicking elsewhere
+  const closeAllDropdowns = useCallback(() => {
+    setShowVoyageStatusDropdown(false);
+    setShowVesselNameDropdown(false);
+    setShowChecklistStatusDropdown(false);
+    setShowSearch(false);
+  }, []);
+
+  // Clear error handler
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  // Stats calculations using the service
+  const stats = useMemo(() => {
+    return vesselReportingService.getReportingStats(vessels);
+  }, [vessels]);
+
+  // Loading state for entire dashboard
+  if (authLoading || permissionsLoading) {
+    return (
+      <div className="dashboard-container">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading dashboard...</p>
+          {authLoading && <small>Authenticating user...</small>}
+          {permissionsLoading && <small>Loading permissions...</small>}
+        </div>
+      </div>
+    );
+  }
+
+  // Permission error state
+  if (permissionsError) {
+    return (
+      <div className="dashboard-container">
+        <div className="error-container">
+          <AlertTriangle size={24} />
+          <h2>Permission Error</h2>
+          <p>{permissionsError}</p>
+          <p>You may have limited access to vessel reporting functionality.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="retry-button"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // No read access state
+  if (!canRead()) {
+    return (
+      <div className="dashboard-container">
+        <div className="error-container">
+          <Shield size={24} />
+          <h2>Access Denied</h2>
+          <p>You don't have permission to view vessel reporting data.</p>
+          <p>Please contact your administrator for access.</p>
+          {roleName && <p>Current role: <strong>{roleName}</strong></p>}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-container" onClick={closeAllDropdowns}>
-      {/* Simplified Filter Bar */}
-      <div className="filter-bar">
-        <div className="filter-section-left">
-          <h1 className="dashboard-title">Vessel Reporting</h1>
-          <div className="vessel-counter">
-            <Ship size={14} />
-            <span>
-              {currentUser.showAllVessels 
-                ? `${vessels.length} vessel${vessels.length !== 1 ? 's' : ''} (all)` 
-                : `${vessels.length} assigned vessel${vessels.length !== 1 ? 's' : ''}`
-              }
-            </span>
+      {/* Dashboard Header */}
+      <header className="dashboard-header">
+        <div className="dashboard-title">
+          <h1>Vessel Reporting Dashboard</h1>
+          <div className="fleet-stats">
+            <div className="fleet-count">
+              <Ship size={16} />
+              <span>{stats.total} Total Vessels</span>
+              {userAssignments.length > 0 && (
+                <small>({userAssignments.length} assigned)</small>
+              )}
+            </div>
+            <div className="fleet-count">
+              <Calendar size={16} />
+              <span>{stats.active} Active Voyages</span>
+            </div>
+            {stats.overdue > 0 && (
+              <div className="alert-count warning">
+                <AlertTriangle size={16} />
+                <span>{stats.overdue} Overdue</span>
+              </div>
+            )}
+            {stats.urgentVessels > 0 && (
+              <div className="alert-count warning">
+                <Clock size={16} />
+                <span>{stats.urgentVessels} Urgent</span>
+              </div>
+            )}
           </div>
         </div>
 
+        <div className="dashboard-controls">
+          {/* Search Container */}
+          <div className="search-container">
+            <button
+              className="search-toggle"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowSearch(!showSearch);
+              }}
+              title="Search vessels"
+            >
+              <Search size={16} />
+            </button>
+
+            {showSearch && (
+              <div className="search-popup" onClick={(e) => e.stopPropagation()}>
+                <input
+                  type="text"
+                  placeholder="Search vessels..."
+                  className="search-input"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="control-buttons">
+            <button
+              className={`control-btn export-btn ${!canExport() ? 'disabled' : ''}`}
+              onClick={handleExport}
+              disabled={!canExport() || filteredVessels.length === 0 || loading}
+              title={canExport() ? "Export filtered data" : "Export not permitted"}
+            >
+              <Download size={16} />
+              Export
+            </button>
+
+            <button
+              className="control-btn refresh-btn"
+              onClick={handleRefreshData}
+              title="Refresh data"
+              disabled={loading}
+            >
+              <RefreshCw size={16} className={loading ? "spinning" : ""} />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Enhanced Stats Cards */}
+      <div className="stats-container">
+        <div className="stat-card">
+          <div className="stat-card-content">
+            <div className="stat-card-title">Total Vessels</div>
+            <div className="stat-card-value">{stats.total}</div>
+          </div>
+          <div className="stat-card-icon">
+            <Ship size={20} />
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-card-content">
+            <div className="stat-card-title">Active Voyages</div>
+            <div className="stat-card-value">{stats.active}</div>
+          </div>
+          <div className="stat-card-icon">
+            <Calendar size={20} />
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-card-content">
+            <div className="stat-card-title">Completed Checklists</div>
+            <div className="stat-card-value">{stats.checklistStats.completed}</div>
+          </div>
+          <div className="stat-card-icon">
+            <FileText size={20} />
+          </div>
+        </div>
+
+        <div className={`stat-card ${stats.overdue > 0 ? 'alert' : ''}`}>
+          <div className="stat-card-content">
+            <div className="stat-card-title">Overdue ETAs</div>
+            <div className="stat-card-value">{stats.overdue}</div>
+          </div>
+          <div className="stat-card-icon">
+            <AlertTriangle size={20} />
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Filter Bar */}
+      <div className="filter-bar">
         <div className="filter-label">
           <Filter size={14} />
         </div>
@@ -287,7 +492,11 @@ const VesselReportingPage = () => {
           <div className="filter-dropdown-container" onClick={(e) => e.stopPropagation()}>
             <button
               className={`filter-dropdown-button ${showVoyageStatusDropdown ? 'active' : ''}`}
-              onClick={() => setShowVoyageStatusDropdown(!showVoyageStatusDropdown)}
+              onClick={() => {
+                setShowVoyageStatusDropdown(!showVoyageStatusDropdown);
+                setShowVesselNameDropdown(false);
+                setShowChecklistStatusDropdown(false);
+              }}
             >
               {voyageStatusFilter}
               <span className="filter-count">
@@ -348,34 +557,145 @@ const VesselReportingPage = () => {
               </div>
             )}
           </div>
+
+          {/* Vessel Name Filter Dropdown */}
+          <div className="filter-dropdown-container" onClick={(e) => e.stopPropagation()}>
+            <button
+              className={`filter-dropdown-button ${showVesselNameDropdown ? 'active' : ''}`}
+              onClick={() => {
+                setShowVesselNameDropdown(!showVesselNameDropdown);
+                setShowVoyageStatusDropdown(false);
+                setShowChecklistStatusDropdown(false);
+              }}
+            >
+              Vessel Names
+              <span className="filter-count">{vesselNameFilters.length}/{uniqueVesselNames.length}</span>
+            </button>
+
+            {showVesselNameDropdown && (
+              <div className="filter-dropdown-content">
+                <div className="filter-dropdown-header">
+                  <h4>Filter by Vessel Name</h4>
+                  <button className="select-all-btn" onClick={() => toggleAllItems('vesselNames')}>
+                    {vesselNameFilters.length === uniqueVesselNames.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+                <div className="filter-dropdown-items">
+                  {uniqueVesselNames.map(vesselName => (
+                    <div key={vesselName} className="filter-checkbox-item">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={vesselNameFilters.includes(vesselName)}
+                          onChange={() => toggleFilterItem('vesselNames', vesselName)}
+                        />
+                        <span>{vesselName}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <div className="filter-dropdown-footer">
+                  <button
+                    className="apply-btn"
+                    onClick={() => setShowVesselNameDropdown(false)}
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Checklist Status Filter Dropdown */}
+          <div className="filter-dropdown-container" onClick={(e) => e.stopPropagation()}>
+            <button
+              className={`filter-dropdown-button ${showChecklistStatusDropdown ? 'active' : ''}`}
+              onClick={() => {
+                setShowChecklistStatusDropdown(!showChecklistStatusDropdown);
+                setShowVoyageStatusDropdown(false);
+                setShowVesselNameDropdown(false);
+              }}
+            >
+              Checklist Status
+              <span className="filter-count">{checklistStatusFilters.length}/{uniqueChecklistStatuses.length}</span>
+            </button>
+
+            {showChecklistStatusDropdown && (
+              <div className="filter-dropdown-content">
+                <div className="filter-dropdown-header">
+                  <h4>Filter by Checklist Status</h4>
+                  <button className="select-all-btn" onClick={() => toggleAllItems('checklistStatuses')}>
+                    {checklistStatusFilters.length === uniqueChecklistStatuses.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+                <div className="filter-dropdown-items">
+                  {uniqueChecklistStatuses.map(status => (
+                    <div key={status} className="filter-checkbox-item">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={checklistStatusFilters.includes(status)}
+                          onChange={() => toggleFilterItem('checklistStatuses', status)}
+                        />
+                        <span className="checklist-status-label">
+                          {status === 'completed' && '✓ Completed'}
+                          {status === 'in_progress' && '⏳ In Progress'}
+                          {status === 'pending' && '⚠️ Pending'}
+                          {status === 'not_started' && '❌ Not Started'}
+                        </span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <div className="filter-dropdown-footer">
+                  <button
+                    className="apply-btn"
+                    onClick={() => setShowChecklistStatusDropdown(false)}
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Reset Filters Button */}
+          {(searchTerm ||
+            voyageStatusFilter !== 'All Voyages' ||
+            vesselNameFilters.length < uniqueVesselNames.length ||
+            checklistStatusFilters.length < uniqueChecklistStatuses.length) && (
+              <button
+                className="reset-button"
+                onClick={resetFilters}
+                title="Reset all filters"
+              >
+                Reset
+              </button>
+            )}
         </div>
 
-        <div className="filter-section-right">
-          <button 
-            className="control-btn refresh-btn" 
-            onClick={fetchVesselData} 
-            title="Refresh data"
-            disabled={loading}
-          >
-            <RefreshCw size={14} className={loading ? "spinning" : ""} />
-          </button>
+        <div className="date-filter">
+          Last updated: {lastUpdated.toLocaleTimeString()}
         </div>
       </div>
 
       {/* Error Message */}
       {error && (
         <div className="error-message">
+          <AlertTriangle size={16} />
           <span>{error}</span>
+          <button
+            onClick={clearError}
+            className="error-close-button"
+            title="Dismiss error"
+          >
+            ×
+          </button>
         </div>
       )}
 
       {/* Main Content - Table */}
-      <div className="reporting-table-section" style={{ 
-        height: 'calc(100vh - 160px)', 
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
+      <div className="vessel-table-wrapper">
         {loading ? (
           <div className="loading-container">
             <div className="loading-spinner"></div>
@@ -383,99 +703,52 @@ const VesselReportingPage = () => {
           </div>
         ) : filteredVessels.length === 0 ? (
           <div className="no-results">
+            <Eye size={24} />
             <p>
-              {vessels.length === 0 
-                ? "No vessels are currently assigned to you." 
-                : "No vessels match the selected voyage status."
+              {vessels.length === 0
+                ? "No vessels are currently assigned to you."
+                : "No vessels match the selected filters."
               }
             </p>
-            {vessels.length > 0 && voyageStatusFilter !== 'All Voyages' && (
-              <button 
-                className="reset-filters" 
-                onClick={() => setVoyageStatusFilter('All Voyages')}
-              >
-                Show All Voyages
-              </button>
+            {userAssignments.length === 0 && vessels.length === 0 && (
+              <small>Contact your administrator to assign vessels to your account.</small>
             )}
+            {vessels.length > 0 && (searchTerm || voyageStatusFilter !== 'All Voyages' ||
+              vesselNameFilters.length < uniqueVesselNames.length ||
+              checklistStatusFilters.length < uniqueChecklistStatuses.length) && (
+                <button
+                  className="reset-filters"
+                  onClick={resetFilters}
+                >
+                  Reset All Filters
+                </button>
+              )}
           </div>
         ) : (
-          <div className="table-container" style={{ 
-            flex: 1,
-            overflow: 'auto',
-            scrollbarWidth: 'thin',
-            scrollbarColor: 'rgba(59, 173, 229, 0.5) rgba(11, 22, 35, 0.3)',
-            background: 'var(--table-row-bg, #0e1e2f)'
-          }}>
-            <style jsx>{`
-              .table-container::-webkit-scrollbar {
-                width: 8px;
-                height: 8px;
-              }
-              
-              .table-container::-webkit-scrollbar-track {
-                background: rgba(11, 22, 35, 0.3);
-                border-radius: 4px;
-              }
-              
-              .table-container::-webkit-scrollbar-thumb {
-                background: rgba(59, 173, 229, 0.5);
-                border-radius: 4px;
-                border: 1px solid rgba(11, 22, 35, 0.5);
-              }
-              
-              .table-container::-webkit-scrollbar-thumb:hover {
-                background: rgba(59, 173, 229, 0.7);
-              }
-              
-              .table-container::-webkit-scrollbar-corner {
-                background: rgba(11, 22, 35, 0.3);
-              }
-              
-              /* Horizontal scrollbar specific styling */
-              .table-container::-webkit-scrollbar:horizontal {
-                height: 8px;
-              }
-              
-              .table-container::-webkit-scrollbar-track:horizontal {
-                background: rgba(11, 22, 35, 0.3);
-                border-radius: 4px;
-              }
-              
-              .table-container::-webkit-scrollbar-thumb:horizontal {
-                background: rgba(59, 173, 229, 0.5);
-                border-radius: 4px;
-                border: 1px solid rgba(11, 22, 35, 0.5);
-              }
-              
-              .table-container::-webkit-scrollbar-thumb:horizontal:hover {
-                background: rgba(59, 173, 229, 0.7);
-              }
-            `}</style>
-            <VesselReportingTable
-              vessels={filteredVessels}
-              fieldMappings={reportingFieldMappings}
-              loading={loading}
-              currentUser={currentUser}
-            />
-          </div>
+          <VesselReportingTable
+            vessels={filteredVessels}
+            fieldMappings={reportingFieldMappings}
+            loading={loading}
+            currentUser={currentUser}
+          />
         )}
       </div>
 
       {/* Footer */}
-      <div className="reporting-footer" style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        background: 'var(--table-header-bg, linear-gradient(180deg, #0a1725, #112032))',
-        borderTop: '1px solid rgba(244, 244, 244, 0.05)',
-        padding: '8px 16px',
-        zIndex: 5
-      }}>
+      <div className="dashboard-footer">
         <div className="footer-info">
-          <span>Last updated: {lastUpdated.toLocaleString()}</span>
-          <span>•</span>
           <span>Showing {filteredVessels.length} of {vessels.length} vessels</span>
+          {userAssignments.length > 0 && (
+            <>
+              <span>•</span>
+              <span>{userAssignments.length} vessels assigned to you</span>
+            </>
+          )}
+          <span>•</span>
+          <span>Last refreshed: {lastUpdated.toLocaleString()}</span>
+        </div>
+        <div className="watermark">
+          Vessel Reporting Dashboard v2.0
         </div>
       </div>
     </div>

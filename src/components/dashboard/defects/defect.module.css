@@ -1531,7 +1531,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 4px 8px;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--table-header-bg);
 }
@@ -2330,7 +2330,7 @@
   background: rgba(231, 76, 60, 0.1);
   border-left: 3px solid var(--danger-color);
   border-radius: 4px;
-  padding: 12px 16px;
+  padding: 4px 8px;
   margin: 0 0 24px 0;
   color: var(--danger-color);
   flex-shrink: 0;
@@ -2586,7 +2586,7 @@
 }
 
 .dataTable td {
-  padding: 10px 16px;
+  padding: 4px 8px;
   border-bottom: 1px solid var(--table-border-color);
   vertical-align: middle;
 }
@@ -2671,7 +2671,7 @@
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
-    padding: 12px 16px;
+    padding: 4px 8px;
   }
   .filterSectionLeft {
     flex-direction: column;
@@ -2724,7 +2724,7 @@
 
 @media (max-width: 576px) {
   .filterBar {
-    padding: 10px;
+    padding: 4px;
   }
   .filterSectionLeft {
     align-items: center;
@@ -2847,7 +2847,7 @@
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   border-radius: 0 12px 0 12px;
-  padding: 10px 14px;
+  padding: 4px 8px;
   color: white;
   font-size: 0.65rem;
   font-weight: 600;
