@@ -439,7 +439,7 @@ const VesselReportingPage = () => {
       </header>
 
       {/* Enhanced Stats Cards */}
-      <div className="stats-container">
+      {/* <div className="stats-container">
         <div className="stat-card">
           <div className="stat-card-content">
             <div className="stat-card-title">Total Vessels</div>
@@ -479,7 +479,7 @@ const VesselReportingPage = () => {
             <AlertTriangle size={20} />
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Enhanced Filter Bar */}
       <div className="filter-bar">

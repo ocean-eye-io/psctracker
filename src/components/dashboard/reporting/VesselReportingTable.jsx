@@ -16,6 +16,7 @@ import {
   TableBadge,
   ExpandedItem
 } from '../../common/Table';
+import { TextTooltip, VesselDetailsTooltip } from '../../common/Table/Tooltip'; // Import TextTooltip and VesselDetailsTooltip
 import PropTypes from 'prop-types';
 
 const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
@@ -116,17 +117,28 @@ const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
         minWidth: field.minWidth,
         sortable: true,
         render: (value, rowData) => {
-          // Vessel name column
+          // Vessel name column with VesselDetailsTooltip
           if (fieldId === 'vessel_name') {
+            // Create enhanced vessel details for tooltip
+            const vesselDetails = {
+              ...rowData,
+              // Add a formatted display for tooltip that includes IMO and Owner (if available)
+              tooltipDetails: [
+                { label: 'IMO', value: rowData.imo_no || '-' },
+                { label: 'Owner', value: rowData.owner || '-' },
+                { label: 'Built', value: rowData.BUILT_DATE ? formatDateTime(rowData.BUILT_DATE, false) : '-' },
+                { label: 'Flag', value: rowData.flag || '-' }
+              ]
+            };
+
             return (
               <div className="vessel-name-cell">
                 <div className="vessel-info">
                   <Ship size={16} className="vessel-icon" />
                   <div className="vessel-details">
-                    <span className="vessel-name" title={`IMO: ${rowData.imo_no || 'N/A'}`}>
-                      {(value || '-').toUpperCase()}
-                    </span>
-                    {rowData.imo_no && <span className="vessel-imo">IMO: {rowData.imo_no}</span>}
+                    <VesselDetailsTooltip vessel={vesselDetails}>
+                      <span className="vessel-name">{(value || '-').toUpperCase()}</span>
+                    </VesselDetailsTooltip>
                   </div>
                 </div>
               </div>
@@ -141,7 +153,9 @@ const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
                   status={value}
                   color={getStatusColor(value)}
                 />
-                <span className="status-icon">{value || '-'}</span>
+                <TextTooltip text={value || '-'}>
+                  <span className="status-icon">{value || '-'}</span>
+                </TextTooltip>
               </div>
             );
           }
@@ -153,13 +167,15 @@ const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
               <div className="checklist-status-cell">
                 <TableBadge variant={statusDisplay.variant} className="enhanced-status-badge">
                   {statusDisplay.icon}
-                  <span>{statusDisplay.label}</span>
+                  <TextTooltip text={statusDisplay.label}>
+                    <span>{statusDisplay.label}</span>
+                  </TextTooltip>
                 </TableBadge>
               </div>
             );
           }
 
-          // ETA column with special formatting
+          // ETA column with special formatting and TextTooltip
           if (fieldId === 'eta') {
             const etaValue = rowData.user_eta || value;
             const formattedValue = formatDateTime(etaValue, true);
@@ -173,51 +189,51 @@ const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
                 <div className="eta-content">
                   <Calendar size={16} className="eta-icon" />
                   <div className="eta-details">
-                    <span
-                      className={isOverdue ? 'overdue-text' : ''}
-                      title={formattedValue}
-                    >
-                      {formattedValue}
-                    </span>
-                    {isOverdue && (
-                      <span className="eta-warning">
-                        <AlertTriangle size={12} /> Overdue
+                    <TextTooltip text={formattedValue}>
+                      <span
+                        className={isOverdue ? 'overdue-text' : ''}
+                      >
+                        {formattedValue}
                       </span>
-                    )}
+                    </TextTooltip>
                   </div>
                 </div>
               </div>
             );
           }
 
-          // ETB column
+          // ETB column with TextTooltip
           if (fieldId === 'etb') {
             const etbValue = rowData.user_etb || value;
             const formattedValue = formatDateTime(etbValue, true);
             return (
               <div className="etb-cell">
                 <Calendar size={16} className="etb-icon" />
-                <span title={formattedValue}>
-                  {formattedValue}
-                </span>
+                <TextTooltip text={formattedValue}>
+                  <span>
+                    {formattedValue}
+                  </span>
+                </TextTooltip>
               </div>
             );
           }
 
-          // Arrival port column
+          // Arrival port column with TextTooltip
           if (fieldId === 'arrival_port') {
             const upperCaseValue = (value || '-').toUpperCase();
             return (
               <div className="port-cell">
                 <MapPin size={16} className="port-icon" />
-                <span className="port-name" title={upperCaseValue}>
-                  {upperCaseValue}
-                </span>
+                <TextTooltip text={upperCaseValue}>
+                  <span className="port-name">
+                    {upperCaseValue}
+                  </span>
+                </TextTooltip>
               </div>
             );
           }
 
-          // Days to go column
+          // Days to go column with TextTooltip
           if (fieldId === 'daysToGo' && typeof value === 'number') {
             const formattedValue = value.toFixed(1);
             const isUrgent = value <= 5 && value > 0;
@@ -228,10 +244,12 @@ const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
                 <div className="days-content">
                   <Clock size={16} className="days-icon" />
                   <div className="days-details">
-                    <span className="days-value" title={`${formattedValue} days remaining`}>
-                      {formattedValue}
-                    </span>
-                    <span className="days-label">days to go</span>
+                    <TextTooltip text={`${formattedValue} days remaining`}>
+                      <span className="days-value">
+                        {formattedValue}
+                      </span>
+                    </TextTooltip>
+                    {/* <span className="days-label">days to go</span> */}
                   </div>
                   {isCritical && (
                     <div className="urgency-indicator critical">
@@ -243,23 +261,27 @@ const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
             );
           }
 
-          // Default date formatting
+          // Default date formatting with TextTooltip
           if (field.type === 'date') {
             const formattedValue = formatDateTime(value, false);
             return (
-              <span className="date-cell" title={formattedValue}>
-                {formattedValue}
-              </span>
+              <TextTooltip text={formattedValue}>
+                <span className="date-cell">
+                  {formattedValue}
+                </span>
+              </TextTooltip>
             );
           }
 
-          // Default text rendering
+          // Default text rendering with TextTooltip
           if (value !== null && value !== undefined && value !== '-') {
             const stringValue = String(value);
             return (
-              <span className="text-cell" title={stringValue}>
-                {stringValue}
-              </span>
+              <TextTooltip text={stringValue}>
+                <span className="text-cell">
+                  {stringValue}
+                </span>
+              </TextTooltip>
             );
           }
 
@@ -396,8 +418,28 @@ const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
           overflow: hidden;
         }
 
-        .vessel-name-cell {
-          padding: 4px 0;
+        /* Adjusting padding for all cells to ensure consistent height */
+        /* This targets the cells within the Table component */
+        .vessel-reporting-table :global(.table-cell) {
+          padding-top: 8px; /* Adjust as needed */
+          padding-bottom: 8px; /* Adjust as needed */
+          display: flex; /* Ensure content is centered vertically */
+          align-items: center; /* Vertically align content */
+          min-height: 48px; /* Set a minimum height for rows */
+        }
+
+        .vessel-name-cell,
+        .status-cell,
+        .checklist-status-cell,
+        .eta-cell,
+        .etb-cell,
+        .port-cell,
+        .days-to-go,
+        .date-cell,
+        .text-cell,
+        .empty-cell {
+          /* Remove individual padding from these to let .table-cell control it */
+          padding: 0;
         }
 
         .vessel-info {
@@ -422,11 +464,6 @@ const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
           color: var(--text-light, #f4f4f4);
         }
 
-        .vessel-imo {
-          color: var(--text-muted, rgba(244, 244, 244, 0.6));
-          font-size: 11px;
-        }
-
         .status-cell {
           display: flex;
           align-items: center;
@@ -435,10 +472,6 @@ const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
 
         .status-icon {
           color: var(--text-muted, rgba(244, 244, 244, 0.6));
-        }
-
-        .checklist-status-cell {
-          padding: 2px 0;
         }
 
         .enhanced-status-badge {
@@ -458,20 +491,16 @@ const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
-        .eta-cell, .etb-cell {
-          padding: 4px 0;
-        }
-
         .eta-cell.overdue {
           background-color: rgba(231, 76, 60, 0.1);
           border-radius: 4px;
-          padding: 6px 8px;
+          padding: 6px 8px; /* Keep this padding for the background effect */
         }
 
         .eta-cell.urgent {
           background-color: rgba(241, 196, 15, 0.1);
           border-radius: 4px;
-          padding: 6px 8px;
+          padding: 6px 8px; /* Keep this padding for the background effect */
         }
 
         .eta-content, .etb-cell {
@@ -491,14 +520,6 @@ const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
           gap: 2px;
         }
 
-        .eta-warning {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 10px;
-          color: var(--warning-color, #F1C40F);
-        }
-
         .port-cell {
           display: flex;
           align-items: center;
@@ -514,20 +535,16 @@ const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
           font-weight: 500;
         }
 
-        .days-to-go {
-          padding: 4px 0;
-        }
-
         .days-to-go.urgent {
           background-color: rgba(241, 196, 15, 0.1);
           border-radius: 4px;
-          padding: 6px 8px;
+          padding: 6px 8px; /* Keep this padding for the background effect */
         }
 
         .days-to-go.critical {
           background-color: rgba(231, 76, 60, 0.1);
           border-radius: 4px;
-          padding: 6px 8px;
+          padding: 6px 8px; /* Keep this padding for the background effect */
         }
 
         .days-content {
@@ -632,10 +649,6 @@ const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
         @media (max-width: 768px) {
           .vessel-details {
             gap: 1px;
-          }
-
-          .vessel-imo {
-            font-size: 10px;
           }
 
           .enhanced-status-badge {
