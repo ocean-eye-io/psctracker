@@ -26,7 +26,7 @@ const CODE_17_COLOR = '#FFC107'; // Distinct color for Code 17
 
 const DeficiencyCodeChart = ({ data = [] }) => {
   const [activeView, setActiveView] = useState('port'); // 'port' or 'overall'
-  const [timeFilter, setTimeFilter] = useState('1y');
+  const [timeFilter, setTimeFilter] = useState('ytd'); // Changed default to YTD
   const [processedData, setProcessedData] = useState({ type: 'port', data: [], keys: [], colorMap: {} });
   const [hoveredBar, setHoveredBar] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -102,9 +102,16 @@ const DeficiencyCodeChart = ({ data = [] }) => {
 
       const currentDate = new Date();
       let filterDate = new Date();
-      if (timeFilter === '3m') filterDate.setMonth(currentDate.getMonth() - 3);
-      else if (timeFilter === '6m') filterDate.setMonth(currentDate.getMonth() - 6);
-      else filterDate.setFullYear(currentDate.getFullYear() - 1);
+      if (timeFilter === '3m') {
+        filterDate.setMonth(currentDate.getMonth() - 3);
+      } else if (timeFilter === '6m') {
+        filterDate.setMonth(currentDate.getMonth() - 6);
+      } else if (timeFilter === '1y') {
+        filterDate.setFullYear(currentDate.getFullYear() - 1);
+      } else if (timeFilter === 'ytd') {
+        // Year to Date - from January 1st of current year
+        filterDate = new Date(currentDate.getFullYear(), 0, 1); // January 1st of current year
+      }
       filterDate.setHours(0, 0, 0, 0);
 
       const filteredByTime = dataArray.filter(item => {
@@ -500,7 +507,7 @@ const DeficiencyCodeChart = ({ data = [] }) => {
           </button>
           
           <div style={{ marginLeft: '6px', display: 'flex', gap: '4px' }}>
-            {['3m', '6m', '1y'].map(period => (
+            {['ytd', '3m', '6m', '1y'].map(period => (
               <button
                 key={period}
                 style={{

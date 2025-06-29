@@ -16,7 +16,7 @@ import '../../../common/charts/styles/chartStyles.css';
 
 const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
   const [activeView, setActiveView] = useState('port'); // 'category' or 'port'
-  const [timeFilter, setTimeFilter] = useState('1y'); // Default to 1 year
+  const [timeFilter, setTimeFilter] = useState('ytd'); // Changed default to YTD
   const [processedData, setProcessedData] = useState([]);
   const [hoveredBar, setHoveredBar] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -75,8 +75,11 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
         filterDate.setMonth(currentDate.getMonth() - 3);
       } else if (timeFilter === '6m') {
         filterDate.setMonth(currentDate.getMonth() - 6);
-      } else {
+      } else if (timeFilter === '1y') {
         filterDate.setFullYear(currentDate.getFullYear() - 1);
+      } else if (timeFilter === 'ytd') {
+        // Year to Date - from January 1st of current year
+        filterDate = new Date(currentDate.getFullYear(), 0, 1); // January 1st of current year
       }
       
       // Set filterDate to start of day for consistent comparison
@@ -584,7 +587,7 @@ const PSCDeficienciesChart = ({ data = [], onFilterChange, activeFilter }) => {
           </button>
           
           <div style={{ marginLeft: '8px', display: 'flex', gap: '6px' }}>
-            {['3m', '6m', '1y'].map(period => (
+            {['ytd', '3m', '6m', '1y'].map(period => (
               <button
                 key={period}
                 style={{
