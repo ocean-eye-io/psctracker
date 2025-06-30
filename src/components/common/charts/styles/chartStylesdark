@@ -1,25 +1,24 @@
 /* src/components/common/charts/styles/chartStyles.css */
 :root {
-  /* Light Theme Color Palette */
-  --text-primary: #333333; /* Darker text for readability on light backgrounds */
-  --text-secondary: rgba(51, 51, 51, 0.7); /* Slightly lighter secondary text */
-  --bg-primary: #f7fafd; /* Very light background */
-  --bg-secondary: #eef4f8; /* Slightly darker background for subtle contrast */
-  --bg-header: #ffffff; /* Pure white for headers */
-  --bg-gradient: linear-gradient(145deg, #e0eaf2, #f0f5f9); /* Soft light gradient */
-  --accent-primary: #007bff; /* Vibrant blue for primary accents */
-  --accent-secondary: #0056b3; /* Darker blue for secondary accents */
-  --accent-tertiary: #007bff; /* Keeping tertiary consistent with primary accent */
-  --border-color: rgba(0, 0, 0, 0.1); /* Light border for subtle separation */
-  --shadow-primary: rgba(0, 0, 0, 0.1); /* Lighter shadow for light theme */
-  --shadow-glow: rgba(0, 123, 255, 0.2); /* Blue glow for accents */
+  --text-primary: #f4f4f4;
+  --text-secondary: rgba(244, 244, 244, 0.7);
+  --bg-primary: #0e1e2f;
+  --bg-secondary: #0c1a29;
+  --bg-header: #0d1c2d;
+  --bg-gradient: linear-gradient(145deg, #132337, #1a2c44);
+  --accent-primary: #4CC9F0;
+  --accent-secondary: #3BADE5;
+  --accent-tertiary: #1e88e5;
+  --border-color: rgba(244, 244, 244, 0.05);
+  --shadow-primary: rgba(0, 0, 0, 0.3);
+  --shadow-glow: rgba(76, 201, 240, 0.3);
   --chart-height: 300px; /* This is a key variable for overall height */
 
   /* Color variables for different statuses and criticality */
-  --positive-color: #28a745; /* Success Green */
-  --warning-color: #ffc107; /* Warning Yellow */
-  --negative-color: #dc3545; /* Danger Red */
-  --info-color: #17a2b8; /* Info Blue (Used for Low Criticality) */
+  --positive-color: #2ECC71; /* Success Green */
+  --warning-color: #F1C40F; /* Warning Yellow */
+  --negative-color: #E74C3C; /* Danger Red */
+  --info-color: #4DC3FF; /* Info Blue (Used for Low Criticality) */
 }
 
 /* Chart Card Styling */
@@ -52,9 +51,9 @@
   right: 0;
   height: 1px;
   background: linear-gradient(90deg,
-    rgba(0, 0, 0, 0),
-    rgba(0, 0, 0, 0.05),
-    rgba(0, 0, 0, 0)
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0)
   );
   z-index: 1;
 }
@@ -74,7 +73,7 @@
   height: 80vh;
   max-width: 1200px;
   background: var(--bg-gradient);
-  box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.6), 0 0 30px var(--shadow-glow); /* Darker overlay for active state */
+  box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.8), 0 0 30px var(--shadow-glow);
   transition: all 0.4s cubic-bezier(0.3, 0, 0.2, 1.3);
 }
 
@@ -87,7 +86,7 @@
   padding: 6px 10px;
   background: var(--bg-header);
   border-radius: 6px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* Lighter shadow */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   position: relative;
   height: 30px;
   flex-shrink: 0;
@@ -102,9 +101,9 @@
   right: 0;
   height: 1px;
   background: linear-gradient(90deg,
-    rgba(0, 0, 0, 0.02),
-    rgba(0, 0, 0, 0.05),
-    rgba(0, 0, 0, 0.02)
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.05)
   );
 }
 
@@ -117,7 +116,7 @@
   position: relative;
   display: inline-block;
   margin: 0;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Lighter text shadow */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .chart-title-highlight {
@@ -140,7 +139,8 @@
 
 /* Chart Wrapper */
 .chart-wrapper {
-  filter: drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.1)); /* Lighter shadow */
+  /* height: calc(100% - 38px); REMOVED - Let flex-grow manage height */
+  filter: drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.2));
   transform: translateZ(0);
   border-radius: 6px;
   overflow: hidden; /* IMPORTANT: Helps contain children */
@@ -150,7 +150,7 @@
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
-  background: rgba(255, 255, 255, 0.5); /* Semi-transparent white */
+  background: rgba(11, 22, 35, 0.5);
   padding: 10px;
   max-height: calc(100vh - 100px); /* Verify this max-height */
   flex-grow: 1; /* Takes remaining space in chart-card */
@@ -160,7 +160,7 @@
 }
 
 .chart-wrapper:hover {
-  filter: drop-shadow(0px 5px 10px rgba(0, 0, 0, 0.15)); /* Lighter shadow */
+  filter: drop-shadow(0px 5px 10px rgba(0, 0, 0, 0.3));
 }
 
 /* Total defects styling */
@@ -187,7 +187,7 @@
   font-size: 28px;
   font-weight: 700;
   color: var(--accent-primary);
-  text-shadow: 0 1px 6px rgba(0, 123, 255, 0.2); /* Blue shadow for light theme */
+  text-shadow: 0 1px 6px rgba(59, 173, 229, 0.3);
   margin: 0;
 }
 
@@ -260,12 +260,12 @@
 }
 
 .recharts-cartesian-grid line {
-  stroke: rgba(0, 0, 0, 0.05); /* Lighter grid lines */
+  stroke: rgba(244, 244, 244, 0.05);
 }
 
 .recharts-cartesian-axis line,
 .recharts-cartesian-axis path {
-  stroke: rgba(0, 0, 0, 0.1); /* Lighter axis lines */
+  stroke: rgba(244, 244, 244, 0.1);
 }
 
 .recharts-reference-line line {
@@ -296,7 +296,7 @@
 }
 
 .recharts-legend-wrapper {
-  background: rgba(255, 255, 255, 0.5); /* Semi-transparent white */
+  background: rgba(11, 22, 35, 0.5);
   border-radius: 4px;
   padding: 3px 6px !important;
   border: 1px solid var(--border-color);
@@ -307,7 +307,7 @@
 }
 
 .recharts-bar-rectangle:hover {
-  filter: brightness(0.9); /* Darken on hover for light theme */
+  filter: brightness(1.1);
 }
 
 .recharts-label-list text {
@@ -343,6 +343,7 @@
   padding: 0;
   position: relative;
   width: 100%;
+  /* border: 1px solid red; /* For debugging layout */
   box-sizing: border-box; /* Added box-sizing */
   /* Ensure no fixed height here that causes overflow */
 }
@@ -377,7 +378,7 @@
 .high-criticality-status-progress {
   width: 100%;
   height: 5px; /* Slightly smaller */
-  background: rgba(0, 0, 0, 0.05); /* Lighter background for bars */
+  background: rgba(244, 244, 244, 0.05);
   border-radius: 3px;
   overflow: hidden;
   margin-top: 2px; /* Reduced margin */
@@ -421,7 +422,7 @@
   font-size: 32px;
   font-weight: 700;
   /* Color is set inline based on criticality */
-  text-shadow: 0 0 10px rgba(0, 123, 255, 0.1); /* Example text shadow using a variable */
+  text-shadow: 0 0 10px rgba(var(--color-blue-rgb), 0.2); /* Example text shadow using a variable */
 }
 
 .criticality-value-label {
@@ -429,11 +430,14 @@
   color: var(--text-secondary); /* Match existing text color */
 }
 
+/* Criticality progress bar - Merged with horizontal-bar-container */
+/* .criticality-progress-bar { ... } */
+
 /* High Criticality Status Section */
 .high-criticality-section-title {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(51, 51, 51, 0.9); /* Match existing text color */
+  color: rgba(244, 244, 244, 0.9); /* Match existing text color */
   display: flex;
   align-items: center;
   gap: 6px;
@@ -474,8 +478,11 @@
 
 .high-criticality-status-item span {
   font-size: 12px;
-  color: rgba(51, 51, 51, 0.9); /* Match existing text color */
+  color: rgba(244, 244, 244, 0.9); /* Match existing text color */
 }
+
+/* High Criticality Status Progress Bar - Merged with horizontal-bar-container */
+/* .high-criticality-status-progress { ... } */
 
 .criticality-status-message {
   font-size: 13px;
@@ -494,10 +501,10 @@
 }
 
 .chart-toggle button {
-  background: rgba(0, 0, 0, 0.05); /* Lighter background */
-  border: 1px solid rgba(0, 0, 0, 0.1); /* Lighter border */
+  background: rgba(244, 244, 244, 0.05);
+  border: 1px solid rgba(244, 244, 244, 0.1);
   border-radius: 4px;
-  color: rgba(51, 51, 51, 0.6); /* Darker text */
+  color: rgba(244, 244, 244, 0.6);
   padding: 4px 12px;
   font-size: 12px;
   cursor: pointer;
@@ -505,23 +512,28 @@
 }
 
 .chart-toggle button:hover {
-  background: rgba(0, 0, 0, 0.1); /* Lighter hover background */
+  background: rgba(244, 244, 244, 0.1);
   transform: translateY(-1px);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Lighter shadow */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .chart-toggle button.active {
-  background: rgba(0, 123, 255, 0.15); /* Blue active background */
-  border-color: rgba(0, 123, 255, 0.4); /* Blue active border */
-  color: var(--accent-secondary); /* Blue active text */
+  background: rgba(59, 173, 229, 0.15);
+  border-color: rgba(59, 173, 229, 0.4);
+  color: #3BADE5;
   font-weight: 500;
 }
 
 /* Chart Action Buttons */
+.chart-actions {
+  display: flex;
+  gap: 6px;
+}
+
 .chart-action-btn {
   font-family: 'Nunito', sans-serif;
-  background: rgba(0, 123, 255, 0.1); /* Blue background */
-  border: 1px solid rgba(0, 123, 255, 0.2); /* Blue border */
+  background: rgba(59, 173, 229, 0.1);
+  border: 1px solid rgba(59, 173, 229, 0.2);
   border-radius: 4px;
   padding: 4px 6px;
   color: var(--accent-secondary);
@@ -533,7 +545,7 @@
   gap: 4px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Lighter shadow */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .chart-action-btn::before {
@@ -551,25 +563,25 @@
 }
 
 .chart-action-btn:hover {
-  background: rgba(0, 123, 255, 0.2); /* Darker blue on hover */
+  background: rgba(59, 173, 229, 0.2);
   transform: translateY(-1px);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); /* Lighter shadow */
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
 }
 
 .chart-action-btn:active {
   transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Lighter shadow */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 
 /* Tooltip Styling */
 .custom-tooltip {
   font-family: 'Nunito', sans-serif;
-  background: rgba(255, 255, 255, 0.95); /* Light background */
+  background: rgba(11, 22, 35, 0.95);
   border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 8px 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 6px var(--shadow-glow); /* Lighter shadow */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 6px var(--shadow-glow);
   backdrop-filter: blur(4px);
   position: relative;
   animation: tooltipFade 0.2s ease-in-out;
@@ -579,7 +591,7 @@
   pointer-events: none;
   max-width: 250px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 123, 255, 0.4) rgba(255, 255, 255, 0.5); /* Blue scrollbar */
+  scrollbar-color: rgba(59, 173, 229, 0.4) rgba(11, 22, 35, 0.5);
 }
 
 .custom-tooltip::-webkit-scrollbar {
@@ -587,12 +599,12 @@
 }
 
 .custom-tooltip::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.5); /* Light scrollbar track */
+  background: rgba(11, 22, 35, 0.5);
   border-radius: 4px;
 }
 
 .custom-tooltip::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 123, 255, 0.4); /* Blue scrollbar thumb */
+  background-color: rgba(59, 173, 229, 0.4);
   border-radius: 4px;
 }
 
@@ -625,13 +637,13 @@
   height: 0;
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
-  border-top: 6px solid rgba(255, 255, 255, 0.95); /* Light arrow */
+  border-top: 6px solid rgba(11, 22, 35, 0.95);
 }
 
 .tooltip-subcategories {
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid rgba(0, 0, 0, 0.1); /* Lighter border */
+  border-top: 1px solid rgba(244, 244, 244, 0.1);
 }
 
 .tooltip-subtitle {
@@ -666,34 +678,34 @@
 .chart-bar {
   fill: url(#barGradient);
   transition: all 0.3s ease;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1)); /* Lighter shadow */
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
   cursor: pointer;
 }
 
 .chart-bar:hover {
   fill: url(#barGradientHover);
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)); /* Lighter shadow */
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
   transform: translateY(-2px) scale(1.01);
 }
 
 .chart-area {
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.1)); /* Lighter shadow */
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
   transition: all 0.3s ease;
 }
 
 .chart-area:hover {
-  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.2)); /* Lighter shadow */
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.5));
 }
 
 .chart-line {
   stroke-width: 2;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1)); /* Lighter shadow */
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
   transition: all 0.3s ease;
 }
 
 .chart-line:hover {
   stroke-width: 3;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)); /* Lighter shadow */
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 }
 
 .chart-dot {
@@ -710,13 +722,13 @@
 
 .chart-pie {
   transition: all 0.3s ease;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.1)); /* Lighter shadow */
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
   cursor: pointer;
 }
 
 .chart-pie:hover {
   transform: translateY(-2px) scale(1.02);
-  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.2)); /* Lighter shadow */
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
 }
 
 
@@ -727,7 +739,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.85); /* Light background */
+  background: rgba(11, 22, 35, 0.85);
   display: flex;
   flex-direction: column; /*Added for text below spinner */
   justify-content: center;
@@ -740,12 +752,20 @@
   gap: 10px; /* Added gap between spinner and text */
 }
 
-.loading-spinner {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  z-index: 9999;
-  background: rgba(247, 250, 253, 0.95); /* Light background */
+/* .loading-spinner {
+  position: relative;
+
+  width: 30px;
+  height: 30px;
+} */
+
+.loading-spinner { 
+position: fixed; 
+top: 50%; 
+left: 50%; 
+/* transform: translate(-50%, -50%);  */
+z-index: 9999; 
+background: rgba(14, 30, 47, 0.95); 
 }
 
 .loading-spinner::before,
@@ -785,7 +805,7 @@
   color: var(--text-secondary);
   font-size: 12px;
   text-align: center;
-  background: rgba(255, 255, 255, 0.5); /* Light background */
+  background: rgba(11, 22, 35, 0.5);
   border-radius: 6px;
   gap: 8px; /* Added gap between icon and text */
 }
@@ -798,11 +818,11 @@
 
 .chart-bar rect.hovered {
   opacity: 0.85;
-  filter: brightness(0.9); /* Darken on hover for light theme */
+  filter: brightness(1.1);
 }
 
 .chart-bar rect.active {
-  stroke: #007bff; /* Blue stroke for active */
+  stroke: #28E0B0;
   stroke-width: 2px;
 }
 
@@ -813,7 +833,7 @@
 
 .timeline-bar {
   cursor: pointer;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.1)); /* Lighter shadow */
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
   transition: all 0.3s ease;
 }
 
@@ -824,20 +844,20 @@
 .timeline-cell.hovered {
   opacity: 1;
   transform: scaleX(1.02);
-  filter: drop-shadow(0 0 6px rgba(0, 123, 255, 0.2)); /* Blue glow for light theme */
+  filter: drop-shadow(0 0 6px rgba(76, 201, 240, 0.4));
 }
 
 .timeline-cell.active {
-  stroke: #007bff; /* Blue stroke */
+  stroke: #ffffff;
   stroke-width: 1px;
-  filter: drop-shadow(0 0 5px rgba(0, 123, 255, 0.2)); /* Blue glow */
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
 }
 
 .timeline-label {
   font-family: 'Nunito', sans-serif;
   font-size: 10px;
   font-weight: 600;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1)); /* Lighter shadow */
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
 }
 
 /* Filter badges and indicators */
@@ -845,29 +865,29 @@
 .filter-badge {
   display: inline-flex;
   align-items: center;
-  background: rgba(0, 123, 255, 0.15); /* Blue background */
-  border: 1px solid rgba(0, 123, 255, 0.3); /* Blue border */
+  background: rgba(59, 173, 229, 0.15);
+  border: 1px solid rgba(59, 173, 229, 0.3);
   border-radius: 4px;
   padding: 4px 8px;
   font-size: 12px;
-  color: var(--text-primary); /* Darker text */
+  color: #f4f4f4;
   margin-left: 10px;
 }
 
 .filter-badge-port {
-  background: rgba(0, 123, 255, 0.15);
-  border-color: rgba(0, 123, 255, 0.3);
+  background: rgba(59, 173, 229, 0.15);
+  border-color: rgba(59, 173, 229, 0.3);
 }
 
 .filter-badge-timeline {
-  background: rgba(40, 224, 176, 0.15); /* Greenish background */
+  background: rgba(40, 224, 176, 0.15);
   border-color: rgba(40, 224, 176, 0.3);
 }
 
 .clear-filter-btn {
-  background: rgba(0, 0, 0, 0.1); /* Lighter background */
+  background: rgba(244, 244, 244, 0.1);
   border: none;
-  color: var(--text-primary); /* Darker text */
+  color: #f4f4f4;
   border-radius: 50%;
   width: 16px;
   height: 16px;
@@ -882,7 +902,7 @@
 }
 
 .clear-filter-btn:hover {
-  background: rgba(0, 0, 0, 0.2); /* Darker on hover */
+  background: rgba(244, 244, 244, 0.2);
 }
 
 .active-filters-container {
@@ -960,7 +980,7 @@
   left: 0;
   width: 40px;
   height: 2px;
-  background: linear-gradient(90deg, var(--accent-primary), rgba(0, 123, 255, 0.5)); /* Blue gradient */
+  background: linear-gradient(90deg, var(--accent-primary), rgba(76, 201, 240, 0.5));
   border-radius: 1px;
 }
 
@@ -969,17 +989,17 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.4); /* Semi-transparent white */
+  background: rgba(11, 22, 35, 0.4);
   border-radius: 6px;
   margin-bottom: 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* Lighter shadow */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
 }
 
 .status-item:hover {
-  background: rgba(255, 255, 255, 0.6); /* Darker on hover */
+  background: rgba(11, 22, 35, 0.6);
   transform: translateY(-1px);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Lighter shadow */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .status-label {
@@ -1012,11 +1032,11 @@
   position: relative;
   width: 100%;
   height: 8px;
-  background: rgba(0, 0, 0, 0.1); /* Lighter background */
+  background: rgba(11, 22, 35, 0.3);
   border-radius: 4px;
   overflow: hidden;
   margin-top: 4px;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1); /* Lighter shadow */
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .status-progress-fill {
@@ -1047,22 +1067,22 @@
 /* Status colors for metric values */
 .chart-metric-value.status-open {
   color: var(--negative-color);
-  text-shadow: 0 0 10px rgba(220, 53, 69, 0.2); /* Lighter shadow */
+  text-shadow: 0 0 10px rgba(231, 76, 60, 0.3);
 }
 
 .chart-metric-value.status-progress {
   color: var(--warning-color);
-  text-shadow: 0 0 10px rgba(255, 193, 7, 0.2); /* Lighter shadow */
+  text-shadow: 0 0 10px rgba(241, 196, 15, 0.3);
 }
 
 .chart-metric-value.status-closed {
   color: var(--positive-color);
-  text-shadow: 0 0 10px rgba(40, 167, 69, 0.2); /* Lighter shadow */
+  text-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
 }
 
 .chart-metric-value.overdue-value {
   color: var(--negative-color);
-  text-shadow: 0 0 10px rgba(220, 53, 69, 0.2); /* Lighter shadow */
+  text-shadow: 0 0 10px rgba(255, 82, 82, 0.3);
 }
 
 .criticality-breakdown {
@@ -1099,19 +1119,19 @@
 }
 
 @keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.2); } /* Blue pulse for light theme */
-  70% { box-shadow: 0 0 0 10px rgba(0, 123, 255, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(76, 201, 240, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(76, 201, 240, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(76, 201, 240, 0); }
 }
 
 /* Chart Footer and Metrics (Original styles, kept for other components) */
 .chart-footer {
   display: flex;
   padding: 6px 10px 8px;
-  background: rgba(255, 255, 255, 0.4); /* Semi-transparent white */
+  background: rgba(11, 22, 35, 0.4);
   border-radius: 6px;
   margin: 4px 6px 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Lighter shadow */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   position: relative;
   justify-content: space-around;
   flex-shrink: 0;
@@ -1140,6 +1160,10 @@
 @media (max-width: 1200px) {
   .chart-card.active {
     width: 90vw;
+  }
+
+  :root {
+    /* --chart-height: 150px; /* Example: reduce height on smaller screens */
   }
 }
 

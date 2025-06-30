@@ -1,0 +1,185 @@
+/* src/components/common/EditableField/EditableField.module.css */
+
+/* Base Container for the entire editable field */
+.container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+    font-family: 'Nunito', sans-serif; /* Changed to Nunito */
+    font-size: 13px;
+    color: #333333; /* Dark text for readability */
+    transition: all 0.2s ease-in-out;
+    padding: 2px 0;
+  }
+
+  /* Highlight for fields with override */
+  .hasOverride {
+    /* border-left: 2px solid #FFD700; */
+    /* background-color: rgba(255, 215, 0, 0.05); */
+  }
+
+  /* Input Group (when editing) */
+  .inputGroup {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-grow: 1;
+    background: rgba(255, 255, 255, 0.85); /* Light background */
+    border: 1px solid rgba(0, 123, 255, 0.3); /* Blue border for light theme */
+    border-radius: 10px;
+    padding: 2px 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Lighter shadow */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .input {
+    background: rgba(240, 240, 240, 0.7); /* Light input background */
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: #333333; /* Dark text for readability */
+    font-size: 13px;
+    flex-grow: 1;
+    min-width: 0;
+    outline: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); /* Lighter shadow */
+    transition: background 0.2s;
+    font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  }
+
+  .input:focus {
+    background: rgba(230, 230, 230, 0.95); /* Slightly darker on focus */
+  }
+
+  .input::placeholder {
+    color: #888888; /* Darker placeholder for light theme */
+  }
+
+  /* Actions (Save/Cancel/Spinner) */
+  .actions {
+    display: flex;
+    gap: 4px;
+  }
+
+  .saveBtn,
+  .cancelBtn {
+    background: none;
+    border: none;
+    color: #007bff; /* Blue for light theme */
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  }
+
+  .saveBtn {
+    background: rgba(40, 167, 69, 0.15); /* Green background for light theme */
+    border: 1px solid rgba(40, 167, 69, 0.3); /* Green border */
+    color: #28a745; /* Green text */
+    padding: 6px;
+    border-radius: 8px;
+  }
+
+  .saveBtn:hover {
+    background-color: rgba(40, 167, 69, 0.25); /* Darker green on hover */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.1); /* Lighter shadow */
+  }
+
+  .cancelBtn {
+    background: rgba(220, 53, 69, 0.15); /* Red background for light theme */
+    border: 1px solid rgba(220, 53, 69, 0.3); /* Red border */
+    color: #dc3545; /* Red text */
+    padding: 6px;
+    border-radius: 8px;
+  }
+
+  .cancelBtn:hover {
+    background-color: rgba(220, 53, 69, 0.25); /* Darker red on hover */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.1); /* Lighter shadow */
+  }
+
+  .spinner {
+    color: #007bff; /* Blue for light theme */
+    font-size: 14px;
+    margin: 4px;
+  }
+
+  /* Display Group (when not editing) */
+  .displayGroup {
+    display: flex;
+    align-items: center;
+    /* Tighter gap for closer icons */
+    gap: 2px; /* Changed from 3px to 2px */
+    flex-grow: 1;
+    cursor: pointer;
+    padding: 4px 0;
+  }
+
+  .value {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-grow: 1;
+    min-width: 0;
+    color: #333333; /* Dark text for readability */
+  }
+
+  /* New style for invalid date value */
+  .invalidValue {
+    color: #dc3545; /* Red color for invalid date */
+  }
+
+  .icon {
+    color: #888888; /* Darker icon for light theme */
+    font-size: 12px;
+    transition: color 0.2s ease-in-out;
+  }
+
+  .displayGroup:hover .icon {
+    color: #007bff; /* Blue on hover for light theme */
+  }
+
+  /* Override Info Container & Icon */
+  .overrideInfoContainer {
+    display: flex;
+    align-items: center;
+    /* Removed margin-right to bring it closer */
+    margin-right: 0; /* Changed from 2px to 0 */
+  }
+
+  .overrideInfoIcon {
+    color: #ffc107; /* Warning yellow for light theme */
+    font-size: 12px;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 3px;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .overrideInfoIcon:hover {
+    color: #ffda44; /* Brighter yellow on hover */
+    background-color: rgba(255, 193, 7, 0.1); /* Yellow background on hover */
+  }
+
+  /* New style for invalid date info icon */
+  .invalidInfoIcon {
+    color: #dc3545; /* Red color for the alert icon */
+    font-size: 12px; /* Small size */
+    margin-left: 4px; /* Space between value and icon */
+    cursor: help; /* Indicate it's for information/tooltip */
+  }
+
+  /* Keyframe Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }

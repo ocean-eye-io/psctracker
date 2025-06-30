@@ -1,12 +1,12 @@
 /* src/components/layout/NavigationStyles.css */
 :root {
-  --primary-light: #ffffff; /* White for primary background */
-  --secondary-light: #f0f5f9; /* Light gray for secondary background */
-  --primary-accent: #007bff; /* Vibrant blue for primary accents */
-  --secondary-accent: #0056b3; /* Darker blue for secondary accents */
-  --text-dark: #333333; /* Dark text for readability */
-  --text-muted-light: rgba(51, 51, 51, 0.7); /* Muted dark text */
-  --border-subtle-light: rgba(0, 0, 0, 0.12); /* Subtle light border */
+  --primary-dark: #0a1725;
+  --secondary-dark: #112032;
+  --primary-accent: #3BADE5;
+  --secondary-accent: #2A95C5;
+  --text-light: #f4f4f4;
+  --text-muted: rgba(244, 244, 244, 0.7);
+  --border-subtle: rgba(244, 244, 244, 0.12);
   --header-height: 42px;
   --mobile-header-height: 38px;
 }
@@ -18,12 +18,12 @@ header.navigation-header,
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  background: linear-gradient(90deg, var(--primary-light), var(--secondary-light)) !important; /* Light gradient */
+  background: linear-gradient(90deg, var(--primary-dark), var(--secondary-dark)) !important;
   padding: 0 12px !important;
   height: 42px !important;
   min-height: 42px !important;
   max-height: 42px !important;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important; /* Lighter shadow */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2) !important;
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
@@ -42,8 +42,8 @@ header.navigation-header,
 }
 
 .brand-icon {
-  color: #007bff; /* Blue for light theme */
-  filter: drop-shadow(0 0 8px rgba(0, 123, 255, 0.2)); /* Blue glow */
+  color: #4FC3F7;
+  filter: drop-shadow(0 0 8px rgba(79, 195, 247, 0.4));
   width: 50px;
   height: 50px;
   flex-shrink: 0;
@@ -61,13 +61,12 @@ header.navigation-header,
 .brand-text h1 {
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-dark); /* Dark text */
+  color: var(--text-light);
   margin: 0;
   letter-spacing: 0.5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .animated-wave {
@@ -120,7 +119,7 @@ header.navigation-header,
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: rgba(51, 51, 51, 0.8); /* Darker text */
+  color: rgba(244, 244, 244, 0.8);
   padding: 0 6px;
   height: 100%;
   text-decoration: none;
@@ -128,7 +127,6 @@ header.navigation-header,
   transition: all 0.3s ease;
   flex-shrink: 0;
   min-width: fit-content;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .nav-item svg {
@@ -145,13 +143,13 @@ header.navigation-header,
 }
 
 .nav-item:hover {
-  color: #000000; /* Black on hover */
-  background: rgba(0, 0, 0, 0.08); /* Darker background on hover */
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.08);
   transform: translateY(-1px);
 }
 
 .nav-item.active {
-  color: var(--primary-accent); /* Blue for active */
+  color: #4FC3F7;
 }
 
 .active-indicator {
@@ -160,9 +158,9 @@ header.navigation-header,
   left: 0;
   width: 100%;
   height: 2px;
-  background: var(--primary-accent); /* Blue for active indicator */
+  background: #4FC3F7;
   border-radius: 2px 2px 0 0;
-  box-shadow: 0 0 8px var(--primary-accent);
+  box-shadow: 0 0 8px #4FC3F7;
 }
 
 /* User Profile Area - Ultra Compact */
@@ -183,12 +181,12 @@ header.navigation-header,
 }
 
 .user-avatar-container:hover {
-  background: rgba(0, 0, 0, 0.1); /* Darker background on hover */
+  background: rgba(255, 255, 255, 0.1);
   transform: scale(1.02);
 }
 
 .user-avatar {
-  background: linear-gradient(135deg, #007bff, #0056b3); /* Blue gradient */
+  background: linear-gradient(135deg, #4FC3F7, #29B6F6);
   color: #FFFFFF;
   width: 32px;
   height: 32px;
@@ -198,11 +196,10 @@ header.navigation-header,
   justify-content: center;
   font-weight: 600;
   font-size: 10px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); /* Lighter shadow */
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
   flex-shrink: 0;
   transition: all 0.2s ease;
-  border: 1px solid rgba(0, 0, 0, 0.1); /* Lighter border */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* User Dropdown - Ultra Compact */
@@ -243,7 +240,6 @@ header.navigation-header,
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .user-dropdown-divider {
@@ -263,7 +259,6 @@ header.navigation-header,
   cursor: pointer;
   transition: all 0.12s ease;
   text-align: left;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .user-dropdown-item:hover {
@@ -272,7 +267,7 @@ header.navigation-header,
 }
 
 .user-dropdown-item.logout-item {
-  color: #dc3545; /* Red for logout */
+  color: #dc3545;
 }
 
 .user-dropdown-item.logout-item:hover {
@@ -290,7 +285,7 @@ header.navigation-header,
   display: none;
   background: none;
   border: none;
-  color: #333333; /* Dark text for light theme */
+  color: #FFFFFF;
   cursor: pointer;
   position: fixed;
   top: 50%;
@@ -308,7 +303,7 @@ header.navigation-header,
 }
 
 .mobile-menu-toggle:hover {
-  background: rgba(0, 0, 0, 0.1); /* Darker background on hover */
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* Mobile Sidebar */
@@ -318,10 +313,10 @@ header.navigation-header,
   left: -280px;
   width: 280px;
   height: 100vh;
-  background: var(--primary-light); /* Light background */
+  background: var(--primary-dark);
   z-index: 105;
   transition: transform 0.3s ease;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1); /* Lighter shadow */
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -337,7 +332,7 @@ header.navigation-header,
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3); /* Lighter backdrop */
+  background: rgba(0, 0, 0, 0.5);
   z-index: 101;
   backdrop-filter: blur(2px);
 }
@@ -347,15 +342,14 @@ header.navigation-header,
   align-items: center;
   gap: 12px;
   padding: 20px 16px;
-  border-bottom: 1px solid var(--border-subtle-light); /* Light border */
+  border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
 
 .sidebar-header h2 {
   font-size: 20px;
-  color: var(--text-dark); /* Dark text */
+  color: var(--text-light);
   margin: 0;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .sidebar-nav {
@@ -368,10 +362,9 @@ header.navigation-header,
   align-items: center;
   gap: 6px;
   padding: 6px 8px;
-  color: var(--text-muted-light); /* Muted dark text */
+  color: var(--text-muted);
   text-decoration: none;
   transition: all 0.2s ease;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .sidebar-nav-item svg {
@@ -381,18 +374,18 @@ header.navigation-header,
 }
 
 .sidebar-nav-item.active {
-  background: rgba(0, 123, 255, 0.1); /* Blue active background */
-  color: var(--primary-accent); /* Blue active text */
+  background: rgba(59, 173, 229, 0.1);
+  color: var(--primary-accent);
   border-left: 3px solid var(--primary-accent);
 }
 
 .sidebar-nav-item:hover {
-  background: rgba(0, 0, 0, 0.05); /* Darker background on hover */
-  color: var(--text-dark); /* Dark text on hover */
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-light);
 }
 
 .logout-item {
-  color: #dc3545 !important; /* Red for logout */
+  color: #E74C3C !important;
   margin-top: 10px;
 }
 
@@ -402,7 +395,7 @@ header.navigation-header,
   gap: 10px;
   padding: 16px;
   margin-top: auto;
-  border-top: 1px solid rgba(0, 0, 0, 0.1); /* Light border */
+  border-top: 1px solid rgba(244, 244, 244, 0.1);
   flex-shrink: 0;
 }
 
@@ -410,7 +403,6 @@ header.navigation-header,
   width: 36px;
   height: 36px;
   font-size: 14px;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .sidebar-user-info .user-info {
@@ -422,20 +414,18 @@ header.navigation-header,
 .sidebar-user-info .user-name {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-dark); /* Dark text */
+  color: var(--text-light);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .sidebar-user-info .user-role {
   font-size: 12px;
-  color: var(--text-muted-light); /* Muted dark text */
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 /* Loading, Error, and Empty States */
@@ -443,11 +433,10 @@ header.navigation-header,
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(51, 51, 51, 0.6); /* Muted dark text */
+  color: rgba(244, 244, 244, 0.6);
   font-size: 14px;
   padding: 12px 24px;
   animation: pulse 1.5s ease-in-out infinite alternate;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 @keyframes pulse {
@@ -459,29 +448,27 @@ header.navigation-header,
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #dc3545; /* Red for error */
+  color: #E74C3C;
   font-size: 14px;
   padding: 12px 24px;
-  background: rgba(220, 53, 69, 0.1); /* Red background */
+  background: rgba(231, 76, 60, 0.1);
   border-radius: 6px;
-  border: 1px solid rgba(220, 53, 69, 0.2); /* Red border */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  border: 1px solid rgba(231, 76, 60, 0.2);
 }
 
 .retry-nav-button {
-  background: rgba(220, 53, 69, 0.2); /* Red background */
-  border: 1px solid rgba(220, 53, 69, 0.3); /* Red border */
-  color: #dc3545; /* Red text */
+  background: rgba(231, 76, 60, 0.2);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  color: #E74C3C;
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .retry-nav-button:hover {
-  background: rgba(220, 53, 69, 0.3); /* Darker red on hover */
+  background: rgba(231, 76, 60, 0.3);
   transform: translateY(-1px);
 }
 
@@ -489,11 +476,10 @@ header.navigation-header,
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(51, 51, 51, 0.5); /* Muted dark text */
+  color: rgba(244, 244, 244, 0.5);
   font-size: 14px;
   padding: 12px 24px;
   font-style: italic;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 /* Tooltip Enhancement */
@@ -507,7 +493,7 @@ header.navigation-header,
   bottom: -35px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.9); /* Dark background for tooltip */
+  background: rgba(0, 0, 0, 0.9);
   color: white;
   padding: 6px 8px;
   border-radius: 4px;
@@ -517,7 +503,6 @@ header.navigation-header,
   opacity: 0;
   animation: fadeInTooltip 0.3s ease-in-out 0.5s forwards;
   pointer-events: none;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 @keyframes fadeInTooltip {
@@ -534,11 +519,11 @@ header.navigation-header,
   .navigation-header.navigation-header {
     padding: 0 12px !important;
   }
-
+  
   .desktop-nav {
     gap: 12px;
   }
-
+  
   .nav-item {
     padding: 0 8px;
   }
@@ -551,11 +536,11 @@ header.navigation-header,
   .navigation-header.navigation-header {
     padding: 0 12px !important;
   }
-
+  
   .desktop-nav {
     gap: 8px;
   }
-
+  
   .nav-item {
     padding: 0 6px;
   }
@@ -566,7 +551,7 @@ header.navigation-header,
   .desktop-nav {
     display: none;
   }
-
+  
   .navigation-header,
   header.navigation-header,
   .navigation-header.navigation-header {
@@ -576,15 +561,15 @@ header.navigation-header,
     justify-content: center !important;
     padding: 0 8px !important;
   }
-
+  
   .mobile-menu-toggle {
     display: block;
   }
-
+  
   .brand-text h1 {
     font-size: 16px;
   }
-
+  
   /* Hide dropdown on mobile - keep logout in sidebar */
   .user-dropdown {
     display: none;
@@ -598,11 +583,11 @@ header.navigation-header,
   .navigation-header.navigation-header {
     padding: 0 8px !important;
   }
-
+  
   .brand-container {
     gap: 8px;
   }
-
+  
   .brand-text h1 {
     font-size: 15px;
   }
@@ -618,44 +603,44 @@ header.navigation-header,
     min-height: 36px !important;
     max-height: 36px !important;
   }
-
+  
   .brand-container {
     gap: 6px;
   }
-
+  
   .brand-icon {
     width: 16px;
     height: 16px;
   }
-
+  
   .brand-text h1 {
     font-size: 14px;
   }
-
+  
   .brand-text {
     padding-top: 12px;
   }
-
+  
   .user-avatar {
     width: 20px;
     height: 20px;
     font-size: 9px;
   }
-
+  
   .mobile-menu-toggle {
     left: 10px;
   }
-
+  
   .mobile-menu-toggle svg {
     width: 16px;
     height: 16px;
   }
-
+  
   .mobile-sidebar {
     width: 260px;
     left: -260px;
   }
-
+  
   .mobile-sidebar.open {
     transform: translateX(260px);
   }
@@ -668,22 +653,22 @@ header.navigation-header,
   .navigation-header.navigation-header {
     padding: 0 4px !important;
   }
-
+  
   .brand-text h1 {
     font-size: 13px;
   }
-
+  
   .user-avatar {
     width: 18px;
     height: 18px;
     font-size: 8px;
   }
-
+  
   .mobile-sidebar {
     width: calc(100vw - 40px);
     left: calc(-100vw + 40px);
   }
-
+  
   .mobile-sidebar.open {
     transform: translateX(calc(100vw - 40px));
   }
@@ -704,14 +689,14 @@ header.navigation-header,
 /* High contrast mode support */
 @media (prefers-contrast: high) {
   .navigation-header {
-    border-bottom: 2px solid var(--text-dark); /* Dark border for high contrast */
+    border-bottom: 2px solid var(--text-light);
   }
-
+  
   .nav-item:hover,
   .nav-item.active {
-    background: rgba(0, 0, 0, 0.2); /* Darker background for high contrast */
+    background: rgba(255, 255, 255, 0.2);
   }
-
+  
   .active-indicator {
     height: 4px;
   }
