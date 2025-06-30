@@ -1,455 +1,758 @@
-import React, { useState, useMemo } from 'react';
-import ReportingDashboard from './ReportingDashboard';
-import { Button } from '../../ui/button';
-import { 
-  Plus, 
-  FileCheck, 
-  AlertTriangle, 
-  Bell, 
-  CheckCircle, 
-  Ship, 
-  X, 
-  Calendar, 
-  Info 
+// src/components/dashboard/reporting/VesselReportingPage.jsx
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  RefreshCw,
+  Ship,
+  Filter,
+  Search,
+  Calendar,
+  AlertTriangle,
+  Download,
+  Eye,
+  FileText,
+  Shield,
+  Clock
 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
-import { sampleVessels } from './data';
-import StatCard from './components/StatCard';
-import AlertManager from './components/AlertManager';
+import VesselReportingTable from './VesselReportingTable';
+import { reportingFieldMappings } from './ReportingFieldMappings';
+import vesselReportingService from '../../../services/vesselReportingService';
+import { useAuth } from '../../../context/AuthContext';
+import { usePermissions } from '../../../context/PermissionContext';
 import '../DashboardStyles.css';
 
 const VesselReportingPage = () => {
-  // States
-  const [notifications, setNotifications] = useState([
-    {
-      id: '1',
-      type: 'info',
-      title: '5-Day Notification Due',
-      message: 'The vessel Pacific Explorer is due for 5-day notification.',
-      timestamp: new Date().toISOString(),
-      vessel: {
-        name: 'Pacific Explorer',
-        imo: '9876543',
-        eta: '2025-03-15T10:30:00'
-      }
-    },
-    {
-      id: '2',
-      type: 'warning',
-      title: 'Checklist Concerns',
-      message: 'Concerns flagged in the checklist for Nordic Star.',
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-      vessel: {
-        name: 'Nordic Star',
-        imo: '9876545',
-        eta: '2025-03-20T15:45:00'
-      }
-    }
-  ]);
-  
-  const [alerts, setAlerts] = useState([
-    {
-      id: 'alert1',
-      type: 'warning',
-      title: 'Urgent: Missing Documentation',
-      message: 'Nordic Star is missing required cargo documentation. Please address this issue before arrival.',
-      actions: [
-        { id: 'view', label: 'View Details', primary: true },
-        { id: 'dismiss', label: 'Dismiss', primary: false }
-      ]
-    }
-  ]);
-  const [activeTab, setActiveTab] = useState('all');
-  const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
-  const [newFormDialogOpen, setNewFormDialogOpen] = useState(false);
-  const [formTypeToCreate, setFormTypeToCreate] = useState('notification');
-  const [selectedVessel, setSelectedVessel] = useState(null);
-  const [vessels, setVessels] = useState(sampleVessels);
+  // State variables
+  const [vessels, setVessels] = useState([]);
+  const [filteredVessels, setFilteredVessels] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Handler functions
-  const handleCloseNotificationDrawer = () => setNotificationDrawerOpen(false);
-  const handleCloseFormDialog = () => setNewFormDialogOpen(false);
-  
-  const handleFormSubmitted = (vesselId, formType, formData) => {
-    // Update vessels with form data
-    const updatedVessels = vessels.map(vessel => {
-      if (vessel.imo_no === vesselId) {
-        if (formType === 'notification') {
-          return { 
-            ...vessel, 
-            notificationSubmitted: true, 
-            notificationDate: new Date().toISOString(), 
-            notificationData: formData 
-          };
-        } else if (formType === 'checklist') {
-          return { 
-            ...vessel, 
-            checklistCompleted: true, 
-            checklistDate: new Date().toISOString(), 
-            checklistData: formData, 
-            checklistConcerns: formData.hasConcerns ? formData.concerns : null 
-          };
-        }
-      }
-      return vessel;
-    });
-    
-    setVessels(updatedVessels);
-    setNewFormDialogOpen(false);
-    
-    // Show a temporary success notification
-    const newNotification = {
-      id: `success-${Date.now()}`,
-      type: 'success',
-      title: `${formType === 'notification' ? '5-Day Notification' : 'Checklist'} Submitted`,
-      message: `Successfully submitted for vessel ${vessels.find(v => v.imo_no === vesselId)?.vessel_name}`,
-      timestamp: new Date().toISOString()
-    };
-    
-    setNotifications([newNotification, ...notifications]);
-    
-    // Remove success notification after 5 seconds
-    setTimeout(() => {
-      setNotifications(currentNotifications => 
-        currentNotifications.filter(n => n.id !== newNotification.id)
+  // Filter state variables
+  const [voyageStatusFilter, setVoyageStatusFilter] = useState('All Voyages');
+  const [vesselNameFilters, setVesselNameFilters] = useState([]);
+  const [checklistStatusFilters, setChecklistStatusFilters] = useState([]);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  // Dropdown visibility state
+  const [showVoyageStatusDropdown, setShowVoyageStatusDropdown] = useState(false);
+  const [showVesselNameDropdown, setShowVesselNameDropdown] = useState(false);
+  const [showChecklistStatusDropdown, setShowChecklistStatusDropdown] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+
+  // Auth and Permission contexts
+  const { currentUser, loading: authLoading } = useAuth();
+  const {
+    permissions,
+    loading: permissionsLoading,
+    error: permissionsError,
+    canRead,
+    canExport,
+    isReadOnly,
+    getPermissionStatus,
+    roleName,
+    refreshPermissions
+  } = usePermissions();
+
+  // Store processed data by status for filter operations
+  const [activeVessels, setActiveVessels] = useState([]);
+  const [inactiveVessels, setInactiveVessels] = useState([]);
+  const [allProcessedVessels, setAllProcessedVessels] = useState([]);
+  const [userAssignments, setUserAssignments] = useState([]);
+
+  // User ID from auth context
+  const userId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
+
+  console.log("VesselReportingPage: Rendering with permissions:", {
+    permissions,
+    permissionStatus: getPermissionStatus(),
+    canRead: canRead(),
+    canExport: canExport(),
+    roleName,
+    userId
+  });
+
+  // Fetch vessel data using the service
+  const fetchVesselData = useCallback(async () => {
+    if (!userId) {
+      console.log("VesselReportingPage: No user ID available, skipping vessel fetch");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log('VesselReportingPage: Fetching vessels for user:', userId);
+      const data = await vesselReportingService.getVesselsForUser(userId);
+
+      console.log('VesselReportingPage: Successfully fetched vessel data:', {
+        total: data.allVessels.length,
+        active: data.activeVessels.length,
+        inactive: data.inactiveVessels.length,
+        assignments: data.userAssignments.length
+      });
+
+      // Set all the state at once to avoid multiple re-renders
+      setActiveVessels(data.activeVessels);
+      setInactiveVessels(data.inactiveVessels);
+      setAllProcessedVessels(data.allVessels);
+      setVessels(data.allVessels);
+      setFilteredVessels(data.allVessels);
+      setUserAssignments(data.userAssignments);
+
+      // Initialize filters with all available options
+      const uniqueVesselNames = [...new Set(data.allVessels.map(v => v.vessel_name).filter(Boolean))];
+      const uniqueChecklistStatuses = [...new Set(data.allVessels.map(v => v.checklistStatus).filter(Boolean))];
+
+      setVesselNameFilters(uniqueVesselNames);
+      setChecklistStatusFilters(uniqueChecklistStatuses);
+      setLastUpdated(new Date());
+
+    } catch (err) {
+      console.error('VesselReportingPage: Error fetching vessel data:', err);
+      setError(`Failed to load vessel data: ${err.message}. Please try again later.`);
+      setVessels([]);
+      setFilteredVessels([]);
+      setActiveVessels([]);
+      setInactiveVessels([]);
+      setAllProcessedVessels([]);
+      setUserAssignments([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
+  // Initial data fetch - wait for auth and permissions to load
+  useEffect(() => {
+    const shouldFetchData = !authLoading && !permissionsLoading && userId && canRead();
+
+    if (shouldFetchData) {
+      console.log("VesselReportingPage: Initial data fetch triggered");
+      fetchVesselData();
+    } else {
+      console.log("VesselReportingPage: Waiting for auth/permissions or insufficient read access", {
+        authLoading,
+        permissionsLoading,
+        userId: !!userId,
+        canRead: canRead()
+      });
+      setLoading(false);
+    }
+  }, [authLoading, permissionsLoading, userId, canRead, fetchVesselData]);
+
+  // Get unique values for filters
+  const uniqueVesselNames = useMemo(() =>
+    [...new Set(allProcessedVessels.map(v => v.vessel_name).filter(Boolean))],
+    [allProcessedVessels]
+  );
+
+  const uniqueChecklistStatuses = useMemo(() =>
+    [...new Set(allProcessedVessels.map(v => v.checklistStatus).filter(Boolean))],
+    [allProcessedVessels]
+  );
+
+  // Filtered vessels based on all criteria
+  const filteredData = useMemo(() => {
+    if (allProcessedVessels.length === 0) return [];
+
+    let baseVessels = [];
+
+    // Apply voyage status filter
+    if (voyageStatusFilter === 'Current Voyages') {
+      baseVessels = activeVessels;
+    } else if (voyageStatusFilter === 'Past Voyages') {
+      baseVessels = inactiveVessels;
+    } else {
+      baseVessels = allProcessedVessels;
+    }
+
+    let results = [...baseVessels];
+
+    // Apply vessel name filters
+    if (vesselNameFilters.length > 0 && vesselNameFilters.length < uniqueVesselNames.length) {
+      results = results.filter(vessel => vesselNameFilters.includes(vessel.vessel_name));
+    }
+
+    // Apply checklist status filters
+    if (checklistStatusFilters.length > 0 && checklistStatusFilters.length < uniqueChecklistStatuses.length) {
+      results = results.filter(vessel => checklistStatusFilters.includes(vessel.checklistStatus));
+    }
+
+    // Apply search term
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      results = results.filter(vessel =>
+        Object.values(vessel).some(value =>
+          value && String(value).toLowerCase().includes(term)
+        )
       );
-    }, 5000);
-  };
-
-  const handleDismissAlert = (alertId) => setAlerts(alerts.filter(a => a.id !== alertId));
-  
-  const handleDismissNotification = (notificationId) => setNotifications(notifications.filter(n => n.id !== notificationId));
-  
-  const handleCreateNewForm = (type) => {
-    setFormTypeToCreate(type);
-    setSelectedVessel(null);
-    setNewFormDialogOpen(true);
-  };
-
-  const handleAlertAction = (alertId, actionId) => {
-    if (actionId === 'dismiss') {
-      handleDismissAlert(alertId);
-    } else if (actionId === 'view') {
-      // Handle view details action
-      // For example, find the vessel related to this alert and open details
-      handleDismissAlert(alertId);
     }
-  };
 
-  // Form content renderer
-  const renderFormContent = () => {
-    const vessel = selectedVessel || vessels[0];
-    const NotificationForm = React.lazy(() => import('./forms/NotificationForm'));
-    const ChecklistForm = React.lazy(() => import('./forms/ChecklistForm'));
-    
-    return (
-      <React.Suspense fallback={<FormLoadingSkeleton />}>
-        {formTypeToCreate === 'notification' ? (
-          <NotificationForm 
-            vessel={vessel} 
-            onSubmit={(formData) => handleFormSubmitted(vessel.imo_no, 'notification', formData)} 
-            onCancel={handleCloseFormDialog}
-          />
-        ) : (
-          <ChecklistForm 
-            vessel={vessel} 
-            onSubmit={(formData) => handleFormSubmitted(vessel.imo_no, 'checklist', formData)}
-            onCancel={handleCloseFormDialog}
-          />
-        )}
-      </React.Suspense>
-    );
-  };
-  
-  // Filtered vessels based on active tab
-  const filteredVessels = useMemo(() => {
-    switch (activeTab) {
-      case 'pending':
-        return vessels.filter(v => !v.notificationSubmitted || !v.checklistCompleted);
-      case 'completed':
-        return vessels.filter(v => v.notificationSubmitted && v.checklistCompleted);
-      case 'concerns':
-        return vessels.filter(v => v.checklistConcerns);
+    return results;
+  }, [
+    allProcessedVessels,
+    activeVessels,
+    inactiveVessels,
+    voyageStatusFilter,
+    vesselNameFilters,
+    checklistStatusFilters,
+    searchTerm,
+    uniqueVesselNames,
+    uniqueChecklistStatuses
+  ]);
+
+  // Update filtered vessels when filters change
+  useEffect(() => {
+    setFilteredVessels(filteredData);
+  }, [filteredData]);
+
+  // Toggle filter items
+  const toggleFilterItem = (type, item) => {
+    switch (type) {
+      case 'vesselNames':
+        setVesselNameFilters(prevFilters =>
+          prevFilters.includes(item)
+            ? prevFilters.filter(i => i !== item)
+            : [...prevFilters, item]
+        );
+        break;
+      case 'checklistStatuses':
+        setChecklistStatusFilters(prevFilters =>
+          prevFilters.includes(item)
+            ? prevFilters.filter(i => i !== item)
+            : [...prevFilters, item]
+        );
+        break;
       default:
-        return vessels;
+        break;
     }
-  }, [vessels, activeTab]);
-  
-  // Stats data
-  const pendingCount = vessels.filter(v => !v.notificationSubmitted || !v.checklistCompleted).length;
-  const completedCount = vessels.filter(v => v.notificationSubmitted && v.checklistCompleted).length;
-  const concernsCount = vessels.filter(v => v.checklistConcerns).length;
-  
-  // Tab styling
-  const getTabStyle = (tabName) => {
-    return activeTab === tabName 
-      ? { backgroundColor: 'rgba(59, 130, 246, 0.2)', color: '#fff' }
-      : { backgroundColor: 'transparent', color: 'rgba(255, 255, 255, 0.6)' };
   };
-  
+
+  // Toggle all items in a filter group
+  const toggleAllItems = (type) => {
+    switch (type) {
+      case 'vesselNames':
+        setVesselNameFilters(vesselNameFilters.length === uniqueVesselNames.length ? [] : uniqueVesselNames);
+        break;
+      case 'checklistStatuses':
+        setChecklistStatusFilters(checklistStatusFilters.length === uniqueChecklistStatuses.length ? [] : uniqueChecklistStatuses);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Reset all filters
+  const resetFilters = useCallback(() => {
+    console.log('Resetting all filters');
+    setSearchTerm('');
+    setVoyageStatusFilter('All Voyages');
+    setVesselNameFilters(uniqueVesselNames);
+    setChecklistStatusFilters(uniqueChecklistStatuses);
+  }, [uniqueVesselNames, uniqueChecklistStatuses]);
+
+  // Export filtered data with permission check
+  const handleExport = useCallback(() => {
+    if (!canExport()) {
+      console.warn('VesselReportingPage: Export not allowed for current user');
+      setError('You do not have permission to export data.');
+      return;
+    }
+
+    try {
+      console.log('VesselReportingPage: Exporting filtered vessel data');
+      vesselReportingService.exportToCsv(filteredVessels, reportingFieldMappings);
+    } catch (exportError) {
+      console.error('VesselReportingPage: Export failed:', exportError);
+      setError('Failed to export data. Please try again.');
+    }
+  }, [canExport, filteredVessels]);
+
+  // Refresh data handler
+  const handleRefreshData = useCallback(async () => {
+    console.log('VesselReportingPage: Manual data refresh requested');
+    setError(null);
+
+    try {
+      await Promise.all([
+        fetchVesselData(),
+        refreshPermissions()
+      ]);
+      console.log('VesselReportingPage: Manual refresh completed');
+    } catch (error) {
+      console.error('VesselReportingPage: Error during manual refresh:', error);
+      setError('Failed to refresh data. Please try again.');
+    }
+  }, [fetchVesselData, refreshPermissions]);
+
+  // Close all dropdowns when clicking elsewhere
+  const closeAllDropdowns = useCallback(() => {
+    setShowVoyageStatusDropdown(false);
+    setShowVesselNameDropdown(false);
+    setShowChecklistStatusDropdown(false);
+    setShowSearch(false);
+  }, []);
+
+  // Clear error handler
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  // Stats calculations using the service
+  const stats = useMemo(() => {
+    return vesselReportingService.getReportingStats(vessels);
+  }, [vessels]);
+
+  // Loading state for entire dashboard
+  if (authLoading || permissionsLoading) {
+    return (
+      <div className="dashboard-container">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading dashboard...</p>
+          {authLoading && <small>Authenticating user...</small>}
+          {permissionsLoading && <small>Loading permissions...</small>}
+        </div>
+      </div>
+    );
+  }
+
+  // Permission error state
+  if (permissionsError) {
+    return (
+      <div className="dashboard-container">
+        <div className="error-container">
+          <AlertTriangle size={24} />
+          <h2>Permission Error</h2>
+          <p>{permissionsError}</p>
+          <p>You may have limited access to vessel reporting functionality.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="retry-button"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // No read access state
+  if (!canRead()) {
+    return (
+      <div className="dashboard-container">
+        <div className="error-container">
+          <Shield size={24} />
+          <h2>Access Denied</h2>
+          <p>You don't have permission to view vessel reporting data.</p>
+          <p>Please contact your administrator for access.</p>
+          {roleName && <p>Current role: <strong>{roleName}</strong></p>}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="vessel-reporting-container">
-      {/* Stats Cards */}
-      <div className="stats-container">
-        <StatCard 
-          title="Pending Reports" 
-          value={pendingCount}
-          icon={<Bell size={20} color="#fbbf24" />} 
-        />
-        <StatCard 
-          title="Completed" 
-          value={completedCount}
-          icon={<CheckCircle size={20} color="#34d399" />} 
-        />
-        <StatCard 
-          title="With Concerns" 
-          value={concernsCount}
-          icon={<AlertTriangle size={20} color="#f87171" />} 
-        />
-      </div>
-      
-      {/* Vessel Reports header */}
-      <div className="reports-header">
-        <div className="reports-title">
-          <h2>Vessel Reports</h2>
-          <span className="vessel-count">
-            {filteredVessels.length} {filteredVessels.length === 1 ? 'vessel' : 'vessels'} shown
-          </span>
-        </div>
-        
-        <div className="action-buttons">
-          <Button 
-            variant="outline" 
-            onClick={() => setNotificationDrawerOpen(true)}
-            className="notification-button"
-          >
-            <Bell size={16} />
-            <span>Notifications</span>
-            {notifications.length > 0 && (
-              <span className="notification-badge">
-                {notifications.length}
-              </span>
+    <div className="dashboard-container" onClick={closeAllDropdowns}>
+      {/* Dashboard Header */}
+      <header className="dashboard-header">
+        <div className="dashboard-title">
+          <h1>Vessel Reporting Dashboard</h1>
+          <div className="fleet-stats">
+            <div className="fleet-count">
+              <Ship size={16} />
+              <span>{stats.total} Total Vessels</span>
+              {userAssignments.length > 0 && (
+                <small>({userAssignments.length} assigned)</small>
+              )}
+            </div>
+            <div className="fleet-count">
+              <Calendar size={16} />
+              <span>{stats.active} Active Voyages</span>
+            </div>
+            {stats.overdue > 0 && (
+              <div className="alert-count warning">
+                <AlertTriangle size={16} />
+                <span>{stats.overdue} Overdue</span>
+              </div>
             )}
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            onClick={() => handleCreateNewForm('notification')}
-            className="action-button"
-          >
-            <Calendar size={16} />
-            <span>5-Day Notification</span>
-          </Button>
-          
-          <Button 
-            onClick={() => handleCreateNewForm('checklist')}
-            className="action-button primary"
-          >
-            <FileCheck size={16} />
-            <span>Checklist</span>
-          </Button>
+            {stats.urgentVessels > 0 && (
+              <div className="alert-count warning">
+                <Clock size={16} />
+                <span>{stats.urgentVessels} Urgent</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="dashboard-controls">
+          {/* Search Container */}
+          <div className="search-container">
+            <button
+              className="search-toggle"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowSearch(!showSearch);
+              }}
+              title="Search vessels"
+            >
+              <Search size={16} />
+            </button>
+
+            {showSearch && (
+              <div className="search-popup" onClick={(e) => e.stopPropagation()}>
+                <input
+                  type="text"
+                  placeholder="Search vessels..."
+                  className="search-input"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="control-buttons">
+            <button
+              className={`control-btn export-btn ${!canExport() ? 'disabled' : ''}`}
+              onClick={handleExport}
+              disabled={!canExport() || filteredVessels.length === 0 || loading}
+              title={canExport() ? "Export filtered data" : "Export not permitted"}
+            >
+              <Download size={16} />
+              Export
+            </button>
+
+            <button
+              className="control-btn refresh-btn"
+              onClick={handleRefreshData}
+              title="Refresh data"
+              disabled={loading}
+            >
+              <RefreshCw size={16} className={loading ? "spinning" : ""} />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Enhanced Stats Cards */}
+      {/* <div className="stats-container">
+        <div className="stat-card">
+          <div className="stat-card-content">
+            <div className="stat-card-title">Total Vessels</div>
+            <div className="stat-card-value">{stats.total}</div>
+          </div>
+          <div className="stat-card-icon">
+            <Ship size={20} />
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-card-content">
+            <div className="stat-card-title">Active Voyages</div>
+            <div className="stat-card-value">{stats.active}</div>
+          </div>
+          <div className="stat-card-icon">
+            <Calendar size={20} />
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-card-content">
+            <div className="stat-card-title">Completed Checklists</div>
+            <div className="stat-card-value">{stats.checklistStats.completed}</div>
+          </div>
+          <div className="stat-card-icon">
+            <FileText size={20} />
+          </div>
+        </div>
+
+        <div className={`stat-card ${stats.overdue > 0 ? 'alert' : ''}`}>
+          <div className="stat-card-content">
+            <div className="stat-card-title">Overdue ETAs</div>
+            <div className="stat-card-value">{stats.overdue}</div>
+          </div>
+          <div className="stat-card-icon">
+            <AlertTriangle size={20} />
+          </div>
+        </div>
+      </div> */}
+
+      {/* Enhanced Filter Bar */}
+      <div className="filter-bar">
+        <div className="filter-label">
+          <Filter size={14} />
+        </div>
+
+        <div className="filter-chips">
+          {/* Voyage Status Filter Dropdown */}
+          <div className="filter-dropdown-container" onClick={(e) => e.stopPropagation()}>
+            <button
+              className={`filter-dropdown-button ${showVoyageStatusDropdown ? 'active' : ''}`}
+              onClick={() => {
+                setShowVoyageStatusDropdown(!showVoyageStatusDropdown);
+                setShowVesselNameDropdown(false);
+                setShowChecklistStatusDropdown(false);
+              }}
+            >
+              {voyageStatusFilter}
+              <span className="filter-count">
+                {voyageStatusFilter === 'All Voyages' && `${allProcessedVessels.length}`}
+                {voyageStatusFilter === 'Current Voyages' && `${activeVessels.length}`}
+                {voyageStatusFilter === 'Past Voyages' && `${inactiveVessels.length}`}
+              </span>
+            </button>
+
+            {showVoyageStatusDropdown && (
+              <div className="filter-dropdown-content">
+                <div className="filter-dropdown-header">
+                  <h4>Voyage Status</h4>
+                </div>
+                <div className="filter-dropdown-items">
+                  <div className="filter-checkbox-item">
+                    <label>
+                      <input
+                        type="radio"
+                        checked={voyageStatusFilter === 'All Voyages'}
+                        onChange={() => setVoyageStatusFilter('All Voyages')}
+                        name="voyageStatus"
+                      />
+                      <span>All Voyages ({allProcessedVessels.length})</span>
+                    </label>
+                  </div>
+                  <div className="filter-checkbox-item">
+                    <label>
+                      <input
+                        type="radio"
+                        checked={voyageStatusFilter === 'Current Voyages'}
+                        onChange={() => setVoyageStatusFilter('Current Voyages')}
+                        name="voyageStatus"
+                      />
+                      <span>Current Voyages ({activeVessels.length})</span>
+                    </label>
+                  </div>
+                  <div className="filter-checkbox-item">
+                    <label>
+                      <input
+                        type="radio"
+                        checked={voyageStatusFilter === 'Past Voyages'}
+                        onChange={() => setVoyageStatusFilter('Past Voyages')}
+                        name="voyageStatus"
+                      />
+                      <span>Past Voyages ({inactiveVessels.length})</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="filter-dropdown-footer">
+                  <button
+                    className="apply-btn"
+                    onClick={() => setShowVoyageStatusDropdown(false)}
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Vessel Name Filter Dropdown */}
+          <div className="filter-dropdown-container" onClick={(e) => e.stopPropagation()}>
+            <button
+              className={`filter-dropdown-button ${showVesselNameDropdown ? 'active' : ''}`}
+              onClick={() => {
+                setShowVesselNameDropdown(!showVesselNameDropdown);
+                setShowVoyageStatusDropdown(false);
+                setShowChecklistStatusDropdown(false);
+              }}
+            >
+              Vessel Names
+              <span className="filter-count">{vesselNameFilters.length}/{uniqueVesselNames.length}</span>
+            </button>
+
+            {showVesselNameDropdown && (
+              <div className="filter-dropdown-content">
+                <div className="filter-dropdown-header">
+                  <h4>Filter by Vessel Name</h4>
+                  <button className="select-all-btn" onClick={() => toggleAllItems('vesselNames')}>
+                    {vesselNameFilters.length === uniqueVesselNames.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+                <div className="filter-dropdown-items">
+                  {uniqueVesselNames.map(vesselName => (
+                    <div key={vesselName} className="filter-checkbox-item">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={vesselNameFilters.includes(vesselName)}
+                          onChange={() => toggleFilterItem('vesselNames', vesselName)}
+                        />
+                        <span>{vesselName}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <div className="filter-dropdown-footer">
+                  <button
+                    className="apply-btn"
+                    onClick={() => setShowVesselNameDropdown(false)}
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Checklist Status Filter Dropdown */}
+          <div className="filter-dropdown-container" onClick={(e) => e.stopPropagation()}>
+            <button
+              className={`filter-dropdown-button ${showChecklistStatusDropdown ? 'active' : ''}`}
+              onClick={() => {
+                setShowChecklistStatusDropdown(!showChecklistStatusDropdown);
+                setShowVoyageStatusDropdown(false);
+                setShowVesselNameDropdown(false);
+              }}
+            >
+              Checklist Status
+              <span className="filter-count">{checklistStatusFilters.length}/{uniqueChecklistStatuses.length}</span>
+            </button>
+
+            {showChecklistStatusDropdown && (
+              <div className="filter-dropdown-content">
+                <div className="filter-dropdown-header">
+                  <h4>Filter by Checklist Status</h4>
+                  <button className="select-all-btn" onClick={() => toggleAllItems('checklistStatuses')}>
+                    {checklistStatusFilters.length === uniqueChecklistStatuses.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+                <div className="filter-dropdown-items">
+                  {uniqueChecklistStatuses.map(status => (
+                    <div key={status} className="filter-checkbox-item">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={checklistStatusFilters.includes(status)}
+                          onChange={() => toggleFilterItem('checklistStatuses', status)}
+                        />
+                        <span className="checklist-status-label">
+                          {status === 'completed' && '✓ Completed'}
+                          {status === 'in_progress' && '⏳ In Progress'}
+                          {status === 'pending' && '⚠️ Pending'}
+                          {status === 'not_started' && '❌ Not Started'}
+                        </span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <div className="filter-dropdown-footer">
+                  <button
+                    className="apply-btn"
+                    onClick={() => setShowChecklistStatusDropdown(false)}
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Reset Filters Button */}
+          {(searchTerm ||
+            voyageStatusFilter !== 'All Voyages' ||
+            vesselNameFilters.length < uniqueVesselNames.length ||
+            checklistStatusFilters.length < uniqueChecklistStatuses.length) && (
+              <button
+                className="reset-button"
+                onClick={resetFilters}
+                title="Reset all filters"
+              >
+                Reset
+              </button>
+            )}
+        </div>
+
+        <div className="date-filter">
+          Last updated: {lastUpdated.toLocaleTimeString()}
         </div>
       </div>
-      
-      {/* Alerts Section */}
-      {alerts.length > 0 && (
-        <div className="alerts-section">
-          <AlertManager 
-            alerts={alerts} 
-            onDismiss={handleDismissAlert}
-            onAction={handleAlertAction}
-          />
+
+      {/* Error Message */}
+      {error && (
+        <div className="error-message">
+          <AlertTriangle size={16} />
+          <span>{error}</span>
+          <button
+            onClick={clearError}
+            className="error-close-button"
+            title="Dismiss error"
+          >
+            ×
+          </button>
         </div>
       )}
-      
-      {/* Tab Navigation */}
-      <div className="tab-navigation">
-        <button 
-          className="tab-button" 
-          style={getTabStyle('all')}
-          onClick={() => setActiveTab('all')}
-        >
-          All
-        </button>
-        <button 
-          className="tab-button" 
-          style={getTabStyle('pending')}
-          onClick={() => setActiveTab('pending')}
-        >
-          Pending
-        </button>
-        <button 
-          className="tab-button" 
-          style={getTabStyle('completed')}
-          onClick={() => setActiveTab('completed')}
-        >
-          Completed
-        </button>
-        <button 
-          className="tab-button" 
-          style={getTabStyle('concerns')}
-          onClick={() => setActiveTab('concerns')}
-        >
-          Concerns
-        </button>
-      </div>
-      
-      {/* Table Container */}
-      <div className="table-container">
-        <ReportingDashboard 
-          vessels={filteredVessels}
-          onFormSubmit={handleFormSubmitted}
-        />
-      </div>
-      
-      {/* Dialogs - Form and Notifications */}
-      <Dialog open={notificationDrawerOpen} onOpenChange={setNotificationDrawerOpen}>
-        <DialogContent className="dialog-content">
-          <DialogHeader>
-            <DialogTitle className="dialog-title">
-              <Bell size={16} className="dialog-icon" />
-              Notifications
-            </DialogTitle>
-          </DialogHeader>
-          <NotificationList notifications={notifications} onDismiss={handleDismissNotification} />
-        </DialogContent>
-      </Dialog>
-      
-      <Dialog open={newFormDialogOpen} onOpenChange={setNewFormDialogOpen}>
-        <DialogContent className="dialog-content">
-          <DialogHeader>
-            <DialogTitle className="dialog-title">
-              {formTypeToCreate === 'notification' ? (
-                <>
-                  <Calendar size={16} className="dialog-icon" />
-                  5-Day Notification
-                </>
-              ) : (
-                <>
-                  <FileCheck size={16} className="dialog-icon" />
-                  Checklist
-                </>
+
+      {/* Main Content - Table */}
+      <div className="vessel-table-wrapper">
+        {loading ? (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Loading your vessel data...</p>
+          </div>
+        ) : filteredVessels.length === 0 ? (
+          <div className="no-results">
+            <Eye size={24} />
+            <p>
+              {vessels.length === 0
+                ? "No vessels are currently assigned to you."
+                : "No vessels match the selected filters."
+              }
+            </p>
+            {userAssignments.length === 0 && vessels.length === 0 && (
+              <small>Contact your administrator to assign vessels to your account.</small>
+            )}
+            {vessels.length > 0 && (searchTerm || voyageStatusFilter !== 'All Voyages' ||
+              vesselNameFilters.length < uniqueVesselNames.length ||
+              checklistStatusFilters.length < uniqueChecklistStatuses.length) && (
+                <button
+                  className="reset-filters"
+                  onClick={resetFilters}
+                >
+                  Reset All Filters
+                </button>
               )}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <VesselSelector 
-            vessels={vessels} 
-            selectedVessel={selectedVessel} 
-            onSelect={setSelectedVessel} 
+          </div>
+        ) : (
+          <VesselReportingTable
+            vessels={filteredVessels}
+            fieldMappings={reportingFieldMappings}
+            loading={loading}
+            currentUser={currentUser}
           />
-          
-          {selectedVessel && renderFormContent()}
-        </DialogContent>
-      </Dialog>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="dashboard-footer">
+        <div className="footer-info">
+          <span>Showing {filteredVessels.length} of {vessels.length} vessels</span>
+          {userAssignments.length > 0 && (
+            <>
+              <span>•</span>
+              <span>{userAssignments.length} vessels assigned to you</span>
+            </>
+          )}
+          <span>•</span>
+          <span>Last refreshed: {lastUpdated.toLocaleString()}</span>
+        </div>
+        <div className="watermark">
+          Vessel Reporting Dashboard v2.0
+        </div>
+      </div>
     </div>
   );
 };
-
-// Enhanced Notification List Component
-const NotificationList = ({ notifications, onDismiss }) => (
-  <div className="notification-list">
-    {notifications.length === 0 ? (
-      <div className="empty-notifications">
-        <Bell size={24} className="empty-icon" />
-        <p>No new notifications</p>
-      </div>
-    ) : (
-      notifications.map(notification => (
-        <NotificationCard key={notification.id} notification={notification} onDismiss={onDismiss} />
-      ))
-    )}
-  </div>
-);
-
-// Enhanced Notification Card Component
-const NotificationCard = ({ notification, onDismiss }) => (
-  <div className="notification-card">
-    <button
-      className="dismiss-button"
-      onClick={() => onDismiss(notification.id)}
-      aria-label="Dismiss notification"
-    >
-      <X size={14} />
-    </button>
-    
-    <div className="notification-content">
-      <div className="notification-icon">
-        {notification.type === 'success' ? <CheckCircle color="#10b981" size={18} /> :
-         notification.type === 'warning' ? <AlertTriangle color="#f59e0b" size={18} /> :
-         notification.type === 'error' ? <AlertTriangle color="#ef4444" size={18} /> :
-         <Info color="#3b82f6" size={18} />}
-      </div>
-      
-      <div className="notification-details">
-        <p className="notification-title">
-          {notification.title}
-        </p>
-        <p className="notification-message">
-          {notification.message}
-        </p>
-        
-        {notification.vessel && (
-          <div className="vessel-info">
-            <p>
-              <span className="label">Vessel:</span> {notification.vessel.name} <span className="imo">(IMO: {notification.vessel.imo})</span>
-            </p>
-            {notification.vessel.eta && (
-              <p>
-                <span className="label">ETA:</span> {new Date(notification.vessel.eta).toLocaleString()}
-              </p>
-            )}
-          </div>
-        )}
-        
-        <div className="notification-time">
-          <span className="time-dot"></span>
-          {new Date(notification.timestamp).toLocaleString()}
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-// Enhanced Vessel Selector Component
-const VesselSelector = ({ vessels, selectedVessel, onSelect }) => (
-  <div className="vessel-selector">
-    <label className="selector-label">
-      <Ship size={14} className="label-icon" />
-      Select Vessel
-    </label>
-    <select 
-      className="vessel-select"
-      value={selectedVessel?.imo_no || ''}
-      onChange={(e) => {
-        const selectedImo = e.target.value;
-        onSelect(vessels.find(v => v.imo_no === selectedImo) || null);
-      }}
-    >
-      <option value="">Select a vessel...</option>
-      {vessels.map(vessel => (
-        <option key={vessel.imo_no} value={vessel.imo_no}>
-          {vessel.vessel_name} (IMO: {vessel.imo_no})
-        </option>
-      ))}
-    </select>
-  </div>
-);
-
-// Form Loading Skeleton Component
-const FormLoadingSkeleton = () => (
-  <div className="form-skeleton">
-    <div className="skeleton-item w-75"></div>
-    <div className="skeleton-item w-100"></div>
-    <div className="skeleton-item w-50"></div>
-    <div className="skeleton-item w-100"></div>
-    <div className="skeleton-item w-75"></div>
-    <div className="skeleton-item h-100"></div>
-    <div className="skeleton-actions">
-      <div className="skeleton-button"></div>
-      <div className="skeleton-button primary"></div>
-    </div>
-  </div>
-);
 
 export default VesselReportingPage;

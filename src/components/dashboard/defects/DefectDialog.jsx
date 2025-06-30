@@ -913,12 +913,12 @@ const DefectDialog = ({
                   Read Only
                 </span>
               )}
-              {roleName && (
+              {/* {roleName && (
                 <span className={formStyles.roleBadge}>
                   <Shield size={12} />
                   {roleName}
                 </span>
-              )}
+              )} */}
             </DialogTitle>
             <DialogDescription id="dialog-description">
               {effectiveIsReadOnly ? (

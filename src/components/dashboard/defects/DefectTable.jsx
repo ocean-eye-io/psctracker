@@ -14,9 +14,8 @@ import styles from './defect.module.css';
 
 const PER_PAGE = 10;
 
-// Senior UX Designer Badge Components - Modern, Sleek & Professional
-
-const StatusBadge = ({ status, variant = 'modern', size = 'medium' }) => {
+// Enhanced Badge Components - Subtle and Professional
+const StatusBadge = ({ status, variant = 'subtle', size = 'medium' }) => {
   if (!status) return <span className={styles.textMuted}>-</span>;
   
   const statusUpper = status.toUpperCase();
@@ -30,7 +29,7 @@ const StatusBadge = ({ status, variant = 'modern', size = 'medium' }) => {
   
   const statusType = getStatusType(statusUpper);
   
-  // Variant selection for different design approaches
+  // Handle different variants
   if (variant === 'pill') {
     const pillClass = `${styles.statusBadgePill} ${styles[statusType] || ''}`;
     return (
@@ -49,44 +48,70 @@ const StatusBadge = ({ status, variant = 'modern', size = 'medium' }) => {
     );
   }
   
-  // Default modern variant - professional and sleek
-  const modernClass = `${styles.statusBadgeModern} ${styles[statusType] || ''}`;
+  if (variant === 'minimal') {
+    const minimalClass = `${styles.statusBadgeMinimal} ${styles[statusType] || ''}`;
+    return (
+      <div className={minimalClass}>
+        <span>{status}</span>
+      </div>
+    );
+  }
+  
+  // Default subtle variant - very understated
+  const subtleClass = `${styles.statusBadgeSubtle} ${styles[statusType] || ''}`;
   return (
-    <div className={modernClass}>
+    <div className={subtleClass}>
       <span>{status}</span>
     </div>
   );
 };
 
-const CriticalityBadge = ({ criticality, variant = 'modern', size = 'medium' }) => {
+const CriticalityBadge = ({ criticality, variant = 'subtle', size = 'medium' }) => {
   if (!criticality) return <span className={styles.textMuted}>-</span>;
   
   const getCriticalityType = (crit) => {
     const critLower = crit.toLowerCase();
-    if (critLower.includes('high') || critLower.includes('critical')) return 'High';
-    if (critLower.includes('medium') || critLower.includes('moderate')) return 'Medium';
-    if (critLower.includes('low') || critLower.includes('minor')) return 'Low';
-    return 'Unknown';
+    if (critLower.includes('high') || critLower.includes('critical')) return 'high';
+    if (critLower.includes('medium') || critLower.includes('moderate')) return 'medium';
+    if (critLower.includes('low') || critLower.includes('minor')) return 'low';
+    return 'unknown';
   };
   
   const criticalityType = getCriticalityType(criticality);
   
-  if (variant === 'enhanced') {
-    const enhancedClass = `${styles.criticalityBadgeEnhanced} ${styles[criticalityType.toLowerCase()] || ''}`;
+  // Handle different variants
+  if (variant === 'pill') {
+    const pillClass = `${styles.criticalityBadgePill} ${styles[`criticality${criticalityType.charAt(0).toUpperCase() + criticalityType.slice(1)}`] || ''}`;
     return (
-      <div className={enhancedClass}>
+      <div className={pillClass}>
         <span>{criticality}</span>
       </div>
     );
   }
   
-  // Default modern variant - keeps the text, adds subtle icons
-  const criticalityClass = `${styles.criticalityBadgeModern} ${styles[`criticality${criticalityType}`] || ''}`;
+  if (variant === 'accent') {
+    const accentClass = `${styles.criticalityBadgeAccent} ${styles[`criticality${criticalityType.charAt(0).toUpperCase() + criticalityType.slice(1)}`] || ''}`;
+    return (
+      <div className={accentClass}>
+        <span>{criticality}</span>
+      </div>
+    );
+  }
   
+  if (variant === 'minimal') {
+    const minimalClass = `${styles.criticalityBadgeMinimal} ${styles[`criticality${criticalityType.charAt(0).toUpperCase() + criticalityType.slice(1)}`] || ''}`;
+    return (
+      <div className={minimalClass}>
+        <span>{criticality}</span>
+      </div>
+    );
+  }
+  
+  // Default subtle variant
+  const subtleClass = `${styles.criticalityBadgeSubtle} ${styles[`criticality${criticalityType.charAt(0).toUpperCase() + criticalityType.slice(1)}`] || ''}`;
   return (
-    <div className={criticalityClass}>
+    <div className={subtleClass}>
       <span>{criticality}</span>
-      {/* Icons are added via CSS ::after pseudo-elements */}
     </div>
   );
 };
@@ -485,60 +510,6 @@ const DefectTable = ({
     roleName
   });
 
-  // Enhanced Badge Components with permission awareness
-  const EnhancedStatusBadge = ({ status, size = 'medium' }) => {
-    if (!status) return <span className={styles.textMuted}>-</span>;
-
-    const getStatusClass = (status) => {
-      const statusUpper = status.toUpperCase();
-      if (statusUpper.includes('OPEN')) return 'statusOpen';
-      if (statusUpper.includes('CLOSED')) return 'statusClosed';
-      if (statusUpper.includes('PROGRESS')) return 'statusProgress';
-      return 'statusOpen'; // default
-    };
-
-    const sizeClass = size === 'small' ? 'badgeSmall' : '';
-    const badgeClasses = `${styles.enhancedActionButton} ${styles.badgeStatus} ${styles[getStatusClass(status)]} ${styles[sizeClass]}`.trim();
-
-    return (
-      <div className={badgeClasses}>
-        <span>{status}</span>
-      </div>
-    );
-  };
-
-  const EnhancedCriticalityBadge = ({ criticality, size = 'medium' }) => {
-    if (!criticality) return <span className={styles.textMuted}>-</span>;
-
-    const getCriticalityClass = (criticality) => {
-      const critLower = criticality.toLowerCase();
-      if (critLower.includes('high')) return 'criticalityHigh';
-      if (critLower.includes('medium')) return 'criticalityMedium';
-      if (critLower.includes('low')) return 'criticalityLow';
-      return 'criticalityMedium'; // default
-    };
-
-    const getIcon = (criticality) => {
-      const critLower = criticality.toLowerCase();
-      if (critLower.includes('high')) return '⚠';
-      if (critLower.includes('medium')) return '●';
-      if (critLower.includes('low')) return '●';
-      return '';
-    };
-
-    const sizeClass = size === 'small' ? 'badgeSmall' : '';
-    const badgeClasses = `${styles.enhancedActionButton} ${styles.badgeCriticality} ${styles[getCriticalityClass(criticality)]} ${styles[sizeClass]}`.trim();
-
-    return (
-      <div className={badgeClasses}>
-        <span>{criticality}</span>
-        <span style={{ fontSize: '0.55rem', opacity: 0.9, marginLeft: '3px' }}>
-          {getIcon(criticality)}
-        </span>
-      </div>
-    );
-  };
-
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   const [currentPage, setCurrentPage] = useState(1);
   const [previewFile, setPreviewFile] = useState(null);
@@ -713,7 +684,7 @@ const DefectTable = ({
     return false;
   };
 
-  // Enhanced columns configuration
+  // Updated DefectTable render function
   const columns = useMemo(() => (
     Object.entries(DEFECT_FIELDS.TABLE)
       .filter(([_, field]) => !field.isAction)
@@ -728,13 +699,21 @@ const DefectTable = ({
         headerClassName: shouldHideColumn(fieldId) ? styles.hiddenColumn : '',
         render: (value, rowData) => {
           if (fieldId === 'status') {
-            return <EnhancedStatusBadge status={value} size="medium" />;
+            return <StatusBadge status={value} variant="pill" size="medium" />;
           }
         
           if (fieldId === 'criticality') {
-            return <EnhancedCriticalityBadge criticality={value} size="medium" />;
+            return <CriticalityBadge criticality={value} variant="pill" size="medium" />;
           }
         
+          if (fieldId === 'vesselName' || field.dbField === 'vessel_name' || fieldId === 'vessel') {
+            return (
+              <span className={styles.vesselName}>
+                {value ? String(value).toUpperCase() : <span className={styles.textMuted}>-</span>}
+              </span>
+            );
+          }  
+
           if (field.type === 'date') {
             return (
               <span className={styles.dateValue}>
@@ -755,8 +734,8 @@ const DefectTable = ({
   // NEW: Enhanced actions configuration with permission-based button states
   const actions = useMemo(() => ({
     label: 'Actions',
-    width: '140px',
-    minWidth: '140px',
+    width: '80px',
+    minWidth: '80px',
     content: (defect) => {
       const actionsContainerStyle = {
         display: 'flex',
@@ -767,7 +746,7 @@ const DefectTable = ({
       return (
         <div style={actionsContainerStyle}>
           {/* Enhanced Generate Report Button */}
-          <button
+          {/* <button
             onClick={e => { 
               e.stopPropagation(); 
               handleGenerateReport(defect); 
@@ -786,10 +765,10 @@ const DefectTable = ({
             ) : (
               <FileText size={16} />
             )}
-          </button>
+          </button> */}
           
           {/* Enhanced Edit Button */}
-          <button
+          {/* <button
             onClick={e => { 
               e.stopPropagation(); 
               onEdit && onEdit(defect); 
@@ -803,7 +782,7 @@ const DefectTable = ({
             data-tooltip={!effectivePermissions.actionPermissions.update ? "Insufficient permissions" : undefined}
           >
             <Eye size={16} />
-          </button>
+          </button> */}
           
           {/* Enhanced Delete Button */}
           <button
@@ -884,11 +863,11 @@ const DefectTable = ({
       }
 
       if (fieldId === 'status') {
-        return <EnhancedStatusBadge status={value} size="small" />;
+        return <StatusBadge status={value} variant="accent" size="small" />;
       }
 
       if (fieldId === 'criticality') {
-        return <EnhancedCriticalityBadge criticality={value} size="small" />;
+        return <CriticalityBadge criticality={value} size="small" />;
       }
 
       if (field.type === 'date') {
