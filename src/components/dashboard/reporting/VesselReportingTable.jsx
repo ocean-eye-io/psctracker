@@ -19,7 +19,7 @@ import {
 import { TextTooltip, VesselDetailsTooltip } from '../../common/Table/Tooltip'; // Import TextTooltip and VesselDetailsTooltip
 import PropTypes from 'prop-types';
 
-const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
+const VesselReportingTable = ({ vessels, fieldMappings, loading, onOpenChecklist }) => {
   // Helper function to format dates
   const formatDateTime = (dateString, includeTime = false) => {
     if (!dateString) return '-';
@@ -361,7 +361,7 @@ const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
     );
   };
 
-  // Actions column for reporting-specific actions
+  // Actions column for reporting-specific actions with checklist integration
   const actions = {
     label: 'Actions',
     width: '120px',
@@ -369,10 +369,7 @@ const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
       <div className="reporting-actions">
         <button
           className="action-button reporting-action primary"
-          onClick={() => {
-            console.log('View checklist for vessel:', vessel);
-            // TODO: Implement checklist view/edit functionality
-          }}
+          onClick={() => onOpenChecklist && onOpenChecklist(vessel)}
           aria-label="View vessel checklist"
         >
           <FileText size={16} />
@@ -684,11 +681,13 @@ const VesselReportingTable = ({ vessels, fieldMappings, loading }) => {
 VesselReportingTable.propTypes = {
   vessels: PropTypes.arrayOf(PropTypes.object).isRequired,
   fieldMappings: PropTypes.object.isRequired,
-  loading: PropTypes.bool
+  loading: PropTypes.bool,
+  onOpenChecklist: PropTypes.func
 };
 
 VesselReportingTable.defaultProps = {
-  loading: false
+  loading: false,
+  onOpenChecklist: null
 };
 
 export default VesselReportingTable;

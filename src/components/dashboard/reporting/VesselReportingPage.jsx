@@ -14,6 +14,7 @@ import {
   Clock
 } from 'lucide-react';
 import VesselReportingTable from './VesselReportingTable';
+import ChecklistPage from './checklist/ChecklistPage'; // ADD THIS IMPORT
 import { reportingFieldMappings } from './ReportingFieldMappings';
 import vesselReportingService from '../../../services/vesselReportingService';
 import { useAuth } from '../../../context/AuthContext';
@@ -39,6 +40,10 @@ const VesselReportingPage = () => {
   const [showVesselNameDropdown, setShowVesselNameDropdown] = useState(false);
   const [showChecklistStatusDropdown, setShowChecklistStatusDropdown] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+
+  // ADD THESE STATE VARIABLES FOR CHECKLIST INTEGRATION
+  const [selectedVessel, setSelectedVessel] = useState(null);
+  const [showChecklistPage, setShowChecklistPage] = useState(false);
 
   // Auth and Permission contexts
   const { currentUser, loading: authLoading } = useAuth();
@@ -71,6 +76,36 @@ const VesselReportingPage = () => {
     roleName,
     userId
   });
+
+  // ADD CHECKLIST HANDLERS
+  const handleOpenChecklist = useCallback((vessel) => {
+    console.log('Opening checklist for vessel:', vessel);
+    
+    // Ensure we have the voyage ID (row id from psc_tracker_comments)
+    const vesselForChecklist = {
+      ...vessel,
+      id: vessel.id, // This is the voyage_id from psc_tracker_comments
+      voyage_id: vessel.id,
+      vessel_name: vessel.vessel_name,
+      imo_no: vessel.imo_no,
+      eta: vessel.user_eta || vessel.eta,
+      etb: vessel.user_etb || vessel.etb,
+      etd: vessel.user_etd || vessel.etd,
+      departure_port: vessel.departure_port,
+      arrival_port: vessel.arrival_port,
+      event_type: vessel.event_type
+    };
+    
+    setSelectedVessel(vesselForChecklist);
+    setShowChecklistPage(true);
+  }, []);
+
+  const handleCloseChecklist = useCallback(() => {
+    setShowChecklistPage(false);
+    setSelectedVessel(null);
+    // Optionally refresh vessel data to get updated checklist status
+    fetchVesselData();
+  }, []);
 
   // Fetch vessel data using the service
   const fetchVesselData = useCallback(async () => {
@@ -305,6 +340,16 @@ const VesselReportingPage = () => {
     return vesselReportingService.getReportingStats(vessels);
   }, [vessels]);
 
+  // ADD THIS CHECK FOR CHECKLIST PAGE
+  if (showChecklistPage && selectedVessel) {
+    return (
+      <ChecklistPage
+        vessel={selectedVessel}
+        onBack={handleCloseChecklist}
+      />
+    );
+  }
+
   // Loading state for entire dashboard
   if (authLoading || permissionsLoading) {
     return (
@@ -437,49 +482,6 @@ const VesselReportingPage = () => {
           </div>
         </div>
       </header>
-
-      {/* Enhanced Stats Cards */}
-      {/* <div className="stats-container">
-        <div className="stat-card">
-          <div className="stat-card-content">
-            <div className="stat-card-title">Total Vessels</div>
-            <div className="stat-card-value">{stats.total}</div>
-          </div>
-          <div className="stat-card-icon">
-            <Ship size={20} />
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-card-content">
-            <div className="stat-card-title">Active Voyages</div>
-            <div className="stat-card-value">{stats.active}</div>
-          </div>
-          <div className="stat-card-icon">
-            <Calendar size={20} />
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-card-content">
-            <div className="stat-card-title">Completed Checklists</div>
-            <div className="stat-card-value">{stats.checklistStats.completed}</div>
-          </div>
-          <div className="stat-card-icon">
-            <FileText size={20} />
-          </div>
-        </div>
-
-        <div className={`stat-card ${stats.overdue > 0 ? 'alert' : ''}`}>
-          <div className="stat-card-content">
-            <div className="stat-card-title">Overdue ETAs</div>
-            <div className="stat-card-value">{stats.overdue}</div>
-          </div>
-          <div className="stat-card-icon">
-            <AlertTriangle size={20} />
-          </div>
-        </div>
-      </div> */}
 
       {/* Enhanced Filter Bar */}
       <div className="filter-bar">
@@ -730,6 +732,7 @@ const VesselReportingPage = () => {
             fieldMappings={reportingFieldMappings}
             loading={loading}
             currentUser={currentUser}
+            onOpenChecklist={handleOpenChecklist}
           />
         )}
       </div>
