@@ -1,56 +1,57 @@
 /* src/components/common/Table/PortDocumentIcon.css */
 .port-document-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    margin-left: 4px;
-    transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-left: 4px;
+  transition: all 0.2s ease;
+  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+}
+
+.port-document-icon.loading {
+  opacity: 0.6;
+}
+
+.port-document-icon.has-documents:hover {
+  transform: scale(1.1);
+}
+
+.icon-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.document-count-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #007bff; /* Standard blue for light theme */
+  color: white;
+  border-radius: 10px;
+  padding: 1px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); /* Lighter shadow */
+  border: 1px solid white; /* Remains white for contrast */
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
   }
-  
-  .port-document-icon.loading {
-    opacity: 0.6;
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
-  
-  .port-document-icon.has-documents:hover {
-    transform: scale(1.1);
-  }
-  
-  .icon-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .document-count-badge {
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    background: #3b82f6;
-    color: white;
-    border-radius: 10px;
-    padding: 1px 4px;
-    font-size: 10px;
-    font-weight: 600;
-    line-height: 1;
-    min-width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    border: 1px solid white;
-    animation: fadeIn 0.3s ease;
-  }
-  
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: scale(0.8);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
+}

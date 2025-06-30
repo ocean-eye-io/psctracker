@@ -1,0 +1,112 @@
+/* common/EditableField/OverrideInfoPopover.module.css */
+
+.overrideInfoPopover {
+    position: fixed; /* Crucial for positioning relative to viewport */
+    background: rgba(255, 255, 255, 0.98); /* Almost opaque light base */
+    backdrop-filter: blur(25px) saturate(250%); /* Even more intense blur and saturation */
+    -webkit-backdrop-filter: blur(25px) saturate(250%); /* For Safari */
+    border: 1px solid rgba(0, 123, 255, 0.7); /* Stronger, more defined blue border */
+    border-radius: 20px; /* Even more rounded corners */
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2); /* Lighter, prominent shadow */
+    padding: 8px; /* Increased padding for a more substantial feel */
+    z-index: 10000; /* High z-index to ensure it's on top */
+    min-width: 180px; /* Slightly wider */
+    max-width: 400px; /* Slightly wider */
+    color: #333333; /* Dark text color */
+    font-size: 12px; /* Slightly larger font for readability */
+    display: flex; /* Use flexbox for layout */
+    flex-direction: column;
+    opacity: 0; /* Start hidden for animation */
+    visibility: hidden; /* Start hidden for animation */
+    transform: translateY(10px); /* Start slightly below for animation */
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out, visibility 0.3s ease-out;
+    font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  }
+
+  .animateFadeIn {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .popoverHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px; /* More space below header */
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.25); /* More visible separator for light theme */
+  }
+
+  .popoverHeader h4 {
+    margin: 0;
+    font-size: 1.3em; /* Larger header text */
+    color: #007bff; /* Accent blue color */
+    font-weight: 700;
+    font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  }
+
+  .closePopoverBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666666; /* Dark grey for close icon */
+    padding: 4px; /* Larger clickable area */
+    border-radius: 50%;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px; /* Larger icon */
+  }
+
+  .closePopoverBtn:hover {
+    background-color: rgba(220, 53, 69, 0.2); /* More pronounced red tint on hover */
+    color: #dc3545; /* Red color on hover */
+  }
+
+  .popoverContent p {
+    margin: 0 0 8px 0; /* More spacing between paragraphs */
+    line-height: 1.7; /* Improved readability */
+    color: #444444; /* Dark text for content */
+    font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  }
+
+  .popoverContent strong {
+    color: #007bff; /* Blue accent for strong text */
+    font-weight: 600;
+    font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  }
+
+  .resetOverrideBtn {
+    background: linear-gradient(145deg, #FFD700, #FFA500); /* Gold gradient */
+    border: none;
+    color: #333333; /* Dark text for contrast on gold */
+    padding: 4px 8px; /* More padding */
+    border-radius: 12px; /* Slightly more rounded */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    font-weight: 700;
+    transition: all 0.2s ease-in-out;
+    margin-top: 8px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); /* Lighter shadow */
+    font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  }
+
+  .resetOverrideBtn:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2); /* Lighter shadow */
+    opacity: 0.9;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .overrideInfoPopover {
+      min-width: 250px;
+      max-width: 95%; /* Allow it to take more width on small screens */
+      padding: 15px;
+    }
+  }

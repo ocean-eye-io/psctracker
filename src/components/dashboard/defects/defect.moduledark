@@ -3,124 +3,124 @@
 /* Base Variables */
 .root {
   /* Colors */
-  --primary-light: #f0f2f5; /* Light primary background */
-  --secondary-light: #ffffff; /* White secondary background */
-  --card-bg-light: #ffffff; /* White card background */
-  --card-dark-light: #f7fafd; /* Slightly off-white card background */
-  --blue-accent-light: #007bff; /* Standard blue accent */
-  --secondary-accent-light: #0056b3; /* Darker blue accent */
-  --text-dark: #333333; /* Dark text */
-  --text-muted-light: rgba(51, 51, 51, 0.6); /* Muted dark text */
-  --border-subtle-light: rgba(0, 0, 0, 0.08); /* Subtle light border */
-  --warning-color-light: #ffc107; /* Standard warning yellow */
-  --success-color-light: #28a745; /* Standard success green */
-  --danger-color-light: #dc3545; /* Standard danger red */
-  --negative-color-light: #dc3545; /* Standard negative red */
-  --positive-color-light: #28a745; /* Standard positive green */
+  --primary-dark: #0a1725;
+  --secondary-dark: #112032;
+  --card-bg: #0e1e2f;
+  --card-dark: #0c1a29;
+  --blue-accent: #3BADE5;
+  --secondary-accent: #2A95C5;
+  --text-light: #f4f4f4;
+  --text-muted: rgba(244, 244, 244, 0.6);
+  --border-subtle: rgba(244, 244, 244, 0.05);
+  --warning-color: #F1C40F;
+  --success-color: #2ECC71;
+  --danger-color: #E74C3C;
+  --negative-color: #E74C3C;
+  --positive-color: #2ECC71;
 
   /* Enhanced Badge Colors */
-  --status-open-bg-light: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); /* Bright red */
-  --status-closed-bg-light: linear-gradient(135deg, #51cf66 0%, #40c057 100%); /* Bright green */
-  --status-progress-bg-light: linear-gradient(135deg, #ffd43b 0%, #fab005 100%); /* Bright yellow */
-  --criticality-high-bg-light: linear-gradient(135deg, #ff4757 0%, #ff3838 100%); /* Bright red */
-  --criticality-medium-bg-light: linear-gradient(135deg, #ffa726 0%, #ff9800 100%); /* Bright orange */
-  --criticality-low-bg-light: linear-gradient(135deg, #42a5f5 0%, #2196f3 100%); /* Bright blue */
+  --status-open-bg: linear-gradient(135deg, #FF6B6B 0%, #EE5A52 100%);
+  --status-closed-bg: linear-gradient(135deg, #51CF66 0%, #40C057 100%);
+  --status-progress-bg: linear-gradient(135deg, #FFD43B 0%, #FAB005 100%);
+  --criticality-high-bg: linear-gradient(135deg, #FF4757 0%, #FF3838 100%);
+  --criticality-medium-bg: linear-gradient(135deg, #FFA726 0%, #FF9800 100%);
+  --criticality-low-bg: linear-gradient(135deg, #42A5F5 0%, #2196F3 100%);
 
   /* Button Gradients */
-  --button-primary-bg-light: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%); /* Blue gradient */
-  --button-primary-hover-light: linear-gradient(135deg, #00e5ff 0%, #4a90e2 100%); /* Lighter blue gradient on hover */
-  --button-disabled-bg-light: linear-gradient(135deg, #ced4da 0%, #adb5bd 100%); /* Light grey disabled */
+  --button-primary-bg: linear-gradient(135deg, #00D2FF 0%, #3A7BD5 100%);
+  --button-primary-hover: linear-gradient(135deg, #00E5FF 0%, #4A90E2 100%);
+  --button-disabled-bg: linear-gradient(135deg, #64748B 0%, #475569 100%);
 
   /* Sizing */
   --header-height: 70px;
-  --card-shadow-light: 0 4px 12px rgba(0, 0, 0, 0.08); /* Lighter shadow */
-  --hover-shadow-light: 0 6px 16px rgba(0, 0, 0, 0.12); /* Lighter hover shadow */
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --hover-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
   --card-radius: 8px;
   --transition-standard: all 0.2s ease;
   --transition-smooth: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  --input-bg-light: rgba(255, 255, 255, 0.7); /* Light input background */
+  --input-bg: rgba(11, 22, 35, 0.5);
 
   /* Filter Styles */
-  --filter-bg-light: rgba(255, 255, 255, 0.8); /* Light filter background */
-  --filter-hover-light: rgba(0, 123, 255, 0.1); /* Light blue hover */
-  --filter-border-light: rgba(0, 123, 255, 0.2); /* Light blue border */
-  --filter-active-light: rgba(0, 123, 255, 0.15); /* Light blue active */
-  --dropdown-shadow-light: 0 8px 16px rgba(0, 0, 0, 0.15); /* Lighter dropdown shadow */
+  --filter-bg: rgba(30, 41, 59, 0.5);
+  --filter-hover: rgba(59, 173, 229, 0.2);
+  --filter-border: rgba(59, 173, 229, 0.3);
+  --filter-active: rgba(59, 173, 229, 0.3);
+  --dropdown-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
 
   /* Table specific */
-  --table-header-bg-light: linear-gradient(180deg, #f7fafd, #e0e8f0); /* Light table header gradient */
-  --table-row-bg-light: #ffffff; /* White table row */
-  --table-row-alt-bg-light: #f7fafd; /* Slightly off-white alt row */
-  --table-row-hover-bg-light: #e9f5ff; /* Light blue hover */
-  --table-border-color-light: rgba(0, 0, 0, 0.08); /* Light border */
-  --status-red-light: #dc3545; /* Standard red */
-  --status-yellow-light: #ffc107; /* Standard yellow */
-  --status-green-light: #28a745; /* Standard green */
-  --status-grey-light: #6c757d; /* Standard grey */
-  --table-text-color-light: #333333; /* Dark text */
-  --table-muted-text-color-light: rgba(51, 51, 51, 0.6); /* Muted dark text */
+  --table-header-bg: linear-gradient(180deg, #0a1725, #112032);
+  --table-row-bg: #0e1e2f;
+  --table-row-alt-bg: #0c1a29;
+  --table-row-hover-bg: #162d48;
+  --table-border-color: rgba(255, 255, 255, 0.05);
+  --status-red: #E74C3C;
+  --status-yellow: #F1C40F;
+  --status-green: #2ECC71;
+  --status-grey: #95a5a6;
+  --table-text-color: #f4f4f4;
+  --table-muted-text-color: rgba(244, 244, 244, 0.6);
 
   /* Fleet Dashboard variables */
-  --bg-gradient-1-light: linear-gradient(145deg, #f0f2f5, #ffffff); /* Light background gradient */
-  --primary-accent-light-theme: #007bff; /* Standard blue */
-  --primary-accent-dark-light: #0056b3; /* Darker blue */
-  --primary-accent-light-alpha: rgba(0, 123, 255, 0.1); /* Light blue alpha */
-  --primary-accent-glow-light: rgba(0, 123, 255, 0.2); /* Light blue glow */
-  --border-accent-light: rgba(0, 123, 255, 0.2); /* Light blue border */
-  --shadow-sm-light: 0 2px 6px rgba(0, 0, 0, 0.1); /* Lighter shadow */
-  --shadow-md-light: 0 4px 10px rgba(0, 0, 0, 0.1); /* Lighter shadow */
-  --shadow-lg-light: 0 6px 20px rgba(0, 0, 0, 0.15); /* Lighter shadow */
-  --shadow-highlight-light: 0 0 10px rgba(0, 123, 255, 0.2); /* Light blue highlight */
-  --shadow-inner-light: inset 0 1px 3px rgba(0, 0, 0, 0.1); /* Lighter inner shadow */
+  --bg-gradient-1: linear-gradient(145deg, #0a1725, #112032);
+  --primary-accent: #4DC3FF;
+  --primary-accent-dark: #2BA5E0;
+  --primary-accent-light: rgba(77, 195, 255, 0.2);
+  --primary-accent-glow: rgba(77, 195, 255, 0.4);
+  --border-accent: rgba(77, 195, 255, 0.3);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.16);
+  --shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.2);
+  --shadow-highlight: 0 0 10px rgba(77, 195, 255, 0.3);
+  --shadow-inner: inset 0 1px 3px rgba(0, 0, 0, 0.2);
   --transition-fast: all 0.15s ease;
   --border-radius-sm: 4px;
   --border-radius-md: 6px;
   --transition-normal: all 0.3s ease;
 
   /* Dashboard filter variables */
-  --dashboard-filter-bg-light: #ffffff; /* White filter background */
-  --dashboard-filter-border-light: rgba(0, 0, 0, 0.08); /* Light border */
-  --dashboard-filter-text-light: #333333; /* Dark text */
-  --dashboard-filter-muted-text-light: rgba(51, 51, 51, 0.6); /* Muted dark text */
-  --dashboard-filter-accent-light: #007bff; /* Standard blue */
-  --dashboard-filter-hover-bg-light: rgba(0, 123, 255, 0.08); /* Light blue hover */
-  --dashboard-filter-active-bg-light: rgba(0, 123, 255, 0.12); /* Light blue active */
-  --dashboard-filter-dropdown-shadow-light: 0 8px 16px rgba(0, 0, 0, 0.15); /* Lighter dropdown shadow */
-  --dashboard-input-bg-light: rgba(255, 255, 255, 0.7); /* Light input background */
+  --dashboard-filter-bg: #0e1e2f;
+  --dashboard-filter-border: rgba(244, 244, 244, 0.05);
+  --dashboard-filter-text: #f4f4f4;
+  --dashboard-filter-muted-text: rgba(244, 244, 244, 0.6);
+  --dashboard-filter-accent: #3BADE5;
+  --dashboard-filter-hover-bg: rgba(59, 173, 229, 0.1);
+  --dashboard-filter-active-bg: rgba(59, 173, 229, 0.2);
+  --dashboard-filter-dropdown-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  --dashboard-input-bg: rgba(11, 22, 35, 0.5);
 
   /* Filter badge variables */
-  --filter-badge-bg-light: rgba(0, 123, 255, 0.1); /* Light blue badge background */
-  --filter-badge-border-light: rgba(0, 123, 255, 0.25); /* Light blue badge border */
-  --filter-badge-text-light: #007bff; /* Standard blue badge text */
-  --filter-badge-clear-hover-light: rgba(0, 0, 0, 0.1); /* Light clear hover */
-  --clear-all-btn-bg-light: rgba(220, 53, 69, 0.08); /* Light red clear all button */
-  --clear-all-btn-border-light: rgba(220, 53, 69, 0.15); /* Lighter red clear all button border */
-  --clear-all-btn-text-light: #dc3545; /* Standard red clear all button text */
-  --clear-all-btn-hover-bg-light: rgba(220, 53, 69, 0.12); /* Slightly darker light red on hover */
+  --filter-badge-bg: rgba(59, 173, 229, 0.15);
+  --filter-badge-border: rgba(59, 173, 229, 0.4);
+  --filter-badge-text: #3BADE5;
+  --filter-badge-clear-hover: rgba(255, 255, 255, 0.2);
+  --clear-all-btn-bg: rgba(255, 255, 255, 0.05);
+  --clear-all-btn-border: rgba(255, 255, 255, 0.1);
+  --clear-all-btn-text: rgba(244, 244, 244, 0.8);
+  --clear-all-btn-hover-bg: rgba(255, 255, 255, 0.1);
 
   /* Fleet Dashboard specific colors */
-  --fleet-button-bg-blue-light: #007bff; /* Standard blue */
-  --fleet-button-hover-blue-light: #0056b3; /* Darker blue */
-  --fleet-add-button-bg-light: #28a745; /* Standard green */
-  --fleet-add-button-hover-light: #218838; /* Darker green */
-  --fleet-filter-badge-bg-light: rgba(0, 123, 255, 0.1); /* Light blue filter badge */
-  --fleet-filter-badge-text-light: #007bff; /* Standard blue filter badge text */
-  --fleet-filter-badge-border-light: rgba(0, 123, 255, 0.2); /* Light blue filter badge border */
-  --fleet-search-input-bg-light: #f7fafd; /* Light search input background */
-  --fleet-search-input-border-light: rgba(0, 0, 0, 0.1); /* Light search input border */
-  --fleet-search-input-placeholder-light: rgba(51, 51, 51, 0.4); /* Muted dark placeholder */
-  --fleet-filter-dropdown-bg-light: #ffffff; /* White dropdown background */
-  --fleet-filter-dropdown-border-light: rgba(0, 0, 0, 0.1); /* Light dropdown border */
-  --fleet-filter-dropdown-hover-light: rgba(0, 123, 255, 0.08); /* Light blue dropdown hover */
-  --fleet-filter-dropdown-text-light: #333333; /* Dark dropdown text */
-  --fleet-filter-bar-bg-light: #e9ecef; /* Light filter bar background */
-  --fleet-filter-bar-border-light: rgba(0, 0, 0, 0.1); /* Light filter bar border */
+  --fleet-button-bg-blue: #0F766E;
+  --fleet-button-hover-blue: #138D83;
+  --fleet-add-button-bg: #3BADE5;
+  --fleet-add-button-hover: #2496c7;
+  --fleet-filter-badge-bg: #1A3A5A;
+  --fleet-filter-badge-text: #4DC3FF;
+  --fleet-filter-badge-border: #2A5C8A;
+  --fleet-search-input-bg: #132337;
+  --fleet-search-input-border: rgba(255, 255, 255, 0.1);
+  --fleet-search-input-placeholder: rgba(255, 255, 255, 0.4);
+  --fleet-filter-dropdown-bg: #132337;
+  --fleet-filter-dropdown-border: rgba(255, 255, 255, 0.1);
+  --fleet-filter-dropdown-hover: rgba(59, 173, 229, 0.2);
+  --fleet-filter-dropdown-text: #f4f4f4;
+  --fleet-filter-bar-bg: #0B1623;
+  --fleet-filter-bar-border: rgba(255, 255, 255, 0.1);
 
   /* Enhanced shadows and effects */
-  --shadow-glow-blue-light: 0 4px 15px rgba(0, 123, 255, 0.2); /* Lighter blue glow */
-  --shadow-glow-red-light: 0 4px 15px rgba(220, 53, 69, 0.2); /* Lighter red glow */
-  --shadow-glow-green-light: 0 4px 15px rgba(40, 167, 69, 0.2); /* Lighter green glow */
-  --shadow-glow-orange-light: 0 4px 15px rgba(255, 193, 7, 0.2); /* Lighter orange glow */
+  --shadow-glow-blue: 0 4px 15px rgba(0, 210, 255, 0.4);
+  --shadow-glow-red: 0 4px 15px rgba(255, 107, 107, 0.4);
+  --shadow-glow-green: 0 4px 15px rgba(81, 207, 102, 0.4);
+  --shadow-glow-orange: 0 4px 15px rgba(255, 167, 38, 0.4);
 }
  
 /* Animations */
@@ -200,8 +200,8 @@
 
 /* Enhanced Animations for Buttons and Badges */
 @keyframes buttonGlow {
-  0% { box-shadow: var(--shadow-glow-blue-light), 0 2px 8px rgba(0, 0, 0, 0.1); }
-  100% { box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3), 0 2px 8px rgba(0, 0, 0, 0.1); }
+  0% { box-shadow: var(--shadow-glow-blue), 0 2px 8px rgba(0, 0, 0, 0.2); }
+  100% { box-shadow: 0 4px 15px rgba(0, 210, 255, 0.6), 0 2px 8px rgba(0, 0, 0, 0.2); }
 }
 
 @keyframes shake {
@@ -221,15 +221,14 @@
   display: flex;
   flex-direction: column;
   height: calc(100vh - var(--header-height));
-  background-color: var(--primary-light); /* Light background */
-  color: var(--text-dark); /* Dark text */
+  background-color: var(--primary-dark);
+  color: var(--text-light);
   padding: 0;
   box-sizing: border-box;
   margin-top: var(--header-height);
   margin-bottom: 50px;
   position: relative;
   overflow: hidden;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 /* Enhanced Expanded Content Styles */
@@ -237,14 +236,14 @@
   padding: 24px;
   position: relative;
   background: linear-gradient(145deg, 
-    rgba(255, 255, 255, 0.95) 0%,
-    rgba(247, 250, 253, 0.95) 100%); /* Lighter background gradient */
+    rgba(15, 25, 40, 0.95) 0%,
+    rgba(20, 30, 45, 0.95) 100%);
   border-radius: 16px;
-  border: 1px solid rgba(0, 0, 0, 0.08); /* Lighter border */
+  border: 1px solid rgba(255, 255, 255, 0.08);
   margin: 12px 20px 20px;
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.1), /* Lighter shadow */
-    inset 0 1px 0 rgba(255, 255, 255, 0.5); /* Lighter inner shadow */
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(12px);
   transition: all 0.3s ease;
   overflow: hidden;
@@ -260,10 +259,10 @@
   height: 1px;
   background: linear-gradient(90deg, 
     transparent 0%,
-    rgba(0, 123, 255, 0.2) 25%,
-    rgba(0, 123, 255, 0.3) 50%,
-    rgba(0, 123, 255, 0.2) 75%,
-    transparent 100%); /* Lighter blue gradient */
+    rgba(59, 173, 229, 0.4) 25%,
+    rgba(59, 173, 229, 0.6) 50%,
+    rgba(59, 173, 229, 0.4) 75%,
+    transparent 100%);
 }
 
 /* Modern Grid Layout */
@@ -281,9 +280,9 @@
   flex-direction: column;
   gap: 6px;
   padding: 12px 16px;
-  background: rgba(0, 0, 0, 0.02); /* Very subtle light background */
+  background: rgba(255, 255, 255, 0.02);
   border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.06); /* Subtle light border */
+  border: 1px solid rgba(255, 255, 255, 0.06);
   transition: all 0.25s ease;
   position: relative;
   overflow: hidden;
@@ -297,49 +296,47 @@
   width: 2px;
   height: 100%;
   background: linear-gradient(to bottom,
-    rgba(0, 123, 255, 0.3) 0%,
-    rgba(0, 123, 255, 0.05) 100%); /* Lighter blue gradient */
+    rgba(59, 173, 229, 0.5) 0%,
+    rgba(59, 173, 229, 0.1) 100%);
   transition: all 0.25s ease;
 }
 
 .expandedField:hover {
-  background: rgba(0, 0, 0, 0.04); /* Slightly darker subtle light background */
-  border-color: rgba(0, 123, 255, 0.1); /* Lighter blue border on hover */
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(59, 173, 229, 0.2);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Lighter shadow on hover */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .expandedField:hover::before {
   background: linear-gradient(to bottom,
-    rgba(0, 123, 255, 0.6) 0%,
-    rgba(0, 123, 255, 0.15) 100%); /* Brighter blue gradient on hover */
+    rgba(59, 173, 229, 0.8) 0%,
+    rgba(59, 173, 229, 0.3) 100%);
   width: 3px;
 }
 
 /* Subtle Field Labels */
 .expandedFieldLabel {
   font-weight: 500;
-  color: rgba(51, 51, 51, 0.65); /* Muted dark text */
+  color: rgba(244, 244, 244, 0.65);
   font-size: 0.7rem;
   line-height: 1.2;
   text-transform: uppercase;
   letter-spacing: 0.8px;
   margin-bottom: 2px;
   transition: color 0.25s ease;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .expandedField:hover .expandedFieldLabel {
-  color: rgba(51, 51, 51, 0.8); /* Slightly darker muted text on hover */
+  color: rgba(244, 244, 244, 0.8);
 }
 
 .expandedFieldValue {
-  color: rgba(51, 51, 51, 0.95); /* Dark text */
+  color: rgba(244, 244, 244, 0.95);
   font-size: 0.8rem;
   line-height: 1.3;
   font-weight: 500;
   word-break: break-word;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 /* ========================================
@@ -356,7 +353,7 @@
   width: 120px;
   height: 36px;
   padding: 0;
-  background: var(--button-primary-bg-light); /* Light theme button gradient */
+  background: var(--button-primary-bg);
   border: none;
   border-radius: 18px;
   color: white;
@@ -367,10 +364,10 @@
   cursor: pointer;
 
   box-shadow:
-    var(--shadow-glow-blue-light), /* Light theme glow */
-    0 2px 8px rgba(0, 0, 0, 0.1), /* Lighter shadow */
-    inset 0 1px 0 rgba(255, 255, 255, 0.5), /* Lighter inner shadow */
-    inset 0 -1px 0 rgba(0, 0, 0, 0.05); /* Lighter inner shadow */
+    var(--shadow-glow-blue),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
 
   transition: var(--transition-smooth);
 
@@ -380,31 +377,30 @@
   gap: 6px;
 
   animation: buttonGlow 2s ease-in-out infinite alternate;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .expandedFieldAction:hover {
   transform: translateY(-2px) scale(1.05);
-  background: var(--button-primary-hover-light); /* Light theme hover gradient */
+  background: var(--button-primary-hover);
   box-shadow:
-    0 8px 25px rgba(0, 123, 255, 0.3), /* Lighter glow on hover */
-    0 4px 15px rgba(0, 0, 0, 0.15), /* Lighter shadow on hover */
-    inset 0 1px 0 rgba(255, 255, 255, 0.6); /* Lighter inner shadow on hover */
+    0 8px 25px rgba(0, 210, 255, 0.6),
+    0 4px 15px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .expandedFieldAction:active {
   transform: translateY(-1px) scale(1.02);
   box-shadow:
-    0 4px 15px rgba(0, 123, 255, 0.25), /* Lighter glow on active */
-    0 2px 8px rgba(0, 0, 0, 0.1); /* Lighter shadow on active */
+    0 4px 15px rgba(0, 210, 255, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .expandedFieldAction:disabled,
 .expandedFieldAction.disabled {
-  background: var(--button-disabled-bg-light); /* Light theme disabled background */
+  background: var(--button-disabled-bg);
   cursor: not-allowed;
   transform: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Lighter shadow */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   animation: none;
   opacity: 0.7;
 }
@@ -416,12 +412,12 @@
   right: 12px;
   z-index: 20;
 
-  background: rgba(255, 255, 255, 0.8); /* Light background */
+  background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 0, 0, 0.1); /* Lighter border */
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 50px;
   padding: 8px 16px;
-  color: #007bff; /* Standard blue */
+  color: #00D2FF;
   font-size: 0.7rem;
   font-weight: 500;
   cursor: pointer;
@@ -433,19 +429,18 @@
   transition: all 0.3s ease;
 
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.15), /* Lighter shadow */
-    inset 0 1px 0 rgba(255, 255, 255, 0.5); /* Lighter inner shadow */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .expandedFieldActionPill:hover {
-  background: rgba(0, 123, 255, 0.08); /* Light blue hover */
-  border-color: #007bff; /* Standard blue */
-  color: #0056b3; /* Darker blue */
+  background: rgba(0, 210, 255, 0.1);
+  border-color: #00D2FF;
+  color: white;
   transform: translateY(-1px);
   box-shadow:
-    0 12px 40px rgba(0, 123, 255, 0.15), /* Lighter glow on hover */
-    inset 0 1px 0 rgba(255, 255, 255, 0.6); /* Lighter inner shadow on hover */
+    0 12px 40px rgba(0, 210, 255, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /* Option 3: Minimalist Corner Button */
@@ -455,7 +450,7 @@
   right: 0;
   z-index: 20;
 
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* Keeping original gradient for now, as it's a specific design choice */
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   border-radius: 0 12px 0 12px;
   padding: 10px 14px;
@@ -471,14 +466,13 @@
   gap: 4px;
 
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2); /* Lighter shadow */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .expandedFieldActionCorner:hover {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); /* Keeping original gradient for now */
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
   transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3); /* Lighter shadow */
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
 }
 
 /* Modern Generate Report Button - Bottom Right Positioned */
@@ -490,10 +484,10 @@
 
   /* Button styling */
   background: linear-gradient(135deg, 
-    rgba(0, 123, 255, 0.9) 0%, 
-    rgba(0, 86, 179, 0.9) 100%); /* Light blue gradient */
+    rgba(59, 173, 229, 0.9) 0%, 
+    rgba(41, 128, 185, 0.9) 100%);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 123, 255, 0.2); /* Light blue border */
+  border: 1px solid rgba(59, 173, 229, 0.3);
   border-radius: 12px;
 
   /* Size and spacing */
@@ -519,40 +513,39 @@
 
   /* Effects */
   box-shadow: 
-    0 4px 16px rgba(0, 123, 255, 0.1), /* Lighter shadow */
-    0 2px 8px rgba(0, 0, 0, 0.1), /* Lighter shadow */
-    inset 0 1px 0 rgba(255, 255, 255, 0.5); /* Lighter inner shadow */
+    0 4px 16px rgba(59, 173, 229, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 
   overflow: hidden;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 /* Hover effects for bottom right button */
 .expandedFieldActionBottomRight:hover {
   transform: translateY(-2px) scale(1.02);
   background: linear-gradient(135deg, 
-    rgba(0, 123, 255, 1) 0%, 
-    rgba(0, 86, 179, 1) 100%); /* Brighter blue gradient on hover */
-  border-color: rgba(0, 123, 255, 0.3); /* Lighter border on hover */
+    rgba(59, 173, 229, 1) 0%, 
+    rgba(41, 128, 185, 1) 100%);
+  border-color: rgba(59, 173, 229, 0.5);
   box-shadow: 
-    0 8px 24px rgba(0, 123, 255, 0.15), /* Lighter shadow on hover */
-    0 4px 16px rgba(0, 0, 0, 0.15), /* Lighter shadow on hover */
-    inset 0 1px 0 rgba(255, 255, 255, 0.6); /* Lighter inner shadow on hover */
+    0 8px 24px rgba(59, 173, 229, 0.3),
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .expandedFieldActionBottomRight:active {
   transform: translateY(-1px) scale(1.01);
   box-shadow: 
-    0 4px 16px rgba(0, 123, 255, 0.12), /* Lighter shadow on active */
-    0 2px 8px rgba(0, 0, 0, 0.1); /* Lighter shadow on active */
+    0 4px 16px rgba(59, 173, 229, 0.25),
+    0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Disabled state for bottom right button */
 .expandedFieldActionBottomRight.disabled {
   background: linear-gradient(135deg, 
-    rgba(173, 181, 189, 0.8) 0%, 
-    rgba(144, 153, 161, 0.8) 100%); /* Light grey disabled */
-  border-color: rgba(173, 181, 189, 0.2); /* Lighter grey border */
+    rgba(100, 116, 139, 0.8) 0%, 
+    rgba(71, 85, 105, 0.8) 100%);
+  border-color: rgba(100, 116, 139, 0.3);
   cursor: not-allowed;
   transform: none;
   opacity: 0.7;
@@ -561,11 +554,11 @@
 .expandedFieldActionBottomRight.disabled:hover {
   transform: none;
   background: linear-gradient(135deg, 
-    rgba(173, 181, 189, 0.8) 0%, 
-    rgba(144, 153, 161, 0.8) 100%); /* Light grey disabled */
+    rgba(100, 116, 139, 0.8) 0%, 
+    rgba(71, 85, 105, 0.8) 100%);
   box-shadow: 
-    0 4px 16px rgba(0, 123, 255, 0.05), /* Very subtle shadow */
-    0 2px 8px rgba(0, 0, 0, 0.05); /* Very subtle shadow */
+    0 4px 16px rgba(59, 173, 229, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Shimmer effect for bottom right button */
@@ -608,9 +601,8 @@
   position: relative;
   overflow: hidden;
   backdrop-filter: blur(8px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Lighter shadow */
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Lighter text shadow */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Bright gradient overlay for depth */
@@ -648,62 +640,62 @@
 
 /* OPEN Status - Bright Red with Energy */
 .statusBadgeModern.open {
-  background: linear-gradient(135deg, #ff4757 0%, #ff3838 50%, #ff6b35 100%); /* Bright red */
+  background: linear-gradient(135deg, #ff4757 0%, #ff3838 50%, #ff6b35 100%);
   color: white;
-  border-color: rgba(255, 71, 87, 0.4); /* Lighter border */
+  border-color: rgba(255, 71, 87, 0.6);
   box-shadow: 
-    0 4px 16px rgba(255, 71, 87, 0.2), /* Lighter shadow */
-    0 0 20px rgba(255, 71, 87, 0.1), /* Lighter glow */
-    inset 0 1px 0 rgba(255, 255, 255, 0.4); /* Lighter inner shadow */
+    0 4px 16px rgba(255, 71, 87, 0.4),
+    0 0 20px rgba(255, 71, 87, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .statusBadgeModern.open:hover {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 50%, #ff7961 100%); /* Brighter red on hover */
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 50%, #ff7961 100%);
   transform: translateY(-1px) scale(1.02);
   box-shadow: 
-    0 8px 24px rgba(255, 71, 87, 0.25), /* Lighter shadow on hover */
-    0 0 30px rgba(255, 71, 87, 0.15), /* Lighter glow on hover */
-    inset 0 1px 0 rgba(255, 255, 255, 0.5); /* Lighter inner shadow on hover */
+    0 8px 24px rgba(255, 71, 87, 0.5),
+    0 0 30px rgba(255, 71, 87, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 /* CLOSED Status - Bright Green with Success Glow */
 .statusBadgeModern.closed {
-  background: linear-gradient(135deg, #00c851 0%, #00bf63 50%, #1dd1a1 100%); /* Bright green */
+  background: linear-gradient(135deg, #00c851 0%, #00bf63 50%, #1dd1a1 100%);
   color: white;
-  border-color: rgba(0, 200, 81, 0.4); /* Lighter border */
+  border-color: rgba(0, 200, 81, 0.6);
   box-shadow: 
-    0 4px 16px rgba(0, 200, 81, 0.2), /* Lighter shadow */
-    0 0 20px rgba(0, 200, 81, 0.1), /* Lighter glow */
-    inset 0 1px 0 rgba(255, 255, 255, 0.4); /* Lighter inner shadow */
+    0 4px 16px rgba(0, 200, 81, 0.4),
+    0 0 20px rgba(0, 200, 81, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .statusBadgeModern.closed:hover {
-  background: linear-gradient(135deg, #00e676 0%, #00c853 50%, #69f0ae 100%); /* Brighter green on hover */
+  background: linear-gradient(135deg, #00e676 0%, #00c853 50%, #69f0ae 100%);
   transform: translateY(-1px) scale(1.02);
   box-shadow: 
-    0 8px 24px rgba(0, 200, 81, 0.25), /* Lighter shadow on hover */
-    0 0 30px rgba(0, 200, 81, 0.15), /* Lighter glow on hover */
-    inset 0 1px 0 rgba(255, 255, 255, 0.5); /* Lighter inner shadow on hover */
+    0 8px 24px rgba(0, 200, 81, 0.5),
+    0 0 30px rgba(0, 200, 81, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 /* IN PROGRESS Status - Bright Orange with Dynamic Energy */
 .statusBadgeModern.inProgress {
-  background: linear-gradient(135deg, #ff8a00 0%, #ffb347 50%, #ffa726 100%); /* Bright orange */
+  background: linear-gradient(135deg, #ff8a00 0%, #ffb347 50%, #ffa726 100%);
   color: white;
-  border-color: rgba(255, 138, 0, 0.4); /* Lighter border */
+  border-color: rgba(255, 138, 0, 0.6);
   box-shadow: 
-    0 4px 16px rgba(255, 138, 0, 0.2), /* Lighter shadow */
-    0 0 20px rgba(255, 138, 0, 0.1), /* Lighter glow */
-    inset 0 1px 0 rgba(255, 255, 255, 0.4); /* Lighter inner shadow */
+    0 4px 16px rgba(255, 138, 0, 0.4),
+    0 0 20px rgba(255, 138, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .statusBadgeModern.inProgress:hover {
-  background: linear-gradient(135deg, #ffb74d 0%, #ffa726 50%, #ff9800 100%); /* Brighter orange on hover */
+  background: linear-gradient(135deg, #ffb74d 0%, #ffa726 50%, #ff9800 100%);
   transform: translateY(-1px) scale(1.02);
   box-shadow: 
-    0 8px 24px rgba(255, 138, 0, 0.25), /* Lighter shadow on hover */
-    0 0 30px rgba(255, 138, 0, 0.15), /* Lighter glow on hover */
-    inset 0 1px 0 rgba(255, 255, 255, 0.5); /* Lighter inner shadow on hover */
+    0 8px 24px rgba(255, 138, 0, 0.5),
+    0 0 30px rgba(255, 138, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 /* Enhanced Bright Criticality Badges */
@@ -724,9 +716,8 @@
   position: relative;
   overflow: hidden;
   backdrop-filter: blur(8px);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1); /* Lighter shadow */
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Lighter text shadow */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Bright gradient overlay for criticality */
@@ -744,13 +735,13 @@
 
 /* HIGH Criticality - Bright Red with Warning Icon */
 .criticalityHigh {
-  background: linear-gradient(135deg, #e53e3e 0%, #c53030 50%, #fc8181 100%); /* Bright red */
+  background: linear-gradient(135deg, #e53e3e 0%, #c53030 50%, #fc8181 100%);
   color: white;
-  border-color: rgba(229, 62, 62, 0.4); /* Lighter border */
+  border-color: rgba(229, 62, 62, 0.6);
   /* box-shadow: 
-    0 4px 14px rgba(229, 62, 62, 0.2),
-    0 0 18px rgba(229, 62, 62, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4); */
+    0 4px 14px rgba(229, 62, 62, 0.4),
+    0 0 18px rgba(229, 62, 62, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2); */
 }
 
 .criticalityHigh::after {
@@ -758,27 +749,27 @@
   font-size: 0.65rem;
   margin-left: 3px;
   opacity: 0.9;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15)); /* Lighter shadow */
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
 }
 
 .criticalityHigh:hover {
-  background: linear-gradient(135deg, #fc8181 0%, #f56565 50%, #e53e3e 100%); /* Brighter red on hover */
+  background: linear-gradient(135deg, #fc8181 0%, #f56565 50%, #e53e3e 100%);
   transform: translateY(-1px) scale(1.02);
   /* box-shadow: 
-    0 6px 20px rgba(229, 62, 62, 0.25),
-    0 0 25px rgba(229, 62, 62, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5); */
+    0 6px 20px rgba(229, 62, 62, 0.5),
+    0 0 25px rgba(229, 62, 62, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3); */
 }
 
 /* MEDIUM Criticality - Bright Orange/Amber */
 .criticalityMedium {
-  background: linear-gradient(135deg, #ed8936 0%, #dd6b20 50%, #fbb040 100%); /* Bright orange */
+  background: linear-gradient(135deg, #ed8936 0%, #dd6b20 50%, #fbb040 100%);
   color: white;
-  border-color: rgba(237, 137, 54, 0.4); /* Lighter border */
+  border-color: rgba(237, 137, 54, 0.6);
   /* box-shadow: 
-    0 4px 14px rgba(237, 137, 54, 0.2),
-    0 0 18px rgba(237, 137, 54, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4); */
+    0 4px 14px rgba(237, 137, 54, 0.4),
+    0 0 18px rgba(237, 137, 54, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2); */
 }
 
 .criticalityMedium::after {
@@ -786,27 +777,27 @@
   font-size: 0.55rem;
   margin-left: 3px;
   opacity: 0.9;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15)); /* Lighter shadow */
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
 }
 
 .criticalityMedium:hover {
-  background: linear-gradient(135deg, #fbb040 0%, #f6ad55 50%, #ed8936 100%); /* Brighter orange on hover */
+  background: linear-gradient(135deg, #fbb040 0%, #f6ad55 50%, #ed8936 100%);
   transform: translateY(-1px) scale(1.02);
   /* box-shadow: 
-    0 6px 20px rgba(237, 137, 54, 0.25),
-    0 0 25px rgba(237, 137, 54, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5); */
+    0 6px 20px rgba(237, 137, 54, 0.5),
+    0 0 25px rgba(237, 137, 54, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3); */
 }
 
 /* LOW Criticality - Bright Blue/Cyan */
 .criticalityLow {
-  background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 50%, #63b3ed 100%); /* Bright blue */
+  background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 50%, #63b3ed 100%);
   color: white;
-  border-color: rgba(49, 130, 206, 0.4); /* Lighter border */
+  border-color: rgba(49, 130, 206, 0.6);
   /* box-shadow: 
-    0 4px 14px rgba(49, 130, 206, 0.2),
-    0 0 18px rgba(49, 130, 206, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4); */
+    0 4px 14px rgba(49, 130, 206, 0.4),
+    0 0 18px rgba(49, 130, 206, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2); */
 }
 
 .criticalityLow::after {
@@ -814,16 +805,16 @@
   font-size: 0.55rem;
   margin-left: 3px;
   opacity: 0.9;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15)); /* Lighter shadow */
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
 }
 
 .criticalityLow:hover {
-  background: linear-gradient(135deg, #63b3ed 0%, #4299e1 50%, #3182ce 100%); /* Brighter blue on hover */
+  background: linear-gradient(135deg, #63b3ed 0%, #4299e1 50%, #3182ce 100%);
   transform: translateY(-1px) scale(1.02);
   /* box-shadow: 
-    0 6px 20px rgba(49, 130, 206, 0.25),
-    0 0 25px rgba(49, 130, 206, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5); */
+    0 6px 20px rgba(49, 130, 206, 0.5),
+    0 0 25px rgba(49, 130, 206, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3); */
 }
 
 /* Ultra Bright Alternative - Neon Style */
@@ -842,41 +833,40 @@
   min-width: 85px;
   justify-content: center;
   position: relative;
-  background: rgba(255, 255, 255, 0.8); /* Light background */
+  background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(10px);
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .statusBadgeNeon.open {
   color: #ff073a;
   border-color: #ff073a;
   box-shadow: 
-    0 0 20px rgba(255, 7, 58, 0.3), /* Lighter glow */
-    inset 0 0 20px rgba(255, 7, 58, 0.05); /* Lighter inner glow */
-  text-shadow: 0 0 10px rgba(255, 7, 58, 0.4); /* Lighter text shadow */
+    0 0 20px rgba(255, 7, 58, 0.6),
+    inset 0 0 20px rgba(255, 7, 58, 0.1);
+  text-shadow: 0 0 10px rgba(255, 7, 58, 0.8);
 }
 
 .statusBadgeNeon.closed {
   color: #39ff14;
   border-color: #39ff14;
   box-shadow: 
-    0 0 20px rgba(57, 255, 20, 0.3), /* Lighter glow */
-    inset 0 0 20px rgba(57, 255, 20, 0.05); /* Lighter inner glow */
-  text-shadow: 0 0 10px rgba(57, 255, 20, 0.4); /* Lighter text shadow */
+    0 0 20px rgba(57, 255, 20, 0.6),
+    inset 0 0 20px rgba(57, 255, 20, 0.1);
+  text-shadow: 0 0 10px rgba(57, 255, 20, 0.8);
 }
 
 .statusBadgeNeon.inProgress {
   color: #ff8c00;
   border-color: #ff8c00;
   box-shadow: 
-    0 0 20px rgba(255, 140, 0, 0.3), /* Lighter glow */
-    inset 0 0 20px rgba(255, 140, 0, 0.05); /* Lighter inner glow */
-  text-shadow: 0 0 10px rgba(255, 140, 0, 0.4); /* Lighter text shadow */
+    0 0 20px rgba(255, 140, 0, 0.6),
+    inset 0 0 20px rgba(255, 140, 0, 0.1);
+  text-shadow: 0 0 10px rgba(255, 140, 0, 0.8);
 }
 
 .statusBadgeNeon:hover {
   transform: scale(1.05);
-  filter: brightness(1.1); /* Slightly less bright */
+  filter: brightness(1.2);
 }
 
 /* Pulse Animation for Active States */
@@ -937,37 +927,36 @@
 
 /* Alternative Vibrant Glass Style */
 .statusBadgeGlass {
-  background: rgba(255, 255, 255, 0.5); /* More opaque white */
+  background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.1); /* Lighter border */
+  border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.1), /* Lighter shadow */
-    inset 0 1px 0 rgba(255, 255, 255, 0.5); /* Lighter inner shadow */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .statusBadgeGlass.open {
   color: #ff6b6b;
-  border-color: rgba(255, 107, 107, 0.3); /* Lighter border */
+  border-color: rgba(255, 107, 107, 0.5);
   background: linear-gradient(135deg, 
-    rgba(255, 107, 107, 0.1) 0%, 
-    rgba(255, 71, 87, 0.05) 100%); /* Lighter gradient */
+    rgba(255, 107, 107, 0.2) 0%, 
+    rgba(255, 71, 87, 0.1) 100%);
 }
 
 .statusBadgeGlass.closed {
   color: #51cf66;
-  border-color: rgba(81, 207, 102, 0.3); /* Lighter border */
+  border-color: rgba(81, 207, 102, 0.5);
   background: linear-gradient(135deg, 
-    rgba(81, 207, 102, 0.1) 0%, 
-    rgba(64, 192, 87, 0.05) 100%); /* Lighter gradient */
+    rgba(81, 207, 102, 0.2) 0%, 
+    rgba(64, 192, 87, 0.1) 100%);
 }
 
 .statusBadgeGlass.inProgress {
   color: #ffa726;
-  border-color: rgba(255, 167, 38, 0.3); /* Lighter border */
+  border-color: rgba(255, 167, 38, 0.5);
   background: linear-gradient(135deg, 
-    rgba(255, 167, 38, 0.1) 0%, 
-    rgba(251, 140, 0, 0.05) 100%); /* Lighter gradient */
+    rgba(255, 167, 38, 0.2) 0%, 
+    rgba(251, 140, 0, 0.1) 100%);
 }
 
 /* ALTERNATIVE: Ultra Modern Pill Style */
@@ -986,21 +975,20 @@
   min-width: 70px;
   justify-content: center;
   position: relative;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .statusBadgePill.open {
-  background: rgba(239, 68, 68, 0.1); /* Lighter background */
+  background: rgba(239, 68, 68, 0.15);
   color: #dc2626;
 }
 
 .statusBadgePill.closed {
-  background: rgba(34, 197, 94, 0.1); /* Lighter background */
+  background: rgba(34, 197, 94, 0.15);
   color: #16a34a;
 }
 
 .statusBadgePill.inProgress {
-  background: rgba(245, 158, 11, 0.1); /* Lighter background */
+  background: rgba(245, 158, 11, 0.15);
   color: #d97706;
 }
 
@@ -1026,32 +1014,31 @@
   text-transform: uppercase;
   letter-spacing: 0.3px;
   border-left: 3px solid;
-  background: rgba(255, 255, 255, 0.05); /* Slightly more opaque light background */
+  background: rgba(255, 255, 255, 0.02);
   transition: all 0.2s ease;
   backdrop-filter: blur(8px);
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .statusBadgeAccent.open {
   border-left-color: #dc2626;
-  color: rgba(239, 68, 68, 0.8); /* Darker red text */
-  background: rgba(239, 68, 68, 0.08); /* Slightly more opaque light red background */
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.05);
 }
 
 .statusBadgeAccent.closed {
   border-left-color: #16a34a;
-  color: rgba(34, 197, 94, 0.8); /* Darker green text */
-  background: rgba(34, 197, 94, 0.08); /* Slightly more opaque light green background */
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.05);
 }
 
 .statusBadgeAccent.inProgress {
   border-left-color: #d97706;
-  color: rgba(245, 158, 11, 0.8); /* Darker yellow text */
-  background: rgba(245, 158, 11, 0.08); /* Slightly more opaque light yellow background */
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.05);
 }
 
 .statusBadgeAccent:hover {
-  background: rgba(255, 255, 255, 0.08); /* Slightly more opaque light background on hover */
+  background: rgba(255, 255, 255, 0.05);
   transform: translateX(2px);
 }
 
@@ -1070,25 +1057,24 @@
   transition: all 0.2s ease;
   position: relative;
   backdrop-filter: blur(8px);
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .criticalityBadgeEnhanced.high {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(220, 38, 38, 0.04)); /* Lighter gradient */
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
   color: #dc2626;
-  border-color: rgba(239, 68, 68, 0.15); /* Lighter border */
+  border-color: rgba(239, 68, 68, 0.2);
 }
 
 .criticalityBadgeEnhanced.medium {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(217, 119, 6, 0.04)); /* Lighter gradient */
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05));
   color: #d97706;
-  border-color: rgba(245, 158, 11, 0.15); /* Lighter border */
+  border-color: rgba(245, 158, 11, 0.2);
 }
 
 .criticalityBadgeEnhanced.low {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(37, 99, 235, 0.04)); /* Lighter gradient */
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
   color: #2563eb;
-  border-color: rgba(59, 130, 246, 0.15); /* Lighter border */
+  border-color: rgba(59, 130, 246, 0.2);
 }
 
 /* Responsive Design */
@@ -1117,20 +1103,19 @@
   border-radius: 4px;
   position: relative;
   overflow: visible;
-  text-shadow: 0 0 8px rgba(0, 123, 255, 0.15); /* Lighter text shadow */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  text-shadow: 0 0 8px rgba(77, 195, 255, 0.3);
 }
 
 .expandedFieldAugmented .expandedFieldValue {
-  color: #007bff; /* Standard blue */
+  color: #4DC3FF;
   font-weight: 700;
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   text-shadow:
-    0 0 10px rgba(0, 123, 255, 0.3), /* Lighter glow */
-    0 0 20px rgba(0, 123, 255, 0.15), /* Lighter glow */
-    0 1px 1px rgba(0, 0, 0, 0.1); /* Lighter shadow */
+    0 0 10px rgba(77, 195, 255, 0.6),
+    0 0 20px rgba(77, 195, 255, 0.3),
+    0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
 /* File List - Compact inline display */
@@ -1141,13 +1126,12 @@
   max-height: 100px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 123, 255, 0.15) transparent; /* Lighter scrollbar */
+  scrollbar-color: rgba(59, 173, 229, 0.3) transparent;
   max-width: 200px;
-  background: rgba(0, 0, 0, 0.05); /* Light background */
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 8px;
   padding: 6px;
-  border: 1px solid rgba(0, 0, 0, 0.05); /* Light border */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .fileItemCompact {
@@ -1155,19 +1139,19 @@
   align-items: center;
   gap: 6px;
   font-size: 0.65rem;
-  color: var(--text-dark); /* Dark text */
+  color: var(--text-light);
   padding: 4px 8px;
   border-radius: 6px;
   transition: background-color 0.2s ease;
   position: relative;
   overflow: hidden;
-  background: rgba(0, 0, 0, 0.02); /* Very subtle light background */
-  border: 1px solid rgba(0, 0, 0, 0.04); /* Subtle light border */
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .fileItemCompact:hover {
-  background: rgba(0, 123, 255, 0.05); /* Light blue hover */
-  border-color: rgba(0, 123, 255, 0.1); /* Light blue border on hover */
+  background: rgba(59, 173, 229, 0.08);
+  border-color: rgba(59, 173, 229, 0.15);
 }
 
 .fileItemCompact::before {
@@ -1179,9 +1163,9 @@
   height: 100%;
   background: linear-gradient(
     90deg,
-    rgba(0, 123, 255, 0) 0%,
-    rgba(0, 123, 255, 0.05) 50%, /* Lighter gradient */
-    rgba(0, 123, 255, 0) 100%
+    rgba(59, 173, 229, 0) 0%,
+    rgba(59, 173, 229, 0.1) 50%,
+    rgba(59, 173, 229, 0) 100%
   );
   transition: left 0.5s ease;
 }
@@ -1190,8 +1174,10 @@
   left: 100%;
 }
 
+
+
 .fileIconCompact {
-  color: var(--blue-accent-light); /* Light theme blue accent */
+  color: var(--blue-accent);
   flex-shrink: 0;
   width: 12px;
   height: 12px;
@@ -1207,7 +1193,7 @@
 .fileNameButton {
   background: none;
   border: none;
-  color: rgba(0, 123, 255, 0.8); /* Lighter blue */
+  color: rgba(59, 173, 229, 0.9);
   cursor: pointer;
   font-size: 0.7rem;
   text-align: left;
@@ -1220,13 +1206,12 @@
   text-decoration-color: transparent;
   transition: all 0.2s ease;
   position: relative;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .fileNameButton:hover {
-  text-decoration-color: var(--blue-accent-light); /* Light theme blue accent */
-  color: rgba(0, 123, 255, 1); /* Standard blue */
-  text-shadow: 0 0 8px rgba(0, 123, 255, 0.15); /* Lighter text shadow */
+  text-decoration-color: var(--blue-accent);
+  color: rgba(59, 173, 229, 1);
+  text-shadow: 0 0 8px rgba(59, 173, 229, 0.3);
 }
 
 .fileNameButton::after {
@@ -1235,7 +1220,7 @@
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8); /* Dark background for tooltip */
+  background: rgba(0, 0, 0, 0.9);
   color: white;
   padding: 4px 8px;
   border-radius: 4px;
@@ -1253,7 +1238,7 @@
 
 .fileSizeCompact {
   font-size: 10px;
-  color: var(--table-muted-text-color-light); /* Light theme muted text */
+  color: var(--table-muted-text-color);
   flex-shrink: 0;
 }
 
@@ -1268,7 +1253,6 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .statusDotCompact {
@@ -1351,31 +1335,30 @@
 
 .filesListCompact::-webkit-scrollbar-thumb,
 .expandedFieldLarge .expandedFieldValue::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 123, 255, 0.15); /* Lighter scrollbar */
+  background-color: rgba(59, 173, 229, 0.3);
   border-radius: 2px;
 }
 
 .filesListCompact::-webkit-scrollbar-thumb:hover,
 .expandedFieldLarge .expandedFieldValue::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(0, 123, 255, 0.25); /* Lighter scrollbar on hover */
+  background-color: rgba(59, 173, 229, 0.5);
 }
 
 /* Filter Bar - Match Fleet Dashboard exactly */
 .filterBar {
   display: flex;
   align-items: center;
-  background: var(--bg-gradient-1-light); /* Light theme background gradient */
+  background: var(--bg-gradient-1);
   padding: 3px 8px;
-  border-bottom: 1px solid var(--border-subtle-light); /* Light theme border */
+  border-bottom: 1px solid var(--border-subtle);
   gap: 12px;
-  box-shadow: var(--shadow-sm-light); /* Light theme shadow */
+  box-shadow: var(--shadow-sm);
   position: relative;
   z-index: 10;
   flex-wrap: wrap;
   flex-shrink: 0;
   height: 42px;
   margin-bottom: 0;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .filterSectionLeft {
@@ -1388,13 +1371,12 @@
   font-size: 1.6rem;
   font-weight: 600;
   margin: 0;
-  color: var(--text-dark); /* Dark text */
+  color: var(--text-light);
   background: none;
   -webkit-background-clip: unset;
   background-clip: unset;
   text-shadow: none;
   letter-spacing: normal;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .searchContainer {
@@ -1406,32 +1388,31 @@
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-muted-light); /* Light theme muted text */
+  color: var(--text-muted);
 }
 
 .searchInput {
-  background: var(--input-bg-light); /* Light theme input background */
-  border: 1px solid var(--border-subtle-light); /* Light theme border */
+  background: var(--input-bg);
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
   padding: 7px 12px 7px 36px;
-  color: var(--text-dark); /* Dark text */
+  color: var(--text-light);
   width: 280px;
   transition: var(--transition-standard);
   font-size: 0.9rem;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .searchInput:focus {
   outline: none;
-  border-color: var(--blue-accent-light); /* Light theme blue accent */
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1); /* Lighter shadow */
+  border-color: var(--blue-accent);
+  box-shadow: 0 0 0 2px rgba(59, 173, 229, 0.2);
 }
 
 .searchToggle {
-  background: var(--input-bg-light); /* Light theme input background */
-  border: 1px solid var(--border-subtle-light); /* Light theme border */
+  background: var(--input-bg);
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
-  color: var(--text-dark); /* Dark text */
+  color: var(--text-light);
   cursor: pointer;
   height: 30px;
   width: 36px;
@@ -1442,9 +1423,9 @@
 }
 
 .searchToggle:hover {
-  background: var(--filter-hover-light); /* Light theme filter hover */
-  border-color: var(--blue-accent-light); /* Light theme blue accent */
-  color: var(--text-dark); /* Dark text */
+  background: var(--filter-hover);
+  border-color: var(--blue-accent);
+  color: var(--text-light);
 }
 
 .searchPopup {
@@ -1452,24 +1433,22 @@
   top: calc(100% + 6px);
   left: 0;
   z-index: 1000;
-  background: var(--card-bg-light); /* Light theme card background */
+  background: var(--card-bg);
   border-radius: 8px;
-  box-shadow: var(--dropdown-shadow-light); /* Light theme dropdown shadow */
-  border: 1px solid var(--border-subtle-light); /* Light theme border */
+  box-shadow: var(--dropdown-shadow);
+  border: 1px solid var(--border-subtle);
   padding: 10px;
   min-width: 200px;
   animation: fadeInDropdown 0.2s ease-out;
   backdrop-filter: none;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .filterLabel {
   display: flex;
   align-items: center;
-  color: var(--text-muted-light); /* Light theme muted text */
+  color: var(--text-muted);
   font-size: 0.85rem;
   margin-right: 12px;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .filterChips {
@@ -1487,10 +1466,10 @@
 
 .filterDropdownButton {
   appearance: none;
-  background: var(--filter-bg-light); /* Light theme filter background */
-  border: 1px solid var(--filter-border-light); /* Light theme filter border */
+  background: var(--filter-bg);
+  border: 1px solid var(--filter-border);
   border-radius: 4px;
-  color: var(--text-dark); /* Dark text */
+  color: var(--text-light);
   cursor: pointer;
   height: 30px;
   display: flex;
@@ -1501,7 +1480,6 @@
   transition: all 0.2s ease;
   white-space: nowrap;
   justify-content: space-between;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .filterDropdownButton::after {
@@ -1510,7 +1488,7 @@
   height: 0;
   border-left: 4px solid transparent;
   border-right: 4px solid transparent;
-  border-top: 4px solid var(--text-muted-light); /* Light theme muted text */
+  border-top: 4px solid var(--text-muted);
   margin-left: 8px;
   transition: transform 0.2s ease;
 }
@@ -1520,14 +1498,14 @@
 }
 
 .filterDropdownButton:hover {
-  background: var(--filter-hover-light); /* Light theme filter hover */
-  border-color: var(--blue-accent-light); /* Light theme blue accent */
+  background: var(--filter-hover);
+  border-color: var(--blue-accent);
 }
 
 .filterDropdownButton.active {
   outline: none;
-  border-color: var(--blue-accent-light); /* Light theme blue accent */
-  background: var(--filter-active-light); /* Light theme filter active */
+  border-color: var(--blue-accent);
+  background: var(--filter-active);
 }
 
 .filterDropdownContent {
@@ -1538,16 +1516,15 @@
   min-width: 250px;
   max-width: 350px;
   max-height: 400px;
-  background: var(--card-bg-light); /* Light theme card background */
+  background: var(--card-bg);
   border-radius: 8px;
-  box-shadow: var(--dropdown-shadow-light); /* Light theme dropdown shadow */
-  border: 1px solid var(--border-subtle-light); /* Light theme border */
+  box-shadow: var(--dropdown-shadow);
+  border: 1px solid var(--border-subtle);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   animation: fadeInDropdown 0.2s ease-out;
   backdrop-filter: none;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .filterDropdownHeader {
@@ -1555,35 +1532,33 @@
   justify-content: space-between;
   align-items: center;
   padding: 4px 8px;
-  border-bottom: 1px solid var(--border-subtle-light); /* Light theme border */
-  background: var(--table-header-bg-light); /* Light theme table header background */
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--table-header-bg);
 }
 
 .filterDropdownHeader h4 {
   margin: 0;
   font-size: 14px;
-  color: var(--text-dark); /* Dark text */
+  color: var(--text-light);
   font-weight: 500;
   letter-spacing: normal;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .selectAllBtn {
   background: none;
   border: none;
-  color: var(--blue-accent-light); /* Light theme blue accent */
+  color: var(--blue-accent);
   cursor: pointer;
   font-size: 12px;
   padding: 0;
   font-weight: normal;
   position: static;
   transition: none;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .selectAllBtn:hover {
   text-decoration: underline;
-  color: var(--blue-accent-light); /* Light theme blue accent */
+  color: var(--blue-accent);
 }
 
 .selectAllBtn::after {
@@ -1595,7 +1570,7 @@
   overflow-y: auto;
   max-height: 280px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(51, 51, 51, 0.1) rgba(255, 255, 255, 0.5); /* Lighter scrollbar */
+  scrollbar-color: rgba(244, 244, 244, 0.2) rgba(11, 22, 35, 0.5);
 }
 
 .filterDropdownItems::-webkit-scrollbar {
@@ -1603,18 +1578,18 @@
 }
 
 .filterDropdownItems::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.5); /* Lighter scrollbar track */
+  background: rgba(11, 22, 35, 0.5);
   border-radius: 0;
 }
 
 .filterDropdownItems::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 123, 255, 0.15); /* Lighter scrollbar */
+  background-color: rgba(59, 173, 229, 0.3);
   border-radius: 3px;
   transition: none;
 }
 
 .filterDropdownItems::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(0, 123, 255, 0.25); /* Lighter scrollbar on hover */
+  background-color: rgba(59, 173, 229, 0.5);
 }
 
 .filterCheckboxItem {
@@ -1624,7 +1599,7 @@
 }
 
 .filterCheckboxItem:hover {
-  background-color: rgba(0, 123, 255, 0.08); /* Light blue hover */
+  background-color: rgba(59, 173, 229, 0.1);
 }
 
 .filterCheckboxItem::after {
@@ -1641,35 +1616,34 @@
 .filterCheckboxItem input[type="checkbox"] {
   margin-right: 8px;
   cursor: pointer;
-  accent-color: var(--blue-accent-light); /* Light theme blue accent */
+  accent-color: var(--blue-accent);
   width: auto;
   height: auto;
 }
 
 .filterCheckboxItem span {
   font-size: 13px;
-  color: var(--text-dark); /* Dark text */
+  color: var(--text-light);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   transition: none;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .filterCheckboxItem:hover span {
-  color: var(--text-dark); /* Dark text */
+  color: var(--text-light);
 }
 
 .filterDropdownFooter {
   padding: 10px 16px;
-  background: var(--card-dark-light); /* Light theme card dark */
-  border-top: 1px solid var(--border-subtle-light); /* Light theme border */
+  background: var(--card-dark);
+  border-top: 1px solid var(--border-subtle);
   display: flex;
   justify-content: flex-end;
 }
 
 .applyBtn {
-  background: var(--blue-accent-light); /* Light theme blue accent */
+  background: var(--blue-accent);
   color: white;
   border: none;
   padding: 6px 12px;
@@ -1679,11 +1653,10 @@
   font-weight: normal;
   transition: all 0.2s ease;
   box-shadow: none;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .applyBtn:hover {
-  background: var(--secondary-accent-light); /* Light theme secondary accent */
+  background: var(--secondary-accent);
   transform: translateY(-1px);
   box-shadow: none;
 }
@@ -1694,12 +1667,12 @@
 }
 
 .resetButton {
-  background: rgba(220, 53, 69, 0.08); /* Light red background */
-  border: 1px solid rgba(220, 53, 69, 0.15); /* Lighter red border */
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
   border-radius: 4px;
   padding: 0 12px;
   height: 30px;
-  color: var(--danger-color-light); /* Light theme danger color */
+  color: var(--danger-color);
   font-size: 13px;
   font-weight: normal;
   cursor: pointer;
@@ -1707,11 +1680,10 @@
   display: flex;
   align-items: center;
   box-shadow: none;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .resetButton:hover {
-  background: rgba(220, 53, 69, 0.12); /* Slightly darker light red on hover */
+  background: rgba(231, 76, 60, 0.2);
   transform: none;
   box-shadow: none;
 }
@@ -1725,28 +1697,25 @@
 .fileListHeader {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--blue-accent-light); /* Light theme blue accent */
+  color: var(--blue-accent);
   margin-bottom: 0.5rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .existingFilesHeader {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--table-muted-text-color-light); /* Light theme muted text */
+  color: var(--table-muted-text-color);
   margin-bottom: 0.5rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .fileSize {
   font-size: 0.75rem;
-  color: var(--table-muted-text-color-light); /* Light theme muted text */
+  color: var(--table-muted-text-color);
   margin-left: 0.5rem;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .fileActions {
@@ -1758,7 +1727,7 @@
 .fileActionButton {
   background: none;
   border: none;
-  color: var(--table-muted-text-color-light); /* Light theme muted text */
+  color: var(--table-muted-text-color);
   cursor: pointer;
   padding: 0.25rem;
   border-radius: 3px;
@@ -1769,13 +1738,13 @@
 }
 
 .fileActionButton:hover {
-  background: rgba(0, 123, 255, 0.08); /* Light blue hover */
-  color: var(--blue-accent-light); /* Light theme blue accent */
+  background: rgba(59, 173, 229, 0.1);
+  color: var(--blue-accent);
 }
 
 .fileDeleteButton:hover {
-  background: rgba(220, 53, 69, 0.08); /* Light red hover */
-  color: var(--negative-color-light); /* Light theme negative color */
+  background: rgba(231, 76, 60, 0.1);
+  color: var(--negative-color);
 }
 
 .fileActionButton:disabled {
@@ -1785,22 +1754,22 @@
 }
 
 .fileActionButton:focus {
-  outline: 2px solid rgba(0, 123, 255, 0.15); /* Lighter outline */
+  outline: 2px solid rgba(59, 173, 229, 0.3);
   outline-offset: 2px;
 }
 
 .uploadProgress {
   margin-top: 1rem;
   padding: 0.75rem;
-  background: rgba(0, 123, 255, 0.05); /* Light blue background */
-  border: 1px solid rgba(0, 123, 255, 0.1); /* Light blue border */
+  background: rgba(59, 173, 229, 0.05);
+  border: 1px solid rgba(59, 173, 229, 0.1);
   border-radius: 6px;
 }
 
 .progressBarContainer {
   width: 100%;
   height: 8px;
-  background: rgba(0, 123, 255, 0.1); /* Light blue background */
+  background: rgba(59, 173, 229, 0.1);
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 0.5rem;
@@ -1808,7 +1777,7 @@
 
 .progressBar {
   height: 100%;
-  background: linear-gradient(90deg, var(--blue-accent-light), #4FC3F7); /* Light theme blue accent */
+  background: linear-gradient(90deg, var(--blue-accent), #4FC3F7);
   border-radius: 4px;
   transition: width 0.3s ease;
   position: relative;
@@ -1832,10 +1801,9 @@
 
 .uploadMessage {
   font-size: 0.875rem;
-  color: var(--blue-accent-light); /* Light theme blue accent */
+  color: var(--blue-accent);
   font-weight: 500;
   text-align: center;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 /* Enhanced File Item Styles */
@@ -1844,33 +1812,32 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem;
-  background: rgba(0, 0, 0, 0.02); /* Very subtle light background */
-  border: 1px solid var(--table-border-color-light); /* Light theme table border */
+  background: rgba(244, 244, 244, 0.02);
+  border: 1px solid var(--table-border-color);
   border-radius: 6px;
   margin-bottom: 0.5rem;
   transition: all 0.2s ease;
   animation: fadeInFile 0.3s ease-out;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .fileItem:hover {
-  background: rgba(0, 123, 255, 0.05); /* Light blue hover */
-  border-color: rgba(0, 123, 255, 0.1); /* Light blue border on hover */
+  background: rgba(59, 173, 229, 0.05);
+  border-color: rgba(59, 173, 229, 0.2);
 }
 
 .fileIcon {
-  color: var(--blue-accent-light); /* Light theme blue accent */
+  color: var(--blue-accent);
   flex-shrink: 0;
 }
 
-.fileIcon.pdf { color: #dc3545; } /* Standard red */
-.fileIcon.doc { color: #007bff; } /* Standard blue */
-.fileIcon.image { color: #28a745; } /* Standard green */
+.fileIcon.pdf { color: #E74C3C; }
+.fileIcon.doc { color: #3498DB; }
+.fileIcon.image { color: #2ECC71; }
 
 .fileName {
   flex: 1;
   font-size: 0.875rem;
-  color: var(--table-text-color-light); /* Light theme table text */
+  color: var(--table-text-color);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1880,7 +1847,7 @@
 .fileRemoveButton {
   background: none;
   border: none;
-  color: var(--table-muted-text-color-light); /* Light theme muted text */
+  color: var(--table-muted-text-color);
   cursor: pointer;
   padding: 0.25rem;
   border-radius: 3px;
@@ -1891,8 +1858,8 @@
 }
 
 .fileRemoveButton:hover {
-  background: rgba(220, 53, 69, 0.08); /* Light red hover */
-  color: var(--negative-color-light); /* Light theme negative color */
+  background: rgba(231, 76, 60, 0.1);
+  color: var(--negative-color);
 }
 
 .fileRemoveButton:disabled {
@@ -1912,7 +1879,7 @@
 
 .existingFileList {
   margin-top: 0.75rem;
-  border-top: 1px solid var(--table-border-color-light); /* Light theme table border */
+  border-top: 1px solid var(--table-border-color);
   padding-top: 0.75rem;
 }
 
@@ -1924,21 +1891,20 @@
   gap: 0.5rem;
   width: 100%;
   padding: 1rem;
-  border: 2px dashed rgba(0, 123, 255, 0.15); /* Lighter dashed border */
+  border: 2px dashed rgba(59, 173, 229, 0.3);
   border-radius: 8px;
-  background: rgba(0, 123, 255, 0.02); /* Very subtle light blue background */
-  color: var(--blue-accent-light); /* Light theme blue accent */
+  background: rgba(59, 173, 229, 0.02);
+  color: var(--blue-accent);
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: 500;
   position: relative;
   overflow: hidden;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .fileUploadButton:hover {
-  border-color: rgba(0, 123, 255, 0.25); /* Lighter border on hover */
-  background: rgba(0, 123, 255, 0.05); /* Slightly more opaque light blue background */
+  border-color: rgba(59, 173, 229, 0.5);
+  background: rgba(59, 173, 229, 0.05);
   transform: translateY(-1px);
 }
 
@@ -1955,9 +1921,9 @@
   height: 100%;
   background: linear-gradient(
     90deg,
-    rgba(0, 123, 255, 0) 0%,
-    rgba(0, 123, 255, 0.05) 50%, /* Lighter gradient */
-    rgba(0, 123, 255, 0) 100%
+    rgba(59, 173, 229, 0) 0%,
+    rgba(59, 173, 229, 0.1) 50%,
+    rgba(59, 173, 229, 0) 100%
   );
   transition: left 0.5s ease;
 }
@@ -1967,8 +1933,8 @@
 }
 
 .fileUploadButton.dragOver {
-  border-color: var(--blue-accent-light); /* Light theme blue accent */
-  background: rgba(0, 123, 255, 0.08); /* Slightly more opaque light blue background */
+  border-color: var(--blue-accent);
+  background: rgba(59, 173, 229, 0.1);
   transform: scale(1.02);
 }
 
@@ -1983,21 +1949,21 @@
 
 /* File Upload Container */
 .fileUploadContainer {
-  border: 1px solid var(--table-border-color-light); /* Light theme table border */
+  border: 1px solid var(--table-border-color);
   border-radius: 8px;
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.7); /* Lighter background */
+  background: rgba(11, 22, 35, 0.3);
   transition: all 0.3s ease;
 }
 
 .fileUploadContainer:hover {
-  border-color: rgba(0, 123, 255, 0.15); /* Lighter border on hover */
-  background: rgba(255, 255, 255, 0.8); /* Slightly more opaque light background */
+  border-color: rgba(59, 173, 229, 0.3);
+  background: rgba(11, 22, 35, 0.5);
 }
 
 .fileUploadContainer:has(.uploadingFiles) {
-  border-color: rgba(0, 123, 255, 0.2); /* Lighter border */
-  background: rgba(0, 123, 255, 0.05); /* Slightly more opaque light blue background */
+  border-color: rgba(59, 173, 229, 0.4);
+  background: rgba(59, 173, 229, 0.08);
 }
 
 /* Disabled State for File Upload */
@@ -2008,8 +1974,8 @@
 }
 
 .fileUploadButton:disabled:hover {
-  border-color: rgba(0, 123, 255, 0.15); /* Lighter border */
-  background: rgba(0, 123, 255, 0.02); /* Very subtle light blue background */
+  border-color: rgba(59, 173, 229, 0.3);
+  background: rgba(59, 173, 229, 0.02);
   transform: none;
 }
 
@@ -2017,25 +1983,23 @@
 .fileUploadError {
   margin-top: 0.5rem;
   padding: 0.5rem;
-  background: rgba(220, 53, 69, 0.08); /* Light red background */
-  border: 1px solid rgba(220, 53, 69, 0.15); /* Lighter red border */
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.2);
   border-radius: 4px;
-  color: var(--negative-color-light); /* Light theme negative color */
+  color: var(--negative-color);
   font-size: 0.875rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .fileValidationError {
-  color: var(--negative-color-light); /* Light theme negative color */
+  color: var(--negative-color);
   font-size: 0.75rem;
   margin-top: 0.25rem;
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 /* Responsive Design for File Upload */
@@ -2066,26 +2030,26 @@
 
 /* Success state for completed uploads */
 .uploadComplete {
-  background: rgba(40, 167, 69, 0.05); /* Light green background */
-  border-color: rgba(40, 167, 69, 0.1); /* Light green border */
+  background: rgba(46, 204, 113, 0.05);
+  border-color: rgba(46, 204, 113, 0.2);
 }
 
 .uploadComplete .uploadMessage {
-  color: var(--positive-color-light); /* Light theme positive color */
+  color: var(--positive-color);
 }
 
 /* Global progress container */
 .globalProgressContainer {
   margin-top: 1rem;
   padding: 0.75rem;
-  background: rgba(0, 123, 255, 0.03); /* Very subtle light blue background */
-  border: 1px solid rgba(0, 123, 255, 0.1); /* Light blue border */
+  background: rgba(59, 173, 229, 0.03);
+  border: 1px solid rgba(59, 173, 229, 0.1);
   border-radius: 6px;
 }
 
 /* File size formatting */
 .fileSize.large {
-  color: var(--warning-color-light); /* Light theme warning color */
+  color: var(--warning-color);
   font-weight: 500;
 }
 
@@ -2093,9 +2057,9 @@
 .uploadQueue {
   margin-top: 0.5rem;
   padding: 0.5rem;
-  background: rgba(0, 123, 255, 0.02); /* Very subtle light blue background */
+  background: rgba(59, 173, 229, 0.02);
   border-radius: 4px;
-  border: 1px dashed rgba(0, 123, 255, 0.1); /* Lighter dashed border */
+  border: 1px dashed rgba(59, 173, 229, 0.2);
 }
 
 .uploadQueueItem {
@@ -2104,34 +2068,32 @@
   justify-content: space-between;
   padding: 0.25rem 0;
   font-size: 0.875rem;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .uploadQueueProgress {
   width: 60px;
   height: 4px;
-  background: rgba(0, 123, 255, 0.1); /* Light blue background */
+  background: rgba(59, 173, 229, 0.2);
   border-radius: 2px;
   overflow: hidden;
 }
 
 .uploadQueueProgressBar {
   height: 100%;
-  background: var(--blue-accent-light); /* Light theme blue accent */
+  background: var(--blue-accent);
   transition: width 0.3s ease;
 }
 
 /* Filter Count Badge */
 .filterCount {
-  background: rgba(0, 123, 255, 0.1); /* Light blue background */
-  color: var(--blue-accent-light); /* Light theme blue accent */
+  background: rgba(59, 173, 229, 0.2);
+  color: var(--blue-accent);
   border-radius: 12px;
   padding: 2px 6px;
   font-size: 11px;
   margin-left: 6px;
   min-width: 20px;
   text-align: center;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .filterSectionRight {
@@ -2142,10 +2104,10 @@
 
 /* Action Buttons - From Fleet Dashboard and Table Styles */
 .actionButton {
-  background: linear-gradient(to bottom, rgba(0, 123, 255, 0.1), rgba(0, 123, 255, 0.08)); /* Lighter blue gradient */
-  border: 1px solid rgba(0, 123, 255, 0.15); /* Lighter blue border */
+  background: linear-gradient(to bottom, rgba(77, 195, 255, 0.15), rgba(77, 195, 255, 0.1));
+  border: 1px solid rgba(77, 195, 255, 0.3);
   border-radius: var(--border-radius-sm);
-  color: var(--primary-accent-light-theme); /* Light theme primary accent */
+  color: var(--primary-accent);
   cursor: pointer;
   padding: 4px 8px;
   display: inline-flex;
@@ -2154,12 +2116,11 @@
   transition: var(--transition-fast);
   font-size: 12px;
   font-weight: 500;
-  box-shadow: var(--shadow-sm-light); /* Light theme shadow */
+  box-shadow: var(--shadow-sm);
   position: relative;
   overflow: hidden;
   white-space: nowrap;
   height: 28px;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .actionButton::before {
@@ -2178,43 +2139,42 @@
 }
 
 .actionButton:hover {
-  background: linear-gradient(to bottom, rgba(0, 123, 255, 0.12), rgba(0, 123, 255, 0.1)); /* Slightly darker light blue gradient */
+  background: linear-gradient(to bottom, rgba(77, 195, 255, 0.2), rgba(77, 195, 255, 0.15));
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md-light), 0 0 8px rgba(0, 123, 255, 0.15); /* Lighter shadow and glow */
+  box-shadow: var(--shadow-md), 0 0 8px rgba(77, 195, 255, 0.3);
 }
 
 .actionButton:active {
   transform: translateY(0);
-  box-shadow: var(--shadow-sm-light); /* Light theme shadow */
+  box-shadow: var(--shadow-sm);
 }
 
 /* Reset Button - From Fleet Dashboard styling */
 .resetButton {
-  background: linear-gradient(to bottom, rgba(220, 53, 69, 0.08), rgba(220, 53, 69, 0.05)); /* Light red gradient */
-  border: 1px solid rgba(220, 53, 69, 0.15); /* Lighter red border */
+  background: linear-gradient(to bottom, rgba(255, 82, 82, 0.1), rgba(255, 82, 82, 0.15));
+  border: 1px solid rgba(255, 82, 82, 0.3);
   border-radius: var(--border-radius-sm);
   padding: 0 10px;
   height: 28px !important;
-  color: var(--danger-color-light); /* Light theme danger color */
+  color: var(--danger-color);
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: var(--transition-fast);
   display: flex;
   align-items: center;
-  box-shadow: var(--shadow-sm-light); /* Light theme shadow */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  box-shadow: var(--shadow-sm);
 }
 
 .resetButton:hover {
-  background: linear-gradient(to bottom, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.08)); /* Slightly darker light red gradient */
+  background: linear-gradient(to bottom, rgba(255, 82, 82, 0.15), rgba(255, 82, 82, 0.2));
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md-light), 0 0 10px rgba(220, 53, 69, 0.15); /* Lighter shadow and glow */
+  box-shadow: var(--shadow-md), 0 0 10px rgba(255, 82, 82, 0.3);
 }
 
 .resetButton:active {
   transform: translateY(0);
-  box-shadow: var(--shadow-sm-light); /* Light theme shadow */
+  box-shadow: var(--shadow-sm);
 }
 
 /* Add Defect Button - From Fleet Dashboard styling */
@@ -2222,65 +2182,61 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.9), rgba(247, 250, 253, 0.9)); /* Light background gradient */
-  border: 1px solid var(--border-subtle-light); /* Light theme border */
+  background: linear-gradient(to bottom, rgba(14, 30, 47, 0.9), rgba(12, 26, 41, 0.9));
+  border: 1px solid var(--border-subtle);
   border-radius: var(--border-radius-sm);
   padding: 0 10px;
   height: 28px !important;
-  color: var(--text-dark); /* Dark text */
+  color: var(--text-light);
   cursor: pointer;
   transition: var(--transition-fast);
   font-size: 11px;
   white-space: nowrap;
-  box-shadow: var(--shadow-sm-light); /* Light theme shadow */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  box-shadow: var(--shadow-sm);
 }
 
 .defectActionBtn:hover {
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 1), rgba(247, 250, 253, 1)); /* Brighter light background */
-  border-color: var(--primary-accent-light-theme); /* Light theme primary accent */
+  background: linear-gradient(to bottom, rgba(14, 30, 47, 1), rgba(12, 26, 41, 1));
+  border-color: var(--primary-accent);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md-light), 0 0 0 1px var(--primary-accent-light-alpha); /* Lighter shadow and glow */
+  box-shadow: var(--shadow-md), 0 0 0 1px var(--primary-accent-light);
 }
 
 .defectActionBtn:active {
   transform: translateY(0);
-  box-shadow: var(--shadow-sm-light); /* Light theme shadow */
+  box-shadow: var(--shadow-sm);
 }
 
 .defectActionBtn.add {
-  background: var(--fleet-add-button-bg-light); /* Light theme add button background */
-  color: white;
+  background: #2496c7;
 }
 
 .defectActionBtn.add:hover {
-  background: var(--fleet-add-button-hover-light); /* Light theme add button hover */
+  background: #3BADE5;
 }
 
 .exportBtn,
 .importBtn {
-  background-color: var(--fleet-button-bg-blue-light); /* Light theme blue button background */
-  color: white;
+  background-color: var(--fleet-button-bg-blue);
 }
 
 .exportBtn:hover,
 .importBtn:hover {
-  background-color: var(--fleet-button-hover-blue-light); /* Light theme blue button hover */
+  background-color: var(--fleet-button-hover-blue);
 }
 
 .controlBtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--card-bg-light); /* Light theme card background */
-  border: 1px solid var(--border-subtle-light); /* Light theme border */
+  background: var(--card-bg);
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
   height: 30px;
   width: 34px;
-  color: var(--text-dark); /* Dark text */
+  color: var(--text-light);
   cursor: pointer;
   transition: var(--transition-standard);
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .controlBtn.exportBtn {
@@ -2290,8 +2246,8 @@
 }
 
 .controlBtn:hover {
-  background: var(--secondary-light); /* Light theme secondary background */
-  border-color: rgba(0, 0, 0, 0.1); /* Lighter border */
+  background: var(--secondary-dark);
+  border-color: rgba(244, 244, 244, 0.2);
   transform: none;
   box-shadow: none;
 }
@@ -2315,11 +2271,10 @@
   border-radius: 16px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--filter-badge-text-light); /* Light theme filter badge text */
-  background-color: var(--filter-badge-bg-light); /* Light theme filter badge background */
-  border: 1px solid var(--filter-badge-border-light); /* Light theme filter badge border */
+  color: var(--filter-badge-text);
+  background-color: var(--filter-badge-bg);
+  border: 1px solid var(--filter-badge-border);
   white-space: nowrap;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .filter-badge span {
@@ -2329,7 +2284,7 @@
 .clear-filter-btn {
   background: none;
   border: none;
-  color: var(--filter-badge-text-light); /* Light theme filter badge text */
+  color: var(--filter-badge-text);
   cursor: pointer;
   font-size: 14px;
   line-height: 1;
@@ -2345,27 +2300,26 @@
 }
 
 .clear-filter-btn:hover {
-  color: var(--text-dark); /* Dark text */
-  background-color: var(--filter-badge-clear-hover-light); /* Light theme filter badge clear hover */
+  color: var(--text-light);
+  background-color: var(--filter-badge-clear-hover);
 }
 
 .clear-all-filters-btn {
-  background: var(--clear-all-btn-bg-light); /* Light theme clear all button background */
-  border: 1px solid var(--clear-all-btn-border-light); /* Light theme clear all button border */
+  background: var(--clear-all-btn-bg);
+  border: 1px solid var(--clear-all-btn-border);
   border-radius: 4px;
-  color: var(--clear-all-btn-text-light); /* Light theme clear all button text */
+  color: var(--clear-all-btn-text);
   padding: 6px 12px;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease, border-color 0.2s ease;
   white-space: nowrap;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .clear-all-filters-btn:hover {
-  background: var(--clear-all-btn-hover-bg-light); /* Light theme clear all button hover */
-  border-color: var(--text-muted-light); /* Light theme muted text */
+  background: var(--clear-all-btn-hover-bg);
+  border-color: var(--text-muted);
 }
 
 /* Error Message */
@@ -2373,14 +2327,13 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(220, 53, 69, 0.08); /* Light red background */
-  border-left: 3px solid var(--danger-color-light); /* Light theme danger color */
+  background: rgba(231, 76, 60, 0.1);
+  border-left: 3px solid var(--danger-color);
   border-radius: 4px;
   padding: 4px 8px;
   margin: 0 0 24px 0;
-  color: var(--danger-color-light); /* Light theme danger color */
+  color: var(--danger-color);
   flex-shrink: 0;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 /* Dashboard Charts */
@@ -2395,11 +2348,11 @@
 
 /* Dashboard Card */
 .dashboardCard {
-  background: var(--bg-gradient-1-light); /* Light theme background gradient */
+  background: var(--bg-gradient-1);
   border-radius: var(--border-radius-md);
   overflow: hidden;
-  box-shadow: var(--shadow-md-light); /* Light theme shadow */
-  border: 1px solid var(--border-subtle-light); /* Light theme border */
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-subtle);
   transition: var(--transition-normal);
   position: relative;
   display: flex;
@@ -2407,8 +2360,8 @@
 }
 
 .dashboardCard:hover {
-  box-shadow: var(--shadow-lg-light), 0 0 15px rgba(0, 123, 255, 0.05); /* Lighter shadow and glow */
-  border-color: var(--border-accent-light); /* Light theme border accent */
+  box-shadow: var(--shadow-lg), 0 0 15px rgba(77, 195, 255, 0.1);
+  border-color: var(--border-accent);
 }
 
 .dashboardCard::before {
@@ -2419,7 +2372,7 @@
   right: 0;
   bottom: 0;
   border-radius: var(--border-radius-md);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05); /* Lighter inner shadow */
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   pointer-events: none;
 }
 
@@ -2440,13 +2393,12 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: var(--text-muted-light); /* Light theme muted text */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  color: var(--text-muted);
 }
 
 .loadingSpinner {
-  border: 4px solid rgba(51, 51, 51, 0.1); /* Lighter spinner border */
-  border-top: 4px solid var(--blue-accent-light); /* Light theme blue accent */
+  border: 4px solid rgba(244, 244, 244, 0.1);
+  border-top: 4px solid var(--blue-accent);
   border-radius: 50%;
   width: 40px;
   height: 40px;
@@ -2475,48 +2427,45 @@
   align-items: center;
   justify-content: center;
   min-height: 150px;
-  color: var(--text-muted-light); /* Light theme muted text */
+  color: var(--text-muted);
   font-size: 12px;
   padding-bottom: 90px;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 /* No results message */
 .noResults {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.7), rgba(247, 250, 253, 0.9)); /* Lighter background gradient */
+  background: linear-gradient(145deg, rgba(14, 30, 47, 0.7), rgba(12, 26, 41, 0.9));
   border-radius: var(--border-radius-md);
   padding: 16px;
   text-align: center;
-  color: var(--text-muted-light); /* Light theme muted text */
-  box-shadow: var(--shadow-inner-light); /* Light theme inner shadow */
-  border: 1px solid var(--border-subtle-light); /* Light theme border */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  color: var(--text-muted);
+  box-shadow: var(--shadow-inner);
+  border: 1px solid var(--border-subtle);
 }
 
 .resetFilters {
   margin-top: 12px;
   padding: 6px 14px;
-  background: linear-gradient(to bottom, rgba(0, 123, 255, 0.1), rgba(0, 123, 255, 0.08)); /* Lighter blue gradient */
-  border: 1px solid rgba(0, 123, 255, 0.15); /* Lighter blue border */
+  background: linear-gradient(to bottom, rgba(77, 195, 255, 0.15), rgba(77, 195, 255, 0.1));
+  border: 1px solid rgba(77, 195, 255, 0.3);
   border-radius: var(--border-radius-sm);
-  color: var(--primary-accent-light-theme); /* Light theme primary accent */
+  color: var(--primary-accent);
   cursor: pointer;
   transition: var(--transition-fast);
   font-weight: 500;
   font-size: 11px;
-  box-shadow: var(--shadow-sm-light); /* Light theme shadow */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  box-shadow: var(--shadow-sm);
 }
 
 .resetFilters:hover {
-  background: linear-gradient(to bottom, rgba(0, 123, 255, 0.12), rgba(0, 123, 255, 0.1)); /* Slightly darker light blue gradient */
+  background: linear-gradient(to bottom, rgba(77, 195, 255, 0.2), rgba(77, 195, 255, 0.15));
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md-light), 0 0 10px rgba(0, 123, 255, 0.1); /* Lighter shadow and glow */
+  box-shadow: var(--shadow-md), 0 0 10px rgba(77, 195, 255, 0.2);
 }
 
 .resetFilters:active {
   transform: translateY(0);
-  box-shadow: var(--shadow-sm-light); /* Light theme shadow */
+  box-shadow: var(--shadow-sm);
 }
 
 /* Table Container */
@@ -2533,7 +2482,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 4px;
-  border-bottom: 1px solid var(--border-subtle-light); /* Light theme border */
+  border-bottom: 1px solid var(--border-subtle);
   flex-wrap: wrap;
   gap: 10px;
   flex-shrink: 0;
@@ -2542,9 +2491,8 @@
 .tableTitle {
   font-size: 1.25rem;
   font-weight: 600;
-  color: var(--text-dark); /* Dark text */
+  color: var(--text-light);
   margin: 0;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .tableActions {
@@ -2559,7 +2507,7 @@
   overflow-y: auto;
   overflow-x: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 123, 255, 0.15) rgba(255, 255, 255, 0.5); /* Lighter scrollbar */
+  scrollbar-color: rgba(59, 173, 229, 0.3) rgba(11, 22, 35, 0.5);
   padding: 0;
   position: relative;
   scroll-behavior: smooth;
@@ -2571,18 +2519,18 @@
 }
 
 .responsiveTableContainer::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.5); /* Lighter scrollbar track */
+  background: rgba(11, 22, 35, 0.3);
   border-radius: 3px;
 }
 
 .responsiveTableContainer::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 123, 255, 0.2); /* Lighter scrollbar */
+  background-color: rgba(59, 173, 229, 0.4);
   border-radius: 3px;
   transition: background-color 0.2s ease;
 }
 
 .responsiveTableContainer::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(0, 123, 255, 0.3); /* Lighter scrollbar on hover */
+  background-color: rgba(59, 173, 229, 0.6);
 }
 
 /* Enhanced table wrapper */
@@ -2598,20 +2546,19 @@
 .dataTable {
   width: 100%;
   border-collapse: collapse;
-  color: var(--text-dark); /* Dark text */
+  color: var(--text-light);
   font-size: 13px;
   table-layout: auto;
   min-width: 800px;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .dataTable th {
-  background: var(--table-header-bg-light); /* Light theme table header background */
-  color: var(--text-dark); /* Dark text */
+  background: var(--table-header-bg);
+  color: var(--text-light);
   font-weight: 600;
   text-align: left;
   padding: 4px 8px;
-  border-bottom: 1px solid var(--table-border-color-light); /* Light theme table border */
+  border-bottom: 1px solid var(--table-border-color);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -2621,26 +2568,26 @@
 }
 
 .dataTable th:hover {
-  background: var(--secondary-light); /* Light theme secondary background */
+  background: var(--secondary-dark);
 }
 
 .dataTable tbody tr {
-  background-color: var(--table-row-bg-light); /* Light theme table row background */
+  background-color: var(--table-row-bg);
   transition: all 0.2s ease;
 }
 
 .dataTable tbody tr:nth-child(even) {
-  background-color: var(--table-row-alt-bg-light); /* Light theme table row alt background */
+  background-color: var(--table-row-alt-bg);
 }
 
 .dataTable tbody tr:hover {
-  background-color: var(--table-row-hover-bg-light); /* Light theme table row hover background */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* Lighter shadow */
+  background-color: var(--table-row-hover-bg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .dataTable td {
   padding: 4px 8px;
-  border-bottom: 1px solid var(--table-border-color-light); /* Light theme table border */
+  border-bottom: 1px solid var(--table-border-color);
   vertical-align: middle;
 }
 
@@ -2663,31 +2610,30 @@
   font-weight: 500;
   text-align: center;
   min-width: 70px;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .statusRed {
-  background-color: rgba(220, 53, 69, 0.1); /* Light red background */
-  color: var(--status-red-light); /* Light theme status red */
-  border: 1px solid rgba(220, 53, 69, 0.15); /* Lighter red border */
+  background-color: rgba(231, 76, 60, 0.15);
+  color: var(--status-red);
+  border: 1px solid rgba(231, 76, 60, 0.3);
 }
 
 .statusYellow {
-  background-color: rgba(255, 193, 7, 0.1); /* Light yellow background */
-  color: var(--status-yellow-light); /* Light theme status yellow */
-  border: 1px solid rgba(255, 193, 7, 0.15); /* Lighter yellow border */
+  background-color: rgba(241, 196, 15, 0.15);
+  color: var(--status-yellow);
+  border: 1px solid rgba(241, 196, 15, 0.3);
 }
 
 .statusGreen {
-  background-color: rgba(40, 167, 69, 0.1); /* Light green background */
-  color: var(--status-green-light); /* Light theme status green */
-  border: 1px solid rgba(40, 167, 69, 0.15); /* Lighter green border */
+  background-color: rgba(46, 204, 113, 0.15);
+  color: var(--status-green);
+  border: 1px solid rgba(46, 204, 113, 0.3);
 }
 
 .statusGrey {
-  background-color: rgba(108, 117, 125, 0.1); /* Light grey background */
-  color: var(--status-grey-light); /* Light theme status grey */
-  border: 1px solid rgba(108, 117, 125, 0.15); /* Lighter grey border */
+  background-color: rgba(149, 165, 166, 0.15);
+  color: var(--status-grey);
+  border: 1px solid rgba(149, 165, 166, 0.3);
 }
 
 .actionsColumn {
@@ -2704,7 +2650,7 @@
 .actionIcon {
   background: none;
   border: none;
-  color: var(--text-muted-light); /* Light theme muted text */
+  color: var(--text-muted);
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
@@ -2715,8 +2661,8 @@
 }
 
 .actionIcon:hover {
-  color: var(--blue-accent-light); /* Light theme blue accent */
-  background-color: rgba(0, 123, 255, 0.08); /* Light blue hover */
+  color: var(--blue-accent);
+  background-color: rgba(59, 173, 229, 0.1);
 }
 
 /* Media Queries for responsiveness */
@@ -2804,7 +2750,7 @@
   width: 140px;
   height: 40px;
   padding: 0;
-  background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%); /* Keeping original gradient for now */
+  background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
   border: none;
   border-radius: 20px;
   color: white;
@@ -2814,17 +2760,16 @@
   letter-spacing: 0.5px;
   cursor: pointer;
   box-shadow: 
-    0 4px 15px rgba(0, 210, 255, 0.2), /* Lighter glow */
-    0 2px 8px rgba(0, 0, 0, 0.1), /* Lighter shadow */
-    inset 0 1px 0 rgba(255, 255, 255, 0.5), /* Lighter inner shadow */
-    inset 0 -1px 0 rgba(0, 0, 0, 0.05); /* Lighter inner shadow */
+    0 4px 15px rgba(0, 210, 255, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   overflow: hidden;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .expandedFieldAction::before {
@@ -2852,16 +2797,16 @@
 }
 
 .expandedFieldAction.disabled {
-  background: linear-gradient(135deg, #ced4da 0%, #adb5bd 100%); /* Light grey disabled */
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
   cursor: not-allowed;
   transform: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Lighter shadow */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   opacity: 0.7;
 }
 
 .expandedFieldAction.disabled:hover {
   transform: none;
-  background: linear-gradient(135deg, #ced4da 0%, #adb5bd 100%); /* Light grey disabled */
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
 }
 
 /* Alternative Button Styles */
@@ -2870,12 +2815,12 @@
   top: 12px;
   right: 12px;
   z-index: 20;
-  background: rgba(255, 255, 255, 0.8); /* Light background */
+  background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 0, 0, 0.1); /* Lighter border */
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 50px;
   padding: 8px 16px;
-  color: #007bff; /* Standard blue */
+  color: #00d2ff;
   font-size: 0.7rem;
   font-weight: 500;
   cursor: pointer;
@@ -2883,16 +2828,15 @@
   align-items: center;
   gap: 6px;
   transition: all 0.3s ease;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15); /* Lighter shadow */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .expandedFieldActionPill:hover {
-  background: rgba(0, 123, 255, 0.08); /* Light blue hover */
-  border-color: #007bff; /* Standard blue */
-  color: #0056b3; /* Darker blue */
+  background: rgba(0, 210, 255, 0.1);
+  border-color: #00d2ff;
+  color: white;
   transform: translateY(-1px);
-  box-shadow: 0 12px 40px rgba(0, 123, 255, 0.15); /* Lighter glow */
+  box-shadow: 0 12px 40px rgba(0, 210, 255, 0.3);
 }
 
 .expandedFieldActionCorner {
@@ -2900,7 +2844,7 @@
   top: 0;
   right: 0;
   z-index: 20;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* Keeping original gradient for now */
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   border-radius: 0 12px 0 12px;
   padding: 4px 8px;
@@ -2914,14 +2858,13 @@
   align-items: center;
   gap: 4px;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2); /* Lighter shadow */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .expandedFieldActionCorner:hover {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); /* Keeping original gradient for now */
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
   transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3); /* Lighter shadow */
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
 }
 
 /* Enhanced Action Button Styles */
@@ -2936,7 +2879,6 @@
   justify-content: center;
   cursor: pointer;
   overflow: hidden;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .enhancedActionButton::before {
@@ -2956,7 +2898,7 @@
 
 .enhancedActionButton:hover {
   transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Lighter shadow */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .enhancedActionButton:active {
@@ -2964,43 +2906,43 @@
 }
 
 .enhancedActionButton.generate {
-  background: rgba(40, 167, 69, 0.08); /* Light green background */
-  border-color: rgba(40, 167, 69, 0.15); /* Lighter green border */
-  color: #28a745; /* Standard green */
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #22c55e;
 }
 
 .enhancedActionButton.generate:hover {
-  background: rgba(40, 167, 69, 0.12); /* Slightly darker light green */
-  border-color: rgba(40, 167, 69, 0.3); /* Lighter green border */
-  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.1); /* Lighter shadow */
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.6);
+  box-shadow: 0 4px 15px rgba(34, 197, 94, 0.25);
 }
 
 .enhancedActionButton.edit {
-  background: rgba(0, 123, 255, 0.08); /* Light blue background */
-  border-color: rgba(0, 123, 255, 0.15); /* Lighter blue border */
-  color: #007bff; /* Standard blue */
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
 }
 
 .enhancedActionButton.edit:hover {
-  background: rgba(0, 123, 255, 0.12); /* Slightly darker light blue */
-  border-color: rgba(0, 123, 255, 0.3); /* Lighter blue border */
-  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.1); /* Lighter shadow */
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.25);
 }
 
 .enhancedActionButton.delete {
-  background: rgba(220, 53, 69, 0.08); /* Light red background */
-  border-color: rgba(220, 53, 69, 0.15); /* Lighter red border */
-  color: #dc3545; /* Standard red */
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
 }
 
 .enhancedActionButton.delete:hover {
-  background: rgba(220, 53, 69, 0.12); /* Slightly darker light red */
-  border-color: rgba(220, 53, 69, 0.3); /* Lighter red border */
-  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.1); /* Lighter shadow */
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.6);
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25);
 }
 
 .enhancedActionButton.generating {
-  background: rgba(40, 167, 69, 0.12); /* Light green background */
+  background: rgba(34, 197, 94, 0.2);
   cursor: not-allowed;
   opacity: 0.7;
 }
@@ -3028,40 +2970,40 @@
 
 /* Status Colors */
 .enhancedActionButton.statusOpen {
-  background: linear-gradient(135deg, rgba(220, 53, 69, 0.08), rgba(220, 53, 69, 0.04)); /* Lighter gradient */
-  border-color: rgba(220, 53, 69, 0.15); /* Lighter border */
-  color: #dc3545; /* Standard red */
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #dc2626;
 }
 
 .enhancedActionButton.statusClosed {
-  background: linear-gradient(135deg, rgba(40, 167, 69, 0.08), rgba(40, 167, 69, 0.04)); /* Lighter gradient */
-  border-color: rgba(40, 167, 69, 0.15); /* Lighter border */
-  color: #28a745; /* Standard green */
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(22, 163, 74, 0.05));
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #16a34a;
 }
 
 .enhancedActionButton.statusProgress {
-  background: linear-gradient(135deg, rgba(255, 193, 7, 0.08), rgba(255, 193, 7, 0.04)); /* Lighter gradient */
-  border-color: rgba(255, 193, 7, 0.15); /* Lighter border */
-  color: #ffc107; /* Standard yellow */
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05));
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #d97706;
 }
 
 /* Criticality Colors */
 .enhancedActionButton.criticalityHigh {
-  background: linear-gradient(135deg, rgba(220, 53, 69, 0.08), rgba(220, 53, 69, 0.04)); /* Lighter gradient */
-  border-color: rgba(220, 53, 69, 0.15); /* Lighter border */
-  color: #dc3545; /* Standard red */
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #dc2626;
 }
 
 .enhancedActionButton.criticalityMedium {
-  background: linear-gradient(135deg, rgba(255, 193, 7, 0.08), rgba(255, 193, 7, 0.04)); /* Lighter gradient */
-  border-color: rgba(255, 193, 7, 0.15); /* Lighter border */
-  color: #ffc107; /* Standard yellow */
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05));
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #d97706;
 }
 
 .enhancedActionButton.criticalityLow {
-  background: linear-gradient(135deg, rgba(0, 123, 255, 0.08), rgba(0, 123, 255, 0.04)); /* Lighter gradient */
-  border-color: rgba(0, 123, 255, 0.15); /* Lighter border */
-  color: #007bff; /* Standard blue */
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #2563eb;
 }
 
 /* Small size for expanded content */
@@ -3076,7 +3018,7 @@
 .enhancedActionButton.badgeStatus:hover,
 .enhancedActionButton.badgeCriticality:hover {
   transform: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* Lighter shadow */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Report Progress Modal Styles */
@@ -3086,7 +3028,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5); /* Lighter overlay */
+  background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -3097,25 +3039,24 @@
 }
 
 .reportProgressModal {
-  background: linear-gradient(145deg, #ffffff, #f7fafd); /* Light background gradient */
-  border: 1px solid rgba(0, 0, 0, 0.1); /* Lighter border */
+  background: linear-gradient(145deg, #0a1725, #112032);
+  border: 1px solid rgba(244, 244, 244, 0.1);
   border-radius: 12px;
   max-width: 400px;
   width: 100%;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2); /* Lighter shadow */
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   animation: slideIn 0.3s ease-out;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .reportProgressHeader {
   padding: 20px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* Lighter border */
-  background: linear-gradient(145deg, #e0e8f0, #f0f2f5); /* Light header gradient */
+  border-bottom: 1px solid rgba(244, 244, 244, 0.1);
+  background: linear-gradient(145deg, #132337, #1a2c42);
 }
 
 .reportProgressHeader h3 {
-  color: #333333; /* Dark text */
+  color: #f4f4f4;
   font-size: 18px;
   font-weight: 600;
   margin: 0 0 8px 0;
@@ -3125,7 +3066,7 @@
 }
 
 .reportProgressDefectId {
-  color: rgba(51, 51, 51, 0.6); /* Muted dark text */
+  color: rgba(244, 244, 244, 0.6);
   font-size: 14px;
 }
 
@@ -3136,7 +3077,7 @@
 .reportProgressBar {
   width: 100%;
   height: 8px;
-  background: rgba(51, 51, 51, 0.1); /* Lighter background */
+  background: rgba(244, 244, 244, 0.1);
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 16px;
@@ -3144,7 +3085,7 @@
 
 .reportProgressFill {
   height: 100%;
-  background: linear-gradient(90deg, #007bff, #4FC3F7); /* Standard blue gradient */
+  background: linear-gradient(90deg, #3bade5, #4fc3f7);
   border-radius: 44px;
   transition: width 0.3s ease;
   position: relative;
@@ -3168,20 +3109,20 @@
 
 .reportProgressText {
   text-align: center;
-  color: #333333; /* Dark text */
+  color: #f4f4f4;
   font-size: 16px;
   font-weight: 500;
 }
 
 .reportProgressFooter {
   padding: 16px 20px;
-  border-top: 1px solid rgba(0, 0, 0, 0.1); /* Lighter border */
-  background: rgba(255, 255, 255, 0.8); /* Lighter background */
+  border-top: 1px solid rgba(244, 244, 244, 0.1);
+  background: rgba(11, 22, 35, 0.5);
 }
 
 .reportProgressClose {
   width: 100%;
-  background: #28a745; /* Standard green */
+  background: #22c55e;
   color: white;
   border: none;
   padding: 12px;
@@ -3193,26 +3134,24 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .reportProgressClose:hover {
-  background: #218838; /* Darker green */
+  background: #16a34a;
   transform: translateY(-1px);
 }
 
 /* Utility Classes */
 .textMuted {
-  color: rgba(51, 51, 51, 0.6); /* Muted dark text */
+  color: rgba(244, 244, 244, 0.6);
   font-style: italic;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .dateValue {
-  color: #333333; /* Dark text */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  color: #f4f4f4;
+  /* font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; */
   font-size: 11px;
-  background: rgba(0, 0, 0, 0.05); /* Light background */
+  background: rgba(255, 255, 255, 0.05);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -3227,11 +3166,10 @@
   text-overflow: ellipsis;
   max-width: 200px;
   transition: color 0.2s ease;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .truncateText:hover {
-  color: #007bff; /* Standard blue */
+  color: #3bade5;
 }
 
 .spinning {
@@ -3239,7 +3177,7 @@
 }
 
 .pulseIcon {
-  color: #ffc107; /* Standard yellow */
+  color: #fbbf24;
   animation: pulse 2s infinite;
 }
 
@@ -3251,9 +3189,8 @@
   max-height: 100px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 123, 255, 0.15) transparent; /* Lighter scrollbar */
+  scrollbar-color: rgba(59, 173, 229, 0.3) transparent;
   max-width: 200px;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .fileItemCompact {
@@ -3261,7 +3198,7 @@
   align-items: center;
   gap: 6px;
   font-size: 0.65rem;
-  color: #333333; /* Dark text */
+  color: #f4f4f4;
   padding: 2px 4px;
   border-radius: 4px;
   transition: background-color 0.2s ease;
@@ -3270,11 +3207,11 @@
 }
 
 .fileItemCompact:hover {
-  background: rgba(0, 123, 255, 0.08); /* Light blue hover */
+  background: rgba(59, 173, 229, 0.1);
 }
 
 .fileIconCompact {
-  color: #007bff; /* Standard blue */
+  color: #3bade5;
   flex-shrink: 0;
   width: 12px;
   height: 12px;
@@ -3283,7 +3220,7 @@
 .fileNameButton {
   background: none;
   border: none;
-  color: #007bff; /* Standard blue */
+  color: #3bade5;
   cursor: pointer;
   font-size: 11px;
   text-align: left;
@@ -3295,17 +3232,16 @@
   text-decoration: underline;
   text-decoration-color: transparent;
   transition: all 0.2s ease;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .fileNameButton:hover {
-  text-decoration-color: #007bff; /* Standard blue */
-  color: #0056b3; /* Darker blue */
+  text-decoration-color: #3bade5;
+  color: #4fc3f7;
 }
 
 .fileSizeCompact {
   font-size: 10px;
-  color: rgba(51, 51, 51, 0.6); /* Muted dark text */
+  color: rgba(244, 244, 244, 0.6);
   flex-shrink: 0;
 }
 
@@ -3320,7 +3256,6 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .statusDotCompact {
@@ -3331,15 +3266,15 @@
 }
 
 .statusGreen {
-  background-color: rgba(40, 167, 69, 0.1); /* Light green background */
-  color: #28a745; /* Standard green */
-  border: 1px solid rgba(40, 167, 69, 0.15); /* Lighter green border */
+  background-color: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.3);
 }
 
 .statusGrey {
-  background-color: rgba(108, 117, 125, 0.1); /* Light grey background */
-  color: #6c757d; /* Standard grey */
-  border: 1px solid rgba(108, 117, 125, 0.15); /* Lighter grey border */
+  background-color: rgba(149, 165, 166, 0.15);
+  color: #95a5a6;
+  border: 1px solid rgba(149, 165, 166, 0.3);
 }
 
 /* Enhanced Table Header Styles */
@@ -3349,16 +3284,16 @@
   align-items: center;
   padding: 10px 12px;
   background: linear-gradient(135deg, 
-    rgba(247, 250, 253, 0.95) 0%,
-    rgba(255, 255, 255, 0.95) 100%); /* Light background gradient */
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08); /* Lighter border */
+    rgba(10, 20, 35, 0.95) 0%,
+    rgba(15, 25, 40, 0.95) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(12px);
 }
 
 .enhancedTableTitle {
   font-size: 1.1rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #333333 0%, rgba(51, 51, 51, 0.8) 100%); /* Dark text gradient */
+  background: linear-gradient(135deg, #f4f4f4 0%, rgba(244, 244, 244, 0.8) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -3366,7 +3301,6 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .enhancedTableTitle::before {
@@ -3374,21 +3308,20 @@
   width: 3px;
   height: 28px;
   background: linear-gradient(to bottom, 
-    rgba(0, 123, 255, 0.4) 0%, 
-    rgba(0, 123, 255, 0.15) 100%); /* Lighter blue gradient */
+    rgba(59, 173, 229, 0.8) 0%, 
+    rgba(59, 173, 229, 0.3) 100%);
   border-radius: 2px;
-  box-shadow: 0 0 8px rgba(0, 123, 255, 0.15); /* Lighter shadow */
+  box-shadow: 0 0 8px rgba(59, 173, 229, 0.3);
 }
 
 .tableItemCount {
   font-size: 0.75rem;
   font-weight: 400;
-  color: rgba(51, 51, 51, 0.6); /* Muted dark text */
-  background: rgba(0, 0, 0, 0.08); /* Light background */
+  color: rgba(244, 244, 244, 0.6);
+  background: rgba(244, 244, 244, 0.1);
   padding: 4px 8px;
   border-radius: 12px;
   margin-left: 8px;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .enhancedTableActions {
@@ -3412,9 +3345,8 @@
   overflow: hidden;
   backdrop-filter: blur(8px);
   box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.08), /* Lighter shadow */
-    inset 0 1px 0 rgba(255, 255, 255, 0.5); /* Lighter inner shadow */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+    0 2px 8px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .enhancedHeaderButton::before {
@@ -3440,61 +3372,85 @@
 .enhancedHeaderButton:hover {
   transform: translateY(-1px);
   box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.1), /* Lighter shadow */
-    inset 0 1px 0 rgba(255, 255, 255, 0.6); /* Lighter inner shadow */
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .enhancedHeaderButton:active {
   transform: translateY(0) scale(1);
 }
 
-/* Subtle Export Button Styles - Much more understated */
-.enhancedHeaderButton.export {
-  background: linear-gradient(135deg, rgba(0, 123, 255, 0.08), rgba(0, 123, 255, 0.04)); /* Lighter blue gradient */
-  border-color: rgba(0, 123, 255, 0.15); /* Lighter blue border */
-  color: #007bff; /* Standard blue */
-  /* Subtle text shadow for better readability */
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.05); /* Lighter text shadow */
+/* .enhancedHeaderButton.export {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.8), rgba(5, 150, 105, 0.8));
+  border-color: rgba(16, 185, 129, 0.5);
+  color: white;
 }
 
 .enhancedHeaderButton.export:hover {
-  background: linear-gradient(135deg, rgba(0, 123, 255, 0.1), rgba(0, 123, 255, 0.06)); /* Slightly darker light blue gradient */
-  border-color: rgba(0, 123, 255, 0.2); /* Lighter blue border */
-  color: #0056b3; /* Darker blue */
+  background: linear-gradient(135deg, rgba(16, 185, 129, 1), rgba(5, 150, 105, 1));
+  border-color: rgba(16, 185, 129, 0.7);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+} */
+/* Subtle Export Button Styles - Much more understated */
+
+.enhancedHeaderButton.export {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+  border-color: rgba(59, 130, 246, 0.25);
+  color: #3b82f6;
+  /* Subtle text shadow for better readability */
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.enhancedHeaderButton.export:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.08));
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #2563eb;
   /* Very subtle glow on hover */
-  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.08); /* Lighter glow */
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
 }
 
 .enhancedHeaderButton.import {
-  background: linear-gradient(135deg, rgba(0, 123, 255, 0.08), rgba(0, 123, 255, 0.04)); /* Lighter blue gradient */
-  border-color: rgba(0, 123, 255, 0.15); /* Lighter blue border */
-  color: #007bff; /* Standard blue */
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+  border-color: rgba(59, 130, 246, 0.25);
+  color: #3b82f6;
   /* Subtle text shadow for better readability */
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.05); /* Lighter text shadow */
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
 
 .enhancedHeaderButton.import:hover {
-  background: linear-gradient(135deg, rgba(0, 123, 255, 0.1), rgba(0, 123, 255, 0.06)); /* Slightly darker light blue gradient */
-  border-color: rgba(0, 123, 255, 0.2); /* Lighter blue border */
-  color: #0056b3; /* Darker blue */
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.08));
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #2563eb;
   /* Very subtle glow on hover */
-  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.08); /* Lighter glow */
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
 }
 
+/* .enhancedHeaderButton.import {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.8), rgba(126, 34, 206, 0.8));
+  border-color: rgba(147, 51, 234, 0.5);
+  color: white;
+}
+
+.enhancedHeaderButton.import:hover {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 1), rgba(126, 34, 206, 1));
+  border-color: rgba(147, 51, 234, 0.7);
+  box-shadow: 0 4px 15px rgba(147, 51, 234, 0.3);
+} */
+
 .enhancedHeaderButton.add {
-  background: linear-gradient(135deg, rgba(0, 123, 255, 0.08), rgba(0, 123, 255, 0.04)); /* Lighter blue gradient */
-  border-color: rgba(0, 123, 255, 0.15); /* Lighter blue border */
-  color: #007bff; /* Standard blue */
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+  border-color: rgba(59, 130, 246, 0.25);
+  color: #3b82f6;
   /* Subtle text shadow for better readability */
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.05); /* Lighter text shadow */
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
 
 .enhancedHeaderButton.add:hover {
-  background: linear-gradient(135deg, rgba(0, 123, 255, 0.1), rgba(0, 123, 255, 0.06)); /* Slightly darker light blue gradient */
-  border-color: rgba(0, 123, 255, 0.2); /* Lighter blue border */
-  color: #0056b3; /* Darker blue */
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.08));
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #2563eb;
   /* Very subtle glow on hover */
-  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.08); /* Lighter glow */
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
 }
 
 /* Add these styles to your existing defect.module.css */
@@ -3505,14 +3461,13 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: linear-gradient(135deg, rgba(0, 123, 255, 0.08), rgba(0, 123, 255, 0.04)); /* Lighter blue gradient */
-  border: 1px solid rgba(0, 123, 255, 0.1); /* Lighter blue border */
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+  border: 1px solid rgba(59, 130, 246, 0.2);
   border-radius: 6px;
   margin-bottom: 16px;
-  color: #007bff; /* Standard blue */
+  color: #2563eb;
   font-size: 14px;
   font-weight: 500;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .permissionBanner svg {
@@ -3521,14 +3476,13 @@
 
 /* Role Badge in Permission Banner */
 .roleBadge {
-  background: rgba(0, 123, 255, 0.1); /* Light blue background */
-  color: #0056b3; /* Darker blue */
+  background: rgba(59, 130, 246, 0.15);
+  color: #1d4ed8;
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 12px;
   font-weight: 600;
   margin-left: auto;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 /* Role Indicator in Dashboard Title */
@@ -3537,14 +3491,13 @@
   align-items: center;
   gap: 4px;
   margin-left: 12px;
-  background: rgba(40, 167, 69, 0.08); /* Light green background */
-  color: #28a745; /* Standard green */
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
-  border: 1px solid rgba(40, 167, 69, 0.15); /* Lighter green border */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  border: 1px solid rgba(34, 197, 94, 0.2);
 }
 
 .roleIndicator svg {
@@ -3558,9 +3511,9 @@
   opacity: 1;
   cursor: not-allowed;
   pointer-events: none;
-  background: rgba(108, 117, 125, 0.08) !important; /* Light grey background */
-  color: rgba(108, 117, 125, 0.6) !important; /* Muted grey text */
-  border-color: rgba(108, 117, 125, 0.15) !important; /* Lighter grey border */
+  background: rgba(107, 114, 128, 0.1) !important;
+  color: rgba(107, 114, 128, 0.6) !important;
+  border-color: rgba(107, 114, 128, 0.2) !important;
 }
 
 .controlBtn.disabled:hover,
@@ -3572,9 +3525,9 @@
 
 /* Enhanced disabled states for action buttons */
 .enhancedActionButton.disabled {
-  background: rgba(108, 117, 125, 0.08) !important; /* Light grey background */
-  border-color: rgba(108, 117, 125, 0.15) !important; /* Lighter grey border */
-  color: rgba(108, 117, 125, 0.4) !important; /* Muted grey text */
+  background: rgba(75, 85, 99, 0.1) !important;
+  border-color: rgba(75, 85, 99, 0.2) !important;
+  color: rgba(75, 85, 99, 0.4) !important;
 }
 
 .enhancedActionButton.disabled svg {
@@ -3589,31 +3542,30 @@
   justify-content: center;
   padding: 40px;
   text-align: center;
-  background: rgba(220, 53, 69, 0.05); /* Light red background */
-  border: 1px solid rgba(220, 53, 69, 0.1); /* Lighter red border */
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 8px;
-  color: #dc3545; /* Standard red */
+  color: #dc2626;
   margin: 20px;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .errorContainer h2 {
   margin: 12px 0 8px 0;
-  color: #dc3545; /* Standard red */
+  color: #dc2626;
 }
 
 .errorContainer p {
   margin: 4px 0;
-  color: rgba(220, 53, 69, 0.8); /* Muted red text */
+  color: rgba(220, 38, 38, 0.8);
 }
 
 /* Read-Only Form States */
 .formInput:read-only,
 .formTextarea:read-only,
 .formSelect:disabled {
-  background: rgba(108, 117, 125, 0.08) !important; /* Light grey background */
-  border-color: rgba(108, 117, 125, 0.15) !important; /* Lighter grey border */
-  color: rgba(108, 117, 125, 0.8) !important; /* Muted grey text */
+  background: rgba(156, 163, 175, 0.1) !important;
+  border-color: rgba(156, 163, 175, 0.3) !important;
+  color: rgba(156, 163, 175, 0.8) !important;
   cursor: not-allowed;
 }
 
@@ -3623,7 +3575,7 @@
 .formGroup:has(.formSelect:disabled) .formLabel::after {
   content: ' (Read Only)';
   font-size: 11px;
-  color: rgba(108, 117, 125, 0.6); /* Muted grey text */
+  color: rgba(107, 114, 128, 0.6);
   font-weight: normal;
   font-style: italic;
 }
@@ -3639,27 +3591,26 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .permissionStatus.loading {
-  background: rgba(108, 117, 125, 0.08); /* Light grey background */
-  color: #6c757d; /* Standard grey */
+  background: rgba(156, 163, 175, 0.1);
+  color: #6b7280;
 }
 
 .permissionStatus.readonly {
-  background: rgba(0, 123, 255, 0.08); /* Light blue background */
-  color: #007bff; /* Standard blue */
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
 }
 
 .permissionStatus.full {
-  background: rgba(40, 167, 69, 0.08); /* Light green background */
-  color: #28a745; /* Standard green */
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
 }
 
 .permissionStatus.error {
-  background: rgba(220, 53, 69, 0.08); /* Light red background */
-  color: #dc3545; /* Standard red */
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
 }
 
 /* Permission Tooltip for Disabled Elements */
@@ -3674,7 +3625,7 @@
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8); /* Dark background for tooltip */
+  background: rgba(17, 24, 39, 0.9);
   color: white;
   padding: 6px 10px;
   border-radius: 4px;
@@ -3694,7 +3645,7 @@
   left: 50%;
   transform: translateX(-50%);
   border: 4px solid transparent;
-  border-top-color: rgba(0, 0, 0, 0.8); /* Dark border for tooltip */
+  border-top-color: rgba(17, 24, 39, 0.9);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
@@ -3709,21 +3660,21 @@
 
 /* Enhanced Action Button Permission States */
 .enhancedActionButton.edit.disabled {
-  background: rgba(0, 123, 255, 0.04) !important; /* Very subtle light blue background */
-  border-color: rgba(0, 123, 255, 0.08) !important; /* Very subtle light blue border */
-  color: rgba(0, 123, 255, 0.2) !important; /* Muted blue text */
+  background: rgba(59, 130, 246, 0.05) !important;
+  border-color: rgba(59, 130, 246, 0.1) !important;
+  color: rgba(59, 130, 246, 0.3) !important;
 }
 
 .enhancedActionButton.delete.disabled {
-  background: rgba(220, 53, 69, 0.04) !important; /* Very subtle light red background */
-  border-color: rgba(220, 53, 69, 0.08) !important; /* Very subtle light red border */
-  color: rgba(220, 53, 69, 0.2) !important; /* Muted red text */
+  background: rgba(239, 68, 68, 0.05) !important;
+  border-color: rgba(239, 68, 68, 0.1) !important;
+  color: rgba(239, 68, 68, 0.3) !important;
 }
 
 .enhancedActionButton.generate.disabled {
-  background: rgba(40, 167, 69, 0.04) !important; /* Very subtle light green background */
-  border-color: rgba(40, 167, 69, 0.08) !important; /* Very subtle light green border */
-  color: rgba(40, 167, 69, 0.2) !important; /* Muted green text */
+  background: rgba(59, 173, 229, 0.05) !important;
+  border-color: rgba(59, 173, 229, 0.1) !important;
+  color: rgba(59, 173, 229, 0.3) !important;
 }
 
 /* Loading Permission State */
@@ -3732,19 +3683,18 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: rgba(108, 117, 125, 0.08); /* Light grey background */
-  border: 1px solid rgba(108, 117, 125, 0.15); /* Lighter grey border */
+  background: rgba(156, 163, 175, 0.1);
+  border: 1px solid rgba(156, 163, 175, 0.2);
   border-radius: 6px;
-  color: #6c757d; /* Standard grey */
+  color: #6b7280;
   font-size: 14px;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .permissionLoading .loadingSpinner {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(108, 117, 125, 0.15); /* Lighter grey border */
-  border-top-color: #6c757d; /* Standard grey */
+  border: 2px solid rgba(156, 163, 175, 0.2);
+  border-top-color: #6b7280;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -3762,7 +3712,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(108, 117, 125, 0.03); /* Very subtle light grey background */
+  background: rgba(156, 163, 175, 0.05);
   border-radius: 8px;
   pointer-events: none;
   z-index: 1;
@@ -3773,7 +3723,7 @@
   position: absolute;
   top: 8px;
   right: 8px;
-  background: rgba(0, 123, 255, 0.9); /* Standard blue */
+  background: rgba(59, 130, 246, 0.9);
   color: white;
   padding: 4px 8px;
   border-radius: 4px;
@@ -3782,8 +3732,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   z-index: 10;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08); /* Lighter shadow */
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Permission Badge in Table Headers */
@@ -3819,7 +3768,6 @@
 
 /* Dark Mode Permission States (if using dark mode) */
 @media (prefers-color-scheme: dark) {
-  /* These styles are for dark mode, so they should remain as is if you intend to support both themes */
   .permissionBanner {
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.08));
     border-color: rgba(59, 130, 246, 0.3);
@@ -3844,9 +3792,559 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Focus states for accessibility */
+/* Focus states for disabled elements */
+.controlBtn.disabled:focus,
+.enhancedActionButton.disabled:focus {
+  outline: 2px solid rgba(107, 114, 128, 0.3);
+  outline-offset: 2px;
+}
+
+/* Loading States */
+.enhancedLoadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  gap: 16px;
+  background: linear-gradient(145deg, 
+    rgba(15, 25, 40, 0.3) 0%,
+    rgba(20, 30, 45, 0.3) 100%);
+  border-radius: 16px;
+  margin: 40px;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.enhancedLoadingSpinner {
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+
+.enhancedLoadingSpinner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 4px solid rgba(244, 244, 244, 0.2);
+  border-top: 4px solid #3bade5;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.enhancedLoadingSpinner::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 2px solid transparent;
+  border-right: 2px solid #4fc3f7;
+  border-radius: 50%;
+  animation: spin 1.5s linear infinite reverse;
+}
+
+.enhancedLoadingText {
+  color: rgba(244, 244, 244, 0.8);
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.enhancedLoadingDots {
+  display: flex;
+  gap: 4px;
+}
+
+.enhancedLoadingDots span {
+  width: 8px;
+  height: 8px;
+  background: #3bade5;
+  border-radius: 50%;
+  animation: bounce 1.4s ease-in-out infinite both;
+}
+
+.enhancedLoadingDots span:nth-child(1) { 
+  animation-delay: -0.32s; 
+}
+
+.enhancedLoadingDots span:nth-child(2) { 
+  animation-delay: -0.16s; 
+}
+
+.enhancedLoadingDots span:nth-child(3) { 
+  animation-delay: 0s; 
+}
+
+/* Empty State */
+.enhancedEmptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  gap: 16px;
+  background: linear-gradient(145deg, 
+    rgba(15, 25, 40, 0.3) 0%,
+    rgba(20, 30, 45, 0.3) 100%);
+  border-radius: 16px;
+  margin: 40px;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.enhancedEmptyIcon {
+  width: 96px;
+  height: 96px;
+  background: linear-gradient(135deg, rgba(75, 85, 99, 0.8), rgba(55, 65, 81, 0.8));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(244, 244, 244, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.enhancedEmptyText {
+  text-align: center;
+  max-width: 300px;
+}
+
+.enhancedEmptyText h3 {
+  color: #f4f4f4;
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin: 0 0 8px 0;
+}
+
+.enhancedEmptyText p {
+  color: rgba(244, 244, 244, 0.6);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.enhancedEmptyAction {
+  background: rgba(59, 130, 246, 0.8);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.enhancedEmptyAction:hover {
+  background: rgba(59, 130, 246, 1);
+  transform: translateY(-1px);
+}
+
+.enhancedPaginationContainer::after,
+.enhancedPaginationContainer::before {
+  display: none !important;
+}
+
+/* Enhanced Pagination Container */
+.enhancedPaginationContainer {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  background: rgba(14, 30, 47, 0.95);
+  backdrop-filter: blur(10px);
+  /*border: 1px solid rgba(244, 244, 244, 0.1);*/
+  border-radius: 12px;
+  padding: 0px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Expanded Content Styles */
+.expandedFieldLarge {
+  max-height: 80px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 173, 229, 0.3) transparent;
+}
+
+.expandedFieldLarge .expandedFieldValue {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #f4f4f4;
+}
+
+/* Animations */
+@keyframes progressShine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 5px currentColor; }
+  100% { box-shadow: 0 0 15px currentColor; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { 
+    box-shadow: 0 4px 15px rgba(255, 71, 87, 0.5);
+  }
+  50% { 
+    box-shadow: 0 4px 25px rgba(255, 71, 87, 0.8), 0 0 30px rgba(255, 71, 87, 0.3);
+  }
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  } 
+  40% {
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from {
+    transform: scale(0.9) translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Scrollbar Styles */
+.filesListCompact::-webkit-scrollbar,
+.expandedFieldLarge::-webkit-scrollbar {
+  width: 3px;
+}
+
+.filesListCompact::-webkit-scrollbar-track,
+.expandedFieldLarge::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.filesListCompact::-webkit-scrollbar-thumb,
+.expandedFieldLarge::-webkit-scrollbar-thumb {
+  background-color: rgba(59, 173, 229, 0.3);
+  border-radius: 2px;
+}
+
+.filesListCompact::-webkit-scrollbar-thumb:hover,
+.expandedFieldLarge::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(59, 173, 229, 0.5);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .statusBadgeModern,
+  .criticalityBadgeModern {
+    font-size: 0.65rem;
+    padding: 4px 8px;
+    min-width: 70px;
+  }
+
+  .expandedFieldAction {
+    width: 120px;
+    height: 36px;
+    font-size: 0.7rem;
+    top: 12px;
+    right: 12px;
+  }
+
+  .enhancedTableHeader {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .enhancedTableActions {
+    justify-content: center;
+  }
+
+  .enhancedHeaderButton {
+    font-size: 0.8rem;
+    padding: 8px 12px;
+  }
+
+  .filesListCompact {
+    max-width: 150px;
+  }
+
+  .fileNameButton {
+    max-width: 80px;
+    font-size: 10px;
+  }
+}
+
+/* File Preview Modal Styles */
+.filePreviewOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.filePreviewModal {
+  background: linear-gradient(145deg, #0a1725, #112032);
+  border: 1px solid var(--table-border-color);
+  border-radius: 12px;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 1px rgba(255, 255, 255, 0.1) inset;
+  animation: slideIn 0.3s ease-out;
+}
+
+.filePreviewHeader {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--table-border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(145deg, #132337, #1a2c42);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.filePreviewTitle {
+  color: var(--table-text-color);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filePreviewActions {
+  display: flex;
+  gap: 8px;
+}
+
+.filePreviewDownload, .filePreviewClose {
+  background: rgba(59, 173, 229, 0.1);
+  border: 1px solid rgba(59, 173, 229, 0.3);
+  border-radius: 6px;
+  color: var(--blue-accent);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.filePreviewDownload:hover, .filePreviewClose:hover {
+  background: rgba(59, 173, 229, 0.2);
+  transform: translateY(-1px);
+}
+
+.filePreviewClose {
+  background: rgba(231, 76, 60, 0.1);
+  border-color: rgba(231, 76, 60, 0.3);
+  color: var(--negative-color);
+}
+
+.filePreviewClose:hover {
+  background: rgba(231, 76, 60, 0.2);
+}
+
+.filePreviewContent {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  max-height: 70vh;
+  overflow: hidden;
+}
+
+.filePreviewLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--table-muted-text-color);
+}
+
+.filePreviewLoading .loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(59, 173, 229, 0.2);
+  border-top: 3px solid var(--blue-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.filePreviewError, .filePreviewPdf, .filePreviewDocument {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: var(--table-text-color);
+  text-align: center;
+}
+
+.filePreviewError {
+  color: var(--negative-color);
+}
+
+.filePreviewImage {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  animation: imageAppear 0.3s ease-out;
+}
+
+.filePreviewPdfNote, .filePreviewDocNote {
+  color: var(--table-muted-text-color);
+  font-size: 14px;
+  margin: 8px 0;
+}
+
+.downloadButton {
+  background: var(--blue-accent);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.downloadButton:hover {
+  background: #2a9fd7;
+  transform: translateY(-1px);
+}
+
+.filePreviewFooter {
+  padding: 12px 20px;
+  border-top: 1px solid var(--table-border-color);
+  background: linear-gradient(145deg, #0b1623, #132337);
+}
+
+.filePreviewInfo {
+  display: flex;
+  gap: 20px;
+  font-size: 12px;
+  color: var(--table-muted-text-color);
+}
+
+/* Responsive Design for File Preview Modal */
+@media (max-width: 768px) {
+  .filePreviewModal {
+    max-width: 95vw;
+    max-height: 95vh;
+  }
+
+  .filePreviewHeader {
+    padding: 12px 16px;
+  }
+
+  .filePreviewTitle {
+    font-size: 14px;
+    max-width: 50%;
+  }
+
+  .filePreviewActions {
+    gap: 6px;
+  }
+
+  .filePreviewDownload, .filePreviewClose {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .filePreviewContent {
+    padding: 16px;
+    min-height: 200px;
+  }
+
+  .filePreviewInfo {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .filesListCompact {
+    max-width: 150px;
+  }
+
+  .fileNameButton {
+    max-width: 80px;
+    font-size: 10px;
+  }
+}
+
+/* Additional utility classes */
+.hidden-column {
+  display: none;
+}
+
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Legacy compatibility */
+.generateReportButton {
+  position: static;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  background-color: #007bff;
+  color: white;
+  border: 1px solid #007bff;
+  width: fit-content;
+  justify-self: end;
+  margin-top: 10px;
+}
+
+.generateReportButton:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+/* Focus styles for accessibility */
 *:focus {
-  outline: 2px solid rgba(0, 123, 255, 0.25); /* Lighter outline */
+  outline: 2px solid rgba(59, 173, 229, 0.5);
   outline-offset: 2px;
 }
 
@@ -3901,33 +4399,32 @@
   border: 1px solid;
   transition: all 0.2s ease;
   min-width: 75px;
-  background: rgba(255, 255, 255, 0.05); /* Slightly more opaque light background */
+  background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(4px);
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .statusBadgeSubtle.open {
-  background: rgba(220, 53, 69, 0.08); /* Light red background */
-  border-color: rgba(220, 53, 69, 0.15); /* Lighter red border */
-  color: rgba(220, 53, 69, 0.9); /* Muted red text */
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: rgba(239, 68, 68, 0.9);
 }
 
 .statusBadgeSubtle.closed {
-  background: rgba(40, 167, 69, 0.08); /* Light green background */
-  border-color: rgba(40, 167, 69, 0.15); /* Lighter green border */
-  color: rgba(40, 167, 69, 0.9); /* Muted green text */
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.2);
+  color: rgba(34, 197, 94, 0.9);
 }
 
 .statusBadgeSubtle.inProgress {
-  background: rgba(255, 193, 7, 0.08); /* Light yellow background */
-  border-color: rgba(255, 193, 7, 0.15); /* Lighter yellow border */
-  color: rgba(255, 193, 7, 0.9); /* Muted yellow text */
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.2);
+  color: rgba(245, 158, 11, 0.9);
 }
 
 .statusBadgeSubtle:hover {
-  background: rgba(255, 255, 255, 0.08); /* Slightly more opaque light background on hover */
+  background: rgba(255, 255, 255, 0.05);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* Lighter shadow */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Criticality Subtle Variant */
@@ -3944,33 +4441,32 @@
   border: 1px solid;
   transition: all 0.2s ease;
   min-width: 70px;
-  background: rgba(255, 255, 255, 0.05); /* Slightly more opaque light background */
+  background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(4px);
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .criticalityBadgeSubtle.criticalityHigh {
-  background: rgba(220, 53, 69, 0.08); /* Light red background */
-  border-color: rgba(220, 53, 69, 0.15); /* Lighter red border */
-  color: rgba(220, 53, 69, 0.9); /* Muted red text */
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: rgba(239, 68, 68, 0.9);
 }
 
 .criticalityBadgeSubtle.criticalityMedium {
-  background: rgba(255, 193, 7, 0.08); /* Light yellow background */
-  border-color: rgba(255, 193, 7, 0.15); /* Lighter yellow border */
-  color: rgba(255, 193, 7, 0.9); /* Muted yellow text */
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.2);
+  color: rgba(245, 158, 11, 0.9);
 }
 
 .criticalityBadgeSubtle.criticalityLow {
-  background: rgba(0, 123, 255, 0.08); /* Light blue background */
-  border-color: rgba(0, 123, 255, 0.15); /* Lighter blue border */
-  color: rgba(0, 123, 255, 0.9); /* Muted blue text */
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.2);
+  color: rgba(59, 130, 246, 0.9);
 }
 
 .criticalityBadgeSubtle:hover {
-  background: rgba(255, 255, 255, 0.08); /* Slightly more opaque light background on hover */
+  background: rgba(255, 255, 255, 0.05);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* Lighter shadow */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* ========================================
@@ -3991,7 +4487,6 @@
   transition: all 0.2s ease;
   min-width: 70px;
   position: relative;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .statusBadgeMinimal::before {
@@ -4007,20 +4502,20 @@
 }
 
 .statusBadgeMinimal.open {
-  background: rgba(220, 53, 69, 0.05); /* Very subtle light red background */
-  color: rgba(220, 53, 69, 0.8); /* Muted red text */
+  background: rgba(239, 68, 68, 0.05);
+  color: rgba(239, 68, 68, 0.8);
   padding-left: 12px;
 }
 
 .statusBadgeMinimal.closed {
-  background: rgba(40, 167, 69, 0.05); /* Very subtle light green background */
-  color: rgba(40, 167, 69, 0.8); /* Muted green text */
+  background: rgba(34, 197, 94, 0.05);
+  color: rgba(34, 197, 94, 0.8);
   padding-left: 12px;
 }
 
 .statusBadgeMinimal.inProgress {
-  background: rgba(255, 193, 7, 0.05); /* Very subtle light yellow background */
-  color: rgba(255, 193, 7, 0.8); /* Muted yellow text */
+  background: rgba(245, 158, 11, 0.05);
+  color: rgba(245, 158, 11, 0.8);
   padding-left: 12px;
 }
 
@@ -4038,7 +4533,6 @@
   transition: all 0.2s ease;
   min-width: 65px;
   position: relative;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .criticalityBadgeMinimal::before {
@@ -4054,20 +4548,20 @@
 }
 
 .criticalityBadgeMinimal.criticalityHigh {
-  background: rgba(220, 53, 69, 0.05); /* Very subtle light red background */
-  color: rgba(220, 53, 69, 0.8); /* Muted red text */
+  background: rgba(239, 68, 68, 0.05);
+  color: rgba(239, 68, 68, 0.8);
   padding-left: 12px;
 }
 
 .criticalityBadgeMinimal.criticalityMedium {
-  background: rgba(255, 193, 7, 0.05); /* Very subtle light yellow background */
-  color: rgba(255, 193, 7, 0.8); /* Muted yellow text */
+  background: rgba(245, 158, 11, 0.05);
+  color: rgba(245, 158, 11, 0.8);
   padding-left: 12px;
 }
 
 .criticalityBadgeMinimal.criticalityLow {
-  background: rgba(0, 123, 255, 0.05); /* Very subtle light blue background */
-  color: rgba(0, 123, 255, 0.8); /* Muted blue text */
+  background: rgba(59, 130, 246, 0.05);
+  color: rgba(59, 130, 246, 0.8);
   padding-left: 12px;
 }
 
@@ -4090,7 +4584,6 @@
   min-width: 75px;
   justify-content: center;
   position: relative;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .statusBadgePill::before {
@@ -4104,18 +4597,18 @@
 }
 
 .statusBadgePill.open {
-  background: rgba(220, 53, 69, 0.1); /* Light red background */
-  color: #dc3545; /* Standard red */
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
 }
 
 .statusBadgePill.closed {
-  background: rgba(40, 167, 69, 0.1); /* Light green background */
-  color: #28a745; /* Standard green */
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
 }
 
 .statusBadgePill.inProgress {
-  background: rgba(255, 193, 7, 0.1); /* Light yellow background */
-  color: #ffc107; /* Standard yellow */
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
 }
 
 .criticalityBadgePill {
@@ -4132,7 +4625,6 @@
   transition: all 0.2s ease;
   min-width: 70px;
   justify-content: center;
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .criticalityBadgePill::before {
@@ -4146,18 +4638,18 @@
 }
 
 .criticalityBadgePill.criticalityHigh {
-  background: rgba(220, 53, 69, 0.1); /* Light red background */
-  color: #dc3545; /* Standard red */
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
 }
 
 .criticalityBadgePill.criticalityMedium {
-  background: rgba(255, 193, 7, 0.1); /* Light yellow background */
-  color: #ffc107; /* Standard yellow */
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
 }
 
 .criticalityBadgePill.criticalityLow {
-  background: rgba(0, 123, 255, 0.1); /* Light blue background */
-  color: #007bff; /* Standard blue */
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
 }
 
 /* ========================================
@@ -4175,33 +4667,32 @@
   text-transform: uppercase;
   letter-spacing: 0.3px;
   border-left: 3px solid;
-  background: rgba(255, 255, 255, 0.05); /* Slightly more opaque light background */
+  background: rgba(255, 255, 255, 0.03);
   transition: all 0.2s ease;
   min-width: 75px;
   backdrop-filter: blur(6px);
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .statusBadgeAccent.open {
-  border-left-color: #dc3545; /* Standard red */
-  color: rgba(220, 53, 69, 0.9); /* Muted red text */
-  background: rgba(220, 53, 69, 0.08); /* Light red background */
+  border-left-color: #dc2626;
+  color: rgba(220, 38, 38, 0.9);
+  background: rgba(239, 68, 68, 0.06);
 }
 
 .statusBadgeAccent.closed {
-  border-left-color: #28a745; /* Standard green */
-  color: rgba(40, 167, 69, 0.9); /* Muted green text */
-  background: rgba(40, 167, 69, 0.08); /* Light green background */
+  border-left-color: #16a34a;
+  color: rgba(22, 163, 74, 0.9);
+  background: rgba(34, 197, 94, 0.06);
 }
 
 .statusBadgeAccent.inProgress {
-  border-left-color: #ffc107; /* Standard yellow */
-  color: rgba(255, 193, 7, 0.9); /* Muted yellow text */
-  background: rgba(255, 193, 7, 0.08); /* Light yellow background */
+  border-left-color: #d97706;
+  color: rgba(217, 119, 6, 0.9);
+  background: rgba(245, 158, 11, 0.06);
 }
 
 .statusBadgeAccent:hover {
-  background: rgba(255, 255, 255, 0.08); /* Slightly more opaque light background on hover */
+  background: rgba(255, 255, 255, 0.06);
   transform: translateX(2px);
 }
 
@@ -4216,33 +4707,32 @@
   text-transform: uppercase;
   letter-spacing: 0.3px;
   border-left: 3px solid;
-  background: rgba(255, 255, 255, 0.05); /* Slightly more opaque light background */
+  background: rgba(255, 255, 255, 0.03);
   transition: all 0.2s ease;
   min-width: 70px;
   backdrop-filter: blur(6px);
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .criticalityBadgeAccent.criticalityHigh {
-  border-left-color: #dc3545; /* Standard red */
-  color: rgba(220, 53, 69, 0.9); /* Muted red text */
-  background: rgba(220, 53, 69, 0.08); /* Light red background */
+  border-left-color: #dc2626;
+  color: rgba(220, 38, 38, 0.9);
+  background: rgba(239, 68, 68, 0.06);
 }
 
 .criticalityBadgeAccent.criticalityMedium {
-  border-left-color: #ffc107; /* Standard yellow */
-  color: rgba(255, 193, 7, 0.9); /* Muted yellow text */
-  background: rgba(255, 193, 7, 0.08); /* Light yellow background */
+  border-left-color: #d97706;
+  color: rgba(217, 119, 6, 0.9);
+  background: rgba(245, 158, 11, 0.06);
 }
 
 .criticalityBadgeAccent.criticalityLow {
-  border-left-color: #007bff; /* Standard blue */
-  color: rgba(0, 123, 255, 0.9); /* Muted blue text */
-  background: rgba(0, 123, 255, 0.08); /* Light blue background */
+  border-left-color: #2563eb;
+  color: rgba(37, 99, 235, 0.9);
+  background: rgba(59, 130, 246, 0.06);
 }
 
 .criticalityBadgeAccent:hover {
-  background: rgba(255, 255, 255, 0.08); /* Slightly more opaque light background on hover */
+  background: rgba(255, 255, 255, 0.06);
   transform: translateX(2px);
 }
 
@@ -4261,14 +4751,13 @@
   justify-content: center;
   cursor: pointer;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.05); /* Slightly more opaque light background */
+  background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(4px);
-  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
 .enhancedActionButton:hover {
   transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* Lighter shadow */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .enhancedActionButton:active {
@@ -4276,51 +4765,51 @@
 }
 
 .enhancedActionButton.generate {
-  background: rgba(40, 167, 69, 0.08); /* Light green background */
-  border-color: rgba(40, 167, 69, 0.15); /* Lighter green border */
-  color: rgba(40, 167, 69, 0.9); /* Muted green text */
+  background: rgba(34, 197, 94, 0.06);
+  border-color: rgba(34, 197, 94, 0.2);
+  color: rgba(34, 197, 94, 0.9);
 }
 
 .enhancedActionButton.generate:hover {
-  background: rgba(40, 167, 69, 0.12); /* Slightly darker light green */
-  border-color: rgba(40, 167, 69, 0.2); /* Lighter green border */
-  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.08); /* Lighter shadow */
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15);
 }
 
 .enhancedActionButton.edit {
-  background: rgba(0, 123, 255, 0.08); /* Light blue background */
-  border-color: rgba(0, 123, 255, 0.15); /* Lighter blue border */
-  color: rgba(0, 123, 255, 0.9); /* Muted blue text */
+  background: rgba(59, 130, 246, 0.06);
+  border-color: rgba(59, 130, 246, 0.2);
+  color: rgba(59, 130, 246, 0.9);
 }
 
 .enhancedActionButton.edit:hover {
-  background: rgba(0, 123, 255, 0.12); /* Slightly darker light blue */
-  border-color: rgba(0, 123, 255, 0.2); /* Lighter blue border */
-  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.08); /* Lighter shadow */
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
 }
 
 .enhancedActionButton.delete {
-  background: rgba(220, 53, 69, 0.08); /* Light red background */
-  border-color: rgba(220, 53, 69, 0.15); /* Lighter red border */
-  color: rgba(220, 53, 69, 0.9); /* Muted red text */
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: rgba(239, 68, 68, 0.9);
 }
 
 .enhancedActionButton.delete:hover {
-  background: rgba(220, 53, 69, 0.12); /* Slightly darker light red */
-  border-color: rgba(220, 53, 69, 0.2); /* Lighter red border */
-  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.08); /* Lighter shadow */
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
 }
 
 .enhancedActionButton.generating {
-  background: rgba(40, 167, 69, 0.12); /* Light green background */
+  background: rgba(34, 197, 94, 0.1);
   cursor: not-allowed;
   opacity: 0.7;
 }
 
 .enhancedActionButton.disabled {
-  background: rgba(108, 117, 125, 0.08) !important; /* Light grey background */
-  border-color: rgba(108, 117, 125, 0.15) !important; /* Lighter grey border */
-  color: rgba(108, 117, 125, 0.4) !important; /* Muted grey text */
+  background: rgba(75, 85, 99, 0.06) !important;
+  border-color: rgba(75, 85, 99, 0.2) !important;
+  color: rgba(75, 85, 99, 0.4) !important;
   cursor: not-allowed;
 }
 

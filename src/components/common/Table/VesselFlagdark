@@ -1,0 +1,112 @@
+/* src/components/common/Table/VesselFlag.css */
+.vessel-flag-container {
+    position: relative;
+    display: inline-block;
+    margin-right: 8px;
+  }
+  
+  .vessel-flag-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .vessel-flag-button:hover {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+  
+  .vessel-flag-button.green {
+    opacity: 1;
+  }
+  
+  .vessel-flag-button.yellow {
+    opacity: 1;
+  }
+  
+  .vessel-flag-button.red {
+    opacity: 1;
+  }
+  
+  /* Flag Selector Styles */
+  .flag-selector-container {
+    background-color: #162d48;
+    border-radius: 6px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(77, 195, 255, 0.3);
+    overflow: hidden;
+    animation: fadeIn 0.2s ease;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .flag-selector {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .flag-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    color: #f4f4f4;
+    transition: all 0.15s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  
+  .flag-option:last-child {
+    border-bottom: none;
+  }
+  
+  .flag-option:hover {
+    background-color: rgba(59, 173, 229, 0.15);
+  }
+  
+  .flag-option.selected {
+    background-color: rgba(59, 173, 229, 0.2);
+  }
+  
+  .flag-option-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .flag-icon {
+    transition: all 0.2s ease;
+  }
+  
+  .check-icon {
+    color: #3BADE5;
+  }
+  
+  /* When flag button is shown in the vessel name cell */
+  .vessel-name-with-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }

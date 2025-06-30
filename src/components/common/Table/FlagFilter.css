@@ -1,32 +1,33 @@
 /* src/components/common/Table/FlagFilter.css */
 .flag-filter-container {
-    position: relative;
-    display: inline-block;
-  }
-  
-  .flag-filter-container .filter-button {
-    margin-left: 8px;
-  }
-  
-  .flag-icon {
-    transition: all 0.2s ease;
-  }
-  
-  .flag-icon.green {
-    color: #2EE086;
-    filter: drop-shadow(0 0 3px rgba(46, 224, 134, 0.4));
-  }
-  
-  .flag-icon.yellow {
-    color: #FFD426;
-    filter: drop-shadow(0 0 3px rgba(255, 212, 38, 0.4));
-  }
-  
-  .flag-icon.red {
-    color: #FF5252;
-    filter: drop-shadow(0 0 3px rgba(255, 82, 82, 0.4));
-  }
-  
-  .flag-icon.none {
-    color: #A0A0A0;
-  }
+  position: relative;
+  display: inline-block;
+  font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
+}
+
+.flag-filter-container .filter-button {
+  margin-left: 8px;
+}
+
+.flag-icon {
+  transition: all 0.2s ease;
+}
+
+.flag-icon.green {
+  color: #28a745; /* Standard green for light theme */
+  filter: drop-shadow(0 0 3px rgba(40, 167, 69, 0.3)); /* Lighter shadow */
+}
+
+.flag-icon.yellow {
+  color: #ffc107; /* Standard yellow/amber for light theme */
+  filter: drop-shadow(0 0 3px rgba(255, 193, 7, 0.3)); /* Lighter shadow */
+}
+
+.flag-icon.red {
+  color: #dc3545; /* Standard red for light theme */
+  filter: drop-shadow(0 0 3px rgba(220, 53, 69, 0.3)); /* Lighter shadow */
+}
+
+.flag-icon.none {
+  color: #6c757d; /* Standard muted grey for light theme */
+}

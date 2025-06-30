@@ -17,68 +17,68 @@ const LoginBackgroundSVG = () => {
         pointerEvents: 'none',
       }}
     >
-      {/* Light gradient background matching login card colors */}
+      {/* Dark gradient background matching login card colors */}
       <defs>
         <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#f7fafd" stopOpacity={1} /> {/* Using --primary-bg-light */}
-          <stop offset="50%" stopColor="#e0e8f0" stopOpacity={1} /> {/* Using --secondary-bg-light */}
-          <stop offset="100%" stopColor="#ffffff" stopOpacity={1} /> {/* Using --card-bg-light */}
+          <stop offset="0%" stopColor="#0a1725" stopOpacity={1} /> {/* Using --primary-bg */}
+          <stop offset="50%" stopColor="#112032" stopOpacity={1} /> {/* Using --secondary-bg */}
+          <stop offset="100%" stopColor="#0e1e2f" stopOpacity={1} /> {/* Using --card-bg */}
         </linearGradient>
         <radialGradient id="blueGlow" cx="50%" cy="50%">
-          <stop offset="0%" stopColor="#007bff" stopOpacity={0.15} /> {/* Using --primary-accent-light */}
-          <stop offset="100%" stopColor="#007bff" stopOpacity={0} />
+          <stop offset="0%" stopColor="#3BADE5" stopOpacity={0.15} /> {/* Using --primary-accent */}
+          <stop offset="100%" stopColor="#3BADE5" stopOpacity={0} />
         </radialGradient>
         <radialGradient id="purpleGlow" cx="50%" cy="50%">
-          <stop offset="0%" stopColor="#6f42c1" stopOpacity={0.12} /> {/* Using --secondary-accent-light */}
-          <stop offset="100%" stopColor="#6f42c1" stopOpacity={0} />
+          <stop offset="0%" stopColor="#7b2ff7" stopOpacity={0.12} /> {/* Using --secondary-accent */}
+          <stop offset="100%" stopColor="#7b2ff7" stopOpacity={0} />
         </radialGradient>
         <linearGradient id="gridGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#007bff" stopOpacity={0} />
-          <stop offset="50%" stopColor="#007bff" stopOpacity={0.2} />
-          <stop offset="100%" stopColor="#007bff" stopOpacity={0} />
+          <stop offset="0%" stopColor="#3BADE5" stopOpacity={0} />
+          <stop offset="50%" stopColor="#3BADE5" stopOpacity={0.2} />
+          <stop offset="100%" stopColor="#3BADE5" stopOpacity={0} />
         </linearGradient>
         <pattern id="circuitPattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-          <path d="M10,10 L40,10 L40,40 L70,40 L70,70 L40,70 L40,90 L10,90 Z" fill="none" stroke="#007bff" strokeWidth="0.6" opacity="0.4"/>
-          <circle cx="10" cy="10" r="2" fill="#007bff" opacity="0.5"/>
-          <circle cx="40" cy="40" r="2" fill="#007bff" opacity="0.5"/>
-          <circle cx="70" cy="70" r="2" fill="#007bff" opacity="0.5"/>
-          <circle cx="40" cy="90" r="2" fill="#007bff" opacity="0.5"/>
+          <path d="M10,10 L40,10 L40,40 L70,40 L70,70 L40,70 L40,90 L10,90 Z" fill="none" stroke="#3BADE5" strokeWidth="0.6" opacity="0.4"/>
+          <circle cx="10" cy="10" r="2" fill="#3BADE5" opacity="0.5"/>
+          <circle cx="40" cy="40" r="2" fill="#3BADE5" opacity="0.5"/>
+          <circle cx="70" cy="70" r="2" fill="#3BADE5" opacity="0.5"/>
+          <circle cx="40" cy="90" r="2" fill="#3BADE5" opacity="0.5"/>
         </pattern>
         <linearGradient id="dataFlowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#6f42c1" stopOpacity={0} />
-          <stop offset="50%" stopColor="#6f42c1" stopOpacity={0.25} />
-          <stop offset="100%" stopColor="#6f42c1" stopOpacity={0} />
+          <stop offset="0%" stopColor="#7b2ff7" stopOpacity={0} />
+          <stop offset="50%" stopColor="#7b2ff7" stopOpacity={0.25} />
+          <stop offset="100%" stopColor="#7b2ff7" stopOpacity={0} />
         </linearGradient>
       </defs>
       <rect width="1920" height="1080" fill="url(#bgGradient)"/>
-
+      
       {/* Subtle grid pattern */}
       <g opacity="0.15">
-        <line x1="320" y1="0" x2="320" y2="1080" stroke="#007bff" strokeWidth="0.5"/>
-        <line x1="640" y1="0" x2="640" y2="1080" stroke="#007bff" strokeWidth="0.5"/>
-        <line x1="960" y1="0" x2="960" y2="1080" stroke="#007bff" strokeWidth="0.5"/>
-        <line x1="1280" y1="0" x2="1280" y2="1080" stroke="#007bff" strokeWidth="0.5"/>
-        <line x1="1600" y1="0" x2="1600" y2="1080" stroke="#007bff" strokeWidth="0.5"/>
-        <line x1="0" y1="216" x2="1920" y2="216" stroke="#007bff" strokeWidth="0.5"/>
-        <line x1="0" y1="432" x2="1920" y2="432" stroke="#007bff" strokeWidth="0.5"/>
-        <line x1="0" y1="648" x2="1920" y2="648" stroke="#007bff" strokeWidth="0.5"/>
-        <line x1="0" y1="864" x2="1920" y2="864" stroke="#007bff" strokeWidth="0.5"/>
+        <line x1="320" y1="0" x2="320" y2="1080" stroke="#3BADE5" strokeWidth="0.5"/>
+        <line x1="640" y1="0" x2="640" y2="1080" stroke="#3BADE5" strokeWidth="0.5"/>
+        <line x1="960" y1="0" x2="960" y2="1080" stroke="#3BADE5" strokeWidth="0.5"/>
+        <line x1="1280" y1="0" x2="1280" y2="1080" stroke="#3BADE5" strokeWidth="0.5"/>
+        <line x1="1600" y1="0" x2="1600" y2="1080" stroke="#3BADE5" strokeWidth="0.5"/>
+        <line x1="0" y1="216" x2="1920" y2="216" stroke="#3BADE5" strokeWidth="0.5"/>
+        <line x1="0" y1="432" x2="1920" y2="432" stroke="#3BADE5" strokeWidth="0.5"/>
+        <line x1="0" y1="648" x2="1920" y2="648" stroke="#3BADE5" strokeWidth="0.5"/>
+        <line x1="0" y1="864" x2="1920" y2="864" stroke="#3BADE5" strokeWidth="0.5"/>
       </g>
-
+      
       {/* Animated horizon line */}
       <line x1="0" y1="540" x2="1920" y2="540" stroke="url(#gridGradient)" strokeWidth="1" opacity="0.4">
         <animate attributeName="opacity" values="0.2;0.4;0.2" dur="4s" repeatCount="indefinite"/>
       </line>
-
+      
       {/* Subtle glow spots (shifted left/center, more prominent) */}
       <circle cx="350" cy="350" r="220" fill="url(#blueGlow)" opacity="0.3"/>
       <circle cx="550" cy="700" r="170" fill="url(#purpleGlow)" opacity="0.3"/>
       <circle cx="900" cy="400" r="200" fill="url(#blueGlow)" opacity="0.25"/>
-
+      
       {/* Circuit board pattern areas (shifted left/center) */}
       <rect x="1100" y="100" width="250" height="200" fill="url(#circuitPattern)" opacity="0.25"/>
       <rect x="100" y="800" width="300" height="180" fill="url(#circuitPattern)" opacity="0.25"/>
-
+      
       {/* Data flow lines (shifted left/center, more prominent) */}
       <path d="M300,200 Q600,100 900,300 T1100,250" stroke="url(#dataFlowGradient)" strokeWidth="2" fill="none" opacity="0.4">
         <animate attributeName="opacity" values="0.2;0.4;0.2" dur="5s" repeatCount="indefinite"/>
@@ -86,139 +86,139 @@ const LoginBackgroundSVG = () => {
       <path d="M100,600 Q400,750 800,650 T1000,700" stroke="url(#dataFlowGradient)" strokeWidth="2" fill="none" opacity="0.4">
         <animate attributeName="opacity" values="0.2;0.4;0.2" dur="6s" repeatCount="indefinite" begin="2s"/>
       </path>
-
+      
       {/* Floating particles (enhanced, shifted left/center, more prominent) */}
       <g opacity="0.5">
-        <circle cx="300" cy="200" r="2.5" fill="#007bff">
+        <circle cx="300" cy="200" r="2.5" fill="#3BADE5">
           <animate attributeName="cy" values="200;180;200" dur="3s" repeatCount="indefinite"/>
           <animate attributeName="opacity" values="0;1;0" dur="3s" repeatCount="indefinite"/>
         </circle>
-        <circle cx="500" cy="700" r="2.5" fill="#007bff">
+        <circle cx="500" cy="700" r="2.5" fill="#3BADE5">
           <animate attributeName="cy" values="700;680;700" dur="3s" begin="0.5s" repeatCount="indefinite"/>
           <animate attributeName="opacity" values="0;1;0" dur="3s" begin="0.5s" repeatCount="indefinite"/>
         </circle>
-        <circle cx="900" cy="400" r="2.5" fill="#6f42c1">
+        <circle cx="900" cy="400" r="2.5" fill="#7b2ff7">
           <animate attributeName="cy" values="400;380;400" dur="3s" begin="1s" repeatCount="indefinite"/>
           <animate attributeName="opacity" values="0;1;0" dur="3s" begin="1s" repeatCount="indefinite"/>
         </circle>
-        <circle cx="1000" cy="800" r="2.5" fill="#007bff">
+        <circle cx="1000" cy="800" r="2.5" fill="#3BADE5">
           <animate attributeName="cy" values="800;780;800" dur="3s" begin="1.5s" repeatCount="indefinite"/>
           <animate attributeName="opacity" values="0;1;0" dur="3s" begin="1.5s" repeatCount="indefinite"/>
         </circle>
-        <circle cx="800" cy="300" r="2.5" fill="#6f42c1">
+        <circle cx="800" cy="300" r="2.5" fill="#7b2ff7">
           <animate attributeName="cy" values="300;280;300" dur="3s" begin="0.7s" repeatCount="indefinite"/>
           <animate attributeName="opacity" values="0;1;0" dur="3s" begin="0.7s" repeatCount="indefinite"/>
         </circle>
-        <circle cx="900" cy="600" r="2.5" fill="#007bff">
+        <circle cx="900" cy="600" r="2.5" fill="#3BADE5">
           <animate attributeName="cy" values="600;580;600" dur="3s" begin="1.2s" repeatCount="indefinite"/>
           <animate attributeName="opacity" values="0;1;0" dur="3s" begin="1.2s" repeatCount="indefinite"/>
         </circle>
       </g>
-
+      
       {/* First scanning radar (upper left) - More visible but still subtle */}
       <g transform="translate(400, 350)" opacity="0.2">
-        <circle cx="0" cy="0" r="120" fill="none" stroke="#007bff" strokeWidth="1" opacity="0.4"/>
-        <circle cx="0" cy="0" r="80" fill="none" stroke="#007bff" strokeWidth="1" opacity="0.5"/>
-        <circle cx="0" cy="0" r="40" fill="none" stroke="#007bff" strokeWidth="1" opacity="0.6"/>
-        <line x1="0" y1="0" x2="0" y2="-120" stroke="#007bff" strokeWidth="1.5" opacity="0.7" transform-origin="0 0">
+        <circle cx="0" cy="0" r="120" fill="none" stroke="#3BADE5" strokeWidth="1" opacity="0.4"/>
+        <circle cx="0" cy="0" r="80" fill="none" stroke="#3BADE5" strokeWidth="1" opacity="0.5"/>
+        <circle cx="0" cy="0" r="40" fill="none" stroke="#3BADE5" strokeWidth="1" opacity="0.6"/>
+        <line x1="0" y1="0" x2="0" y2="-120" stroke="#3BADE5" strokeWidth="1.5" opacity="0.7" transform-origin="0 0">
           <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="5s" repeatCount="indefinite"/>
         </line>
-        <circle cx="0" cy="0" r="5" fill="none" stroke="#007bff" strokeWidth="1">
+        <circle cx="0" cy="0" r="5" fill="none" stroke="#3BADE5" strokeWidth="1">
           <animate attributeName="r" values="5;120;5" dur="4s" repeatCount="indefinite"/>
           <animate attributeName="opacity" values="0.7;0;0.7" dur="4s" repeatCount="indefinite"/>
         </circle>
       </g>
-
+      
       {/* Second scanning radar (lower center-left) - More visible but still subtle */}
       <g transform="translate(600, 700)" opacity="0.18">
-        <circle cx="0" cy="0" r="100" fill="none" stroke="#6f42c1" strokeWidth="1" opacity="0.4"/>
-        <circle cx="0" cy="0" r="65" fill="none" stroke="#6f42c1" strokeWidth="1" opacity="0.5"/>
-        <circle cx="0" cy="0" r="30" fill="none" stroke="#6f42c1" strokeWidth="1" opacity="0.6"/>
-        <line x1="0" y1="0" x2="0" y2="-100" stroke="#6f42c1" strokeWidth="1.5" opacity="0.7" transform-origin="0 0">
+        <circle cx="0" cy="0" r="100" fill="none" stroke="#7b2ff7" strokeWidth="1" opacity="0.4"/>
+        <circle cx="0" cy="0" r="65" fill="none" stroke="#7b2ff7" strokeWidth="1" opacity="0.5"/>
+        <circle cx="0" cy="0" r="30" fill="none" stroke="#7b2ff7" strokeWidth="1" opacity="0.6"/>
+        <line x1="0" y1="0" x2="0" y2="-100" stroke="#7b2ff7" strokeWidth="1.5" opacity="0.7" transform-origin="0 0">
           <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="7s" repeatCount="indefinite"/>
         </line>
-        <circle cx="0" cy="0" r="5" fill="none" stroke="#6f42c1" strokeWidth="1">
+        <circle cx="0" cy="0" r="5" fill="none" stroke="#7b2ff7" strokeWidth="1">
           <animate attributeName="r" values="5;100;5" dur="5s" repeatCount="indefinite"/>
           <animate attributeName="opacity" values="0.7;0;0.7" dur="5s" repeatCount="indefinite"/>
         </circle>
       </g>
-
+      
       {/* Third scanning radar (upper center) - More visible but still subtle */}
       <g transform="translate(1000, 400)" opacity="0.15">
-        <circle cx="0" cy="0" r="90" fill="none" stroke="#007bff" strokeWidth="1" opacity="0.4"/>
-        <circle cx="0" cy="0" r="60" fill="none" stroke="#007bff" strokeWidth="1" opacity="0.5"/>
-        <circle cx="0" cy="0" r="30" fill="none" stroke="#007bff" strokeWidth="1" opacity="0.6"/>
-        <line x1="0" y1="0" x2="0" y2="-90" stroke="#007bff" strokeWidth="1.5" opacity="0.7" transform-origin="0 0">
+        <circle cx="0" cy="0" r="90" fill="none" stroke="#3BADE5" strokeWidth="1" opacity="0.4"/>
+        <circle cx="0" cy="0" r="60" fill="none" stroke="#3BADE5" strokeWidth="1" opacity="0.5"/>
+        <circle cx="0" cy="0" r="30" fill="none" stroke="#3BADE5" strokeWidth="1" opacity="0.6"/>
+        <line x1="0" y1="0" x2="0" y2="-90" stroke="#3BADE5" strokeWidth="1.5" opacity="0.7" transform-origin="0 0">
           <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="6s" repeatCount="indefinite"/>
         </line>
-        <circle cx="0" cy="0" r="5" fill="none" stroke="#007bff" strokeWidth="1">
+        <circle cx="0" cy="0" r="5" fill="none" stroke="#3BADE5" strokeWidth="1">
           <animate attributeName="r" values="5;90;5" dur="4.5s" repeatCount="indefinite"/>
           <animate attributeName="opacity" values="0.7;0;0.7" dur="4.5s" repeatCount="indefinite"/>
         </circle>
       </g>
-
+      
       {/* Digital code matrix effect (shifted left/center) */}
       <g opacity="0.25">
-        <text x="1100" y="300" fontFamily="monospace" fontSize="12" fill="#007bff">01001010</text>
-        <text x="1100" y="312" fontFamily="monospace" fontSize="12" fill="#007bff">10110101</text>
-        <text x="1100" y="324" fontFamily="monospace" fontSize="12" fill="#007bff">01101001</text>
-        <text x="1100" y="336" fontFamily="monospace" fontSize="12" fill="#007bff">10010110</text>
-        <text x="1100" y="348" fontFamily="monospace" fontSize="12" fill="#007bff">01101010</text>
-        <text x="200" y="850" fontFamily="monospace" fontSize="12" fill="#6f42c1">01001010</text>
-        <text x="200" y="862" fontFamily="monospace" fontSize="12" fill="#6f42c1">10110101</text>
-        <text x="200" y="874" fontFamily="monospace" fontSize="12" fill="#6f42c1">01101001</text>
-        <text x="200" y="886" fontFamily="monospace" fontSize="12" fill="#6f42c1">10010110</text>
-        <text x="200" y="898" fontFamily="monospace" fontSize="12" fill="#6f42c1">01101010</text>
+        <text x="1100" y="300" fontFamily="monospace" fontSize="12" fill="#3BADE5">01001010</text>
+        <text x="1100" y="312" fontFamily="monospace" fontSize="12" fill="#3BADE5">10110101</text>
+        <text x="1100" y="324" fontFamily="monospace" fontSize="12" fill="#3BADE5">01101001</text>
+        <text x="1100" y="336" fontFamily="monospace" fontSize="12" fill="#3BADE5">10010110</text>
+        <text x="1100" y="348" fontFamily="monospace" fontSize="12" fill="#3BADE5">01101010</text>
+        <text x="200" y="850" fontFamily="monospace" fontSize="12" fill="#7b2ff7">01001010</text>
+        <text x="200" y="862" fontFamily="monospace" fontSize="12" fill="#7b2ff7">10110101</text>
+        <text x="200" y="874" fontFamily="monospace" fontSize="12" fill="#7b2ff7">01101001</text>
+        <text x="200" y="886" fontFamily="monospace" fontSize="12" fill="#7b2ff7">10010110</text>
+        <text x="200" y="898" fontFamily="monospace" fontSize="12" fill="#7b2ff7">01101010</text>
       </g>
-
+      
       {/* Tech hexagon pattern (subtle, shifted left/center, more prominent) */}
       <g opacity="0.25">
-        <path d="M900,200 L915,225 L900,250 L870,250 L855,225 L870,200 Z" stroke="#007bff" strokeWidth="1.2" fill="none"/>
-        <path d="M930,225 L945,250 L930,275 L900,275 L885,250 L900,225 Z" stroke="#007bff" strokeWidth="1.2" fill="none"/>
-        <path d="M870,250 L885,275 L870,300 L840,300 L825,275 L840,250 Z" stroke="#007bff" strokeWidth="1.2" fill="none"/>
-        <path d="M300,600 L315,625 L300,650 L270,650 L255,625 L270,600 Z" stroke="#6f42c1" strokeWidth="1.2" fill="none"/>
-        <path d="M330,625 L345,650 L330,675 L300,675 L285,650 L300,625 Z" stroke="#6f42c1" strokeWidth="1.2" fill="none"/>
-        <path d="M270,650 L285,675 L270,700 L240,700 L225,675 L240,650 Z" stroke="#6f42c1" strokeWidth="1.2" fill="none"/>
+        <path d="M900,200 L915,225 L900,250 L870,250 L855,225 L870,200 Z" stroke="#3BADE5" strokeWidth="1.2" fill="none"/>
+        <path d="M930,225 L945,250 L930,275 L900,275 L885,250 L900,225 Z" stroke="#3BADE5" strokeWidth="1.2" fill="none"/>
+        <path d="M870,250 L885,275 L870,300 L840,300 L825,275 L840,250 Z" stroke="#3BADE5" strokeWidth="1.2" fill="none"/>
+        <path d="M300,600 L315,625 L300,650 L270,650 L255,625 L270,600 Z" stroke="#7b2ff7" strokeWidth="1.2" fill="none"/>
+        <path d="M330,625 L345,650 L330,675 L300,675 L285,650 L300,625 Z" stroke="#7b2ff7" strokeWidth="1.2" fill="none"/>
+        <path d="M270,650 L285,675 L270,700 L240,700 L225,675 L240,650 Z" stroke="#7b2ff7" strokeWidth="1.2" fill="none"/>
       </g>
-
+      
       {/* Subtle digital ship (left, near bottom, new shape, more prominent) */}
       <g transform="translate(220, 900)" opacity="0.3">
         {/* Hull: more angular, modern, digital style */}
-        <polygon points="0,30 25,5 60,0 95,5 120,30 100,45 20,45" fill="none" stroke="#007bff" strokeWidth="2.5"/>
+        <polygon points="0,30 25,5 60,0 95,5 120,30 100,45 20,45" fill="none" stroke="#3BADE5" strokeWidth="2.5"/>
         {/* Deck: geometric, digital bridge */}
-        <rect x="45" y="-10" width="30" height="12" fill="none" stroke="#6f42c1" strokeWidth="2"/>
+        <rect x="45" y="-10" width="30" height="12" fill="none" stroke="#7b2ff7" strokeWidth="2"/>
         {/* Antenna: taller, digital */}
-        <line x1="60" y1="-10" x2="60" y2="-28" stroke="#007bff" strokeWidth="2"/>
+        <line x1="60" y1="-10" x2="60" y2="-28" stroke="#3BADE5" strokeWidth="2"/>
         {/* Digital dots and lines for techy look */}
-        <circle cx="20" cy="40" r="2.5" fill="#007bff" opacity="0.7"/>
-        <circle cx="100" cy="40" r="2.5" fill="#6f42c1" opacity="0.7"/>
-        <line x1="20" y1="40" x2="100" y2="40" stroke="#007bff" strokeWidth="1.5" opacity="0.5"/>
-        <circle cx="60" cy="0" r="2.5" fill="#007bff" opacity="0.6"/>
+        <circle cx="20" cy="40" r="2.5" fill="#3BADE5" opacity="0.7"/>
+        <circle cx="100" cy="40" r="2.5" fill="#7b2ff7" opacity="0.7"/>
+        <line x1="20" y1="40" x2="100" y2="40" stroke="#3BADE5" strokeWidth="1.5" opacity="0.5"/>
+        <circle cx="60" cy="0" r="2.5" fill="#3BADE5" opacity="0.6"/>
       </g>
-
+      
       {/* Enhanced animated waves at bottom (more prominent) */}
       <g transform="translate(0, 1020)" opacity="0.3">
-        <path d="M0,20 Q480,60 960,20 T1920,20 L1920,60 L0,60 Z" fill="#007bff">
+        <path d="M0,20 Q480,60 960,20 T1920,20 L1920,60 L0,60 Z" fill="#3BADE5">
           <animate attributeName="opacity" values="0.2;0.3;0.2" dur="6s" repeatCount="indefinite"/>
         </path>
-        <path d="M0,40 Q480,80 960,40 T1920,40 L1920,80 L0,80 Z" fill="#6f42c1" opacity="0.15">
+        <path d="M0,40 Q480,80 960,40 T1920,40 L1920,80 L0,80 Z" fill="#7b2ff7" opacity="0.15">
           <animate attributeName="opacity" values="0.15;0.25;0.15" dur="8s" repeatCount="indefinite"/>
         </path>
         {/* Extra digital wave lines */}
-        <path d="M0,55 Q480,90 960,55 T1920,55" stroke="#007bff" strokeWidth="1.5" fill="none" opacity="0.5">
+        <path d="M0,55 Q480,90 960,55 T1920,55" stroke="#3BADE5" strokeWidth="1.5" fill="none" opacity="0.5">
           <animate attributeName="opacity" values="0.3;0.5;0.3" dur="7s" repeatCount="indefinite"/>
         </path>
-        <path d="M0,70 Q480,110 960,70 T1920,70" stroke="#6f42c1" strokeWidth="1.5" fill="none" opacity="0.5">
+        <path d="M0,70 Q480,110 960,70 T1920,70" stroke="#7b2ff7" strokeWidth="1.5" fill="none" opacity="0.5">
           <animate attributeName="opacity" values="0.3;0.5;0.3" dur="9s" repeatCount="indefinite"/>
         </path>
       </g>
-
+      
       {/* Subtle data arcs (left side, more prominent) */}
       <g opacity="0.25">
-        <path d="M200,800 Q300,700 400,800" stroke="#007bff" strokeWidth="2.5" fill="none">
+        <path d="M200,800 Q300,700 400,800" stroke="#3BADE5" strokeWidth="2.5" fill="none">
           <animate attributeName="opacity" values="0.15;0.25;0.15" dur="7s" repeatCount="indefinite"/>
         </path>
-        <path d="M250,850 Q350,750 450,850" stroke="#6f42c1" strokeWidth="2" fill="none">
+        <path d="M250,850 Q350,750 450,850" stroke="#7b2ff7" strokeWidth="2" fill="none">
           <animate attributeName="opacity" values="0.15;0.25;0.15" dur="9s" repeatCount="indefinite"/>
         </path>
       </g>

@@ -429,26 +429,25 @@ const DocumentsDashboard = ({
     <div style={{
       width: '100%',
       height: '100vh',
-      backgroundColor: '#f8fafc', /* Light background */
-      color: '#1e293b', /* Darker text for contrast */
+      backgroundColor: '#0f172a',
+      color: '#f1f5f9',
       display: 'flex',
       flexDirection: 'column',
-      fontFamily: 'Nunito, sans-serif' /* Nunito font */
+      fontFamily: 'system-ui, sans-serif'
     }}>
       {/* Header */}
       <div style={{
         padding: '12px 16px',
-        backgroundColor: '#ffffff', /* White header */
-        borderBottom: '1px solid #e2e8f0', /* Light border */
-        flexShrink: 0,
-        boxShadow: '0 2px 4px rgba(0,0,0,0.05)' /* Subtle shadow */
+        backgroundColor: '#1e293b',
+        borderBottom: '1px solid #334155',
+        flexShrink: 0
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: '#2563eb' /* Blue accent */ }}>
+            <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: '#60a5fa' }}>
               Port Documents
             </h1>
-            <div style={{ display: 'flex', gap: '16px', fontSize: '14px', color: '#64748b' /* Muted text */ }}>
+            <div style={{ display: 'flex', gap: '16px', fontSize: '14px', color: '#94a3b8' }}>
               <span>{totalDocs} docs</span>
               <span>{formatFileSize(totalSize)}</span>
             </div>
@@ -460,15 +459,12 @@ const DocumentsDashboard = ({
             }}
             style={{
               padding: '8px',
-              backgroundColor: '#f1f5f9', /* Light button background */
-              border: '1px solid #cbd5e1', /* Light button border */
+              backgroundColor: '#334155',
+              border: '1px solid #475569',
               borderRadius: '6px',
-              color: '#475569', /* Darker text for button */
-              cursor: 'pointer',
-              transition: 'background-color 0.2s ease, border-color 0.2s ease'
+              color: '#f1f5f9',
+              cursor: 'pointer'
             }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#e2e8f0'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#f1f5f9'}
           >
             <RefreshCw size={16} style={{ animation: isLoadingPorts ? 'spin 1s linear infinite' : 'none' }} />
           </button>
@@ -492,19 +488,18 @@ const DocumentsDashboard = ({
           ].map((stat, i) => (
             <div key={`stat-${i}`} style={{
               padding: '12px',
-              backgroundColor: '#ffffff', /* White card background */
-              border: '1px solid #e2e8f0', /* Light card border */
+              backgroundColor: '#1e293b',
+              border: '1px solid #334155',
               borderRadius: '8px',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)' /* Subtle shadow */
+              alignItems: 'center'
             }}>
               <div>
-                <div style={{ fontSize: '12px', color: '#64748b' /* Muted text */ }}>{stat.label}</div>
-                <div style={{ fontSize: '16px', fontWeight: '600', color: '#1e293b' /* Darker text */ }}>{stat.value}</div>
+                <div style={{ fontSize: '12px', color: '#94a3b8' }}>{stat.label}</div>
+                <div style={{ fontSize: '16px', fontWeight: '600' }}>{stat.value}</div>
               </div>
-              <stat.icon size={18} style={{ color: '#2563eb' /* Blue accent */ }} />
+              <stat.icon size={18} style={{ color: '#60a5fa' }} />
             </div>
           ))}
         </div>
@@ -513,14 +508,14 @@ const DocumentsDashboard = ({
         {error && (
           <div style={{
             padding: '12px',
-            backgroundColor: 'rgba(252, 165, 165, 0.1)', /* Light red background */
-            border: '1px solid rgba(239, 68, 68, 0.2)', /* Red border */
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
             borderRadius: '6px',
             marginBottom: '16px',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            color: '#dc2626' /* Darker red text */
+            color: '#fca5a5'
           }}>
             <AlertCircle size={16} />
             <span style={{ flex: 1 }}>{error}</span>
@@ -536,14 +531,14 @@ const DocumentsDashboard = ({
         {successMessage && (
           <div style={{
             padding: '12px',
-            backgroundColor: 'rgba(134, 239, 172, 0.1)', /* Light green background */
-            border: '1px solid rgba(34, 197, 94, 0.2)', /* Green border */
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            border: '1px solid rgba(34, 197, 94, 0.2)',
             borderRadius: '6px',
             marginBottom: '16px',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            color: '#16a34a' /* Darker green text */
+            color: '#86efac'
           }}>
             <CheckCircle size={16} />
             <span style={{ flex: 1 }}>{successMessage}</span>
@@ -558,27 +553,26 @@ const DocumentsDashboard = ({
 
         {/* Upload Section */}
         <div style={{
-          backgroundColor: '#ffffff', /* White card background */
-          border: '1px solid #e2e8f0', /* Light card border */
+          backgroundColor: '#1e293b',
+          border: '1px solid #334155',
           borderRadius: '8px',
-          marginBottom: '20px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.05)' /* Subtle shadow */
+          marginBottom: '20px'
         }}>
           <div style={{
             padding: '16px',
-            borderBottom: '1px solid #e2e8f0', /* Light border */
+            borderBottom: '1px solid #334155',
             display: 'flex',
             alignItems: 'center',
             gap: '8px'
           }}>
-            <Upload size={20} style={{ color: '#2563eb' /* Blue accent */ }} />
-            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#1e293b' /* Darker text */ }}>Upload Documents</h2>
+            <Upload size={20} style={{ color: '#60a5fa' }} />
+            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>Upload Documents</h2>
           </div>
           
           <div style={{ padding: '16px' }}>
             {/* Port Selection */}
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#334155' /* Darker text */ }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
                 Select Port
               </label>
               <div style={{ position: 'relative' }} ref={uploadPortDropdownRef}>
@@ -598,13 +592,12 @@ const DocumentsDashboard = ({
                   style={{
                     width: '100%',
                     padding: '8px 40px 8px 12px',
-                    backgroundColor: '#f1f5f9', /* Light input background */
-                    border: `1px solid ${selectedUploadPort ? '#22c55e' : '#cbd5e1'}`, /* Green or light border */
+                    backgroundColor: '#334155',
+                    border: `1px solid ${selectedUploadPort ? '#22c55e' : '#475569'}`,
                     borderRadius: '6px',
-                    color: '#1e293b', /* Darker text */
+                    color: '#f1f5f9',
                     outline: 'none',
-                    boxSizing: 'border-box',
-                    transition: 'border-color 0.2s ease'
+                    boxSizing: 'border-box'
                   }}
                 />
                 
@@ -613,7 +606,7 @@ const DocumentsDashboard = ({
                   right: '12px',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  color: selectedUploadPort ? '#22c55e' : '#94a3b8' /* Green or muted icon */
+                  color: selectedUploadPort ? '#22c55e' : '#94a3b8'
                 }}>
                   {selectedUploadPort ? <CheckCircle size={16} /> : <Search size={16} />}
                 </div>
@@ -625,13 +618,12 @@ const DocumentsDashboard = ({
                     left: 0,
                     right: 0,
                     marginTop: '4px',
-                    backgroundColor: '#ffffff', /* White dropdown background */
-                    border: '1px solid #e2e8f0', /* Light dropdown border */
+                    backgroundColor: '#334155',
+                    border: '1px solid #475569',
                     borderRadius: '6px',
                     maxHeight: '200px',
                     overflowY: 'auto',
-                    zIndex: 10,
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)' /* Shadow for dropdown */
+                    zIndex: 10
                   }}>
                     {getFilteredPorts(uploadPortSearch).map(port => (
                       <div
@@ -640,14 +632,13 @@ const DocumentsDashboard = ({
                         style={{
                           padding: '12px',
                           cursor: 'pointer',
-                          borderBottom: '1px solid #f1f5f9', /* Lighter border for items */
-                          transition: 'background-color 0.2s ease'
+                          borderBottom: '1px solid #475569'
                         }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = '#475569'}
                         onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
                       >
-                        <div style={{ fontWeight: '500', color: '#1e293b' /* Darker text */ }}>{port.port_name}</div>
-                        <div style={{ fontSize: '12px', color: '#64748b' /* Muted text */ }}>{port.country_name}</div>
+                        <div style={{ fontWeight: '500' }}>{port.port_name}</div>
+                        <div style={{ fontSize: '12px', color: '#94a3b8' }}>{port.country_name}</div>
                       </div>
                     ))}
                   </div>
@@ -658,10 +649,10 @@ const DocumentsDashboard = ({
                 <div style={{
                   marginTop: '8px',
                   padding: '8px 12px',
-                  backgroundColor: 'rgba(34, 197, 94, 0.1)', /* Light green background */
-                  border: '1px solid rgba(34, 197, 94, 0.2)', /* Green border */
+                  backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                  border: '1px solid rgba(34, 197, 94, 0.2)',
                   borderRadius: '6px',
-                  color: '#16a34a', /* Darker green text */
+                  color: '#86efac',
                   fontSize: '14px',
                   display: 'flex',
                   alignItems: 'center',
@@ -675,19 +666,18 @@ const DocumentsDashboard = ({
 
             {/* File Upload Area */}
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#334155' /* Darker text */ }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
                 Upload Documents
               </label>
               <div
                 style={{
-                  border: `2px dashed ${dragActive ? '#2563eb' : '#cbd5e1'}`, /* Blue or light dashed border */
+                  border: `2px dashed ${dragActive ? '#3b82f6' : '#475569'}`,
                   borderRadius: '8px',
                   padding: '24px',
                   textAlign: 'center',
                   cursor: selectedUploadPort ? 'pointer' : 'not-allowed',
                   opacity: selectedUploadPort ? 1 : 0.6,
-                  backgroundColor: dragActive ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
-                  transition: 'border-color 0.2s ease, background-color 0.2s ease'
+                  backgroundColor: dragActive ? 'rgba(59, 130, 246, 0.05)' : 'transparent'
                 }}
                 onDragEnter={(e) => {
                   e.preventDefault();
@@ -716,11 +706,11 @@ const DocumentsDashboard = ({
                   onChange={(e) => handleFileSelect(e.target.files)}
                 />
                 
-                <Upload size={32} style={{ color: '#2563eb', marginBottom: '12px' }} />
-                <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '8px', color: '#1e293b' /* Darker text */ }}>
+                <Upload size={32} style={{ color: '#60a5fa', marginBottom: '12px' }} />
+                <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '8px' }}>
                   {selectedUploadPort ? 'Drop files here or click to browse' : 'Please select a port first'}
                 </div>
-                <div style={{ fontSize: '14px', color: '#64748b' /* Muted text */ }}>
+                <div style={{ fontSize: '14px', color: '#94a3b8' }}>
                   PDF and Word documents only, max 10MB per file
                 </div>
               </div>
@@ -734,7 +724,7 @@ const DocumentsDashboard = ({
                     alignItems: 'center',
                     marginBottom: '12px'
                   }}>
-                    <h4 style={{ margin: 0, fontSize: '16px', color: '#1e293b' /* Darker text */ }}>
+                    <h4 style={{ margin: 0, fontSize: '16px' }}>
                       Selected Files ({selectedFiles.length})
                     </h4>
                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -745,16 +735,13 @@ const DocumentsDashboard = ({
                         }}
                         style={{
                           padding: '6px 12px',
-                          backgroundColor: '#f1f5f9', /* Light button background */
-                          border: '1px solid #cbd5e1', /* Light button border */
+                          backgroundColor: '#334155',
+                          border: '1px solid #475569',
                           borderRadius: '4px',
-                          color: '#475569', /* Darker text */
+                          color: '#f1f5f9',
                           cursor: 'pointer',
-                          fontSize: '12px',
-                          transition: 'background-color 0.2s ease, border-color 0.2s ease'
+                          fontSize: '12px'
                         }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = '#e2e8f0'}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = '#f1f5f9'}
                       >
                         Clear All
                       </button>
@@ -763,7 +750,7 @@ const DocumentsDashboard = ({
                         disabled={isUploading || selectedFiles.filter(f => f.status === 'pending').length === 0}
                         style={{
                           padding: '6px 12px',
-                          backgroundColor: '#2563eb', /* Blue button */
+                          backgroundColor: '#3b82f6',
                           border: 'none',
                           borderRadius: '4px',
                           color: 'white',
@@ -771,12 +758,8 @@ const DocumentsDashboard = ({
                           fontSize: '12px',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '4px',
-                          transition: 'background-color 0.2s ease',
-                          opacity: (isUploading || selectedFiles.filter(f => f.status === 'pending').length === 0) ? 0.7 : 1
+                          gap: '4px'
                         }}
-                        onMouseEnter={(e) => { if (!(isUploading || selectedFiles.filter(f => f.status === 'pending').length === 0)) e.target.style.backgroundColor = '#1d4ed8'; }}
-                        onMouseLeave={(e) => { if (!(isUploading || selectedFiles.filter(f => f.status === 'pending').length === 0)) e.target.style.backgroundColor = '#2563eb'; }}
                       >
                         {isUploading ? 
                           <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : 
@@ -796,28 +779,27 @@ const DocumentsDashboard = ({
                           alignItems: 'center',
                           gap: '12px',
                           padding: '12px',
-                          backgroundColor: '#f8fafc', /* Lighter background for file items */
+                          backgroundColor: '#334155',
                           border: `1px solid ${
                             fileItem.status === 'completed' ? '#22c55e' : 
-                            fileItem.status === 'error' ? '#ef4444' : '#e2e8f0' /* Green, red, or light border */
+                            fileItem.status === 'error' ? '#ef4444' : '#475569'
                           }`,
-                          borderRadius: '6px',
-                          boxShadow: '0 1px 2px rgba(0,0,0,0.03)' /* Subtle shadow */
+                          borderRadius: '6px'
                         }}
                       >
                         <div>{getFileIcon(fileItem.file.name.split('.').pop())}</div>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: '500', fontSize: '14px', color: '#1e293b' /* Darker text */ }}>
+                          <div style={{ fontWeight: '500', fontSize: '14px' }}>
                             {fileItem.file.name}
                           </div>
-                          <div style={{ fontSize: '12px', color: '#64748b' /* Muted text */ }}>
+                          <div style={{ fontSize: '12px', color: '#94a3b8' }}>
                             {formatFileSize(fileItem.file.size)}
                           </div>
                           {uploadProgress[fileItem.id] !== undefined && (
                             <div style={{
                               width: '100%',
                               height: '4px',
-                              backgroundColor: '#e2e8f0', /* Light progress bar background */
+                              backgroundColor: '#475569',
                               borderRadius: '2px',
                               overflow: 'hidden',
                               marginTop: '4px'
@@ -825,7 +807,7 @@ const DocumentsDashboard = ({
                               <div style={{
                                 width: `${uploadProgress[fileItem.id]}%`,
                                 height: '100%',
-                                backgroundColor: '#2563eb', /* Blue progress bar fill */
+                                backgroundColor: '#3b82f6',
                                 transition: 'width 0.3s ease'
                               }} />
                             </div>
@@ -839,7 +821,7 @@ const DocumentsDashboard = ({
                             <AlertCircle size={16} style={{ color: '#ef4444' }} />
                           )}
                           {uploadProgress[fileItem.id] !== undefined && uploadProgress[fileItem.id] < 100 && (
-                            <Loader2 size={16} style={{ color: '#2563eb', animation: 'spin 1s linear infinite' }} />
+                            <Loader2 size={16} style={{ color: '#60a5fa', animation: 'spin 1s linear infinite' }} />
                           )}
                           <button
                             onClick={() => {
@@ -854,13 +836,10 @@ const DocumentsDashboard = ({
                               padding: '4px',
                               backgroundColor: 'transparent',
                               border: 'none',
-                              color: '#64748b', /* Muted icon color */
+                              color: '#94a3b8',
                               cursor: 'pointer',
-                              borderRadius: '4px',
-                              transition: 'color 0.2s ease'
+                              borderRadius: '4px'
                             }}
-                            onMouseEnter={(e) => e.target.style.color = '#ef4444'}
-                            onMouseLeave={(e) => e.target.style.color = '#64748b'}
                           >
                             <Trash2 size={14} />
                           </button>
@@ -876,20 +855,19 @@ const DocumentsDashboard = ({
 
         {/* View Documents Section */}
         <div style={{
-          backgroundColor: '#ffffff', /* White card background */
-          border: '1px solid #e2e8f0', /* Light card border */
-          borderRadius: '8px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.05)' /* Subtle shadow */
+          backgroundColor: '#1e293b',
+          border: '1px solid #334155',
+          borderRadius: '8px'
         }}>
           <div style={{
             padding: '16px',
-            borderBottom: '1px solid #e2e8f0', /* Light border */
+            borderBottom: '1px solid #334155',
             display: 'flex',
             alignItems: 'center',
             gap: '8px'
           }}>
-            <FolderOpen size={20} style={{ color: '#2563eb' /* Blue accent */ }} />
-            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#1e293b' /* Darker text */ }}>View Documents</h2>
+            <FolderOpen size={20} style={{ color: '#60a5fa' }} />
+            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>View Documents</h2>
           </div>
 
           <div style={{ padding: '16px' }}>
@@ -901,7 +879,7 @@ const DocumentsDashboard = ({
               marginBottom: '16px'
             }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#334155' /* Darker text */ }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
                   Select Port to View Documents
                 </label>
                 <div style={{ position: 'relative' }} ref={viewPortDropdownRef}>
@@ -921,13 +899,12 @@ const DocumentsDashboard = ({
                     style={{
                       width: '100%',
                       padding: '8px 40px 8px 12px',
-                      backgroundColor: '#f1f5f9', /* Light input background */
-                      border: `1px solid ${selectedViewPort ? '#2563eb' : '#cbd5e1'}`, /* Blue or light border */
+                      backgroundColor: '#334155',
+                      border: `1px solid ${selectedViewPort ? '#3b82f6' : '#475569'}`,
                       borderRadius: '6px',
-                      color: '#1e293b', /* Darker text */
+                      color: '#f1f5f9',
                       outline: 'none',
-                      boxSizing: 'border-box',
-                      transition: 'border-color 0.2s ease'
+                      boxSizing: 'border-box'
                     }}
                   />
                   
@@ -936,7 +913,7 @@ const DocumentsDashboard = ({
                     right: '12px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    color: selectedViewPort ? '#2563eb' : '#94a3b8' /* Blue or muted icon */
+                    color: selectedViewPort ? '#3b82f6' : '#94a3b8'
                   }}>
                     {selectedViewPort ? <CheckCircle size={16} /> : <Search size={16} />}
                   </div>
@@ -948,13 +925,12 @@ const DocumentsDashboard = ({
                       left: 0,
                       right: 0,
                       marginTop: '4px',
-                      backgroundColor: '#ffffff', /* White dropdown background */
-                      border: '1px solid #e2e8f0', /* Light dropdown border */
+                      backgroundColor: '#334155',
+                      border: '1px solid #475569',
                       borderRadius: '6px',
                       maxHeight: '200px',
                       overflowY: 'auto',
-                      zIndex: 10,
-                      boxShadow: '0 4px 6px rgba(0,0,0,0.1)' /* Shadow for dropdown */
+                      zIndex: 10
                     }}>
                       {getFilteredPorts(viewPortSearch).map(port => (
                         <div
@@ -963,14 +939,13 @@ const DocumentsDashboard = ({
                           style={{
                             padding: '12px',
                             cursor: 'pointer',
-                            borderBottom: '1px solid #f1f5f9', /* Lighter border for items */
-                            transition: 'background-color 0.2s ease'
+                            borderBottom: '1px solid #475569'
                           }}
-                          onMouseEnter={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+                          onMouseEnter={(e) => e.target.style.backgroundColor = '#475569'}
                           onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
                         >
-                          <div style={{ fontWeight: '500', color: '#1e293b' /* Darker text */ }}>{port.port_name}</div>
-                          <div style={{ fontSize: '12px', color: '#64748b' /* Muted text */ }}>{port.country_name}</div>
+                          <div style={{ fontWeight: '500' }}>{port.port_name}</div>
+                          <div style={{ fontSize: '12px', color: '#94a3b8' }}>{port.country_name}</div>
                         </div>
                       ))}
                     </div>
@@ -981,10 +956,10 @@ const DocumentsDashboard = ({
                   <div style={{
                     marginTop: '8px',
                     padding: '8px 12px',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)', /* Light blue background */
-                    border: '1px solid rgba(59, 130, 246, 0.2)', /* Blue border */
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    border: '1px solid rgba(59, 130, 246, 0.2)',
                     borderRadius: '6px',
-                    color: '#2563eb', /* Darker blue text */
+                    color: '#93c5fd',
                     fontSize: '14px',
                     display: 'flex',
                     alignItems: 'center',
@@ -998,7 +973,7 @@ const DocumentsDashboard = ({
 
               {selectedViewPort && (
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#334155' /* Darker text */ }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
                     Search Documents
                   </label>
                   <div style={{ position: 'relative' }}>
@@ -1010,13 +985,12 @@ const DocumentsDashboard = ({
                       style={{
                         width: '100%',
                         padding: '8px 40px 8px 40px',
-                        backgroundColor: '#f1f5f9', /* Light input background */
-                        border: '1px solid #cbd5e1', /* Light border */
+                        backgroundColor: '#334155',
+                        border: '1px solid #475569',
                         borderRadius: '6px',
-                        color: '#1e293b', /* Darker text */
+                        color: '#f1f5f9',
                         outline: 'none',
-                        boxSizing: 'border-box',
-                        transition: 'border-color 0.2s ease'
+                        boxSizing: 'border-box'
                       }}
                     />
                     <Search size={16} style={{
@@ -1024,7 +998,7 @@ const DocumentsDashboard = ({
                       left: '12px',
                       top: '50%',
                       transform: 'translateY(-50%)',
-                      color: '#94a3b8' /* Muted icon */
+                      color: '#94a3b8'
                     }} />
                     {searchQuery && (
                       <button
@@ -1036,12 +1010,9 @@ const DocumentsDashboard = ({
                           transform: 'translateY(-50%)',
                           background: 'none',
                           border: 'none',
-                          color: '#94a3b8', /* Muted icon */
-                          cursor: 'pointer',
-                          transition: 'color 0.2s ease'
+                          color: '#94a3b8',
+                          cursor: 'pointer'
                         }}
-                        onMouseEnter={(e) => e.target.style.color = '#ef4444'}
-                        onMouseLeave={(e) => e.target.style.color = '#94a3b8'}
                       >
                         <X size={16} />
                       </button>
@@ -1054,19 +1025,18 @@ const DocumentsDashboard = ({
             {/* Documents Display */}
             {selectedViewPort ? (
               <div style={{
-                border: '1px solid #e2e8f0', /* Light border */
+                border: '1px solid #475569',
                 borderRadius: '8px',
-                overflow: 'hidden',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.05)' /* Subtle shadow */
+                overflow: 'hidden'
               }}>
                 {isLoading ? (
                   <div style={{ textAlign: 'center', padding: '48px 16px' }}>
-                    <Loader2 size={32} style={{ color: '#2563eb', animation: 'spin 1s linear infinite', marginBottom: '16px' }} />
-                    <div style={{ fontSize: '16px', fontWeight: '500', color: '#1e293b' /* Darker text */ }}>Loading documents...</div>
+                    <Loader2 size={32} style={{ color: '#60a5fa', animation: 'spin 1s linear infinite', marginBottom: '16px' }} />
+                    <div style={{ fontSize: '16px', fontWeight: '500' }}>Loading documents...</div>
                   </div>
                 ) : filteredDocuments.length > 0 ? (
                   <div style={{ padding: '16px' }}>
-                    <div style={{ marginBottom: '16px', fontSize: '14px', color: '#64748b' /* Muted text */ }}>
+                    <div style={{ marginBottom: '16px', fontSize: '14px', color: '#94a3b8' }}>
                       Found {filteredDocuments.length} document{filteredDocuments.length !== 1 ? 's' : ''}
                     </div>
                     
@@ -1079,10 +1049,9 @@ const DocumentsDashboard = ({
                             alignItems: 'center',
                             gap: '12px',
                             padding: '12px',
-                            backgroundColor: '#f8fafc', /* Lighter background for document items */
+                            backgroundColor: '#334155',
                             borderRadius: '6px',
-                            border: '1px solid #e2e8f0', /* Light border */
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.03)' /* Subtle shadow */
+                            border: '1px solid #475569'
                           }}
                         >
                           <div>{getFileIcon(doc.file_type)}</div>
@@ -1093,12 +1062,11 @@ const DocumentsDashboard = ({
                               marginBottom: '4px',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                              color: '#1e293b' /* Darker text */
+                              whiteSpace: 'nowrap'
                             }}>
                               {doc.original_file_name}
                             </div>
-                            <div style={{ fontSize: '12px', color: '#64748b' /* Muted text */ }}>
+                            <div style={{ fontSize: '12px', color: '#94a3b8' }}>
                               {formatFileSize(doc.file_size)} • {doc.uploaded_by} • {new Date(doc.upload_date).toLocaleDateString()}
                             </div>
                           </div>
@@ -1108,15 +1076,12 @@ const DocumentsDashboard = ({
                               title="View document"
                               style={{
                                 padding: '6px',
-                                backgroundColor: 'rgba(59, 130, 246, 0.1)', /* Light blue background */
-                                border: '1px solid rgba(59, 130, 246, 0.2)', /* Blue border */
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                border: '1px solid rgba(59, 130, 246, 0.2)',
                                 borderRadius: '4px',
-                                color: '#2563eb', /* Darker blue icon */
-                                cursor: 'pointer',
-                                transition: 'background-color 0.2s ease, border-color 0.2s ease'
+                                color: '#60a5fa',
+                                cursor: 'pointer'
                               }}
-                              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(59, 130, 246, 0.2)'}
-                              onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(59, 130, 246, 0.1)'}
                             >
                               <Eye size={14} />
                             </button>
@@ -1125,15 +1090,12 @@ const DocumentsDashboard = ({
                               title="Download document"
                               style={{
                                 padding: '6px',
-                                backgroundColor: 'rgba(34, 197, 94, 0.1)', /* Light green background */
-                                border: '1px solid rgba(34, 197, 94, 0.2)', /* Green border */
+                                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                border: '1px solid rgba(34, 197, 94, 0.2)',
                                 borderRadius: '4px',
-                                color: '#16a34a', /* Darker green icon */
-                                cursor: 'pointer',
-                                transition: 'background-color 0.2s ease, border-color 0.2s ease'
+                                color: '#22c55e',
+                                cursor: 'pointer'
                               }}
-                              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(34, 197, 94, 0.2)'}
-                              onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(34, 197, 94, 0.1)'}
                             >
                               <Download size={14} />
                             </button>
@@ -1142,17 +1104,14 @@ const DocumentsDashboard = ({
                               title="Delete document"
                               style={{
                                 padding: '6px',
-                                backgroundColor: 'rgba(239, 68, 68, 0.1)', /* Light red background */
-                                border: '1px solid rgba(239, 68, 68, 0.2)', /* Red border */
+                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                border: '1px solid rgba(239, 68, 68, 0.2)',
                                 borderRadius: '4px',
-                                color: '#dc2626', /* Darker red icon */
-                                cursor: 'pointer',
-                                transition: 'background-color 0.2s ease, border-color 0.2s ease'
+                                color: '#ef4444',
+                                cursor: 'pointer'
                               }}
-                              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(239, 68, 68, 0.2)'}
-                              onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
                             >
-                              <Trash2 size={14} />
+                              <X size={14} />
                             </button>
                           </div>
                         </div>
@@ -1164,19 +1123,19 @@ const DocumentsDashboard = ({
                     <div style={{
                       width: '48px',
                       height: '48px',
-                      backgroundColor: '#e2e8f0', /* Light background for icon circle */
+                      backgroundColor: '#334155',
                       borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       margin: '0 auto 16px'
                     }}>
-                      <FileText size={24} style={{ color: '#94a3b8' /* Muted icon */ }} />
+                      <FileText size={24} style={{ color: '#94a3b8' }} />
                     </div>
-                    <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '8px', color: '#1e293b' /* Darker text */ }}>
+                    <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '8px' }}>
                       No documents found
                     </div>
-                    <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '16px' /* Muted text */ }}>
+                    <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '16px' }}>
                       {searchQuery ? 'No documents match your search criteria' : 'No documents have been uploaded for this port yet'}
                     </div>
                     {!searchQuery && (
@@ -1187,7 +1146,7 @@ const DocumentsDashboard = ({
                         }}
                         style={{
                           padding: '8px 16px',
-                          backgroundColor: '#2563eb', /* Blue button */
+                          backgroundColor: '#3b82f6',
                           border: 'none',
                           borderRadius: '6px',
                           color: 'white',
@@ -1195,11 +1154,8 @@ const DocumentsDashboard = ({
                           display: 'flex',
                           alignItems: 'center',
                           gap: '6px',
-                          margin: '0 auto',
-                          transition: 'background-color 0.2s ease'
+                          margin: '0 auto'
                         }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = '#1d4ed8'}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = '#2563eb'}
                       >
                         <Plus size={16} />
                         Upload First Document
@@ -1212,26 +1168,25 @@ const DocumentsDashboard = ({
               <div style={{
                 textAlign: 'center',
                 padding: '48px 16px',
-                border: '1px solid #e2e8f0', /* Light border */
-                borderRadius: '8px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.05)' /* Subtle shadow */
+                border: '1px solid #475569',
+                borderRadius: '8px'
               }}>
                 <div style={{
                   width: '48px',
                   height: '48px',
-                  backgroundColor: '#e2e8f0', /* Light background for icon circle */
+                  backgroundColor: '#334155',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   margin: '0 auto 16px'
                 }}>
-                  <FolderOpen size={24} style={{ color: '#2563eb' /* Blue icon */ }} />
+                  <FolderOpen size={24} style={{ color: '#60a5fa' }} />
                 </div>
-                <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '8px', color: '#1e293b' /* Darker text */ }}>
+                <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '8px' }}>
                   Select a Port to View Documents
                 </div>
-                <div style={{ fontSize: '14px', color: '#64748b' /* Muted text */ }}>
+                <div style={{ fontSize: '14px', color: '#94a3b8' }}>
                   Choose a port from the dropdown above to view and manage documents
                 </div>
               </div>
@@ -1241,13 +1196,13 @@ const DocumentsDashboard = ({
 
         {/* Footer */}
         <div style={{
-          borderTop: '1px solid #e2e8f0', /* Light border */
+          borderTop: '1px solid #334155',
           padding: '12px 0',
           marginTop: '24px',
           display: 'flex',
           justifyContent: 'space-between',
           fontSize: '12px',
-          color: '#64748b' /* Muted text */
+          color: '#94a3b8'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Cloud size={12} />

@@ -9,8 +9,8 @@ div.dashboard-container div.af-container,
   justify-content: space-between !important;
   gap: 12px !important;
   padding: 8px 12px !important;
-  background: rgba(255, 255, 255, 0.8) !important; /* Lighter background */
-  border: 1px solid rgba(0, 123, 255, 0.2) !important; /* Light blue border */
+  background: rgba(30, 41, 59, 0.5) !important;
+  border: 1px solid rgba(59, 173, 229, 0.3) !important;
   border-radius: 6px !important;
   margin-bottom: 16px !important;
   min-height: 44px !important;
@@ -22,9 +22,9 @@ div.dashboard-container div.af-container,
   overflow: visible !important;
   position: relative !important;
   z-index: 1 !important;
-  font-family: 'Nunito', sans-serif !important; /* Ensure Nunito font */
+  font-family: system-ui, -apple-system, sans-serif !important;
   font-size: 13px !important;
-  color: #333333 !important; /* Dark text */
+  color: #f4f4f4 !important;
 }
 
 div.dashboard-container div.af-badges-wrapper,
@@ -46,11 +46,11 @@ div.dashboard-container div.af-badge,
   display: flex !important;
   align-items: center !important;
   gap: 6px !important;
-  background: rgba(0, 123, 255, 0.08) !important; /* Light blue background */
-  border: 1px solid rgba(0, 123, 255, 0.2) !important; /* Light blue border */
+  background: rgba(59, 173, 229, 0.1) !important;
+  border: 1px solid rgba(59, 173, 229, 0.3) !important;
   border-radius: 16px !important;
   padding: 4px 8px 4px 12px !important;
-  color: #333333 !important; /* Dark text */
+  color: #f4f4f4 !important;
   font-size: 13px !important;
   font-weight: 500 !important;
   max-width: 200px !important;
@@ -61,23 +61,22 @@ div.dashboard-container div.af-badge,
   flex-shrink: 1 !important;
   min-width: 0 !important;
   margin: 0 !important;
-  font-family: 'Nunito', sans-serif !important; /* Ensure Nunito font */
 }
 
 div.dashboard-container div.af-badge-port,
 .dashboard-container .af-badge-port,
 .af-badge-port.af-badge-port.af-badge-port {
-  background: rgba(40, 167, 69, 0.08) !important; /* Light green background */
-  border-color: rgba(40, 167, 69, 0.2) !important; /* Light green border */
-  color: #28a745 !important; /* Standard green */
+  background: rgba(46, 204, 113, 0.1) !important;
+  border-color: rgba(46, 204, 113, 0.3) !important;
+  color: #2ECC71 !important;
 }
 
 div.dashboard-container div.af-badge-timeline,
 .dashboard-container .af-badge-timeline,
 .af-badge-timeline.af-badge-timeline.af-badge-timeline {
-  background: rgba(255, 193, 7, 0.08) !important; /* Light yellow background */
-  border-color: rgba(255, 193, 7, 0.2) !important; /* Light yellow border */
-  color: #ffc107 !important; /* Standard yellow */
+  background: rgba(241, 196, 15, 0.1) !important;
+  border-color: rgba(241, 196, 15, 0.3) !important;
+  color: #F1C40F !important;
 }
 
 div.dashboard-container div.af-label,
@@ -89,7 +88,6 @@ div.dashboard-container div.af-label,
   margin: 0 !important;
   padding: 0 !important;
   color: inherit !important;
-  font-family: 'Nunito', sans-serif !important; /* Ensure Nunito font */
 }
 
 div.dashboard-container div.af-value,
@@ -104,7 +102,6 @@ div.dashboard-container div.af-value,
   padding: 0 !important;
   flex-shrink: 1 !important;
   color: inherit !important;
-  font-family: 'Nunito', sans-serif !important; /* Ensure Nunito font */
 }
 
 div.dashboard-container button.af-clear-btn,
@@ -113,7 +110,7 @@ button.af-clear-btn.af-clear-btn.af-clear-btn {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background: rgba(0, 0, 0, 0.05) !important; /* Light background */
+  background: rgba(255, 255, 255, 0.1) !important;
   border: none !important;
   border-radius: 50% !important;
   width: 18px !important;
@@ -128,13 +125,12 @@ button.af-clear-btn.af-clear-btn.af-clear-btn {
   margin: 0 !important;
   padding: 0 !important;
   outline: none !important;
-  font-family: 'Nunito', sans-serif !important; /* Ensure Nunito font */
 }
 
 div.dashboard-container button.af-clear-btn:hover,
 .dashboard-container .af-clear-btn:hover,
 button.af-clear-btn.af-clear-btn.af-clear-btn:hover {
-  background: rgba(0, 0, 0, 0.1) !important; /* Slightly darker light background on hover */
+  background: rgba(255, 255, 255, 0.2) !important;
   transform: scale(1.1) !important;
 }
 
@@ -144,11 +140,11 @@ button.af-clear-all-btn.af-clear-all-btn.af-clear-all-btn {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background: rgba(220, 53, 69, 0.08) !important; /* Light red background */
-  border: 1px solid rgba(220, 53, 69, 0.15) !important; /* Lighter red border */
+  background: rgba(231, 76, 60, 0.1) !important;
+  border: 1px solid rgba(231, 76, 60, 0.3) !important;
   border-radius: 4px !important;
   padding: 6px 12px !important;
-  color: #dc3545 !important; /* Standard red */
+  color: #E74C3C !important;
   font-size: 12px !important;
   font-weight: 500 !important;
   cursor: pointer !important;
@@ -158,13 +154,12 @@ button.af-clear-all-btn.af-clear-all-btn.af-clear-all-btn {
   min-height: 32px !important;
   margin: 0 !important;
   outline: none !important;
-  font-family: 'Nunito', sans-serif !important; /* Ensure Nunito font */
 }
 
 div.dashboard-container button.af-clear-all-btn:hover,
 .dashboard-container .af-clear-all-btn:hover,
 button.af-clear-all-btn.af-clear-all-btn.af-clear-all-btn:hover {
-  background: rgba(220, 53, 69, 0.12) !important; /* Slightly darker light red background on hover */
+  background: rgba(231, 76, 60, 0.2) !important;
   transform: translateY(-1px) !important;
 }
 
