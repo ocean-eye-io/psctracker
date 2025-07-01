@@ -13,6 +13,7 @@ import {
   X
 } from 'lucide-react';
 import PropTypes from 'prop-types';
+import '../../../styles/checklistStyles.css'; // Import the external CSS file
 
 const ChecklistForm = ({ 
   vessel, 
@@ -34,28 +35,28 @@ const ChecklistForm = ({
   // Get items from processed template
   const items = useMemo(() => {
     console.log('ChecklistForm - Processing template:', template);
-    
+  
     if (!template) {
       console.warn('ChecklistForm - No template provided');
       return [];
     }
-    
+  
     if (!template.processed_items) {
       console.warn('ChecklistForm - Template has no processed_items:', template);
-      
+    
       // Try to process template data if it exists but wasn't processed
       if (template.template_data && template.template_data.sections) {
         console.log('ChecklistForm - Attempting to process template data manually');
         const manualItems = [];
-        
+      
         template.template_data.sections.forEach((section) => {
           const sectionName = section.section_name || section.name || 'Unknown Section';
-          
+        
           // Check for subsections (lowercase)
           if (section.subsections && Array.isArray(section.subsections)) {
             section.subsections.forEach((subSection) => {
               const subSectionName = subSection.subsection_name || subSection.name || 'Unknown Subsection';
-              
+            
               if (subSection.items && Array.isArray(subSection.items)) {
                 subSection.items.forEach((item, itemIndex) => {
                   manualItems.push({
@@ -78,7 +79,7 @@ const ChecklistForm = ({
           else if (section.sub_sections && Array.isArray(section.sub_sections)) {
             section.sub_sections.forEach((subSection) => {
               const subSectionName = subSection.sub_section_name || subSection.name || 'Unknown Subsection';
-              
+            
               if (subSection.items && Array.isArray(subSection.items)) {
                 subSection.items.forEach((item, itemIndex) => {
                   manualItems.push({
@@ -115,14 +116,14 @@ const ChecklistForm = ({
             });
           }
         });
-        
+      
         console.log('ChecklistForm - Manually processed items:', manualItems.length);
         return manualItems;
       }
-      
+    
       return [];
     }
-    
+  
     console.log('ChecklistForm - Using processed_items:', template.processed_items.length);
     return template.processed_items;
   }, [template]);
@@ -150,13 +151,13 @@ const ChecklistForm = ({
       if (autoSaveTimer) {
         clearTimeout(autoSaveTimer);
       }
-      
+    
       const timer = setTimeout(() => {
         handleAutoSave();
       }, 30000); // Auto-save every 30 seconds
-      
+    
       setAutoSaveTimer(timer);
-      
+    
       return () => {
         if (timer) clearTimeout(timer);
       };
@@ -165,7 +166,7 @@ const ChecklistForm = ({
 
   const handleAutoSave = async () => {
     if (mode !== 'edit') return;
-    
+  
     try {
       const responseArray = items.map(item => ({
         item_id: item.item_id,
@@ -175,7 +176,7 @@ const ChecklistForm = ({
         comments: responses[item.item_id]?.comments || '',
         is_mandatory: item.is_mandatory
       }));
-      
+    
       await onSave(responseArray, true); // true indicates auto-save
     } catch (error) {
       console.error('Auto-save failed:', error);
@@ -184,7 +185,7 @@ const ChecklistForm = ({
 
   const handleResponseChange = (itemId, field, value) => {
     if (mode === 'view') return;
-    
+  
     setResponses(prev => ({
       ...prev,
       [itemId]: {
@@ -212,7 +213,7 @@ const ChecklistForm = ({
         const hasResponse = response?.yes_no_na_value !== null && response?.yes_no_na_value !== undefined ||
                            response?.text_value?.trim() ||
                            response?.date_value;
-        
+      
         if (!hasResponse) {
           newErrors[item.item_id] = 'This field is required';
           isValid = false;
@@ -226,7 +227,7 @@ const ChecklistForm = ({
 
   const handleSave = async () => {
     if (mode === 'view') return;
-    
+  
     setSaving(true);
     try {
       const responseArray = items.map(item => ({
@@ -237,7 +238,7 @@ const ChecklistForm = ({
         comments: responses[item.item_id]?.comments || '',
         is_mandatory: item.is_mandatory
       }));
-      
+    
       await onSave(responseArray, false);
     } catch (error) {
       console.error('Save failed:', error);
@@ -249,7 +250,7 @@ const ChecklistForm = ({
 
   const handleSubmit = async () => {
     if (mode === 'view') return;
-    
+  
     if (!validateForm()) {
       alert('Please complete all mandatory fields before submitting.');
       return;
@@ -265,7 +266,7 @@ const ChecklistForm = ({
         comments: responses[item.item_id]?.comments || '',
         is_mandatory: item.is_mandatory
       }));
-      
+    
       await onSubmit(responseArray);
     } catch (error) {
       console.error('Submit failed:', error);
@@ -277,14 +278,14 @@ const ChecklistForm = ({
 
   const getCompletionPercentage = () => {
     if (items.length === 0) return 0;
-    
+  
     const completedItems = items.filter(item => {
       const response = responses[item.item_id];
       return response?.yes_no_na_value !== null && response?.yes_no_na_value !== undefined ||
              response?.text_value?.trim() ||
              response?.date_value;
     }).length;
-    
+  
     return Math.round((completedItems / items.length) * 100);
   };
 
@@ -296,10 +297,10 @@ const ChecklistForm = ({
     switch (item.response_type) {
       case 'yes_no_na':
         return (
-          <div className="response-field">
-            <div className="radio-group">
+          <div className="checklist-form-response-field">
+            <div className="checklist-form-radio-group">
               {['Yes', 'No', 'N/A'].map(option => (
-                <label key={option} className="radio-option">
+                <label key={option} className="checklist-form-radio-option">
                   <input
                     type="radio"
                     name={`response_${item.item_id}`}
@@ -312,13 +313,13 @@ const ChecklistForm = ({
                 </label>
               ))}
             </div>
-            {hasError && <span className="error-text">{hasError}</span>}
+            {hasError && <span className="checklist-form-error-text">{hasError}</span>}
           </div>
         );
 
       case 'text':
         return (
-          <div className="response-field">
+          <div className="checklist-form-response-field">
             <textarea
               value={response.text_value || ''}
               onChange={(e) => handleResponseChange(item.item_id, 'text_value', e.target.value)}
@@ -327,13 +328,13 @@ const ChecklistForm = ({
               disabled={isReadonly}
               className={hasError ? 'error' : ''}
             />
-            {hasError && <span className="error-text">{hasError}</span>}
+            {hasError && <span className="checklist-form-error-text">{hasError}</span>}
           </div>
         );
 
       case 'date':
         return (
-          <div className="response-field">
+          <div className="checklist-form-response-field">
             <input
               type="date"
               value={response.date_value || ''}
@@ -341,13 +342,13 @@ const ChecklistForm = ({
               disabled={isReadonly}
               className={hasError ? 'error' : ''}
             />
-            {hasError && <span className="error-text">{hasError}</span>}
+            {hasError && <span className="checklist-form-error-text">{hasError}</span>}
           </div>
         );
 
       default:
         return (
-          <div className="response-field">
+          <div className="checklist-form-response-field">
             <input
               type="text"
               value={response.text_value || ''}
@@ -356,7 +357,7 @@ const ChecklistForm = ({
               disabled={isReadonly}
               className={hasError ? 'error' : ''}
             />
-            {hasError && <span className="error-text">{hasError}</span>}
+            {hasError && <span className="checklist-form-error-text">{hasError}</span>}
           </div>
         );
     }
@@ -370,12 +371,12 @@ const ChecklistForm = ({
       if (!groups[sectionKey]) {
         groups[sectionKey] = {};
       }
-      
+    
       const subSectionKey = item.sub_section_name || 'Items';
       if (!groups[sectionKey][subSectionKey]) {
         groups[sectionKey][subSectionKey] = [];
       }
-      
+    
       groups[sectionKey][subSectionKey].push(item);
     });
     return groups;
@@ -384,8 +385,8 @@ const ChecklistForm = ({
   if (loading) {
     return (
       <div className="checklist-form loading">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
+        <div className="checklist-form loading-container">
+          <div className="checklist-form loading-spinner"></div>
           <p>Loading checklist...</p>
         </div>
       </div>
@@ -394,501 +395,31 @@ const ChecklistForm = ({
 
   return (
     <div className="checklist-form">
-      <style jsx>{`
-        .checklist-form {
-          background: var(--primary-dark);
-          min-height: 100vh-100px;
-          color: var(--text-light);
-        }
-
-        .checklist-form.loading {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .loading-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 16px;
-        }
-
-        .loading-spinner {
-          width: 40px;
-          height: 40px;
-          border: 3px solid rgba(244, 244, 244, 0.1);
-          border-radius: 50%;
-          border-top: 3px solid var(--blue-accent);
-          animation: spin 1s linear infinite;
-        }
-
-        .form-header {
-          background: var(--secondary-dark);
-          padding: 20px 24px;
-          border-bottom: 1px solid var(--border-subtle);
-          position: sticky;
-          top: 50px;
-          z-index: 10;
-        }
-
-        .header-top {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 16px;
-        }
-
-        .header-left {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-
-        .back-button {
-          background: rgba(244, 244, 244, 0.1);
-          border: none;
-          color: var(--text-light);
-          padding: 8px;
-          border-radius: 6px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s ease;
-        }
-
-        .back-button:hover {
-          background: rgba(244, 244, 244, 0.2);
-          transform: translateX(-2px);
-        }
-
-        .form-title {
-          margin: 0;
-          font-size: 20px;
-          font-weight: 600;
-        }
-
-        .mode-badge {
-          padding: 4px 8px;
-          border-radius: 12px;
-          font-size: 12px;
-          font-weight: 500;
-          text-transform: uppercase;
-        }
-
-        .mode-badge.view {
-          background: rgba(46, 204, 113, 0.2);
-          color: var(--success-color);
-        }
-
-        .mode-badge.edit {
-          background: rgba(52, 152, 219, 0.2);
-          color: #3498DB;
-        }
-
-        .action-buttons {
-          display: flex;
-          gap: 12px;
-        }
-
-        .action-btn {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 16px;
-          border-radius: 6px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          border: none;
-          font-size: 14px;
-        }
-
-        .action-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .action-btn.secondary {
-          background: rgba(244, 244, 244, 0.1);
-          color: var(--text-light);
-        }
-
-        .action-btn.secondary:hover:not(:disabled) {
-          background: rgba(244, 244, 244, 0.2);
-        }
-
-        .action-btn.primary {
-          background: var(--blue-accent);
-          color: white;
-        }
-
-        .action-btn.primary:hover:not(:disabled) {
-          background: var(--secondary-accent, #2A95C5);
-          transform: translateY(-1px);
-        }
-
-        .action-btn.success {
-          background: var(--success-color);
-          color: white;
-        }
-
-        .action-btn.success:hover:not(:disabled) {
-          background: #27AE60;
-          transform: translateY(-1px);
-        }
-
-        .progress-bar {
-          background: rgba(0, 0, 0, 0.3);
-          border-radius: 4px;
-          height: 8px;
-          overflow: hidden;
-          flex: 1;
-          margin: 0 16px;
-        }
-
-        .progress-fill {
-          background: linear-gradient(90deg, var(--blue-accent), var(--success-color));
-          height: 100%;
-          transition: width 0.3s ease;
-        }
-
-        .progress-text {
-          font-size: 14px;
-          color: var(--text-muted);
-        }
-
-        .form-content {
-          padding: 24px;
-          max-width: 1200px;
-          margin: 0 auto;
-        }
-
-        .section {
-          background: var(--card-bg);
-          border-radius: 8px;
-          margin-bottom: 24px;
-          overflow: hidden;
-          border: 1px solid var(--border-subtle);
-        }
-
-        .section-header {
-          background: linear-gradient(180deg, #0a1725, #112032);
-          padding: 16px 20px;
-          border-bottom: 1px solid var(--border-subtle);
-        }
-
-        .section-title {
-          font-size: 18px;
-          font-weight: 600;
-          margin: 0;
-          color: var(--text-light);
-        }
-
-        .sub-section {
-          border-bottom: 1px solid var(--border-subtle);
-        }
-
-        .sub-section:last-child {
-          border-bottom: none;
-        }
-
-        .sub-section-header {
-          background: rgba(0, 0, 0, 0.2);
-          padding: 12px 20px;
-          border-bottom: 1px solid var(--border-subtle);
-        }
-
-        .sub-section-title {
-          font-size: 16px;
-          font-weight: 500;
-          margin: 0;
-          color: var(--text-light);
-        }
-
-        .item {
-          padding: 16px 20px;
-          border-bottom: 1px solid rgba(244, 244, 244, 0.05);
-          transition: background-color 0.2s ease;
-        }
-
-        .item:last-child {
-          border-bottom: none;
-        }
-
-        .item:hover {
-          background: rgba(0, 0, 0, 0.1);
-        }
-
-        .item.mandatory {
-          border-left: 3px solid var(--blue-accent);
-        }
-
-        .item-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 12px;
-          gap: 16px;
-        }
-
-        .item-question {
-          flex: 1;
-        }
-
-        .question-text {
-          font-weight: 500;
-          margin-bottom: 4px;
-          line-height: 1.4;
-        }
-
-        .question-meta {
-          display: flex;
-          gap: 16px;
-          font-size: 12px;
-          color: var(--text-muted);
-        }
-
-        .mandatory-indicator {
-          color: var(--blue-accent);
-          font-weight: 600;
-          font-size: 12px;
-        }
-
-        .response-field {
-          margin-top: 12px;
-        }
-
-        .radio-group {
-          display: flex;
-          gap: 16px;
-          margin-bottom: 8px;
-        }
-
-        .radio-option {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          cursor: pointer;
-          font-size: 14px;
-        }
-
-        .radio-option input[type="radio"] {
-          accent-color: var(--blue-accent);
-          cursor: pointer;
-        }
-
-        .response-field input,
-        .response-field textarea {
-          width: 100%;
-          background: rgba(0, 0, 0, 0.3);
-          border: 1px solid var(--border-subtle);
-          border-radius: 4px;
-          padding: 8px 12px;
-          color: var(--text-light);
-          font-size: 14px;
-          transition: border-color 0.2s ease;
-        }
-
-        .response-field input:focus,
-        .response-field textarea:focus {
-          outline: none;
-          border-color: var(--blue-accent);
-          box-shadow: 0 0 0 2px rgba(59, 173, 229, 0.2);
-        }
-
-        .response-field input.error,
-        .response-field textarea.error {
-          border-color: var(--danger-color);
-        }
-
-        .response-field input:disabled,
-        .response-field textarea:disabled {
-          background: rgba(0, 0, 0, 0.1);
-          cursor: not-allowed;
-          opacity: 0.7;
-        }
-
-        .error-text {
-          color: var(--danger-color);
-          font-size: 12px;
-          margin-top: 4px;
-          display: block;
-        }
-
-        .comments-section {
-          margin-top: 12px;
-          padding-top: 12px;
-          border-top: 1px solid rgba(244, 244, 244, 0.1);
-        }
-
-        .comments-label {
-          font-size: 14px;
-          color: var(--text-muted);
-          margin-bottom: 6px;
-          display: block;
-        }
-
-        .comments-textarea {
-          width: 100%;
-          background: rgba(0, 0, 0, 0.2);
-          border: 1px solid var(--border-subtle);
-          border-radius: 4px;
-          padding: 8px 12px;
-          color: var(--text-light);
-          font-size: 13px;
-          min-height: 60px;
-          resize: vertical;
-        }
-
-        .comments-textarea:focus {
-          outline: none;
-          border-color: var(--blue-accent);
-        }
-
-        .comments-textarea:disabled {
-          background: rgba(0, 0, 0, 0.1);
-          cursor: not-allowed;
-          opacity: 0.7;
-        }
-
-        .evidence-section {
-          margin-top: 12px;
-          padding-top: 12px;
-          border-top: 1px solid rgba(244, 244, 244, 0.1);
-        }
-
-        .evidence-label {
-          font-size: 14px;
-          color: var(--text-muted);
-          margin-bottom: 8px;
-          display: block;
-        }
-
-        .evidence-upload {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .upload-btn {
-          background: rgba(59, 173, 229, 0.1);
-          border: 1px solid rgba(59, 173, 229, 0.3);
-          color: var(--blue-accent);
-          padding: 6px 12px;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 12px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          transition: all 0.2s ease;
-        }
-
-        .upload-btn:hover:not(:disabled) {
-          background: rgba(59, 173, 229, 0.2);
-        }
-
-        .upload-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .evidence-list {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-top: 8px;
-        }
-
-        .evidence-item {
-          background: rgba(0, 0, 0, 0.3);
-          padding: 4px 8px;
-          border-radius: 4px;
-          font-size: 12px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-
-        .evidence-item button {
-          background: none;
-          border: none;
-          color: var(--danger-color);
-          cursor: pointer;
-          padding: 0;
-          display: flex;
-        }
-
-        .empty-form {
-          text-align: center;
-          padding: 60px 20px;
-          color: var(--text-muted);
-        }
-
-        .empty-icon {
-          margin-bottom: 16px;
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 768px) {
-          .header-top {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 12px;
-          }
-
-          .action-buttons {
-            width: 100%;
-            justify-content: flex-end;
-          }
-
-          .radio-group {
-            flex-direction: column;
-            gap: 8px;
-          }
-
-          .item-header {
-            flex-direction: column;
-            gap: 8px;
-          }
-
-          .evidence-upload {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-        }
-      `}</style>
-
       {/* Form Header */}
-      <div className="form-header">
-        <div className="header-top">
-          <div className="header-left">
-            <button className="back-button" onClick={onCancel}>
+      <div className="checklist-form-header-section">
+        <div className="checklist-form-header-top">
+          <div className="checklist-form-header-left">
+            <button className="checklist-form-back-button" onClick={onCancel}>
               <ArrowLeft size={20} />
             </button>
-            <h1 className="form-title">
+            <h1 className="checklist-form-title">
               {template?.name || template?.template_name || 'Checklist'}
             </h1>
-            <span className={`mode-badge ${mode}`}>
+            <span className={`checklist-form-mode-badge ${mode}`}>
               {mode === 'view' ? 'View Only' : 'Editing'}
             </span>
           </div>
 
           {mode === 'edit' && (
-            <div className="action-buttons">
+            <div className="checklist-form-action-buttons">
               <button
-                className="action-btn secondary"
+                className="checklist-form-action-btn secondary"
                 onClick={handleSave}
                 disabled={saving}
               >
                 {saving ? (
                   <>
-                    <div className="loading-spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }}></div>
+                    <div className="checklist-form loading-spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }}></div>
                     Saving...
                   </>
                 ) : (
@@ -900,13 +431,13 @@ const ChecklistForm = ({
               </button>
 
               <button
-                className="action-btn success"
+                className="checklist-form-action-btn success"
                 onClick={handleSubmit}
                 disabled={submitting}
               >
                 {submitting ? (
                   <>
-                    <div className="loading-spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }}></div>
+                    <div className="checklist-form loading-spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }}></div>
                     Submitting...
                   </>
                 ) : (
@@ -922,56 +453,56 @@ const ChecklistForm = ({
 
         {/* Progress Bar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <span className="progress-text">Progress:</span>
-          <div className="progress-bar">
+          <span className="checklist-form-progress-text">Progress:</span>
+          <div className="checklist-form-progress-bar">
             <div 
-              className="progress-fill" 
+              className="checklist-form-progress-fill" 
               style={{ width: `${getCompletionPercentage()}%` }}
             ></div>
           </div>
-          <span className="progress-text">{getCompletionPercentage()}%</span>
+          <span className="checklist-form-progress-text">{getCompletionPercentage()}%</span>
         </div>
       </div>
 
       {/* Form Content */}
-      <div className="form-content">
+      <div className="checklist-form-content">
         {items.length === 0 ? (
-          <div className="empty-form">
-            <div className="empty-icon">
-              <FileText size={48} color="var(--text-muted)" />
+          <div className="checklist-form-empty-state-container">
+            <div className="checklist-form-empty-icon">
+              <FileText size={48} color="var(--checklist-form-text-muted)" />
             </div>
             <h3>No Items Available</h3>
             <p>This checklist template appears to be empty or not properly configured.</p>
           </div>
         ) : (
           Object.entries(groupedItems).map(([sectionName, subSections]) => (
-            <div key={sectionName} className="section">
-              <div className="section-header">
-                <h2 className="section-title">{sectionName}</h2>
+            <div key={sectionName} className="checklist-form-section">
+              <div className="checklist-form-section-header">
+                <h2 className="checklist-form-section-title">{sectionName}</h2>
               </div>
 
               {Object.entries(subSections).map(([subSectionName, sectionItems]) => (
-                <div key={`${sectionName}-${subSectionName}`} className="sub-section">
+                <div key={`${sectionName}-${subSectionName}`} className="checklist-form-sub-section">
                   {subSectionName !== 'Items' && (
-                    <div className="sub-section-header">
-                      <h3 className="sub-section-title">{subSectionName}</h3>
+                    <div className="checklist-form-sub-section-header">
+                      <h3 className="checklist-form-sub-section-title">{subSectionName}</h3>
                     </div>
                   )}
 
                   {sectionItems.map((item, index) => (
                     <div 
                       key={item.item_id} 
-                      className={`item ${item.is_mandatory ? 'mandatory' : ''}`}
+                      className={`checklist-form-item ${item.is_mandatory ? 'mandatory' : ''}`}
                     >
-                      <div className="item-header">
-                        <div className="item-question">
-                          <div className="question-text">
+                      <div className="checklist-form-item-header">
+                        <div className="checklist-form-item-question">
+                          <div className="checklist-form-question-text">
                             {item.check_description}
                           </div>
-                          <div className="question-meta">
+                          <div className="checklist-form-question-meta">
                             {item.pic && <span>PIC: {item.pic}</span>}
                             {item.is_mandatory && (
-                              <span className="mandatory-indicator">* MANDATORY</span>
+                              <span className="checklist-form-mandatory-indicator">* MANDATORY</span>
                             )}
                             {item.guidance && <span>Guidance: {item.guidance}</span>}
                           </div>
@@ -982,10 +513,10 @@ const ChecklistForm = ({
                       {renderResponseField(item)}
 
                       {/* Comments Section */}
-                      <div className="comments-section">
-                        <label className="comments-label">Comments (Optional)</label>
+                      <div className="checklist-form-comments-section">
+                        <label className="checklist-form-comments-label">Comments (Optional)</label>
                         <textarea
-                          className="comments-textarea"
+                          className="checklist-form-comments-textarea"
                           value={responses[item.item_id]?.comments || ''}
                           onChange={(e) => handleResponseChange(item.item_id, 'comments', e.target.value)}
                           placeholder="Add any additional comments..."
@@ -995,24 +526,24 @@ const ChecklistForm = ({
 
                       {/* Evidence Section (if required) */}
                       {item.requires_evidence && (
-                        <div className="evidence-section">
-                          <label className="evidence-label">Evidence Required</label>
-                          <div className="evidence-upload">
+                        <div className="checklist-form-evidence-section">
+                          <label className="checklist-form-evidence-label">Evidence Required</label>
+                          <div className="checklist-form-evidence-upload">
                             <button 
-                              className="upload-btn"
+                              className="checklist-form-upload-btn"
                               disabled={mode === 'view'}
                             >
                               <Upload size={14} />
                               Upload Evidence
                             </button>
-                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--checklist-form-text-muted)' }}>
                               Upload photos, documents, or other evidence
                             </span>
                           </div>
                           {responses[item.item_id]?.evidence && responses[item.item_id].evidence.length > 0 && (
-                            <div className="evidence-list">
+                            <div className="checklist-form-evidence-list">
                               {responses[item.item_id].evidence.map((file, fileIndex) => (
-                                <div key={fileIndex} className="evidence-item">
+                                <div key={fileIndex} className="checklist-form-evidence-item">
                                   <span>{file.name}</span>
                                   {mode === 'edit' && (
                                     <button onClick={() => {/* Handle remove evidence */}}>
