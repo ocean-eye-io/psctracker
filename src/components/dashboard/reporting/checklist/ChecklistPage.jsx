@@ -1,4 +1,3 @@
-// src/components/dashboard/reporting/checklist/ChecklistPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   ArrowLeft,
@@ -14,13 +13,15 @@ import {
   RefreshCw,
   Target,
   User,
-  Info
+  Info,
+  Grid3X3,
+  List,
+  Filter
 } from 'lucide-react';
 import ModernChecklistForm from './ModernChecklistForm';
 import checklistService from '../../../../services/checklistService';
 import { useAuth } from '../../../../context/AuthContext';
-import '../../DashboardStyles.css'; // Assuming this provides base dashboard styles
-import './checklistStyles.css'; // Your new checklist-specific styles
+import './checklistStyles.css';
 import PropTypes from 'prop-types';
 
 const ChecklistPage = ({ vessel, onBack }) => {
@@ -32,7 +33,9 @@ const ChecklistPage = ({ vessel, onBack }) => {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [formMode, setFormMode] = useState('view');
   const [refreshing, setRefreshing] = useState(false);
-  
+  const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'rows'
+  const [statusFilter, setStatusFilter] = useState('all');
+
   const { currentUser } = useAuth();
   const selectedVessel = vessel;
 
@@ -40,15 +43,15 @@ const ChecklistPage = ({ vessel, onBack }) => {
   useEffect(() => {
     const fetchData = async () => {
       if (!selectedVessel?.id) return;
-      
+    
       setLoading(true);
       setError(null);
-      
+    
       try {
         console.log('Fetching checklists for vessel:', selectedVessel.id);
         const existingChecklists = await checklistService.getChecklistsForVessel(selectedVessel.id);
         console.log('Fetched checklists:', existingChecklists);
-        
+      
         setChecklists(existingChecklists);
 
         // Auto-create checklists if none exist
@@ -66,8 +69,6 @@ const ChecklistPage = ({ vessel, onBack }) => {
             setChecklists(createdChecklists);
           } catch (createError) {
             console.log('Could not auto-create checklists:', createError.message);
-            // Do not set global error for auto-create failure, as it's a background process
-            // and we still want to show the empty state.
           }
         }
       } catch (fetchError) {
@@ -83,7 +84,7 @@ const ChecklistPage = ({ vessel, onBack }) => {
 
   const refreshChecklists = async () => {
     setRefreshing(true);
-    setError(null); // Clear previous errors on refresh
+    setError(null);
     try {
       const updatedChecklists = await checklistService.getChecklistsForVessel(selectedVessel.id);
       setChecklists(updatedChecklists);
@@ -102,10 +103,7 @@ const ChecklistPage = ({ vessel, onBack }) => {
         checklistService.getChecklistById(checklist.checklist_id),
         checklistService.getTemplateById(checklist.template_id)
       ]);
-      
-      console.log('Full checklist:', fullChecklist);
-      console.log('Template:', template);
-      
+    
       setSelectedChecklist(fullChecklist);
       setSelectedTemplate(template);
       setFormMode('edit');
@@ -123,10 +121,7 @@ const ChecklistPage = ({ vessel, onBack }) => {
         checklistService.getChecklistById(checklist.checklist_id),
         checklistService.getTemplateById(checklist.template_id)
       ]);
-      
-      console.log('Full checklist:', fullChecklist);
-      console.log('Template:', template);
-      
+    
       setSelectedChecklist(fullChecklist);
       setSelectedTemplate(template);
       setFormMode('view');
@@ -141,7 +136,7 @@ const ChecklistPage = ({ vessel, onBack }) => {
     if (!window.confirm('Are you sure you want to delete this checklist? This action cannot be undone.')) {
       return;
     }
-    setError(null); // Clear previous errors before new action
+    setError(null);
     try {
       await checklistService.deleteChecklist(checklistId);
       const updatedChecklists = await checklistService.getChecklistsForVessel(selectedVessel.id);
@@ -171,7 +166,6 @@ const ChecklistPage = ({ vessel, onBack }) => {
       }
     } catch (err) {
       console.error('Error saving checklist:', err);
-      // Re-throw to allow ModernChecklistForm to handle its own error state
       throw new Error('Failed to save checklist. Please try again.');
     }
   };
@@ -179,14 +173,11 @@ const ChecklistPage = ({ vessel, onBack }) => {
   const handleSubmitChecklist = async (responses) => {
     try {
       if (formMode === 'edit' && selectedChecklist) {
-        // First update responses
         await checklistService.updateChecklistResponses(
           selectedChecklist.checklist_id, 
           responses, 
           currentUser.id
         );
-        
-        // Then submit
         await checklistService.submitChecklist(
           selectedChecklist.checklist_id, 
           currentUser.id
@@ -200,11 +191,11 @@ const ChecklistPage = ({ vessel, onBack }) => {
       setShowForm(false);
     } catch (err) {
       console.error('Error submitting checklist:', err);
-      // Re-throw to allow ModernChecklistForm to handle its own error state
       throw new Error('Failed to submit checklist. Please ensure all mandatory fields are completed.');
     }
   };
 
+  // Helper functions
   const getChecklistStatusIcon = (status) => {
     switch (status) {
       case 'complete':
@@ -246,7 +237,7 @@ const ChecklistPage = ({ vessel, onBack }) => {
 
   const getUrgencyLevel = (checklist, vessel) => {
     if (checklist.status === 'complete') return null;
-    
+  
     const eta = vessel.eta ? new Date(vessel.eta) : null;
     if (!eta) return null;
 
@@ -289,9 +280,16 @@ const ChecklistPage = ({ vessel, onBack }) => {
     }
   };
 
+  // Filter checklists based on status
+  const filteredChecklists = checklists.filter(checklist => {
+    if (statusFilter === 'all') return true;
+    return checklist.status === statusFilter;
+  });
+
+  // Loading state
   if (loading) {
     return (
-      <div className="dashboard-container checklist-page-container">
+      <div className="checklist-page-container">
         <div className="checklist-loading-container">
           <div className="checklist-loading-spinner"></div>
           <div className="checklist-loading-text">Loading Maritime Checklists...</div>
@@ -300,6 +298,7 @@ const ChecklistPage = ({ vessel, onBack }) => {
     );
   }
 
+  // Form view
   if (showForm && selectedTemplate) {
     return (
       <ModernChecklistForm
@@ -309,7 +308,7 @@ const ChecklistPage = ({ vessel, onBack }) => {
         onSave={handleSaveChecklist}
         onSubmit={handleSubmitChecklist}
         onCancel={() => setShowForm(false)}
-        loading={loading} // Pass loading state to form if needed
+        loading={loading}
         currentUser={currentUser}
         mode={formMode}
       />
@@ -317,66 +316,84 @@ const ChecklistPage = ({ vessel, onBack }) => {
   }
 
   return (
-    <div className="dashboard-container checklist-page-container checklist-fade-in">
-      {/* Dashboard Header */}
-      <header className="dashboard-header checklist-header">
-        <div className="dashboard-title checklist-header-title">
+    <div className="checklist-page-container checklist-fade-in">
+      {/* Enhanced Header */}
+      <header className="checklist-header">
+        <div className="checklist-header-title">
           <button 
             onClick={onBack}
-            className="control-btn checklist-back-btn" // Added checklist-back-btn for specific styling
+            className="checklist-action-btn"
             aria-label="Back to vessel list"
+            style={{ minWidth: 'auto', padding: '8px' }}
           >
             <ArrowLeft size={16} />
           </button>
-          
-          <div className="stat-card-icon checklist-header-icon">
+        
+          <div className="checklist-info-card-icon">
             <Ship size={20} />
           </div>
-          
+        
           <div>
-            <h1>Vessel Checklists</h1>
-            <div className="fleet-stats checklist-header-info">
-              <div className="fleet-count checklist-info-item">
-                <Ship size={14} />
+            <h1 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 600 }}>Vessel Checklists</h1>
+            <div className="checklist-header-info" style={{ display: 'flex', gap: '16px', marginTop: '4px', fontSize: '13px', color: 'var(--checklist-text-muted)' }}>
+              <div className="checklist-info-item">
+                <Ship size={12} />
                 <span>{vessel.vessel_name}</span>
               </div>
-              <div className="fleet-count checklist-info-item">
+              <div className="checklist-info-item">
                 <span>IMO: {vessel.imo_no}</span>
               </div>
-              <div className="fleet-count checklist-info-item">
-                <Calendar size={14} />
+              <div className="checklist-info-item">
+                <Calendar size={12} />
                 <span>ETA: {vessel.eta ? new Date(vessel.eta).toLocaleDateString() : 'TBD'}</span>
               </div>
-              <div className={`badge ${vessel.event_type ? 'badge-info' : 'badge-default'}`}>
+              <div className={`checklist-badge ${vessel.event_type ? 'checklist-badge-info' : 'checklist-badge-default'}`}>
                 {vessel.event_type || 'Unknown Status'}
               </div>
             </div>
           </div>
         </div>
 
-        <div className="dashboard-controls checklist-header-controls">
+        <div className="checklist-header-controls" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <button
             onClick={refreshChecklists}
             disabled={refreshing}
-            className="control-btn export-btn checklist-action-btn" // Added checklist-action-btn
+            className="checklist-action-btn"
             aria-label={refreshing ? 'Refreshing checklists' : 'Refresh checklists'}
           >
-            <RefreshCw size={16} className={refreshing ? 'spinning' : ''} />
+            <RefreshCw size={16} className={refreshing ? 'checklist-spinning' : ''} />
             {refreshing ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
       </header>
 
       {/* Content Area */}
-      <div className="content-area checklist-content-area">
+      <div className="checklist-content-area">
         {/* Error Message */}
         {error && (
-          <div className="error-message checklist-error-message checklist-fade-in" role="alert">
+          <div className="checklist-error-message checklist-fade-in" role="alert" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(231, 76, 60, 0.1)',
+            border: '1px solid rgba(231, 76, 60, 0.3)',
+            borderRadius: '6px',
+            padding: '12px 16px',
+            marginBottom: '16px',
+            color: 'var(--checklist-danger)'
+          }}>
             <AlertTriangle size={16} />
             <span>{error}</span>
             <button
               onClick={() => setError(null)}
-              className="checklist-error-close"
+              style={{
+                marginLeft: 'auto',
+                background: 'none',
+                border: 'none',
+                color: 'var(--checklist-danger)',
+                cursor: 'pointer',
+                fontSize: '16px'
+              }}
               aria-label="Close alert"
             >
               ×
@@ -386,171 +403,332 @@ const ChecklistPage = ({ vessel, onBack }) => {
 
         {/* Info Card */}
         <div className="checklist-info-card checklist-slide-up">
-          <div className="stat-card-icon checklist-info-card-icon">
-            <Info size={20} /> {/* Changed icon to Info for general info */}
+          <div className="checklist-info-card-icon">
+            <Info size={20} />
           </div>
           <div className="checklist-info-card-content">
-            <h3>Automatic Checklist Management</h3>
-            <p>
+            <h3 style={{ margin: '0 0 8px 0', color: 'var(--checklist-primary)', fontSize: '1.1rem', fontWeight: 600 }}>
+              Automatic Checklist Management
+            </h3>
+            <p style={{ margin: 0, color: 'var(--checklist-text-muted)', lineHeight: 1.4 }}>
               Checklists are automatically created when you visit this page based on your vessel's voyage requirements. Complete them as needed for compliance.
             </p>
           </div>
         </div>
 
+        {/* View Controls and Filters */}
+        <div className="checklist-view-controls">
+          <div className="checklist-view-toggle">
+            <button
+              onClick={() => setViewMode('cards')}
+              className={`checklist-view-toggle-btn ${viewMode === 'cards' ? 'active' : ''}`}
+            >
+              <Grid3X3 size={16} />
+              Cards
+            </button>
+            <button
+              onClick={() => setViewMode('rows')}
+              className={`checklist-view-toggle-btn ${viewMode === 'rows' ? 'active' : ''}`}
+            >
+              <List size={16} />
+              List
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <Filter size={16} style={{ color: '#6c757d' }} />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                background: '#f8f9fa',
+                border: '1px solid #dee2e6',
+                borderRadius: '6px',
+                color: '#495057',
+                padding: '6px 12px',
+                fontSize: '14px'
+              }}
+            >
+              <option value="all">All Status</option>
+              <option value="draft">Draft</option>
+              <option value="in_progress">In Progress</option>
+              <option value="complete">Complete</option>
+            </select>
+          </div>
+
+          <div style={{ marginLeft: 'auto', color: '#6c757d', fontSize: '14px' }}>
+            {filteredChecklists.length} {filteredChecklists.length === 1 ? 'checklist' : 'checklists'} 
+            {statusFilter !== 'all' && ` (${statusFilter})`}
+          </div>
+        </div>
+
         {/* Checklists Section */}
-        <div className="dashboard-card checklist-cards-container checklist-slide-up">
-          <div className="dashboard-card-body">
-            <div className="checklist-cards-header">
-              <h2>Available Checklists</h2>
-              <div className="checklist-cards-count">
-                {checklists.length} {checklists.length === 1 ? 'checklist' : 'checklists'} available
-              </div>
+        <div className="checklist-cards-container checklist-slide-up">
+          {filteredChecklists.length === 0 ? (
+            <div className="checklist-empty-state checklist-fade-in">
+              <FileText size={48} className="checklist-empty-icon" />
+              <h3 className="checklist-empty-title">
+                {statusFilter === 'all' ? 'No Checklists Available' : `No ${statusFilter} checklists`}
+              </h3>
+              <p className="checklist-empty-description">
+                {statusFilter === 'all' 
+                  ? 'Checklists will be automatically created based on your vessel\'s voyage requirements and compliance needs. Please refresh if you expect to see new checklists.'
+                  : `No checklists with ${statusFilter} status found. Try changing the filter or refresh the page.`
+                }
+              </p>
             </div>
-
-            {checklists.length === 0 ? (
-              <div className="checklist-empty-state checklist-fade-in">
-                <FileText size={48} className="checklist-empty-icon" />
-                <h3 className="checklist-empty-title">No Checklists Available</h3>
-                <p className="checklist-empty-description">
-                  Checklists will be automatically created based on your vessel's voyage requirements and compliance needs. Please refresh if you expect to see new checklists.
-                </p>
-              </div>
-            ) : (
-              <div className="checklist-cards-grid">
-                {checklists.map(checklist => {
-                  const urgency = getUrgencyLevel(checklist, vessel);
-                  const completionPercentage = checklist.progress_percentage || 0;
-                  const statusBadge = getChecklistStatusBadge(checklist.status);
-                  const urgencyClass = urgency ? `checklist-${urgency}` : '';
+          ) : (
+            <>
+              {/* Cards View */}
+              {viewMode === 'cards' && (
+                <div className="checklist-cards-grid">
+                  {filteredChecklists.map(checklist => {
+                    const urgency = getUrgencyLevel(checklist, vessel);
+                    const completionPercentage = checklist.progress_percentage || 0;
+                    const statusBadge = getChecklistStatusBadge(checklist.status);
+                    const urgencyClass = urgency ? `checklist-${urgency}` : '';
                   
-                  return (
-                    <div 
-                      key={checklist.checklist_id}
-                      className={`dashboard-card checklist-card ${urgencyClass}`}
-                      tabIndex="0" // Make card focusable for accessibility
-                      aria-label={`Checklist: ${checklist.template_name}, Status: ${getChecklistStatusText(checklist.status)}, Progress: ${completionPercentage}%`}
-                    >
-                      {/* Urgency Badge */}
-                      {urgency && (
-                        <div className="checklist-urgency-badge">
-                          <span className={`checklist-badge ${getUrgencyBadgeClass(urgency)}`}>
-                            {getUrgencyText(urgency)}
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="dashboard-card-body checklist-card-body">
-                        {/* Header */}
-                        <div className="checklist-card-header">
-                          <div className="stat-card-icon checklist-card-header-icon">
-                            {getChecklistStatusIcon(checklist.status)}
+                    return (
+                      <div 
+                        key={checklist.checklist_id}
+                        className={`checklist-card checklist-card-compact ${urgencyClass}`}
+                        tabIndex="0"
+                        aria-label={`Checklist: ${checklist.template_name}, Status: ${getChecklistStatusText(checklist.status)}, Progress: ${completionPercentage}%`}
+                      >
+                        {/* Urgency Badge */}
+                        {urgency && (
+                          <div className="checklist-urgency-badge">
+                            <span className={`checklist-badge ${getUrgencyBadgeClass(urgency)}`}>
+                              {getUrgencyText(urgency)}
+                            </span>
                           </div>
-                          <div className="checklist-card-header-content">
-                            <h3 className="checklist-card-title">
+                        )}
+
+                        <div className="checklist-card-body">
+                          {/* Header */}
+                          <div className="checklist-card-header" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                            <div style={{
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '50%',
+                              background: 'linear-gradient(135deg, var(--checklist-primary), var(--checklist-secondary))',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'white',
+                              flexShrink: 0
+                            }}>
+                              {getChecklistStatusIcon(checklist.status)}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <h3 style={{
+                                margin: '0 0 4px 0',
+                                fontSize: '14px',
+                                fontWeight: 600,
+                                color: 'var(--checklist-text-primary)',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }}>
+                                {checklist.template_name || 'Unknown Template'}
+                              </h3>
+                              <span className={`checklist-badge ${statusBadge}`} style={{ fontSize: '11px', padding: '2px 6px' }}>
+                                {getChecklistStatusText(checklist.status)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Progress */}
+                          <div className="checklist-progress-section">
+                            <div style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              marginBottom: '6px',
+                              fontSize: '12px'
+                            }}>
+                              <span style={{ color: 'var(--checklist-text-muted)' }}>Progress</span>
+                              <span style={{ fontWeight: 600, color: 'var(--checklist-text-primary)' }}>{completionPercentage}%</span>
+                            </div>
+                          
+                            <div className="checklist-progress-bar-container">
+                              <div 
+                                className={`checklist-progress-bar ${
+                                  checklist.status === 'complete' ? 'checklist-complete' : 
+                                  completionPercentage > 70 ? 'checklist-high' : 
+                                  'checklist-normal'
+                                }`}
+                                style={{ width: `${completionPercentage}%` }}
+                                role="progressbar"
+                                aria-valuenow={completionPercentage}
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                              ></div>
+                            </div>
+                          </div>
+
+                          {/* Metadata */}
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr',
+                            gap: '8px',
+                            margin: '12px 0',
+                            fontSize: '11px'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Target size={12} style={{ color: 'var(--checklist-primary)', flexShrink: 0 }} />
+                              <span style={{ color: 'var(--checklist-text-muted)' }}>Items:</span>
+                              <span style={{ fontWeight: 500, color: 'var(--checklist-text-primary)' }}>
+                                {checklist.items_completed || 0}/{checklist.total_items || 0}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Calendar size={12} style={{ color: 'var(--checklist-primary)', flexShrink: 0 }} />
+                              <span style={{ color: 'var(--checklist-text-muted)' }}>Created:</span>
+                              <span style={{ fontWeight: 500, color: 'var(--checklist-text-primary)' }}>
+                                {new Date(checklist.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                            {checklist.submitted_at && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', gridColumn: '1 / -1' }}>
+                                <CheckCircle size={12} style={{ color: 'var(--checklist-success)', flexShrink: 0 }} />
+                                <span style={{ color: 'var(--checklist-text-muted)' }}>Submitted:</span>
+                                <span style={{ fontWeight: 500, color: 'var(--checklist-success)' }}>
+                                  {new Date(checklist.submitted_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Actions */}
+                          <div className="checklist-actions">
+                            <button
+                              onClick={() => handleViewChecklist(checklist)}
+                              className="checklist-action-btn checklist-btn-view"
+                              aria-label={`View ${checklist.template_name} checklist`}
+                            >
+                              <Eye size={14} />
+                              <span>View</span>
+                            </button>
+
+                            {checklist.status !== 'complete' && (
+                              <button
+                                onClick={() => handleEditChecklist(checklist)}
+                                className="checklist-action-btn checklist-btn-edit"
+                                aria-label={`Edit ${checklist.template_name} checklist`}
+                              >
+                                <Edit3 size={14} />
+                                <span>Edit</span>
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => handleDeleteChecklist(checklist.checklist_id)}
+                              className="checklist-action-btn checklist-btn-delete"
+                              aria-label={`Delete ${checklist.template_name} checklist`}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Rows View */}
+              {viewMode === 'rows' && (
+                <div className="checklist-rows-container" style={{ display: 'flex' }}>
+                  {filteredChecklists.map(checklist => {
+                    const urgency = getUrgencyLevel(checklist, vessel);
+                    const completionPercentage = checklist.progress_percentage || 0;
+                    const urgencyClass = urgency ? `checklist-${urgency}` : '';
+                  
+                    return (
+                      <div 
+                        key={checklist.checklist_id}
+                        className={`checklist-row ${urgencyClass}`}
+                        tabIndex="0"
+                      >
+                        <div className="checklist-row-icon">
+                          {getChecklistStatusIcon(checklist.status)}
+                        </div>
+                        
+                        <div className="checklist-row-content">
+                          <div className="checklist-row-main">
+                            <h4 className="checklist-row-title">
                               {checklist.template_name || 'Unknown Template'}
-                            </h3>
-                            <span className={`checklist-badge ${statusBadge} checklist-card-status`}>
+                            </h4>
+                            <div className="checklist-row-meta">
+                              <span className={`checklist-badge ${getChecklistStatusBadge(checklist.status)}`} style={{ fontSize: '10px', padding: '2px 6px' }}>
+                                {getChecklistStatusText(checklist.status)}
+                              </span>
+                              <span>{checklist.items_completed || 0}/{checklist.total_items || 0} items</span>
+                              <span>Created: {new Date(checklist.created_at).toLocaleDateString()}</span>
+                              {urgency && (
+                                <span className={`checklist-badge ${getUrgencyBadgeClass(urgency)}`} style={{ fontSize: '10px', padding: '2px 6px' }}>
+                                  {getUrgencyText(urgency)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="checklist-row-progress">
+                            <span style={{ fontSize: '12px', fontWeight: 600, minWidth: '35px' }}>{completionPercentage}%</span>
+                            <div className="checklist-row-progress-bar">
+                              <div 
+                                className="checklist-row-progress-fill"
+                                style={{ 
+                                  width: `${completionPercentage}%`,
+                                  background: checklist.status === 'complete' ? 'var(--checklist-success)' : 'var(--checklist-primary)'
+                                }}
+                              ></div>
+                            </div>
+                          </div>
+                          
+                          <div className="checklist-row-status" style={{ minWidth: '80px' }}>
+                            <span className={`checklist-badge ${getChecklistStatusBadge(checklist.status)}`} style={{ fontSize: '11px' }}>
                               {getChecklistStatusText(checklist.status)}
                             </span>
                           </div>
-                        </div>
-
-                        {/* Progress */}
-                        <div className="checklist-progress-section">
-                          <div className="checklist-progress-header">
-                            <span className="checklist-progress-label">Progress</span>
-                            <span className="checklist-progress-value">{completionPercentage}%</span>
-                          </div>
                           
-                          <div className="checklist-progress-bar-container">
-                            <div 
-                              className={`checklist-progress-bar ${
-                                checklist.status === 'complete' ? 'checklist-complete' : 
-                                completionPercentage > 70 ? 'checklist-high' : 
-                                'checklist-normal'
-                              }`}
-                              style={{ width: `${completionPercentage}%` }}
-                              role="progressbar"
-                              aria-valuenow={completionPercentage}
-                              aria-valuemin="0"
-                              aria-valuemax="100"
-                            ></div>
-                          </div>
-                        </div>
-
-                        {/* Metadata */}
-                        <div className="checklist-metadata">
-                          <div className="checklist-metadata-item">
-                            <Target size={14} className="checklist-metadata-icon" />
-                            <span className="checklist-metadata-label">Items:</span>
-                            <span className="checklist-metadata-value">
-                              {checklist.items_completed || 0}/{checklist.total_items || 0}
-                            </span>
-                          </div>
-                          <div className="checklist-metadata-item">
-                            <Calendar size={14} className="checklist-metadata-icon" />
-                            <span className="checklist-metadata-label">Created:</span>
-                            <span className="checklist-metadata-value">
-                              {new Date(checklist.created_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                          {checklist.submitted_at && (
-                            <div className="checklist-metadata-item checklist-metadata-submitted">
-                              <CheckCircle size={14} className="checklist-metadata-icon" />
-                              <span className="checklist-metadata-label">Submitted:</span>
-                              <span className="checklist-metadata-value">
-                                {new Date(checklist.submitted_at).toLocaleDateString()}
-                              </span>
-                            </div>
-                          )}
-                          {checklist.last_updated_by && (
-                            <div className="checklist-metadata-item">
-                              <User size={14} className="checklist-metadata-icon" />
-                              <span className="checklist-metadata-label">Last Updated By:</span>
-                              <span className="checklist-metadata-value">
-                                {checklist.last_updated_by}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="checklist-actions">
-                          <button
-                            onClick={() => handleViewChecklist(checklist)}
-                            className="checklist-action-btn checklist-btn-view control-btn"
-                            aria-label={`View ${checklist.template_name} checklist`}
-                          >
-                            <Eye size={16} />
-                            <span>View</span>
-                          </button>
-
-                          {checklist.status !== 'complete' && (
+                          <div className="checklist-row-actions">
                             <button
-                              onClick={() => handleEditChecklist(checklist)}
-                              className="checklist-action-btn checklist-btn-edit control-btn export-btn"
-                              aria-label={`Edit ${checklist.template_name} checklist`}
+                              onClick={() => handleViewChecklist(checklist)}
+                              className="checklist-action-btn"
+                              style={{ minWidth: 'auto', padding: '6px' }}
+                              aria-label="View checklist"
                             >
-                              <Edit3 size={16} />
-                              <span>Edit</span>
+                              <Eye size={14} />
                             </button>
-                          )}
-
-                          <button
-                            onClick={() => handleDeleteChecklist(checklist.checklist_id)}
-                            className="checklist-action-btn checklist-btn-delete"
-                            aria-label={`Delete ${checklist.template_name} checklist`}
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                            {checklist.status !== 'complete' && (
+                              <button
+                                onClick={() => handleEditChecklist(checklist)}
+                                className="checklist-action-btn"
+                                style={{ minWidth: 'auto', padding: '6px' }}
+                                aria-label="Edit checklist"
+                              >
+                                <Edit3 size={14} />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteChecklist(checklist.checklist_id)}
+                              className="checklist-action-btn checklist-btn-delete"
+                              style={{ minWidth: 'auto', padding: '6px' }}
+                              aria-label="Delete checklist"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>
