@@ -4,7 +4,6 @@ import {
   Clock,
   AlertTriangle,
   XCircle,
-  FileText,
   MessageSquare
 } from 'lucide-react';
 import TrafficLightIndicator from '../../common/Table/TrafficLightIndicator';
@@ -12,14 +11,14 @@ import {
   Table,
   StatusIndicator,
   TableBadge,
-  ExpandedItem,
-  DropdownField
+  ExpandedItem
 } from '../../common/Table';
 import { TextTooltip, VesselDetailsTooltip } from '../../common/Table/Tooltip';
 import CommentTooltip from '../../common/Table/CommentTooltip';
-import EditableField from '../../common/EditableField/EditableField'; // Import the actual EditableField
+import EditableField from '../../common/EditableField/EditableField';
 import PortDocumentIcon from '../../common/Table/PortDocumentIcon';
 import DocumentModal from '../../common/DocumentModal/DocumentModal';
+import ChecklistStatusBadge from './ChecklistStatusBadge'; // Import the simplified component
 import portMappingService from '../../../services/PortMappingService';
 import PropTypes from 'prop-types';
 
@@ -193,13 +192,6 @@ const VesselReportingTable = ({
     } else {
       return '#f4f4f4';
     }
-  };
-
-  const getRiskScoreVariant = (score) => {
-    if (!score && score !== 0) return 'info';
-    if (score < 50) return 'success';
-    if (score < 75) return 'warning';
-    return 'danger';
   };
 
   const normalizeChecklistValue = (value) => {
@@ -432,20 +424,22 @@ const VesselReportingTable = ({
     return false;
   };
 
-  // Convert field mappings to table columns (using the same logic as VesselTable)
+  // Convert field mappings to table columns
   const getTableColumns = useCallback(() => {
-    // Filter out action columns, PIC column, and comments column
+    // Filter out action columns, PIC column, comments column, AND checklistStatus
     const columnsData = Object.entries(fieldMappings.TABLE)
       .filter(([fieldId, field]) => 
         !field.isAction && 
         fieldId !== 'comments' && 
-        fieldId !== 'pic' && // Exclude PIC column
+        fieldId !== 'pic' &&
         fieldId !== 'imo' && 
-        fieldId !== 'owner'
+        fieldId !== 'owner' &&
+        fieldId !== 'checklistStatus' // REMOVE THE OLD CHECKLIST COLUMN
       )
       .sort((a, b) => a[1].priority - b[1].priority);
 
-    return columnsData.map(([fieldId, field]) => {
+    // Create the base columns
+    const baseColumns = columnsData.map(([fieldId, field]) => {
       // Responsive column widths
       let columnWidth = field.width;
 
@@ -454,8 +448,6 @@ const VesselReportingTable = ({
           case 'vessel_name':
             columnWidth = '140px';
             break;
-          case 'vessel_type':
-          case 'doc_type':
           case 'event_type':
             columnWidth = '80px';
             break;
@@ -464,10 +456,6 @@ const VesselReportingTable = ({
           case 'etb':
             columnWidth = '100px';
             break;
-          case 'checklist_received':
-          case 'sanz':
-            columnWidth = '90px';
-            break;
           default:
             break;
         }
@@ -475,12 +463,6 @@ const VesselReportingTable = ({
         switch (fieldId) {
           case 'vessel_name':
             columnWidth = '160px';
-            break;
-          case 'vessel_type':
-            columnWidth = '120px';
-            break;
-          case 'doc_type':
-            columnWidth = '80px';
             break;
           case 'event_type':
             columnWidth = '110px';
@@ -544,7 +526,7 @@ const VesselReportingTable = ({
           }
         }
 
-        // Editable date fields - EXACTLY LIKE VESSELTABLE
+        // Editable date fields
         if (['eta', 'etb', 'etd'].includes(fieldId)) {
           // Validation for ETB vs ETA
           if (fieldId === 'etb') {
@@ -584,7 +566,7 @@ const VesselReportingTable = ({
           );
         }
 
-        // Vessel name with traffic light - EXACTLY LIKE VESSELTABLE
+        // Vessel name with traffic light
         if (fieldId === 'vessel_name') {
           const statusInfo = getVesselStatus(rowData);
 
@@ -600,13 +582,10 @@ const VesselReportingTable = ({
 
           return (
             <div className="vessel-name-cell">
-              {/* Traffic light indicator - SAME AS VESSELTABLE */}
               <TrafficLightIndicator
                 status={statusInfo.status}
                 tooltipData={statusInfo}
               />
-
-              {/* Vessel name with tooltip - NO SHIP ICON */}
               <VesselDetailsTooltip vessel={vesselDetails}>
                 <span className="vessel-name">{(value || '-').toUpperCase()}</span>
               </VesselDetailsTooltip>
@@ -629,25 +608,7 @@ const VesselReportingTable = ({
           );
         }
 
-        // Vessel type
-        if (fieldId === 'vessel_type') {
-          return (
-            <TextTooltip text={value || '-'}>
-              <span>{(value || '-').toUpperCase()}</span>
-            </TextTooltip>
-          );
-        }
-
-        // Document type
-        if (fieldId === 'doc_type') {
-          return (
-            <TextTooltip text={value || '-'}>
-              <span>{(value || '-').toUpperCase()}</span>
-            </TextTooltip>
-          );
-        }
-
-        // Arrival port - NO MAPPIN ICON, SAME AS VESSELTABLE
+        // Arrival port
         if (fieldId === 'arrival_port') {
           const upperCaseValue = (value || '-').toUpperCase();
 
@@ -689,61 +650,7 @@ const VesselReportingTable = ({
           );
         }
 
-        // Risk score
-        if (fieldId === 'riskScore') {
-          const score = value !== null && value !== undefined ? Math.round(value) : null;
-          return (
-            <TableBadge variant={getRiskScoreVariant(score)}>
-              {score !== null ? score : '-'}
-            </TableBadge>
-          );
-        }
-
-        // Checklist received dropdown
-        if (fieldId === 'checklist_received') {
-          const normalizedValue = normalizeChecklistValue(value);
-
-          return (
-            <DropdownField
-              value={normalizedValue}
-              vessel={rowData}
-              onUpdate={onUpdateVessel}
-              field="checklist_received"
-              options={["Pending", "Acknowledged", "Submitted"]}
-              className={shouldHideColumn(fieldId) ? 'hidden-column' : ''}
-            />
-          );
-        }
-
-        // SANZ dropdown
-        if (fieldId === 'sanz') {
-          return (
-            <DropdownField
-              value={value || ""}
-              vessel={rowData}
-              onUpdate={onUpdateVessel}
-              field="sanz"
-              options={["Select...", "Rohit Banta", "John Willis", "Prakash Rebala", "Others"]}
-              className="sanz-dropdown"
-              allowCustomInput={true}
-            />
-          );
-        }
-
-        // Checklist status with enhanced display
-        if (fieldId === 'checklistStatus') {
-          const statusDisplay = getChecklistStatusDisplay(value);
-          return (
-            <div className="checklist-status-cell">
-              <TableBadge variant={statusDisplay.variant} className="enhanced-status-badge">
-                {statusDisplay.icon}
-                <TextTooltip text={statusDisplay.label}>
-                  <span>{statusDisplay.label}</span>
-                </TextTooltip>
-              </TableBadge>
-            </div>
-          );
-        }
+        // REMOVED: checklistStatus rendering - now handled by actions column with ChecklistStatusBadge
 
         // Date fields (non-editable)
         if (field.type === 'date' && !['eta', 'etb', 'etd'].includes(fieldId)) {
@@ -765,31 +672,6 @@ const VesselReportingTable = ({
           );
         }
 
-        // Days to go
-        if (fieldId === 'daysToGo' && typeof value === 'number') {
-          const formattedValue = value.toFixed(1);
-          const isUrgent = value <= 5 && value > 0;
-          const isCritical = value <= 0;
-
-          return (
-            <div className={`days-to-go ${isUrgent ? 'urgent' : ''} ${isCritical ? 'critical' : ''}`}>
-              <div className="days-content">
-                <Clock size={16} className="days-icon" />
-                <div className="days-details">
-                  <TextTooltip text={`${formattedValue} days remaining`}>
-                    <span className="days-value">{formattedValue}</span>
-                  </TextTooltip>
-                </div>
-                {isCritical && (
-                  <div className="urgency-indicator critical">
-                    <AlertTriangle size={10} />
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        }
-
         // Default text rendering
         if (value !== null && value !== undefined && value !== '-') {
           const stringValue = String(value);
@@ -805,7 +687,68 @@ const VesselReportingTable = ({
 
       return column;
     });
-  }, [windowWidth, fieldMappings, shouldHideColumn, isDateInPast, getDaysOverdue, onUpdateOverride, savingStates, getVesselStatus, formatDateTime, getStatusColor, handleOpenDocuments, getRiskScoreVariant, normalizeChecklistValue, onUpdateVessel, getChecklistStatusDisplay]);
+
+    // Add Pre-Arrival column if onOpenChecklist is provided
+    if (onOpenChecklist) {
+      baseColumns.push({
+        field: 'preArrival',
+        label: 'Pre-Arrival',
+        width: windowWidth < 768 ? '100px' : '140px',
+        minWidth: windowWidth < 768 ? '80px' : '100px',
+        sortable: false,
+        render: (value, rowData) => (
+          <ChecklistStatusBadge
+            vessel={rowData}
+            onOpenChecklist={onOpenChecklist}
+            className="table-checklist-badge"
+          />
+        )
+      });
+    }
+
+    // Add Comments column if onOpenRemarks is provided
+    if (onOpenRemarks) {
+      baseColumns.push({
+        field: 'comments',
+        label: 'Comments',
+        width: windowWidth < 768 ? '80px' : '160px',
+        minWidth: windowWidth < 768 ? '60px' : '120px',
+        sortable: false,
+        render: (value, rowData) => {
+          const hasComments = rowData.comments && rowData.comments.trim().length > 0;
+
+          return (
+            <div className="comment-cell">
+              <CommentTooltip
+                comment={rowData.comments || ""}
+                onEditClick={() => onOpenRemarks && onOpenRemarks(rowData)}
+              >
+                <div
+                  className={`comment-indicator ${hasComments ? 'has-comment' : 'no-comment'}`}
+                >
+                  <div className="comment-icon">
+                    <MessageSquare size={16} />
+                  </div>
+
+                  {hasComments && windowWidth >= 768 ? (
+                    <div className="comment-preview-text">
+                      {rowData.comments.length > 28
+                        ? `${rowData.comments.substring(0, 28)}...`
+                        : rowData.comments}
+                    </div>
+                  ) : windowWidth >= 768 ? (
+                    <div className="comment-add-text">Add comment</div>
+                  ) : null}
+                </div>
+              </CommentTooltip>
+            </div>
+          );
+        }
+      });
+    }
+
+    return baseColumns;
+  }, [windowWidth, fieldMappings, shouldHideColumn, isDateInPast, getDaysOverdue, onUpdateOverride, savingStates, getVesselStatus, formatDateTime, getStatusColor, handleOpenDocuments, onOpenChecklist, onOpenRemarks]);
 
   // Create expanded content renderer
   const renderExpandedContent = useCallback((vessel) => {
@@ -871,26 +814,6 @@ const VesselReportingTable = ({
             value = formatDateTime(value, true);
           }
 
-          // Special handling for checklist status in expanded view
-          if (fieldId === 'checklistStatus') {
-            const statusDisplay = getChecklistStatusDisplay(value);
-            return (
-              <ExpandedItem
-                key={fieldId}
-                label={field.label}
-                value={
-                  <div className="expanded-checklist-status">
-                    {statusDisplay.icon}
-                    <span style={{ color: statusDisplay.color }}>
-                      {statusDisplay.label}
-                    </span>
-                  </div>
-                }
-                className={windowWidth < 768 ? 'mobile-expanded-item' : ''}
-              />
-            );
-          }
-
           // Special handling for vessel status in expanded view
           if (fieldId === 'event_type') {
             return (
@@ -953,7 +876,7 @@ const VesselReportingTable = ({
         })}
       </div>
     );
-  }, [windowWidth, fieldMappings, formatDateTime, getChecklistStatusDisplay, getStatusColor, isDateInPast, getDaysOverdue]);
+  }, [windowWidth, fieldMappings, formatDateTime, getStatusColor, isDateInPast, getDaysOverdue]);
 
   // Comments column - exactly like VesselTable
   const commentsColumn = useMemo(() => ({
@@ -992,25 +915,90 @@ const VesselReportingTable = ({
     }
   }), [windowWidth, onOpenRemarks]);
 
-  // Actions column for checklist functionality
-  const actions = useMemo(() => ({
-    label: 'Checklist',
-    width: '100px',
+  // Actions column for checklist functionality - USING SIMPLIFIED BADGE
+  const checklistActions = useMemo(() => ({
+    label: 'Pre-Arrival',
+    width: windowWidth < 768 ? '100px' : '140px',
     content: (vessel) => (
-      <div className="reporting-actions">
-        <button
-          className="action-button reporting-action primary"
-          onClick={() => onOpenChecklist && onOpenChecklist(vessel)}
-          aria-label="View vessel checklist"
-        >
-          <FileText size={16} />
-          <span>View</span>
-        </button>
-      </div>
+      <ChecklistStatusBadge
+        vessel={vessel}
+        onOpenChecklist={onOpenChecklist}
+        className="table-checklist-badge"
+      />
     )
-  }), [onOpenChecklist]);
+  }), [onOpenChecklist, windowWidth]);
 
-  // Sort vessels by priority (same logic as VesselTable but adapted for reporting)
+  // Combined actions - show both comments and checklist badges
+  const combinedActions = useMemo(() => {
+    if (onOpenRemarks && onOpenChecklist) {
+      // For multiple columns, we need to return a single action object that renders both
+      return {
+        label: 'Actions',
+        width: windowWidth < 768 ? '180px' : '300px',
+        content: (vessel) => (
+          <div className="multiple-actions-container">
+            <div className="checklist-action">
+              <ChecklistStatusBadge
+                vessel={vessel}
+                onOpenChecklist={onOpenChecklist}
+                className="table-checklist-badge"
+              />
+            </div>
+            <div className="comment-action">
+              {(() => {
+                const hasComments = vessel.comments && vessel.comments.trim().length > 0;
+                return (
+                  <CommentTooltip
+                    comment={vessel.comments || ""}
+                    onEditClick={() => onOpenRemarks && onOpenRemarks(vessel)}
+                  >
+                    <div
+                      className={`comment-indicator ${hasComments ? 'has-comment' : 'no-comment'}`}
+                    >
+                      <div className="comment-icon">
+                        <MessageSquare size={16} />
+                      </div>
+
+                      {hasComments && windowWidth >= 768 ? (
+                        <div className="comment-preview-text">
+                          {vessel.comments.length > 28
+                            ? `${vessel.comments.substring(0, 28)}...`
+                            : vessel.comments}
+                        </div>
+                      ) : windowWidth >= 768 ? (
+                        <div className="comment-add-text">Add comment</div>
+                      ) : null}
+                    </div>
+                  </CommentTooltip>
+                );
+              })()}
+            </div>
+          </div>
+        )
+      };
+    } else if (onOpenRemarks) {
+      // Show only comments column
+      return commentsColumn;
+    } else if (onOpenChecklist) {
+      // Show only checklist column
+      return {
+        label: 'Pre-Arrival',
+        width: windowWidth < 768 ? '100px' : '140px',
+        content: (vessel) => (
+          <ChecklistStatusBadge
+            vessel={vessel}
+            onOpenChecklist={onOpenChecklist}
+            className="table-checklist-badge"
+          />
+        )
+      };
+    }
+    
+    // Show nothing if neither is provided
+    return null;
+  }, [onOpenRemarks, onOpenChecklist, windowWidth, commentsColumn]);
+
+  // Sort vessels by priority
   const sortedVessels = useMemo(() => {
     return [...vesselsToDisplay].sort((a, b) => {
       const aEta = a.user_eta || a.eta;
@@ -1039,15 +1027,15 @@ const VesselReportingTable = ({
 
   return (
     <div ref={tableRef} className="vessel-reporting-table">
-      {/* EXACT CSS AS VESSELTABLE */}
       <style jsx>{`
-        /* Vessel Table Exact CSS Match */
+        /* Vessel Table CSS */
         .vessel-reporting-table {
           width: 100%;
           overflow: hidden;
+          position: relative;
         }
 
-        /* Vessel Name Cell - Same as VesselTable */
+        /* Vessel Name Cell */
         .vessel-name-cell {
           display: flex;
           align-items: center;
@@ -1055,10 +1043,15 @@ const VesselReportingTable = ({
           width: 100%;
         }
 
+        /* MODIFIED: Use the vessel-name class from tableStyles.css */
         .vessel-name {
-          font-weight: 600;
-          color: var(--text-light, #f4f4f4);
-          cursor: pointer;
+          font-weight: 500; /* From tableStyles.css */
+          white-space: nowrap; /* From tableStyles.css */
+          overflow: hidden; /* From tableStyles.css */
+          text-overflow: ellipsis; /* From tableStyles.css */
+          color: var(--table-text-color); /* From tableStyles.css */
+          font-family: 'Nunito', sans-serif; /* From tableStyles.css */
+          cursor: pointer; /* Added back for clickability */
         }
 
         /* Status Cell */
@@ -1090,7 +1083,7 @@ const VesselReportingTable = ({
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
-        /* Arrival Port Cell - Same as VesselTable */
+        /* Arrival Port Cell */
         .arrival-port-cell {
           display: flex;
           align-items: center;
@@ -1112,60 +1105,6 @@ const VesselReportingTable = ({
           color: #2980B9;
         }
 
-        /* Days to Go */
-        .days-to-go.urgent {
-          background-color: rgba(241, 196, 15, 0.1);
-          border-radius: 4px;
-          padding: 6px 8px;
-        }
-
-        .days-to-go.critical {
-          background-color: rgba(231, 76, 60, 0.1);
-          border-radius: 4px;
-          padding: 6px 8px;
-        }
-
-        .days-content {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          position: relative;
-        }
-
-        .days-icon {
-          color: var(--blue-accent, #3BADE5);
-          flex-shrink: 0;
-        }
-
-        .days-details {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-        }
-
-        .days-value {
-          font-weight: 600;
-          font-size: 14px;
-        }
-
-        .urgency-indicator {
-          position: absolute;
-          top: -2px;
-          right: -2px;
-          background-color: var(--danger-color, #E74C3C);
-          border-radius: 50%;
-          width: 16px;
-          height: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          animation: pulse 2s infinite;
-        }
-
-        .urgency-indicator.critical {
-          color: white;
-        }
-
         /* Text Cells */
         .date-cell, .datetime-cell, .text-cell {
           color: var(--text-light, #f4f4f4);
@@ -1176,7 +1115,7 @@ const VesselReportingTable = ({
           font-style: italic;
         }
 
-        /* Comments - Same as VesselTable */
+        /* Comments */
         .comment-cell {
           width: 100%;
         }
@@ -1227,39 +1166,7 @@ const VesselReportingTable = ({
           font-style: italic;
         }
 
-        /* Actions */
-        .reporting-actions {
-          display: flex;
-          gap: 6px;
-        }
-
-        .reporting-action {
-          min-width: 80px;
-          justify-content: center;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          padding: 6px 12px;
-          border-radius: 4px;
-          border: 1px solid;
-          font-size: 12px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .reporting-action.primary {
-          background: rgba(59, 173, 229, 0.15);
-          border-color: rgba(59, 173, 229, 0.3);
-          color: var(--blue-accent, #3BADE5);
-        }
-
-        .reporting-action.primary:hover {
-          background: rgba(59, 173, 229, 0.25);
-          transform: translateY(-1px);
-        }
-
         /* Expanded Content */
-        .expanded-checklist-status,
         .expanded-vessel-status {
           display: flex;
           align-items: center;
@@ -1278,7 +1185,48 @@ const VesselReportingTable = ({
           font-weight: bold !important;
         }
 
-        /* Responsive Design - Same as VesselTable */
+        /* Table checklist badge positioning */
+        .table-checklist-badge {
+          width: 100%;
+          justify-content: center;
+        }
+
+        /* Multiple actions container */
+        .multiple-actions-container {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          width: 100%;
+        }
+
+        .checklist-action {
+          flex: 1;
+          min-width: 100px;
+        }
+
+        .comment-action {
+          flex: 1;
+          min-width: 80px;
+        }
+
+        .comment-action .comment-cell {
+          width: 100%;
+        }
+
+        /* Enhanced checklist status cell for fallback */
+        .checklist-status-cell {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+        }
+
+        .checklist-status-cell .enhanced-status-badge {
+          min-width: 100px;
+          justify-content: center;
+        }
+
+        /* Responsive Design */
         @media (max-width: 767px) {
           .hidden-column {
             display: none !important;
@@ -1319,14 +1267,19 @@ const VesselReportingTable = ({
             gap: 4px;
           }
 
-          .reporting-action {
-            min-width: 70px;
+          .table-checklist-badge {
             font-size: 11px;
-            padding: 4px 8px;
           }
 
-          .port-content {
+          .multiple-actions-container {
+            flex-direction: column;
             gap: 4px;
+          }
+
+          .checklist-action,
+          .comment-action {
+            width: 100%;
+            min-width: auto;
           }
         }
 
@@ -1358,16 +1311,6 @@ const VesselReportingTable = ({
           }
         }
 
-        /* Animations */
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.6;
-          }
-        }
-
         /* Ensure consistent table cell height */
         .vessel-reporting-table :global(.data-row td) {
           padding-top: 8px;
@@ -1389,7 +1332,7 @@ const VesselReportingTable = ({
         data={sortedVessels}
         columns={getTableColumns()}
         expandedContent={renderExpandedContent}
-        actions={onOpenRemarks ? commentsColumn : actions}
+        actions={null}
         uniqueIdField="uniqueKey"
         defaultSortKey="eta"
         defaultSortDirection="asc"

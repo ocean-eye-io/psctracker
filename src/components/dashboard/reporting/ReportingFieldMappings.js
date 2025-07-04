@@ -6,32 +6,32 @@ export const reportingFieldMappings = {
       dbField: 'vessel_name',
       label: 'Vessel',
       priority: 1,
-      width: '250px',
-      minWidth: '180px',
+      width: '200px',
+      minWidth: '160px',
       type: 'text'
     },
-    vessel_type: {
-      dbField: 'vessel_type',
-      label: 'Vessel Type',
-      priority: 2,
-      width: '130px',
-      minWidth: '100px',
-      type: 'text'
-    },
-    doc_type: {
-      dbField: 'fleet_type',
-      label: 'DOC',
-      priority: 3,
-      width: '80px',
-      minWidth: '70px',
-      type: 'text'
-    },
+    // vessel_type: {
+    //   dbField: 'vessel_type',
+    //   label: 'Vessel Type',
+    //   priority: 2,
+    //   width: '130px',
+    //   minWidth: '100px',
+    //   type: 'text'
+    // },
+    // doc_type: {
+    //   dbField: 'fleet_type',
+    //   label: 'DOC',
+    //   priority: 3,
+    //   width: '80px',
+    //   minWidth: '70px',
+    //   type: 'text'
+    // },
     event_type: {
       dbField: 'event_type',
       label: 'Event Type',
       priority: 4,
-      width: '110px',
-      minWidth: '100px',
+      width: '160px',
+      minWidth: '160px',
       type: 'status'
     },
     arrival_port: {
@@ -66,14 +66,22 @@ export const reportingFieldMappings = {
       minWidth: '150px',
       type: 'datetime'
     },
-    daysToGo: {
-      dbField: 'days_to_go',
-      label: 'Days to Go',
+    etd: {
+      dbField: 'etd',
+      label: 'ETD (LT)',
       priority: 9,
-      width: '100px',
-      minWidth: '80px',
-      type: 'number'
+      width: '170px',
+      minWidth: '150px',
+      type: 'datetime'
     },
+    // daysToGo: {
+    //   dbField: 'days_to_go',
+    //   label: 'Days to Go',
+    //   priority: 9,
+    //   width: '100px',
+    //   minWidth: '80px',
+    //   type: 'number'
+    // },
     checklistStatus: {
       dbField: 'checklistStatus',
       label: 'Pre-Arrival',
@@ -85,49 +93,44 @@ export const reportingFieldMappings = {
   },
 
   EXPANDED: {
-    imo_no: {
-      dbField: 'imo_no',
-      label: 'IMO No',
-      priority: 1,
-      type: 'text'
-    },
-    owner: {
-      dbField: 'owner',
-      label: 'Owner',
-      priority: 2,
-      type: 'text'
-    },
-    flag: {
-      dbField: 'flag',
-      label: 'Flag',
-      priority: 3,
-      type: 'text'
-    },
-    dwt: {
-      dbField: 'dwt',
-      label: 'DWT',
-      priority: 4,
-      type: 'number'
-    },
-    departure_port: {
-      dbField: 'departure_port',
-      label: 'Departure Port',
-      priority: 5,
-      type: 'text',
-      combineWithCountry: true
-    },
-    etd: {
-      dbField: 'etd',
-      label: 'ETD (LT)',
-      priority: 6,
-      type: 'datetime'
-    },
-    office_doc: {
-      dbField: 'office_doc',
-      label: 'DOC Office',
-      priority: 7,
-      type: 'text'
-    },
+    // imo_no: {
+    //   dbField: 'imo_no',
+    //   label: 'IMO No',
+    //   priority: 1,
+    //   type: 'text'
+    // },
+    // owner: {
+    //   dbField: 'owner',
+    //   label: 'Owner',
+    //   priority: 2,
+    //   type: 'text'
+    // },
+    // flag: {
+    //   dbField: 'flag',
+    //   label: 'Flag',
+    //   priority: 3,
+    //   type: 'text'
+    // },
+    // dwt: {
+    //   dbField: 'dwt',
+    //   label: 'DWT',
+    //   priority: 4,
+    //   type: 'number'
+    // },
+    // departure_port: {
+    //   dbField: 'departure_port',
+    //   label: 'Departure Port',
+    //   priority: 5,
+    //   type: 'text',
+    //   combineWithCountry: true
+    // },
+    
+    // office_doc: {
+    //   dbField: 'office_doc',
+    //   label: 'DOC Office',
+    //   priority: 7,
+    //   type: 'text'
+    // },
     psc_last_inspection_date: {
       dbField: 'psc_last_inspection_date',
       label: 'PSC Last Inspection Date',

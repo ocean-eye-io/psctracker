@@ -1,3 +1,4 @@
+// ChecklistPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   ArrowLeft,
@@ -39,46 +40,57 @@ const ChecklistPage = ({ vessel, onBack }) => {
   const { currentUser } = useAuth();
   const selectedVessel = vessel;
 
+  // Add debugging to the vessel checklists fetch
+  const fetchData = async () => {
+    if (!selectedVessel?.id) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.log('=== FETCHING VESSEL CHECKLISTS ===');
+      console.log('Fetching checklists for vessel:', selectedVessel.id);
+
+      const existingChecklists = await checklistService.getChecklistsForVessel(selectedVessel.id);
+      console.log('Fetched checklists:', {
+        count: existingChecklists.length,
+        checklists: existingChecklists.map(c => ({
+          id: c.checklist_id,
+          status: c.status,
+          progress: c.progress_percentage,
+          template: c.template_name
+        }))
+      });
+
+      setChecklists(existingChecklists);
+
+      // Auto-create checklists if none exist
+      if (existingChecklists.length === 0) {
+        try {
+          console.log('Auto-creating checklists for vessel:', selectedVessel.vessel_name);
+          const createdChecklists = await checklistService.createChecklistsForVoyage(
+            selectedVessel.id,
+            {
+              vessel_name: selectedVessel.vessel_name,
+              user_id: currentUser?.id || 'system'
+            }
+          );
+          console.log('Auto-created checklists:', createdChecklists);
+          setChecklists(createdChecklists);
+        } catch (createError) {
+          console.log('Could not auto-create checklists:', createError.message);
+        }
+      }
+    } catch (fetchError) {
+      console.error('Error fetching checklist data:', fetchError);
+      setError('Failed to load checklist data. Please try refreshing.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch existing checklists and auto-create if needed
   useEffect(() => {
-    const fetchData = async () => {
-      if (!selectedVessel?.id) return;
-    
-      setLoading(true);
-      setError(null);
-    
-      try {
-        console.log('Fetching checklists for vessel:', selectedVessel.id);
-        const existingChecklists = await checklistService.getChecklistsForVessel(selectedVessel.id);
-        console.log('Fetched checklists:', existingChecklists);
-      
-        setChecklists(existingChecklists);
-
-        // Auto-create checklists if none exist
-        if (existingChecklists.length === 0) {
-          try {
-            console.log('Auto-creating checklists for vessel:', selectedVessel.vessel_name);
-            const createdChecklists = await checklistService.createChecklistsForVoyage(
-              selectedVessel.id,
-              {
-                vessel_name: selectedVessel.vessel_name,
-                user_id: currentUser?.id || 'system'
-              }
-            );
-            console.log('Auto-created checklists:', createdChecklists);
-            setChecklists(createdChecklists);
-          } catch (createError) {
-            console.log('Could not auto-create checklists:', createError.message);
-          }
-        }
-      } catch (fetchError) {
-        console.error('Error fetching checklist data:', fetchError);
-        setError('Failed to load checklist data. Please try refreshing.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, [selectedVessel?.id, currentUser?.id]);
 
@@ -96,39 +108,89 @@ const ChecklistPage = ({ vessel, onBack }) => {
     }
   };
 
+  // Add debugging to the edit handler to see the data flow
   const handleEditChecklist = async (checklist) => {
+    setError(null);
+    setLoading(true);
+
     try {
+      console.log('=== EDIT CHECKLIST DEBUG ===');
       console.log('Loading checklist for editing:', checklist.checklist_id);
+      console.log('Checklist summary:', {
+        id: checklist.checklist_id,
+        status: checklist.status,
+        progress: checklist.progress_percentage,
+        items_completed: checklist.items_completed
+      });
+
       const [fullChecklist, template] = await Promise.all([
         checklistService.getChecklistById(checklist.checklist_id),
         checklistService.getTemplateById(checklist.template_id)
       ]);
-    
+
+      console.log('=== LOADED DATA DEBUG ===');
+      console.log('Full checklist loaded:', {
+        checklistId: fullChecklist.checklist_id,
+        responseCount: fullChecklist.responses?.length || 0,
+        progress: fullChecklist.progress_percentage
+      });
+
+      console.log('Template loaded:', {
+        templateId: template.template_id || template.id,
+        name: template.name,
+        itemCount: template.processed_items?.length || 0
+      });
+
+      if (fullChecklist.responses && fullChecklist.responses.length > 0) {
+        console.log('Sample existing responses:');
+        fullChecklist.responses.slice(0, 3).forEach((resp, idx) => {
+          console.log(`Response ${idx}:`, {
+            item_id: resp.item_id,
+            yes_no_na_value: resp.yes_no_na_value,
+            text_value: resp.text_value,
+            remarks: resp.remarks
+          });
+        });
+      } else {
+        console.log('No existing responses found in checklist');
+      }
+
       setSelectedChecklist(fullChecklist);
       setSelectedTemplate(template);
       setFormMode('edit');
       setShowForm(true);
+
     } catch (error) {
       console.error('Error loading checklist for editing:', error);
       setError('Failed to load checklist for editing. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Enhanced view handler
   const handleViewChecklist = async (checklist) => {
+    setError(null);
+    setLoading(true);
+
     try {
       console.log('Loading checklist for viewing:', checklist.checklist_id);
+
       const [fullChecklist, template] = await Promise.all([
         checklistService.getChecklistById(checklist.checklist_id),
         checklistService.getTemplateById(checklist.template_id)
       ]);
-    
+
       setSelectedChecklist(fullChecklist);
       setSelectedTemplate(template);
       setFormMode('view');
       setShowForm(true);
+
     } catch (error) {
       console.error('Error loading checklist for viewing:', error);
       setError('Failed to load checklist for viewing. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -147,51 +209,95 @@ const ChecklistPage = ({ vessel, onBack }) => {
     }
   };
 
+  // Updated handleSaveChecklist
   const handleSaveChecklist = async (responses, isAutoSave = false) => {
     try {
+      console.log('ChecklistPage: handleSaveChecklist called', {
+        isAutoSave,
+        responseCount: Object.keys(responses).length,
+        checklistId: selectedChecklist?.checklist_id,
+        responses: responses
+      });
+
       if (formMode === 'edit' && selectedChecklist) {
-        await checklistService.updateChecklistResponses(
-          selectedChecklist.checklist_id, 
-          responses, 
-          currentUser.id
-        );
+        // The ModernChecklistForm will handle the actual API call
+
+        if (!isAutoSave) {
+          console.log('ChecklistPage: Save completed, refreshing data...');
+
+          // Add delay to ensure save is complete
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Refresh the checklists list to show updated progress
+          console.log('ChecklistPage: Fetching updated checklists...');
+          const updatedChecklists = await checklistService.getChecklistsForVessel(selectedVessel.id);
+          console.log('ChecklistPage: Updated checklists received:', {
+            count: updatedChecklists.length,
+            sample: updatedChecklists.slice(0, 2).map(c => ({
+              id: c.checklist_id,
+              progress: c.progress_percentage,
+              items_completed: c.items_completed,
+              status: c.status
+            }))
+          });
+
+          setChecklists(updatedChecklists);
+
+          // Also refresh the selected checklist to show updated data
+          console.log('ChecklistPage: Refreshing selected checklist...');
+          const refreshedChecklist = await checklistService.getChecklistById(selectedChecklist.checklist_id);
+          console.log('ChecklistPage: Refreshed checklist:', {
+            id: refreshedChecklist.checklist_id,
+            progress: refreshedChecklist.progress_percentage,
+            responseCount: refreshedChecklist.responses?.length
+          });
+
+          setSelectedChecklist(refreshedChecklist);
+        }
       } else {
         throw new Error('Invalid operation: Cannot save checklist in current mode or no checklist selected.');
       }
 
-      if (!isAutoSave) {
-        const updatedChecklists = await checklistService.getChecklistsForVessel(selectedVessel.id);
-        setChecklists(updatedChecklists);
-        setShowForm(false);
-      }
     } catch (err) {
-      console.error('Error saving checklist:', err);
-      throw new Error('Failed to save checklist. Please try again.');
+      console.error('ChecklistPage: Error in handleSaveChecklist:', err);
+      throw err;
     }
   };
 
+  // Updated handleSubmitChecklist
   const handleSubmitChecklist = async (responses) => {
     try {
+      console.log('ChecklistPage: handleSubmitChecklist called', {
+        responseCount: Object.keys(responses).length,
+        checklistId: selectedChecklist?.checklist_id
+      });
+
       if (formMode === 'edit' && selectedChecklist) {
-        await checklistService.updateChecklistResponses(
-          selectedChecklist.checklist_id, 
-          responses, 
-          currentUser.id
-        );
-        await checklistService.submitChecklist(
-          selectedChecklist.checklist_id, 
-          currentUser.id
-        );
+        // The ModernChecklistForm will handle the actual API calls for saving and submitting.
+        // This handler in ChecklistPage is for page-level logic after successful submission.
+
+        console.log('ChecklistPage: Submit completed, refreshing data...');
+
+        // Refresh the checklists list to show the completed status
+        const updatedChecklists = await checklistService.getChecklistsForVessel(selectedVessel.id);
+        setChecklists(updatedChecklists);
+
+        // Close the form
+        setShowForm(false);
+        setSelectedChecklist(null);
+        setSelectedTemplate(null);
+
+        // Show a brief success message (optional, or rely on ModernChecklistForm's message)
+        console.log('Checklist submitted successfully!');
+
       } else {
         throw new Error('Cannot submit checklist: Invalid mode or no checklist selected.');
       }
 
-      const updatedChecklists = await checklistService.getChecklistsForVessel(selectedVessel.id);
-      setChecklists(updatedChecklists);
-      setShowForm(false);
     } catch (err) {
-      console.error('Error submitting checklist:', err);
-      throw new Error('Failed to submit checklist. Please ensure all mandatory fields are completed.');
+      console.error('ChecklistPage: Error in handleSubmitChecklist:', err);
+      // Re-throw to let the ModernChecklistForm handle the error display
+      throw err;
     }
   };
 
@@ -237,7 +343,7 @@ const ChecklistPage = ({ vessel, onBack }) => {
 
   const getUrgencyLevel = (checklist, vessel) => {
     if (checklist.status === 'complete') return null;
-  
+
     const eta = vessel.eta ? new Date(vessel.eta) : null;
     if (!eta) return null;
 
@@ -305,12 +411,13 @@ const ChecklistPage = ({ vessel, onBack }) => {
         vessel={vessel}
         template={selectedTemplate}
         existingChecklist={selectedChecklist}
-        onSave={handleSaveChecklist}
-        onSubmit={handleSubmitChecklist}
+        onSave={handleSaveChecklist} // This will now trigger the page-level refresh logic
+        onSubmit={handleSubmitChecklist} // This will now trigger the page-level refresh and form close logic
         onCancel={() => setShowForm(false)}
         loading={loading}
         currentUser={currentUser}
         mode={formMode}
+        selectedChecklist={selectedChecklist} // Pass selectedChecklist to the form
       />
     );
   }
@@ -320,7 +427,7 @@ const ChecklistPage = ({ vessel, onBack }) => {
       {/* Enhanced Header */}
       <header className="checklist-header">
         <div className="checklist-header-title">
-          <button 
+          <button
             onClick={onBack}
             className="checklist-action-btn"
             aria-label="Back to vessel list"
@@ -328,11 +435,11 @@ const ChecklistPage = ({ vessel, onBack }) => {
           >
             <ArrowLeft size={16} />
           </button>
-        
+
           <div className="checklist-info-card-icon">
             <Ship size={20} />
           </div>
-        
+
           <div>
             <h1 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 600 }}>Vessel Checklists</h1>
             <div className="checklist-header-info" style={{ display: 'flex', gap: '16px', marginTop: '4px', fontSize: '13px', color: 'var(--checklist-text-muted)' }}>
@@ -457,7 +564,7 @@ const ChecklistPage = ({ vessel, onBack }) => {
           </div>
 
           <div style={{ marginLeft: 'auto', color: '#6c757d', fontSize: '14px' }}>
-            {filteredChecklists.length} {filteredChecklists.length === 1 ? 'checklist' : 'checklists'} 
+            {filteredChecklists.length} {filteredChecklists.length === 1 ? 'checklist' : 'checklists'}
             {statusFilter !== 'all' && ` (${statusFilter})`}
           </div>
         </div>
@@ -471,7 +578,7 @@ const ChecklistPage = ({ vessel, onBack }) => {
                 {statusFilter === 'all' ? 'No Checklists Available' : `No ${statusFilter} checklists`}
               </h3>
               <p className="checklist-empty-description">
-                {statusFilter === 'all' 
+                {statusFilter === 'all'
                   ? 'Checklists will be automatically created based on your vessel\'s voyage requirements and compliance needs. Please refresh if you expect to see new checklists.'
                   : `No checklists with ${statusFilter} status found. Try changing the filter or refresh the page.`
                 }
@@ -487,9 +594,9 @@ const ChecklistPage = ({ vessel, onBack }) => {
                     const completionPercentage = checklist.progress_percentage || 0;
                     const statusBadge = getChecklistStatusBadge(checklist.status);
                     const urgencyClass = urgency ? `checklist-${urgency}` : '';
-                  
+
                     return (
-                      <div 
+                      <div
                         key={checklist.checklist_id}
                         className={`checklist-card checklist-card-compact ${urgencyClass}`}
                         tabIndex="0"
@@ -550,12 +657,12 @@ const ChecklistPage = ({ vessel, onBack }) => {
                               <span style={{ color: 'var(--checklist-text-muted)' }}>Progress</span>
                               <span style={{ fontWeight: 600, color: 'var(--checklist-text-primary)' }}>{completionPercentage}%</span>
                             </div>
-                          
+
                             <div className="checklist-progress-bar-container">
-                              <div 
+                              <div
                                 className={`checklist-progress-bar ${
-                                  checklist.status === 'complete' ? 'checklist-complete' : 
-                                  completionPercentage > 70 ? 'checklist-high' : 
+                                  checklist.status === 'complete' ? 'checklist-complete' :
+                                  completionPercentage > 70 ? 'checklist-high' :
                                   'checklist-normal'
                                 }`}
                                 style={{ width: `${completionPercentage}%` }}
@@ -644,9 +751,9 @@ const ChecklistPage = ({ vessel, onBack }) => {
                     const urgency = getUrgencyLevel(checklist, vessel);
                     const completionPercentage = checklist.progress_percentage || 0;
                     const urgencyClass = urgency ? `checklist-${urgency}` : '';
-                  
+
                     return (
-                      <div 
+                      <div
                         key={checklist.checklist_id}
                         className={`checklist-row ${urgencyClass}`}
                         tabIndex="0"
@@ -654,7 +761,7 @@ const ChecklistPage = ({ vessel, onBack }) => {
                         <div className="checklist-row-icon">
                           {getChecklistStatusIcon(checklist.status)}
                         </div>
-                        
+
                         <div className="checklist-row-content">
                           <div className="checklist-row-main">
                             <h4 className="checklist-row-title">
@@ -673,26 +780,26 @@ const ChecklistPage = ({ vessel, onBack }) => {
                               )}
                             </div>
                           </div>
-                          
+
                           <div className="checklist-row-progress">
                             <span style={{ fontSize: '12px', fontWeight: 600, minWidth: '35px' }}>{completionPercentage}%</span>
                             <div className="checklist-row-progress-bar">
-                              <div 
+                              <div
                                 className="checklist-row-progress-fill"
-                                style={{ 
+                                style={{
                                   width: `${completionPercentage}%`,
                                   background: checklist.status === 'complete' ? 'var(--checklist-success)' : 'var(--checklist-primary)'
                                 }}
                               ></div>
                             </div>
                           </div>
-                          
+
                           <div className="checklist-row-status" style={{ minWidth: '80px' }}>
                             <span className={`checklist-badge ${getChecklistStatusBadge(checklist.status)}`} style={{ fontSize: '11px' }}>
                               {getChecklistStatusText(checklist.status)}
                             </span>
                           </div>
-                          
+
                           <div className="checklist-row-actions">
                             <button
                               onClick={() => handleViewChecklist(checklist)}

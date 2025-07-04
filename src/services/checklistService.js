@@ -1,4 +1,4 @@
-// src/services/checklistService.js
+// src/services/checklistService.js - FIXED VERSION
 import apiClient from './apiClient';
 
 class ChecklistService {
@@ -27,11 +27,15 @@ class ChecklistService {
    */
   async getTemplateById(templateId) {
     try {
+      console.log('ChecklistService: Fetching template by ID:', templateId);
       const response = await apiClient.get(`${this.baseUrl}/checklist-templates/${templateId}`);
       const template = response.data;
-      
+
+      console.log('ChecklistService: Raw template received:', template);
+
       // Process the template data for form compatibility
       const processedTemplate = this.processTemplateForForm(template);
+      console.log('ChecklistService: Processed template:', processedTemplate);
       return processedTemplate;
     } catch (error) {
       console.error('Error fetching template:', error);
@@ -63,7 +67,7 @@ class ChecklistService {
   async createChecklistsForVoyage(voyageId, options = {}) {
     try {
       console.log('Creating checklists for voyage:', voyageId, 'options:', options);
-      
+
       // Always use auto-create endpoint when no specific template_id is provided
       if (!options.template_id) {
         console.log('Using auto-create endpoint');
@@ -84,13 +88,13 @@ class ChecklistService {
       }
     } catch (error) {
       console.error('Error creating checklists for voyage:', error);
-      
+
       // Handle 409 conflict error specifically
       if (error.message.includes('409')) {
         console.warn('Checklist already exists, fetching existing checklists instead');
         return await this.getChecklistsForVessel(voyageId);
       }
-      
+
       throw new Error('Failed to create checklists');
     }
   }
@@ -102,8 +106,16 @@ class ChecklistService {
    */
   async getChecklistById(checklistId) {
     try {
+      console.log('ChecklistService: Fetching checklist by ID:', checklistId);
+
+      // REAL API CALL to your Lambda
       const response = await apiClient.get(`${this.baseUrl}/checklist/${checklistId}`);
-      return this.processChecklistItem(response.data);
+      console.log('ChecklistService: Raw checklist received:', response.data);
+
+      const processedChecklist = this.processChecklistItem(response.data);
+      console.log('ChecklistService: Processed checklist:', processedChecklist);
+      return processedChecklist;
+
     } catch (error) {
       console.error('Error fetching checklist:', error);
       throw new Error('Failed to fetch checklist');
@@ -111,40 +123,170 @@ class ChecklistService {
   }
 
   /**
-   * Update checklist responses
+   * Update checklist responses - ENHANCED VERSION with duplicate handling
    * @param {string} checklistId - Checklist UUID
    * @param {Array} responses - Array of response objects
-   * @param {string} userId - User ID
+   * @param {string} userId - User ID (optional)
    * @returns {Promise<Object>} Update result
    */
-  async updateChecklistResponses(checklistId, responses, userId) {
+  async updateChecklistResponses(checklistId, responses, userId = 'system') {
     try {
-      const response = await apiClient.put(`${this.baseUrl}/checklist/${checklistId}/responses`, {
-        responses,
-        user_id: userId
+      console.log('ChecklistService: updateChecklistResponses called with:');
+      console.log('  checklistId:', checklistId);
+      console.log('  responses count:', responses?.length);
+      console.log('  userId:', userId);
+
+      // Validation
+      if (!checklistId) {
+        throw new Error('Checklist ID is required');
+      }
+
+      if (!responses || !Array.isArray(responses)) {
+        console.error('ChecklistService: Invalid responses data');
+        throw new Error('Responses must be an array');
+      }
+
+      // Remove duplicates and filter responses with values
+      const uniqueResponses = [];
+      const seenItemIds = new Set();
+
+      for (let i = responses.length - 1; i >= 0; i--) {
+        const response = responses[i];
+        if (response.item_id && !seenItemIds.has(response.item_id)) {
+          seenItemIds.add(response.item_id);
+          uniqueResponses.unshift(response);
+        } else if (response.item_id) {
+          console.warn(`Duplicate item_id found and removed: ${response.item_id}`);
+        } else {
+          console.warn('Response without item_id found and removed:', response);
+        }
+      }
+
+      console.log(`ChecklistService: Deduplicated responses from ${responses.length} to ${uniqueResponses.length}`);
+
+      const responsesWithValues = uniqueResponses.filter(r => {
+        const hasValue = r.yes_no_na_value !== null ||
+          r.text_value !== null ||
+          r.date_value !== null ||
+          (r.remarks !== null && r.remarks !== '');
+
+        if (!hasValue) {
+          console.log(`Filtering out response without values for item: ${r.item_id}`);
+        }
+
+        return hasValue;
       });
-      return response.data;
+
+      console.log('ChecklistService: Sending', responsesWithValues.length, 'responses with values out of', uniqueResponses.length, 'total');
+
+      // ENHANCED: Validate each response has required fields
+      const validatedResponses = responsesWithValues.map((response, index) => {
+        // Ensure required fields are present
+        if (!response.item_id) {
+          throw new Error(`Response at index ${index} is missing item_id`);
+        }
+
+        // Clean and validate the response object
+        return {
+          item_id: response.item_id,
+          sr_no: response.sr_no || index + 1,
+          section: response.section || 'GENERAL',
+          subsection: response.subsection || null,
+          check_description: response.check_description || '',
+          pic: response.pic || '',
+          response_type: response.response_type || 'yes_no_na',
+          yes_no_na_value: response.yes_no_na_value || null,
+          text_value: response.text_value || null,
+          date_value: response.date_value || null,
+          remarks: response.remarks || null,
+          guidance: response.guidance || '',
+          is_mandatory: Boolean(response.is_mandatory),
+          requires_evidence: Boolean(response.requires_evidence)
+        };
+      });
+
+      console.log('ChecklistService: Validated responses sample:', validatedResponses.slice(0, 3));
+
+      // Prepare the request body exactly as your Lambda expects
+      const requestBody = {
+        responses: validatedResponses,
+        user_id: userId
+      };
+
+      console.log('ChecklistService: Making REAL API call to:', `${this.baseUrl}/checklist/${checklistId}/responses`);
+      console.log('ChecklistService: Request body summary:', {
+        responsesCount: requestBody.responses.length,
+        user_id: requestBody.user_id,
+        sampleResponse: requestBody.responses[0]
+      });
+
+      // ✅ REAL API CALL to your Lambda
+      const response = await apiClient.put(`${this.baseUrl}/checklist/${checklistId}/responses`, requestBody);
+
+      console.log('ChecklistService: REAL API response received:', response);
+
+      // Enhanced response validation
+      if (response && response.data) {
+        console.log('ChecklistService: Update successful:', {
+          summary: response.data.summary,
+          checklist_status: response.data.checklist_status
+        });
+        return response.data;
+      } else if (response) {
+        console.log('ChecklistService: Update successful (legacy format):', response);
+        return response;
+      } else {
+        throw new Error('Empty response from server');
+      }
+
     } catch (error) {
-      console.error('Error updating checklist responses:', error);
-      throw new Error('Failed to update checklist');
+      console.error('ChecklistService: Error updating checklist responses:', error);
+      console.error('ChecklistService: Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        response: error.response?.data,
+        url: error.config?.url,
+        method: error.config?.method
+      });
+
+      // Provide more specific error messages
+      if (error.response?.status === 400) {
+        throw new Error('Invalid request data. Please check your responses.');
+      } else if (error.response?.status === 404) {
+        throw new Error('Checklist not found.');
+      } else if (error.response?.status === 403) {
+        throw new Error('You do not have permission to update this checklist.');
+      } else if (error.response?.status === 409) {
+        throw new Error('Conflict: Another user may be editing this checklist.');
+      } else if (error.response?.status >= 500) {
+        throw new Error('Server error. Please try again later.');
+      } else {
+        throw new Error('Failed to update checklist responses: ' + error.message);
+      }
     }
   }
 
   /**
-   * Submit checklist (mark as complete)
+   * Submit checklist (mark as complete) - FIXED VERSION
    * @param {string} checklistId - Checklist UUID
-   * @param {string} userId - User ID
+   * @param {string} userId - User ID (optional)
    * @returns {Promise<Object>} Submission result
    */
-  async submitChecklist(checklistId, userId) {
+  async submitChecklist(checklistId, userId = 'system') {
     try {
+      console.log('ChecklistService: Submitting checklist:', checklistId, 'by user:', userId);
+
+      // ✅ REAL API CALL
       const response = await apiClient.post(`${this.baseUrl}/checklist/${checklistId}/submit`, {
         user_id: userId
       });
-      return response.data;
+
+      console.log('ChecklistService: Submit successful:', response);
+      return response.data || response;
+
     } catch (error) {
       console.error('Error submitting checklist:', error);
-      throw new Error('Failed to submit checklist');
+      throw new Error('Failed to submit checklist: ' + error.message);
     }
   }
 
@@ -220,15 +362,15 @@ class ChecklistService {
   }
 
   /**
-   * Process template data from nested JSON structure to flat form structure
+   * Process template data from nested JSON structure to flat form structure - ENHANCED VERSION
    * @param {Object} template - Template with nested JSON structure
    * @returns {Object} Processed template for form compatibility
    */
   processTemplateForForm(template) {
-    console.log('Processing template:', template);
-    
+    console.log('ChecklistService: Processing template for form:', template?.name || template?.template_name);
+
     if (!template) {
-      console.warn('Template is null or undefined');
+      console.warn('ChecklistService: Template is null or undefined');
       return {
         items: [],
         item_types: [],
@@ -238,7 +380,7 @@ class ChecklistService {
     }
 
     if (!template.template_data) {
-      console.warn('Template has no template_data:', template);
+      console.warn('ChecklistService: Template has no template_data:', template);
       return {
         ...template,
         items: [],
@@ -249,132 +391,129 @@ class ChecklistService {
     }
 
     const templateData = template.template_data;
-    console.log('Template data structure:', templateData);
-    
+    console.log('ChecklistService: Template data structure:', {
+      hasSection: !!templateData.sections,
+      sectionsLength: templateData.sections?.length,
+      keys: Object.keys(templateData)
+    });
+
     const items = [];
     const item_types = [];
     const is_mandatory = [];
     const processed_items = [];
+    let itemCounter = 0;
+    const seenItemIds = new Set(); // Track seen item IDs to prevent duplicates
 
     // Process nested sections structure from your database
     if (templateData.sections && Array.isArray(templateData.sections)) {
-      console.log('Found sections:', templateData.sections.length);
-      
+      console.log('ChecklistService: Found sections:', templateData.sections.length);
+
       templateData.sections.forEach((section, sectionIndex) => {
-        // Use section_name instead of name based on the actual structure
         const sectionName = section.section_name || section.name || `Section ${sectionIndex}`;
-        console.log(`Processing section ${sectionIndex}:`, sectionName);
-        
+        console.log(`ChecklistService: Processing section ${sectionIndex}:`, sectionName);
+
         // Check for subsections (note: lowercase 's' in 'subsections')
-        if (section.subsections && Array.isArray(section.subsections)) {
-          console.log(`Found ${section.subsections.length} subsections in ${sectionName}`);
-          
-          section.subsections.forEach((subSection, subSectionIndex) => {
-            const subSectionName = subSection.subsection_name || subSection.name || `Subsection ${subSectionIndex}`;
-            console.log(`Processing subsection ${subSectionIndex}:`, subSectionName);
-            
+        const subsections = section.subsections || section.sub_sections || [];
+
+        if (subsections && Array.isArray(subsections) && subsections.length > 0) {
+          console.log(`ChecklistService: Found ${subsections.length} subsections in ${sectionName}`);
+
+          subsections.forEach((subSection, subSectionIndex) => {
+            const subSectionName = subSection.subsection_name || subSection.sub_section_name || subSection.name || `Subsection ${subSectionIndex}`;
+            console.log(`ChecklistService: Processing subsection ${subSectionIndex}:`, subSectionName);
+
             if (subSection.items && Array.isArray(subSection.items)) {
-              console.log(`Found ${subSection.items.length} items in ${subSectionName}`);
-              
+              console.log(`ChecklistService: Found ${subSection.items.length} items in ${subSectionName}`);
+
               subSection.items.forEach((item, itemIndex) => {
-                console.log(`Processing item ${itemIndex}:`, item.item_id, item.check);
-                
+                // ENHANCED: Check for duplicate item IDs
+                if (seenItemIds.has(item.item_id)) {
+                  console.warn(`ChecklistService: Duplicate item_id found in template: ${item.item_id} (skipping)`);
+                  return;
+                }
+                seenItemIds.add(item.item_id);
+
+                console.log(`ChecklistService: Processing item ${itemCounter}:`, item.item_id, item.description?.substring(0, 50));
+
                 const processedItem = {
-                  item_id: item.item_id || `${sectionName}_${subSectionName}_${itemIndex}`,
+                  item_id: item.item_id || `${sectionName}_${subSectionName}_${itemIndex}`.replace(/\s+/g, '_').toLowerCase(),
                   section_name: sectionName,
                   sub_section_name: subSectionName,
-                  check_description: item.check || item.check_description || '',
+                  description: item.description || '',
+                  check_description: item.description || item.check_description || '',
                   pic: item.pic || '',
                   guidance: item.guidance || '',
                   response_type: this.determineResponseType(item),
-                  is_mandatory: item.mandatory !== undefined ? item.mandatory : true,
+                  is_mandatory: item.is_mandatory !== undefined ? item.is_mandatory : true,
                   requires_evidence: item.requires_evidence || false,
-                  order_index: processed_items.length
+                  order_index: itemCounter++
                 };
 
                 processed_items.push(processedItem);
-                items.push(processedItem.check_description);
+                items.push(processedItem.description);
                 item_types.push(processedItem.response_type);
                 is_mandatory.push(processedItem.is_mandatory);
               });
             } else {
-              console.log(`Subsection ${subSectionName} has no items or items is not an array:`, subSection.items);
-            }
-          });
-        } 
-        // Also check for sub_sections (with underscore) as fallback
-        else if (section.sub_sections && Array.isArray(section.sub_sections)) {
-          console.log(`Found ${section.sub_sections.length} sub_sections in ${sectionName}`);
-          
-          section.sub_sections.forEach((subSection, subSectionIndex) => {
-            const subSectionName = subSection.sub_section_name || subSection.name || `Subsection ${subSectionIndex}`;
-            console.log(`Processing sub_section ${subSectionIndex}:`, subSectionName);
-            
-            if (subSection.items && Array.isArray(subSection.items)) {
-              console.log(`Found ${subSection.items.length} items in ${subSectionName}`);
-              
-              subSection.items.forEach((item, itemIndex) => {
-                console.log(`Processing item ${itemIndex}:`, item.item_id, item.check);
-                
-                const processedItem = {
-                  item_id: item.item_id || `${sectionName}_${subSectionName}_${itemIndex}`,
-                  section_name: sectionName,
-                  sub_section_name: subSectionName,
-                  check_description: item.check || item.check_description || '',
-                  pic: item.pic || '',
-                  guidance: item.guidance || '',
-                  response_type: this.determineResponseType(item),
-                  is_mandatory: item.mandatory !== undefined ? item.mandatory : true,
-                  requires_evidence: item.requires_evidence || false,
-                  order_index: processed_items.length
-                };
-
-                processed_items.push(processedItem);
-                items.push(processedItem.check_description);
-                item_types.push(processedItem.response_type);
-                is_mandatory.push(processedItem.is_mandatory);
-              });
-            } else {
-              console.log(`Sub_section ${subSectionName} has no items or items is not an array:`, subSection.items);
+              console.log(`ChecklistService: Subsection ${subSectionName} has no items or items is not an array:`, subSection.items);
             }
           });
         }
         // Check for direct items in section
         else if (section.items && Array.isArray(section.items)) {
-          console.log(`Section ${sectionName} has direct items:`, section.items.length);
-          
+          console.log(`ChecklistService: Section ${sectionName} has direct items:`, section.items.length);
+
           section.items.forEach((item, itemIndex) => {
-            console.log(`Processing direct item ${itemIndex}:`, item.item_id, item.check);
-            
+            // ENHANCED: Check for duplicate item IDs
+            if (seenItemIds.has(item.item_id)) {
+              console.warn(`ChecklistService: Duplicate item_id found in template: ${item.item_id} (skipping)`);
+              return;
+            }
+            seenItemIds.add(item.item_id);
+
+            console.log(`ChecklistService: Processing direct item ${itemCounter}:`, item.item_id, item.description?.substring(0, 50));
+
             const processedItem = {
-              item_id: item.item_id || `${sectionName}_${itemIndex}`,
+              item_id: item.item_id || `${sectionName}_${itemIndex}`.replace(/\s+/g, '_').toLowerCase(),
               section_name: sectionName,
               sub_section_name: null,
-              check_description: item.check || item.check_description || '',
+              description: item.description || '',
+              check_description: item.description || item.check_description || '',
               pic: item.pic || '',
               guidance: item.guidance || '',
               response_type: this.determineResponseType(item),
-              is_mandatory: item.mandatory !== undefined ? item.mandatory : true,
+              is_mandatory: item.is_mandatory !== undefined ? item.is_mandatory : true,
               requires_evidence: item.requires_evidence || false,
-              order_index: processed_items.length
+              order_index: itemCounter++
             };
 
             processed_items.push(processedItem);
-            items.push(processedItem.check_description);
+            items.push(processedItem.description);
             item_types.push(processedItem.response_type);
             is_mandatory.push(processedItem.is_mandatory);
           });
         } else {
-          console.log(`Section ${sectionName} has no subsections or direct items:`, section);
+          console.log(`ChecklistService: Section ${sectionName} has no subsections or direct items:`, section);
         }
       });
     } else {
-      console.warn('Template data has no sections or sections is not an array:', templateData);
+      console.warn('ChecklistService: Template data has no sections or sections is not an array:', templateData);
     }
 
-    console.log('Final processed template items:', processed_items.length);
-    console.log('Sample processed items:', processed_items.slice(0, 3));
-    
+    console.log('ChecklistService: Final processed template items:', processed_items.length);
+    console.log('ChecklistService: Unique item IDs:', seenItemIds.size);
+    console.log('ChecklistService: Sample processed items:', processed_items.slice(0, 3));
+
+    // ENHANCED: Validate no duplicate item IDs in final result
+    const finalItemIds = processed_items.map(item => item.item_id);
+    const uniqueFinalItemIds = new Set(finalItemIds);
+
+    if (finalItemIds.length !== uniqueFinalItemIds.size) {
+      console.error('ChecklistService: CRITICAL - Duplicate item IDs detected in final processed items!');
+      const duplicates = finalItemIds.filter((item, index) => finalItemIds.indexOf(item) !== index);
+      console.error('ChecklistService: Duplicate item IDs:', [...new Set(duplicates)]);
+    }
+
     const result = {
       ...template,
       items,
@@ -382,10 +521,11 @@ class ChecklistService {
       is_mandatory,
       processed_items,
       total_items: processed_items.length,
-      mandatory_items: processed_items.filter(item => item.is_mandatory).length
+      mandatory_items: processed_items.filter(item => item.is_mandatory).length,
+      unique_items: uniqueFinalItemIds.size
     };
-    
-    console.log('Returning processed template:', result);
+
+    console.log('ChecklistService: Returning processed template with', result.processed_items.length, 'items and', result.unique_items, 'unique IDs');
     return result;
   }
 
@@ -417,15 +557,6 @@ class ChecklistService {
     return 'yes_no_na';
   }
 
-  /**
-   * Upload evidence for checklist item
-   * @param {string} checklistId - Checklist UUID
-   * @param {string} itemId - Item ID
-   * @param {File} file - File object
-   * @param {string} description - Optional description
-   * @param {string} uploadedBy - User ID
-   * @returns {Promise<Object>} Upload result
-   */
   async uploadEvidence(checklistId, itemId, file, description = '', uploadedBy) {
     try {
       // Step 1: Get upload URL
@@ -475,11 +606,6 @@ class ChecklistService {
     }
   }
 
-  /**
-   * Get download URL for evidence
-   * @param {string} evidenceId - Evidence UUID
-   * @returns {Promise<Object>} Download URL and metadata
-   */
   async getEvidenceDownloadUrl(evidenceId) {
     try {
       const response = await apiClient.get(`${this.baseUrl}/evidence/${evidenceId}/download-url`);
@@ -490,11 +616,6 @@ class ChecklistService {
     }
   }
 
-  /**
-   * Delete evidence file
-   * @param {string} evidenceId - Evidence UUID
-   * @returns {Promise<boolean>} Success status
-   */
   async deleteEvidence(evidenceId) {
     try {
       await apiClient.delete(`${this.baseUrl}/evidence/${evidenceId}`);
@@ -506,30 +627,44 @@ class ChecklistService {
   }
 
   /**
-   * Calculate completion percentage based on responses
-   * @param {Array} responses - Checklist responses
-   * @param {number} totalItems - Total number of items
-   * @returns {number} Completion percentage (0-100)
+   * Enhanced method to calculate completion percentage with duplicate handling
    */
   calculateCompletionPercentage(responses, totalItems) {
     if (!responses || !Array.isArray(responses) || totalItems === 0) {
       return 0;
     }
 
-    const completedItems = responses.filter(response => {
-      return response.yes_no_na_value !== null || 
-             response.text_value?.trim() || 
-             response.date_value;
+    // Remove duplicates by response_id or item_id
+    const uniqueResponses = [];
+    const seenItems = new Set();
+
+    responses.forEach(response => {
+      const key = response.item_id || response.response_id;
+      if (key && !seenItems.has(key)) {
+        seenItems.add(key);
+        uniqueResponses.push(response);
+      }
+    });
+
+    const completedItems = uniqueResponses.filter(response => {
+      return response.yes_no_na_value !== null ||
+        response.text_value?.trim() ||
+        response.date_value;
     }).length;
 
-    return Math.round((completedItems / totalItems) * 100);
+    const percentage = Math.round((completedItems / totalItems) * 100);
+
+    console.log('ChecklistService: Completion calculation:', {
+      originalResponses: responses.length,
+      uniqueResponses: uniqueResponses.length,
+      completedItems,
+      totalItems,
+      percentage
+    });
+
+    return percentage;
   }
 
-  /**
-   * Validate checklist responses before submission
-   * @param {Array} responses - Checklist responses
-   * @returns {Object} Validation result
-   */
   validateChecklistResponses(responses) {
     const errors = {};
     let isValid = true;
@@ -540,12 +675,12 @@ class ChecklistService {
 
     responses.forEach((response, index) => {
       const itemKey = `item_${index}`;
-      
+
       if (response.is_mandatory) {
-        const hasResponse = response.yes_no_na_value !== null || 
-                           response.text_value?.trim() || 
-                           response.date_value;
-        
+        const hasResponse = response.yes_no_na_value !== null ||
+          response.text_value?.trim() ||
+          response.date_value;
+
         if (!hasResponse) {
           errors[itemKey] = 'This field is required';
           isValid = false;
@@ -562,12 +697,6 @@ class ChecklistService {
     return { isValid, errors };
   }
 
-  /**
-   * Export checklist data to CSV
-   * @param {Array} checklists - Array of checklists to export
-   * @param {string} filename - Custom filename
-   * @returns {void}
-   */
   exportChecklistsToCSV(checklists, filename = 'checklists') {
     try {
       if (!checklists || checklists.length === 0) {
@@ -632,11 +761,6 @@ class ChecklistService {
     }
   }
 
-  /**
-   * Get summary statistics for vessel reporting
-   * @param {Array} vessels - Array of vessels with checklist data
-   * @returns {Object} Summary statistics
-   */
   getVesselChecklistSummary(vessels) {
     const summary = {
       total_vessels: vessels.length,
@@ -652,7 +776,7 @@ class ChecklistService {
       if (vessel.checklists && vessel.checklists.length > 0) {
         summary.vessels_with_checklists++;
         summary.total_checklists += vessel.checklists.length;
-        
+
         vessel.checklists.forEach(checklist => {
           if (checklist.status === 'complete') {
             summary.completed_checklists++;
