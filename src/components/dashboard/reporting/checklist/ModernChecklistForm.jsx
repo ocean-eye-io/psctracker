@@ -33,33 +33,12 @@ import {
   Minus
 } from 'lucide-react';
 
-// REMOVE THE MOCK DEFINITION HERE
-// const checklistService = {
-//   updateChecklistResponses: async (checklistId, responses, userId) => {
-//     console.log(`Mock: Updating responses for checklist ${checklistId} by ${userId}`, responses);
-//     return new Promise(resolve => setTimeout(() => resolve({ success: true, updatedCount: responses.length }), 500));
-//   },
-//   submitChecklist: async (checklistId, userId) => {
-//     console.log(`Mock: Submitting checklist ${checklistId} by ${userId}`);
-//     return new Promise(resolve => setTimeout(() => resolve({ success: true, status: 'submitted' }), 500));
-//   },
-//   getChecklistById: async (checklistId) => {
-//     console.log(`Mock: Fetching checklist ${checklistId}`);
-//     // This mock should return responses in the format expected by the form
-//     return new Promise(resolve => setTimeout(() => resolve({
-//       checklist_id: checklistId,
-//       responses: [
-//         { item_id: 'psc_001', yes_no_na_value: 'Yes', remarks: 'Mock response 1' },
-//         { item_id: 'psc_002', yes_no_na_value: 'No', remarks: 'Mock response 2' },
-//       ],
-//       status: 'in_progress',
-//       progress_percentage: 50
-//     }), 500));
-//   }
-// };
-
 // IMPORT THE REAL CHECKLIST SERVICE
 import checklistService from '../../../../services/checklistService'; // <--- THIS IS THE CRITICAL CHANGE
+
+// 1. Import the DynamicTable component at the top
+import DynamicTable from './DynamicTable';
+import './DynamicTable.css';
 
 // Make sure you have these imports in ModernChecklistForm.jsx
 // Assuming this file exists and contains the transformation logic
@@ -72,13 +51,16 @@ const transformResponsesToAPIFormat = (responses, items) => {
 
     if (originalItem) {
       // Only include responses that have a value or remarks
-      if (itemResponse.response !== null || itemResponse.remarks !== '') {
+      // UPDATED: Include table_data check
+      if (itemResponse.response !== null || itemResponse.remarks !== '' || (originalItem.response_type === 'table' && itemResponse.table_data && itemResponse.table_data.length > 0)) {
         apiResponses.push({
           item_id: itemId,
           checklist_id: originalItem.checklist_id, // Assuming item has checklist_id
           yes_no_na_value: ['Yes', 'No', 'N/A'].includes(itemResponse.response) ? itemResponse.response : null,
           text_value: !['Yes', 'No', 'N/A'].includes(itemResponse.response) ? itemResponse.response : null,
           remarks: itemResponse.remarks || itemResponse.comments || '',
+          // ADD TABLE DATA HANDLING
+          table_data: originalItem.response_type === 'table' ? (itemResponse.table_data || []) : null,
           // Add other fields as necessary, e.g., photo_url, date_value
         });
       }
@@ -95,15 +77,33 @@ const validateResponsesForSubmission = (apiResponses, items) => {
   };
 
   const respondedItemIds = new Set(apiResponses.map(r => r.item_id));
+  const apiResponsesMap = new Map(apiResponses.map(r => [r.item_id, r]));
 
   items.forEach(item => {
-    if (item.is_mandatory && !respondedItemIds.has(item.item_id)) {
-      validation.isValid = false;
-      validation.mandatoryIncomplete.push({
-        item_id: item.item_id,
-        description: item.description,
-        section: item.section_name // Use actual section name
-      });
+    if (item.is_mandatory) {
+      const response = apiResponsesMap.get(item.item_id);
+      let hasResponse = false;
+
+      if (item.response_type === 'table') {
+        // For table fields, check if there's at least one row of data
+        hasResponse = response?.table_data &&
+                     Array.isArray(response.table_data) &&
+                     response.table_data.length > 0;
+      } else {
+        // For other fields, check for standard responses
+        hasResponse = response?.yes_no_na_value !== null && response?.yes_no_na_value !== undefined ||
+                     response?.text_value?.trim() ||
+                     response?.date_value;
+      }
+
+      if (!hasResponse) {
+        validation.isValid = false;
+        validation.mandatoryIncomplete.push({
+          item_id: item.item_id,
+          description: item.description,
+          section: item.section_name // Use actual section name
+        });
+      }
     }
   });
 
@@ -148,6 +148,7 @@ const ModernChecklistForm = ({
   // Add these state variables for error/success display
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [errors, setErrors] = useState({}); // State for field-specific errors
 
   // NEW: State for DebugPanel visibility, lifted up to parent
   const [showDebugPanel, setShowDebugPanel] = useState(false);
@@ -165,76 +166,116 @@ const ModernChecklistForm = ({
 
   // 1. UPDATED: Enhanced items processing with duplicate handling
   const items = useMemo(() => {
-    // Try multiple possible paths for the sections data
-    const sections = template?.template_data?.sections ||
-                    template?.sections ||
-                    template?.processed_items ||
-                    [];
+    console.log('ModernChecklistForm - Processing template for items...');
 
-    if (!sections || sections.length === 0) {
-      console.warn('Template has no sections in any expected location:', template);
+    if (!template) {
+      console.warn('ModernChecklistForm - No template provided');
       return [];
     }
 
-    const allItems = [];
-    const seenItemIds = new Set(); // Track seen item IDs to prevent duplicates
+    // IMPORTANT: Use processed_items from the service if available
+    if (template.processed_items && Array.isArray(template.processed_items)) {
+      console.log('ModernChecklistForm - Using pre-processed items from service:', template.processed_items.length);
+      console.log('ModernChecklistForm - Sample processed items:', template.processed_items.slice(0, 3));
+      return template.processed_items;
+    }
 
-    // Handle both array of sections and processed_items format
-    if (Array.isArray(sections) && sections[0]?.subsections) {
-      // This is the sections format
-      sections.forEach(section => {
-        section.subsections?.forEach(subsection => {
-          subsection.items?.forEach(item => {
-            // ENHANCED: Check for duplicate item IDs
-            if (seenItemIds.has(item.item_id)) {
-              console.warn(`Duplicate item_id found in template processing: ${item.item_id} (skipping)`);
+    console.warn('ModernChecklistForm - No processed_items found, template structure:', {
+      hasProcessedItems: !!template.processed_items,
+      templateKeys: Object.keys(template || {}),
+      templateDataKeys: template.template_data ? Object.keys(template.template_data) : []
+    });
+
+    // Fallback: Only if no processed_items are available
+    if (template.template_data?.sections) {
+      console.log('ModernChecklistForm - Falling back to manual processing');
+      const manualItems = [];
+      let itemCounter = 0;
+      const seenItemIds = new Set();
+
+      template.template_data.sections.forEach((section, sectionIndex) => {
+        const sectionName = section.section_name || section.name || `Section ${sectionIndex}`;
+
+        if (section.fields && Array.isArray(section.fields)) {
+          section.fields.forEach((field, fieldIndex) => {
+            // Skip table fields for now
+            if (field.field_type === 'table') {
+              console.log(`ModernChecklistForm - Skipping table field: ${field.field_id}`);
+              // For table fields, ensure table_structure is passed if available
+              const processedItem = {
+                item_id: field.field_id,
+                section_name: sectionName,
+                sub_section_name: null,
+                description: field.label || '',
+                check_description: field.label || field.description || '',
+                pic: field.pic || '',
+                guidance: field.guidance || field.placeholder || '',
+                response_type: mapFieldTypeToResponseType(field.field_type),
+                is_mandatory: field.is_mandatory !== undefined ? field.is_mandatory : true,
+                requires_evidence: field.requires_evidence || false,
+                order_index: itemCounter++,
+                table_structure: field.table_structure || null // Pass table structure
+              };
+              manualItems.push(processedItem);
               return;
             }
-            seenItemIds.add(item.item_id);
 
-            allItems.push({
-              ...item,
-              section_name: section.section_name || 'GENERAL',
-              sub_section_name: subsection.subsection_name || 'General Items',
-              category: determineCategoryFromItem(item),
-              riskLevel: item.is_mandatory ? 'high' : 'medium',
-              estimatedTime: estimateTimeFromItem(item),
-              location: extractLocationFromItem(item),
-              frequency: item.is_mandatory ? 'Daily' : 'Weekly'
-            });
+            if (!field.field_id) {
+              console.warn('ModernChecklistForm - Field missing field_id:', field);
+              return;
+            }
+
+            if (seenItemIds.has(field.field_id)) {
+              console.warn(`ModernChecklistForm - Duplicate field_id found: ${field.field_id} (skipping)`);
+              return;
+            }
+            seenItemIds.add(field.field_id);
+
+            const processedItem = {
+              item_id: field.field_id,
+              section_name: sectionName,
+              sub_section_name: null,
+              description: field.label || '',
+              check_description: field.label || field.description || '',
+              pic: field.pic || '',
+              guidance: field.guidance || field.placeholder || '',
+              response_type: mapFieldTypeToResponseType(field.field_type),
+              is_mandatory: field.is_mandatory !== undefined ? field.is_mandatory : true,
+              requires_evidence: field.requires_evidence || false,
+              order_index: itemCounter++
+            };
+
+            manualItems.push(processedItem);
           });
-        });
-      });
-    } else if (Array.isArray(sections)) {
-      // This might be processed_items format
-      sections.forEach(item => {
-        // ENHANCED: Check for duplicate item IDs
-        if (seenItemIds.has(item.item_id)) {
-          console.warn(`Duplicate item_id found in processed_items: ${item.item_id} (skipping)`);
-          return;
         }
-        seenItemIds.add(item.item_id);
-
-        allItems.push({
-          ...item,
-          category: determineCategoryFromItem(item),
-          riskLevel: item.is_mandatory ? 'high' : 'medium',
-          estimatedTime: estimateTimeFromItem(item),
-          location: extractLocationFromItem(item),
-          frequency: item.is_mandatory ? 'Daily' : 'Weekly'
-        });
       });
+
+      console.log('ModernChecklistForm - Manually processed items:', manualItems.length);
+      return manualItems;
     }
 
-    console.log('Processed items:', allItems.length, 'unique items:', seenItemIds.size);
-
-    // VALIDATION: Ensure no duplicates in final result
-    if (allItems.length !== seenItemIds.size) {
-      console.error('CRITICAL: Item processing resulted in duplicates!');
-    }
-
-    return allItems;
+    console.warn('ModernChecklistForm - No valid template data found');
+    return [];
   }, [template]);
+
+  // Helper function for field type mapping (if you need fallback processing)
+  const mapFieldTypeToResponseType = (field_type) => {
+    switch (field_type) {
+      case 'text':
+        return 'text';
+      case 'date':
+        return 'date';
+      case 'yes_no':
+        return 'yes_no_na';
+      case 'number':
+        return 'text';
+      case 'table':
+        return 'table';
+      default:
+        console.warn(`ModernChecklistForm - Unknown field_type: ${field_type}, defaulting to text`);
+        return 'text';
+    }
+  };
 
   // 3. UPDATED: Enhanced sections grouping with duplicate handling
   const sections = useMemo(() => {
@@ -370,57 +411,87 @@ const ModernChecklistForm = ({
     });
   }, [items, searchTerm, filterPIC, showOnlyMandatory]);
 
-  // 2. UPDATED: Enhanced handleResponse with duplicate prevention
-  const handleResponse = (itemId, value, type = 'response') => {
-    console.log('=== HANDLE RESPONSE ===');
-    console.log('ItemId:', itemId);
-    console.log('Value:', value);
-    console.log('Type:', type);
-    console.log('Previous response:', responses[itemId]);
+  // 2. Update your handleResponseChange function to handle table data
+  const handleResponseChange = (itemId, field, value) => {
+    if (mode === 'view') return;
 
-    // Validate itemId exists in items array
-    const itemExists = items.some(item => item.item_id === itemId);
-    if (!itemExists) {
-      console.error(`Item ID ${itemId} not found in template items!`);
-      return;
-    }
+    console.log('ModernChecklistForm - Response change:', itemId, field, value);
 
     setResponses(prev => {
       const updated = {
         ...prev,
         [itemId]: {
           ...prev[itemId],
-          [type]: value,
+          [field]: value,
           timestamp: new Date().toISOString()
         }
       };
 
-      console.log('Updated response for', itemId, ':', updated[itemId]);
+      // Logic to update completedItems based on any response field having a value
+      const currentItemResponse = updated[itemId];
+      const item = items.find(i => i.item_id === itemId);
+
+      let hasAnyValue = false;
+      if (item?.response_type === 'table') {
+        hasAnyValue = currentItemResponse.table_data && currentItemResponse.table_data.length > 0;
+      } else {
+        hasAnyValue = Object.values(currentItemResponse).some(val =>
+          val !== null && val !== undefined && val !== '' && !(Array.isArray(val) && val.length === 0)
+        );
+      }
+
+      setCompletedItems(prevCompleted => {
+        const newSet = new Set(prevCompleted);
+        if (hasAnyValue) {
+          newSet.add(itemId);
+        } else {
+          newSet.delete(itemId);
+        }
+        return newSet;
+      });
+
       return updated;
     });
 
-    // Update completed items based on the response
-    if (type === 'response') {
-      if (value === 'Yes' || value === 'No' || value === 'N/A' || (value && value.trim())) {
-        console.log('Marking item as completed:', itemId);
-        setCompletedItems(prevCompleted => new Set([...prevCompleted, itemId]));
-      } else if (!value || value === '') {
-        console.log('Removing item from completed:', itemId);
-        setCompletedItems(prevCompleted => {
-          const newSet = new Set(prevCompleted);
-          newSet.delete(itemId);
-          return newSet;
-        });
-      }
+    // Clear any existing errors for this field
+    if (errors[itemId]) {
+      setErrors(prev => ({
+        ...prev,
+        [itemId]: null
+      }));
     }
   };
 
   // Progress tracking
   const getProgress = () => {
     const totalItems = items.length;
-    const completedCount = completedItems.size;
+    // UPDATED: getCompletionPercentage now handles table data
+    const completedCount = items.filter(item => {
+      const response = responses[item.item_id];
+
+      if (item.response_type === 'table') {
+        return response?.table_data &&
+               Array.isArray(response.table_data) &&
+               response.table_data.length > 0;
+      }
+
+      return response?.yes_no_na_value !== null && response?.yes_no_na_value !== undefined ||
+             response?.text_value?.trim() ||
+             response?.date_value;
+    }).length;
+
     const mandatoryItems = items.filter(item => item.is_mandatory);
-    const mandatoryCompleted = mandatoryItems.filter(item => completedItems.has(item.item_id)).length;
+    const mandatoryCompleted = mandatoryItems.filter(item => {
+      const response = responses[item.item_id];
+      if (item.response_type === 'table') {
+        return response?.table_data &&
+               Array.isArray(response.table_data) &&
+               response.table_data.length > 0;
+      }
+      return response?.yes_no_na_value !== null && response?.yes_no_na_value !== undefined ||
+             response?.text_value?.trim() ||
+             response?.date_value;
+    }).length;
 
     return {
       total: totalItems,
@@ -439,8 +510,7 @@ const ModernChecklistForm = ({
 
     // You can emit this to parent component if needed
     // onProgressUpdate?.(progress);
-  }, [completedItems, items]);
-
+  }, [completedItems, items, responses]); // Added responses to dependency array
 
   const toggleSection = (sectionId) => {
     setExpandedSections(prev => {
@@ -501,7 +571,7 @@ const ModernChecklistForm = ({
     // Prevent multiple simultaneous saves
     if (saving) {
       console.log('Save already in progress, skipping...');
-      return;
+      return { success: false, reason: 'save_in_progress' };
     }
 
     setSaving(true);
@@ -526,7 +596,8 @@ const ModernChecklistForm = ({
         sampleItems: items.slice(0, 3).map(item => ({
           item_id: item.item_id,
           description: item.description?.substring(0, 50),
-          is_mandatory: item.is_mandatory
+          is_mandatory: item.is_mandatory,
+          response_type: item.response_type
         }))
       });
 
@@ -537,12 +608,16 @@ const ModernChecklistForm = ({
       console.log('Total API responses:', apiResponses.length);
 
       // Filter to only responses with actual values for the API call
-      const responsesWithValues = apiResponses.filter(r =>
-        r.yes_no_na_value !== null ||
-        r.text_value !== null ||
-        r.date_value !== null ||
-        (r.remarks !== null && r.remarks !== '')
-      );
+      const responsesWithValues = apiResponses.filter(r => {
+        const originalItem = items.find(item => item.item_id === r.item_id);
+        if (originalItem?.response_type === 'table') {
+          return r.table_data && r.table_data.length > 0;
+        }
+        return r.yes_no_na_value !== null ||
+               r.text_value !== null ||
+               r.date_value !== null ||
+               (r.remarks !== null && r.remarks !== '');
+      });
 
       console.log('Responses with values for API:', responsesWithValues.length);
       console.log('Sample responses for API:', responsesWithValues.slice(0, 3));
@@ -626,7 +701,7 @@ const ModernChecklistForm = ({
     // Prevent multiple simultaneous submissions
     if (submitting) {
       console.log('Submit already in progress, skipping...');
-      return;
+      return { success: false, reason: 'submit_in_progress' };
     }
 
     setSubmitting(true);
@@ -828,7 +903,8 @@ const ModernChecklistForm = ({
           item_id: existingChecklist.responses[0].item_id,
           yes_no_na_value: existingChecklist.responses[0].yes_no_na_value,
           text_value: existingChecklist.responses[0].text_value,
-          remarks: existingChecklist.responses[0].remarks
+          remarks: existingChecklist.responses[0].remarks,
+          table_data: existingChecklist.responses[0].table_data // Check for table_data
         });
       } else {
         console.log('No existing responses found');
@@ -860,7 +936,8 @@ const ModernChecklistForm = ({
           yes_no_na_value: response.yes_no_na_value,
           text_value: response.text_value,
           date_value: response.date_value,
-          remarks: response.remarks
+          remarks: response.remarks,
+          table_data: response.table_data // Include table_data
         });
 
         if (response.item_id) {
@@ -883,16 +960,28 @@ const ModernChecklistForm = ({
           }
 
           existingResponses[response.item_id] = {
-            response: mainResponse,
+            response: mainResponse, // Keep for compatibility with old handleResponse
+            yes_no_na_value: response.yes_no_na_value,
+            text_value: response.text_value,
+            date_value: response.date_value,
             remarks: response.remarks || '',
             comments: response.remarks || '', // Alias for compatibility
+            table_data: response.table_data || [], // Initialize table_data
             timestamp: response.updated_at || response.created_at
           };
 
-          // Mark as completed if it has any response (main response or remarks)
-          if (mainResponse !== null || (response.remarks && response.remarks.trim() !== '')) {
+          // Mark as completed if it has any response (main response, remarks, or table_data)
+          const currentItem = items.find(i => i.item_id === response.item_id);
+          let hasAnyValue = false;
+          if (currentItem?.response_type === 'table') {
+            hasAnyValue = response.table_data && response.table_data.length > 0;
+          } else {
+            hasAnyValue = mainResponse !== null || (response.remarks && response.remarks.trim() !== '');
+          }
+
+          if (hasAnyValue) {
             completedItemsSet.add(response.item_id);
-            console.log(`Marking item ${response.item_id} as completed with response:`, mainResponse, 'remarks:', response.remarks);
+            console.log(`Marking item ${response.item_id} as completed with response:`, mainResponse, 'remarks:', response.remarks, 'table_data:', response.table_data);
           }
         }
       });
@@ -920,13 +1009,33 @@ const ModernChecklistForm = ({
     console.log('Completed items:', completedItems.size);
 
     // Log any responses that have values
-    const responsesWithValues = Object.entries(responses).filter(([_, resp]) => resp.response);
+    const responsesWithValues = Object.entries(responses).filter(([itemId, resp]) => {
+      const item = items.find(i => i.item_id === itemId);
+      if (item?.response_type === 'table') {
+        return resp.table_data && resp.table_data.length > 0;
+      }
+      return resp.yes_no_na_value || resp.text_value || resp.date_value || (resp.remarks && resp.remarks.trim() !== '');
+    });
     console.log('Responses with values:', responsesWithValues.length);
 
     if (responsesWithValues.length > 0) {
       console.log('Sample responses with values:', responsesWithValues.slice(0, 3));
     }
   }, [responses, completedItems]);
+
+  // Also add this debug info to see what's happening with table fields
+  useEffect(() => {
+    console.log('=== ITEMS DEBUG ===');
+    items.forEach((item, index) => {
+      console.log(`Item ${index}:`, {
+        item_id: item.item_id,
+        response_type: item.response_type,
+        section_name: item.section_name,
+        description: item.description,
+        table_structure: item.table_structure ? 'HAS TABLE STRUCTURE' : 'NO TABLE STRUCTURE'
+      });
+    });
+  }, [items]);
 
 
   const stats = getProgress(); // Use the new getProgress function
@@ -944,7 +1053,9 @@ const ModernChecklistForm = ({
         is_mandatory: item.is_mandatory,
         section: item.section_name,
         subsection: item.sub_section_name,
-        pic: item.pic
+        pic: item.pic,
+        response_type: item.response_type,
+        table_structure: item.table_structure ? 'HAS TABLE STRUCTURE' : 'NO TABLE STRUCTURE'
       })));
     };
 
@@ -952,9 +1063,13 @@ const ModernChecklistForm = ({
       console.log('=== DEBUGGING CURRENT RESPONSES ===');
       console.log('Responses object:', responses);
       console.log('Completed items set:', Array.from(completedItems));
-      const currentResponsesWithValues = Object.entries(responses).filter(([_, resp]) =>
-        resp.response !== null || (resp.remarks && resp.remarks.trim() !== '')
-      );
+      const currentResponsesWithValues = Object.entries(responses).filter(([itemId, resp]) => {
+        const item = items.find(i => i.item_id === itemId);
+        if (item?.response_type === 'table') {
+          return resp.table_data && resp.table_data.length > 0;
+        }
+        return resp.yes_no_na_value !== null || resp.text_value !== null || resp.date_value !== null || (resp.remarks && resp.remarks.trim() !== '');
+      });
       console.log('Responses with values (current state):', currentResponsesWithValues.length);
       currentResponsesWithValues.slice(0, 5).forEach(([itemId, resp]) => {
         console.log(`Item ${itemId}:`, resp);
@@ -975,12 +1090,16 @@ const ModernChecklistForm = ({
         console.log('Transformed API responses:', apiResponses.length);
 
         // Filter to only ones with values
-        const responsesWithValues = apiResponses.filter(r =>
-          r.yes_no_na_value !== null ||
-          r.text_value !== null ||
-          r.date_value !== null ||
-          (r.remarks !== null && r.remarks !== '')
-        );
+        const responsesWithValues = apiResponses.filter(r => {
+          const originalItem = items.find(item => item.item_id === r.item_id);
+          if (originalItem?.response_type === 'table') {
+            return r.table_data && r.table_data.length > 0;
+          }
+          return r.yes_no_na_value !== null ||
+                 r.text_value !== null ||
+                 r.date_value !== null ||
+                 (r.remarks !== null && r.remarks !== '');
+        });
 
         console.log('Responses with values for API:', responsesWithValues.length);
         console.log('Sample API responses:', responsesWithValues.slice(0, 3));
@@ -1023,8 +1142,26 @@ const ModernChecklistForm = ({
         console.log('Testing with uncompleted item:', uncompletedItem.item_id, uncompletedItem.description?.substring(0, 50));
 
         // Simulate adding a response (this should trigger your handleResponse)
-        handleResponse(uncompletedItem.item_id, 'Yes', 'response');
-        handleResponse(uncompletedItem.item_id, 'Test response added for testing', 'remarks');
+        if (uncompletedItem.response_type === 'yes_no_na') {
+          handleResponseChange(uncompletedItem.item_id, 'yes_no_na_value', 'Yes');
+        } else if (uncompletedItem.response_type === 'text') {
+          handleResponseChange(uncompletedItem.item_id, 'text_value', 'Test response added for testing');
+        } else if (uncompletedItem.response_type === 'table' && uncompletedItem.table_structure) {
+          const mockRow = {};
+          uncompletedItem.table_structure.columns.forEach(col => {
+            if (col.type === 'text') mockRow[col.field_id] = 'Test Data';
+            if (col.type === 'number') mockRow[col.field_id] = 123;
+            if (col.type === 'yes_no') mockRow[col.field_id] = 'Yes';
+          });
+          handleResponseChange(uncompletedItem.item_id, 'table_data', [mockRow]);
+        } else {
+          console.warn('Skipping new response test for unsupported type:', uncompletedItem.response_type);
+          alert('Skipping new response test for unsupported item type.');
+          return;
+        }
+
+        handleResponseChange(uncompletedItem.item_id, 'remarks', 'Test remarks added for testing');
+
 
         // Wait a moment for state to update
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -1073,7 +1210,7 @@ const ModernChecklistForm = ({
     const testAPIDirectly = async () => {
       console.log('=== TESTING API DIRECTLY ===');
       try {
-        const mockResponses = [{ item_id: 'item1', yes_no_na_value: 'Yes', remarks: 'Direct test' }];
+        const mockResponses = [{ item_id: 'test_item', yes_no_na_value: 'Yes', remarks: 'Direct test' }];
         console.log('Attempting direct update with mock responses:', mockResponses);
         const updateResult = await checklistService.updateChecklistResponses(
           selectedChecklist.checklist_id,
@@ -1107,14 +1244,18 @@ const ModernChecklistForm = ({
 
         // 2. Transform and check what we send to API
         const apiResponses = transformResponsesToAPIFormat(responses, items);
-        const responsesWithValues = apiResponses.filter(r =>
-          r.yes_no_na_value !== null ||
-          r.text_value !== null ||
-          r.date_value !== null ||
-          (r.remarks !== null && r.remarks !== '')
-        );
+        const responsesWithValues = apiResponses.filter(r => {
+          const originalItem = items.find(item => item.item_id === r.item_id);
+          if (originalItem?.response_type === 'table') {
+            return r.table_data && r.table_data.length > 0;
+          }
+          return r.yes_no_na_value !== null ||
+                 r.text_value !== null ||
+                 r.date_value !== null ||
+                 (r.remarks !== null && r.remarks !== '');
+        });
 
-        console.log('2. What we send to save API:');
+        console.log('2. What we SEND to save API:');
         console.log('Total API responses:', apiResponses.length);
         console.log('Responses with values:', responsesWithValues.length);
         console.log('Sample API request data:', responsesWithValues.slice(0, 3));
@@ -1149,6 +1290,7 @@ const ModernChecklistForm = ({
             has_text_value: sampleResponse.text_value !== undefined,
             has_date_value: sampleResponse.date_value !== undefined,
             has_remarks: !!sampleResponse.remarks,
+            has_table_data: sampleResponse.table_data !== undefined, // Check for table_data
             actual_structure: Object.keys(sampleResponse)
           });
         } else {
@@ -1226,12 +1368,16 @@ const ModernChecklistForm = ({
       // 1. Show what we send to the API
       const currentResponses = responses;
       const apiResponses = transformResponsesToAPIFormat(currentResponses, items);
-      const responsesWithValues = apiResponses.filter(r =>
-        r.yes_no_na_value !== null ||
-        r.text_value !== null ||
-        r.date_value !== null ||
-        (r.remarks !== null && r.remarks !== '')
-      );
+      const responsesWithValues = apiResponses.filter(r => {
+        const originalItem = items.find(item => item.item_id === r.item_id);
+        if (originalItem?.response_type === 'table') {
+          return r.table_data && r.table_data.length > 0;
+        }
+        return r.yes_no_na_value !== null ||
+               r.text_value !== null ||
+               r.date_value !== null ||
+               (r.remarks !== null && r.remarks !== '');
+      });
 
       console.log('1. What we SEND to Lambda (PUT request format):');
       console.log('Sample request item:', responsesWithValues[0]);
@@ -1245,6 +1391,7 @@ const ModernChecklistForm = ({
         text_value: null,
         date_value: null,
         remarks: 'Some remarks',
+        table_data: [], // Expected table_data
         created_at: '2025-01-01T00:00:00Z',
         updated_at: '2025-01-01T00:00:00Z'
       });
@@ -1465,6 +1612,110 @@ const ModernChecklistForm = ({
       </div>
     );
   }
+
+  // 5. Update your renderResponseField function to include the table case
+  const renderResponseField = (item) => {
+    const response = responses[item.item_id] || {};
+    const hasError = errors[item.item_id];
+    const isReadonly = mode === 'view';
+
+    console.log('Rendering field:', item.item_id, 'Type:', item.response_type, 'Item:', item);
+
+    switch (item.response_type) {
+      case 'yes_no_na':
+        return (
+          <div className="checklist-form-response-field">
+            <div className="checklist-form-radio-group">
+              {['Yes', 'No', 'N/A'].map(option => (
+                <label key={option} className="checklist-form-radio-option">
+                  <input
+                    type="radio"
+                    name={`response_${item.item_id}`}
+                    value={option}
+                    checked={response.yes_no_na_value === option}
+                    onChange={(e) => handleResponseChange(item.item_id, 'yes_no_na_value', e.target.value)}
+                    disabled={isReadonly}
+                  />
+                  <span>{option}</span>
+                </label>
+              ))}
+            </div>
+            {hasError && <span className="checklist-form-error-text">{hasError}</span>}
+          </div>
+        );
+
+      case 'text':
+        return (
+          <div className="checklist-form-response-field">
+            <textarea
+              value={response.text_value || ''}
+              onChange={(e) => handleResponseChange(item.item_id, 'text_value', e.target.value)}
+              placeholder="Enter response..."
+              rows={3}
+              disabled={isReadonly}
+              className={hasError ? 'error' : ''}
+            />
+            {hasError && <span className="checklist-form-error-text">{hasError}</span>}
+          </div>
+        );
+
+      case 'date':
+        return (
+          <div className="checklist-form-response-field">
+            <input
+              type="date"
+              value={response.date_value || ''}
+              onChange={(e) => handleResponseChange(item.item_id, 'date_value', e.target.value)}
+              disabled={isReadonly}
+              className={hasError ? 'error' : ''}
+            />
+            {hasError && <span className="checklist-form-error-text">{hasError}</span>}
+          </div>
+        );
+
+      // REPLACE THE PLACEHOLDER TABLE CASE WITH THIS FUNCTIONAL ONE
+      case 'table':
+        return (
+          <div className="checklist-form-response-field">
+            <DynamicTable
+              item={item}
+              value={response.table_data || []}
+              onChange={(tableData) => handleResponseChange(item.item_id, 'table_data', tableData)}
+              disabled={isReadonly}
+              hasError={!!hasError}
+            />
+            {hasError && <span className="checklist-form-error-text">{hasError}</span>}
+          </div>
+        );
+
+      default:
+        return (
+          <div className="checklist-form-response-field">
+            <div style={{
+              padding: '12px',
+              background: '#fff3cd',
+              border: '1px solid #ffeaa7',
+              borderRadius: '4px',
+              color: '#856404'
+            }}>
+              <strong>Unknown field type:</strong> {item.response_type}
+              <br/>
+              <small>Item ID: {item.item_id}</small>
+            </div>
+            <input
+              type="text"
+              value={response.text_value || ''}
+              onChange={(e) => handleResponseChange(item.item_id, 'text_value', e.target.value)}
+              placeholder="Enter response..."
+              disabled={isReadonly}
+              className={hasError ? 'error' : ''}
+            />
+            {hasError && <span className="checklist-form-error-text">{hasError}</span>}
+          </div>
+        );
+    }
+  };
+
 
   return (
     <div className="dashboard-container" style={{ background: '#f8fafc', minHeight: '100vh' }}>
@@ -1807,9 +2058,11 @@ const ModernChecklistForm = ({
                         item={item}
                         responses={responses}
                         isCompleted={completedItems.has(item.item_id)}
-                        onResponse={handleResponse}
+                        onResponse={handleResponseChange} // Keep this for the old button logic
+                        onResponseChange={handleResponseChange} // New prop for updated fields
                         categoryConfig={categoryConfig}
                         mode={mode}
+                        renderResponseField={renderResponseField} // Pass the new render function
                       />
                     ))}
                   </div>
@@ -1824,7 +2077,7 @@ const ModernChecklistForm = ({
 };
 
 // Ultra Compact Checklist Item Component with formatted description
-const CompactChecklistItem = ({ item, responses, isCompleted, onResponse, categoryConfig, mode }) => {
+const CompactChecklistItem = ({ item, responses, isCompleted, onResponse, onResponseChange, categoryConfig, mode, renderResponseField }) => {
   const [showDetails, setShowDetails] = useState(false);
   const response = responses[item.item_id] || {};
 
@@ -1939,55 +2192,25 @@ const CompactChecklistItem = ({ item, responses, isCompleted, onResponse, catego
         )}
       </div>
 
-      {/* Response Buttons Row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'space-between' }}>
+      {/* Render the appropriate response field based on item.response_type */}
+      {renderResponseField(item)}
 
-        {/* Yes/No/N/A Buttons */}
-        <div style={{ display: 'flex', gap: '2px' }}>
-          {['Yes', 'No', 'N/A'].map((option) => (
-            <button
-              key={option}
-              onClick={() => onResponse(item.item_id, option, 'response')}
-              disabled={mode === 'view'}
-              style={{
-                padding: '3px 8px',
-                borderRadius: '4px',
-                fontSize: '10px',
-                fontWeight: '500',
-                border: '1px solid',
-                cursor: mode === 'view' ? 'not-allowed' : 'pointer',
-                transition: 'all 0.15s ease',
-                background: response.response === option
-                  ? option === 'Yes' ? '#10b981' : option === 'No' ? '#ef4444' : '#f59e0b'
-                  : 'white',
-                borderColor: response.response === option
-                  ? option === 'Yes' ? '#10b981' : option === 'No' ? '#ef4444' : '#f59e0b'
-                  : '#e2e8f0',
-                color: response.response === option ? 'white' : '#64748b'
-              }}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '2px' }}>
-          <button
-            onClick={() => setShowDetails(!showDetails)}
-            style={{
-              padding: '2px 4px',
-              background: 'transparent',
-              border: '1px solid #e2e8f0',
-              borderRadius: '3px',
-              cursor: 'pointer',
-              fontSize: '9px',
-              color: '#64748b'
-            }}
-          >
-            <MoreHorizontal size={10} />
-          </button>
-        </div>
+      {/* Action Buttons */}
+      <div style={{ display: 'flex', gap: '2px', justifyContent: 'flex-end', marginTop: '8px' }}>
+        <button
+          onClick={() => setShowDetails(!showDetails)}
+          style={{
+            padding: '2px 4px',
+            background: 'transparent',
+            border: '1px solid #e2e8f0',
+            borderRadius: '3px',
+            cursor: 'pointer',
+            fontSize: '9px',
+            color: '#64748b'
+          }}
+        >
+          <MoreHorizontal size={10} />
+        </button>
       </div>
 
       {/* Expandable Details */}
@@ -2019,7 +2242,7 @@ const CompactChecklistItem = ({ item, responses, isCompleted, onResponse, catego
             </div>
             <textarea
               value={response.remarks || ''}
-              onChange={(e) => onResponse(item.item_id, e.target.value, 'remarks')}
+              onChange={(e) => onResponseChange(item.item_id, 'remarks', e.target.value)}
               disabled={mode === 'view'}
               placeholder="Add comments..."
               style={{

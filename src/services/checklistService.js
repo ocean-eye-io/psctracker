@@ -362,27 +362,14 @@ class ChecklistService {
   }
 
   /**
-   * Process template data from nested JSON structure to flat form structure - ENHANCED VERSION
-   * @param {Object} template - Template with nested JSON structure
-   * @returns {Object} Processed template for form compatibility
+   * Fixed processTemplateForForm method to handle your JSON structure
+   * Add this to your ChecklistService class
    */
   processTemplateForForm(template) {
     console.log('ChecklistService: Processing template for form:', template?.name || template?.template_name);
 
-    if (!template) {
-      console.warn('ChecklistService: Template is null or undefined');
+    if (!template || !template.template_data) {
       return {
-        items: [],
-        item_types: [],
-        is_mandatory: [],
-        processed_items: []
-      };
-    }
-
-    if (!template.template_data) {
-      console.warn('ChecklistService: Template has no template_data:', template);
-      return {
-        ...template,
         items: [],
         item_types: [],
         is_mandatory: [],
@@ -391,20 +378,10 @@ class ChecklistService {
     }
 
     const templateData = template.template_data;
-    console.log('ChecklistService: Template data structure:', {
-      hasSection: !!templateData.sections,
-      sectionsLength: templateData.sections?.length,
-      keys: Object.keys(templateData)
-    });
-
-    const items = [];
-    const item_types = [];
-    const is_mandatory = [];
     const processed_items = [];
     let itemCounter = 0;
-    const seenItemIds = new Set(); // Track seen item IDs to prevent duplicates
+    const seenItemIds = new Set();
 
-    // Process nested sections structure from your database
     if (templateData.sections && Array.isArray(templateData.sections)) {
       console.log('ChecklistService: Found sections:', templateData.sections.length);
 
@@ -412,109 +389,59 @@ class ChecklistService {
         const sectionName = section.section_name || section.name || `Section ${sectionIndex}`;
         console.log(`ChecklistService: Processing section ${sectionIndex}:`, sectionName);
 
-        // Check for subsections (note: lowercase 's' in 'subsections')
-        const subsections = section.subsections || section.sub_sections || [];
+        if (section.fields && Array.isArray(section.fields)) {
+          console.log(`ChecklistService: Section ${sectionName} has fields:`, section.fields.length);
 
-        if (subsections && Array.isArray(subsections) && subsections.length > 0) {
-          console.log(`ChecklistService: Found ${subsections.length} subsections in ${sectionName}`);
-
-          subsections.forEach((subSection, subSectionIndex) => {
-            const subSectionName = subSection.subsection_name || subSection.sub_section_name || subSection.name || `Subsection ${subSectionIndex}`;
-            console.log(`ChecklistService: Processing subsection ${subSectionIndex}:`, subSectionName);
-
-            if (subSection.items && Array.isArray(subSection.items)) {
-              console.log(`ChecklistService: Found ${subSection.items.length} items in ${subSectionName}`);
-
-              subSection.items.forEach((item, itemIndex) => {
-                // ENHANCED: Check for duplicate item IDs
-                if (seenItemIds.has(item.item_id)) {
-                  console.warn(`ChecklistService: Duplicate item_id found in template: ${item.item_id} (skipping)`);
-                  return;
-                }
-                seenItemIds.add(item.item_id);
-
-                console.log(`ChecklistService: Processing item ${itemCounter}:`, item.item_id, item.description?.substring(0, 50));
-
-                const processedItem = {
-                  item_id: item.item_id || `${sectionName}_${subSectionName}_${itemIndex}`.replace(/\s+/g, '_').toLowerCase(),
-                  section_name: sectionName,
-                  sub_section_name: subSectionName,
-                  description: item.description || '',
-                  check_description: item.description || item.check_description || '',
-                  pic: item.pic || '',
-                  guidance: item.guidance || '',
-                  response_type: this.determineResponseType(item),
-                  is_mandatory: item.is_mandatory !== undefined ? item.is_mandatory : true,
-                  requires_evidence: item.requires_evidence || false,
-                  order_index: itemCounter++
-                };
-
-                processed_items.push(processedItem);
-                items.push(processedItem.description);
-                item_types.push(processedItem.response_type);
-                is_mandatory.push(processedItem.is_mandatory);
-              });
-            } else {
-              console.log(`ChecklistService: Subsection ${subSectionName} has no items or items is not an array:`, subSection.items);
-            }
-          });
-        }
-        // Check for direct items in section
-        else if (section.items && Array.isArray(section.items)) {
-          console.log(`ChecklistService: Section ${sectionName} has direct items:`, section.items.length);
-
-          section.items.forEach((item, itemIndex) => {
-            // ENHANCED: Check for duplicate item IDs
-            if (seenItemIds.has(item.item_id)) {
-              console.warn(`ChecklistService: Duplicate item_id found in template: ${item.item_id} (skipping)`);
+          section.fields.forEach((field, fieldIndex) => {
+            if (!field.field_id) {
+              console.warn('ChecklistService: Field missing field_id:', field);
               return;
             }
-            seenItemIds.add(item.item_id);
 
-            console.log(`ChecklistService: Processing direct item ${itemCounter}:`, item.item_id, item.description?.substring(0, 50));
+            if (seenItemIds.has(field.field_id)) {
+              console.warn(`ChecklistService: Duplicate field_id found: ${field.field_id} (skipping)`);
+              return;
+            }
+            seenItemIds.add(field.field_id);
 
+            console.log(`ChecklistService: Processing field ${itemCounter}:`, field.field_id, field.label?.substring(0, 50));
+
+            // INCLUDE TABLE FIELDS NOW - don't skip them
             const processedItem = {
-              item_id: item.item_id || `${sectionName}_${itemIndex}`.replace(/\s+/g, '_').toLowerCase(),
-              section_name: sectionName,
+              item_id: field.field_id,
+              section_name: sectionName, // Use the actual section name
               sub_section_name: null,
-              description: item.description || '',
-              check_description: item.description || item.check_description || '',
-              pic: item.pic || '',
-              guidance: item.guidance || '',
-              response_type: this.determineResponseType(item),
-              is_mandatory: item.is_mandatory !== undefined ? item.is_mandatory : true,
-              requires_evidence: item.requires_evidence || false,
-              order_index: itemCounter++
+              description: field.label || '',
+              check_description: field.label || field.description || '',
+              pic: field.pic || '',
+              guidance: field.guidance || field.placeholder || '',
+              response_type: this.mapFieldTypeToResponseType(field.field_type),
+              is_mandatory: field.is_mandatory !== undefined ? field.is_mandatory : true,
+              requires_evidence: field.requires_evidence || false,
+              order_index: itemCounter++,
+              // ADD TABLE STRUCTURE FOR TABLE FIELDS
+              table_structure: field.field_type === 'table' ? field.table_structure : null
             };
 
             processed_items.push(processedItem);
-            items.push(processedItem.description);
-            item_types.push(processedItem.response_type);
-            is_mandatory.push(processedItem.is_mandatory);
           });
-        } else {
-          console.log(`ChecklistService: Section ${sectionName} has no subsections or direct items:`, section);
         }
       });
-    } else {
-      console.warn('ChecklistService: Template data has no sections or sections is not an array:', templateData);
     }
 
     console.log('ChecklistService: Final processed template items:', processed_items.length);
-    console.log('ChecklistService: Unique item IDs:', seenItemIds.size);
-    console.log('ChecklistService: Sample processed items:', processed_items.slice(0, 3));
+    console.log('ChecklistService: Items by section:', 
+      processed_items.reduce((acc, item) => {
+        acc[item.section_name] = (acc[item.section_name] || 0) + 1;
+        return acc;
+      }, {})
+    );
 
-    // ENHANCED: Validate no duplicate item IDs in final result
-    const finalItemIds = processed_items.map(item => item.item_id);
-    const uniqueFinalItemIds = new Set(finalItemIds);
+    const items = processed_items.map(item => item.description);
+    const item_types = processed_items.map(item => item.response_type);
+    const is_mandatory = processed_items.map(item => item.is_mandatory);
 
-    if (finalItemIds.length !== uniqueFinalItemIds.size) {
-      console.error('ChecklistService: CRITICAL - Duplicate item IDs detected in final processed items!');
-      const duplicates = finalItemIds.filter((item, index) => finalItemIds.indexOf(item) !== index);
-      console.error('ChecklistService: Duplicate item IDs:', [...new Set(duplicates)]);
-    }
-
-    const result = {
+    return {
       ...template,
       items,
       item_types,
@@ -522,11 +449,8 @@ class ChecklistService {
       processed_items,
       total_items: processed_items.length,
       mandatory_items: processed_items.filter(item => item.is_mandatory).length,
-      unique_items: uniqueFinalItemIds.size
+      unique_items: seenItemIds.size
     };
-
-    console.log('ChecklistService: Returning processed template with', result.processed_items.length, 'items and', result.unique_items, 'unique IDs');
-    return result;
   }
 
   /**
@@ -555,6 +479,27 @@ class ChecklistService {
 
     // Default to yes_no_na for most checklist items
     return 'yes_no_na';
+  }
+
+  /**
+   * New helper method to map your field_type to response_type
+   */
+  mapFieldTypeToResponseType(field_type) {
+    switch (field_type) {
+      case 'text':
+        return 'text';
+      case 'date':
+        return 'date';
+      case 'yes_no':
+        return 'yes_no_na';
+      case 'number':
+        return 'text'; // Numbers can be handled as text inputs
+      case 'table':
+        return 'table'; // Special handling needed
+      default:
+        console.warn(`ChecklistService: Unknown field_type: ${field_type}, defaulting to text`);
+        return 'text';
+    }
   }
 
   async uploadEvidence(checklistId, itemId, file, description = '', uploadedBy) {
