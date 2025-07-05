@@ -42,7 +42,7 @@ const DeficiencyCodeChart = ({ data = [] }) => {
     },
     viewButton: {
       backgroundColor: 'rgba(59, 173, 229, 0.15)',
-      color: '#f4f4f4',
+      color: '#3BADE5',
       border: '1px solid rgba(59, 173, 229, 0.2)',
       padding: '4px 10px',
       fontSize: '11px',
@@ -57,7 +57,7 @@ const DeficiencyCodeChart = ({ data = [] }) => {
     },
     timeButton: {
       backgroundColor: 'rgba(59, 173, 229, 0.15)',
-      color: '#f4f4f4',
+      color: '#3BADE5',
       border: '1px solid rgba(59, 173, 229, 0.2)',
       padding: '4px 7px',
       fontSize: '11px',

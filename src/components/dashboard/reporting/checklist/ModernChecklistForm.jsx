@@ -565,6 +565,7 @@ const ModernChecklistForm = ({
   // Enhanced save and submit handlers for ModernChecklistForm
   // These should replace the existing handlers in your component
 
+  // FIXED: Enhanced save handler with better error handling and state management
   const handleSave = async (isAutoSave = false) => {
     if (mode === 'view') return;
 
@@ -578,15 +579,22 @@ const ModernChecklistForm = ({
     setError(null);
 
     try {
-      console.log('=== SAVE OPERATION STARTED ===');
+      console.log('=== SAVE OPERATION STARTED (ENHANCED) ===');
       console.log('Auto-save:', isAutoSave);
       console.log('Checklist ID:', selectedChecklist?.checklist_id);
       console.log('User ID:', currentUser?.id);
 
-      // Enhanced debugging
+      // FIXED: Enhanced state debugging
       console.log('Current responses state:', {
         totalResponseKeys: Object.keys(responses).length,
-        sampleResponses: Object.entries(responses).slice(0, 3),
+        sampleResponses: Object.entries(responses).slice(0, 3).map(([itemId, resp]) => ({
+          itemId,
+          mainResponse: resp.response,
+          yes_no_na_value: resp.yes_no_na_value,
+          text_value: resp.text_value,
+          remarks: resp.remarks,
+          tableDataLength: resp.table_data?.length || 0
+        })),
         completedItemsCount: completedItems.size,
         sampleCompletedItems: Array.from(completedItems).slice(0, 5)
       });
@@ -601,22 +609,27 @@ const ModernChecklistForm = ({
         }))
       });
 
-      // Transform responses to API format
+      // FIXED: Enhanced response transformation with validation
       const apiResponses = transformResponsesToAPIFormat(responses, items);
-
-      console.log('=== API TRANSFORMATION RESULT ===');
+      console.log('=== API TRANSFORMATION RESULT (ENHANCED) ===');
       console.log('Total API responses:', apiResponses.length);
 
-      // Filter to only responses with actual values for the API call
+      // FIXED: Better filtering logic for responses with values
       const responsesWithValues = apiResponses.filter(r => {
         const originalItem = items.find(item => item.item_id === r.item_id);
+        
         if (originalItem?.response_type === 'table') {
-          return r.table_data && r.table_data.length > 0;
+          const hasTableData = r.table_data && Array.isArray(r.table_data) && r.table_data.length > 0;
+          if (hasTableData) return true;
         }
-        return r.yes_no_na_value !== null ||
-               r.text_value !== null ||
-               r.date_value !== null ||
-               (r.remarks !== null && r.remarks !== '');
+        
+        const hasStandardResponse = r.yes_no_na_value !== null && r.yes_no_na_value !== undefined ||
+                                   (r.text_value !== null && r.text_value !== undefined && r.text_value.trim() !== '') ||
+                                   r.date_value !== null && r.date_value !== undefined;
+        
+        const hasRemarks = r.remarks !== null && r.remarks !== undefined && r.remarks.trim() !== '';
+        
+        return hasStandardResponse || hasRemarks;
       });
 
       console.log('Responses with values for API:', responsesWithValues.length);
@@ -635,12 +648,8 @@ const ModernChecklistForm = ({
         throw new Error('Checklist ID is required for saving');
       }
 
-      if (!currentUser?.id) {
-        console.warn('No user ID available, using system default');
-      }
-
-      // Call the service method with proper error handling
-      console.log('=== CALLING API ===');
+      // FIXED: Enhanced API call with better error handling
+      console.log('=== CALLING API (ENHANCED) ===');
       console.log('Endpoint: updateChecklistResponses');
       console.log('Checklist ID:', selectedChecklist.checklist_id);
       console.log('Responses count:', responsesWithValues.length);
@@ -648,37 +657,49 @@ const ModernChecklistForm = ({
 
       const result = await checklistService.updateChecklistResponses(
         selectedChecklist.checklist_id,
-        responsesWithValues, // Send only responses with values to reduce payload
+        responsesWithValues,
         currentUser?.id || 'system'
       );
 
-      console.log('=== API CALL SUCCESSFUL ===');
+      console.log('=== API CALL SUCCESSFUL (ENHANCED) ===');
       console.log('Save result:', result);
 
-      if (!isAutoSave) {
-        // Show success message
-        setSuccessMessage(`Checklist saved successfully (${responsesWithValues.length} responses updated)`);
-        setTimeout(() => setSuccessMessage(''), 3000);
+      // FIXED: Enhanced result validation
+      if (result && result.summary) {
+        console.log('Save confirmed successful:', {
+          created: result.summary.created,
+          updated: result.summary.updated,
+          total_processed: result.summary.total_processed,
+          progress: result.checklist_status?.progress_percentage
+        });
 
-        // Call parent handler if provided
-        if (onSave) {
-          console.log('Calling parent onSave handler...');
-          await onSave(responses, isAutoSave);
+        if (!isAutoSave) {
+          setSuccessMessage(`Checklist saved successfully (${result.summary.total_processed} responses updated)`);
+          setTimeout(() => setSuccessMessage(''), 3000);
+
+          if (onSave) {
+            console.log('Calling parent onSave handler...');
+            await onSave(responses, isAutoSave);
+          }
+        } else {
+          console.log('Auto-save completed successfully');
         }
+
+        return { success: true, result };
       } else {
-        console.log('Auto-save completed successfully');
+        console.warn('Save result missing expected structure:', result);
+        return { success: true, result }; // Still consider it successful if we got any result
       }
 
-      return { success: true, result };
-
     } catch (error) {
-      console.error('=== SAVE OPERATION FAILED ===');
+      console.error('=== SAVE OPERATION FAILED (ENHANCED) ===');
       console.error('Error details:', {
         message: error.message,
         stack: error.stack,
         isAutoSave,
         checklistId: selectedChecklist?.checklist_id,
-        userId: currentUser?.id
+        userId: currentUser?.id,
+        responsesCount: Object.keys(responses).length
       });
 
       const errorMessage = error.message || 'Failed to save checklist. Please try again.';
@@ -912,10 +933,10 @@ const ModernChecklistForm = ({
     }
   }, [existingChecklist]);
 
-  // 4. UPDATED: Enhanced response loading with duplicate handling
+  // FIXED: Enhanced response loading with proper duplicate handling and validation
   useEffect(() => {
     if (existingChecklist && existingChecklist.responses) {
-      console.log('=== LOADING EXISTING RESPONSES ===');
+      console.log('=== LOADING EXISTING RESPONSES (ENHANCED) ===');
       console.log('Loading existing responses:', existingChecklist.responses.length);
 
       const existingResponses = {};
@@ -923,8 +944,8 @@ const ModernChecklistForm = ({
       const processedResponseIds = new Set();
 
       existingChecklist.responses.forEach((response, index) => {
-        // Skip duplicate responses (by response_id or item_id)
-        const responseKey = response.response_id || response.item_id;
+        // FIXED: Better duplicate detection
+        const responseKey = response.response_id || `${response.item_id}_${index}`;
         if (processedResponseIds.has(responseKey)) {
           console.warn(`Duplicate response found: ${responseKey} (skipping)`);
           return;
@@ -937,70 +958,139 @@ const ModernChecklistForm = ({
           text_value: response.text_value,
           date_value: response.date_value,
           remarks: response.remarks,
-          table_data: response.table_data // Include table_data
+          table_data_length: response.table_data ? (Array.isArray(response.table_data) ? response.table_data.length : 'invalid') : 0
         });
 
         if (response.item_id) {
-          // Validate item_id exists in current template
+          // FIXED: Validate item_id exists in current template
           const itemExists = items.some(item => item.item_id === response.item_id);
           if (!itemExists) {
             console.warn(`Response for unknown item_id: ${response.item_id} (skipping)`);
             return;
           }
 
-          // Determine which value to use as the main response
+          // FIXED: Enhanced response value determination
           let mainResponse = null;
+          let hasAnyValue = false;
 
-          if (response.yes_no_na_value) {
+          // Handle different response types properly
+          if (response.yes_no_na_value !== null && response.yes_no_na_value !== undefined) {
             mainResponse = response.yes_no_na_value;
-          } else if (response.text_value) {
+            hasAnyValue = true;
+          } else if (response.text_value !== null && response.text_value !== undefined && response.text_value.trim() !== '') {
             mainResponse = response.text_value;
-          } else if (response.date_value) {
+            hasAnyValue = true;
+          } else if (response.date_value !== null && response.date_value !== undefined) {
             mainResponse = response.date_value;
+            hasAnyValue = true;
           }
 
+          // FIXED: Enhanced table data handling
+          let tableData = [];
+          if (response.table_data) {
+            try {
+              if (Array.isArray(response.table_data)) {
+                tableData = response.table_data;
+              } else if (typeof response.table_data === 'string') {
+                tableData = JSON.parse(response.table_data);
+              } else if (typeof response.table_data === 'object') {
+                tableData = [response.table_data]; // Single object, wrap in array
+              }
+              
+              if (Array.isArray(tableData) && tableData.length > 0) {
+                hasAnyValue = true;
+              }
+            } catch (e) {
+              console.warn(`Invalid table_data for item ${response.item_id}:`, e);
+              tableData = [];
+            }
+          }
+
+          // Check for remarks
+          const hasRemarks = response.remarks && response.remarks.trim() !== '';
+          if (hasRemarks) {
+            hasAnyValue = true;
+          }
+
+          // FIXED: Create comprehensive response object
           existingResponses[response.item_id] = {
-            response: mainResponse, // Keep for compatibility with old handleResponse
+            // Legacy compatibility
+            response: mainResponse,
+            
+            // Specific field values
             yes_no_na_value: response.yes_no_na_value,
             text_value: response.text_value,
             date_value: response.date_value,
             remarks: response.remarks || '',
             comments: response.remarks || '', // Alias for compatibility
-            table_data: response.table_data || [], // Initialize table_data
-            timestamp: response.updated_at || response.created_at
+            
+            // FIXED: Enhanced table data handling
+            table_data: tableData,
+            
+            // Metadata
+            timestamp: response.updated_at || response.created_at,
+            response_id: response.response_id,
+            evidence_provided: Boolean(response.evidence_provided)
           };
 
-          // Mark as completed if it has any response (main response, remarks, or table_data)
-          const currentItem = items.find(i => i.item_id === response.item_id);
-          let hasAnyValue = false;
-          if (currentItem?.response_type === 'table') {
-            hasAnyValue = response.table_data && response.table_data.length > 0;
-          } else {
-            hasAnyValue = mainResponse !== null || (response.remarks && response.remarks.trim() !== '');
-          }
-
+          // FIXED: Mark as completed based on actual content
           if (hasAnyValue) {
             completedItemsSet.add(response.item_id);
-            console.log(`Marking item ${response.item_id} as completed with response:`, mainResponse, 'remarks:', response.remarks, 'table_data:', response.table_data);
+            console.log(`Marking item ${response.item_id} as completed:`, {
+              mainResponse,
+              remarks: hasRemarks,
+              tableDataLength: tableData.length,
+              evidence: response.evidence_provided
+            });
           }
         }
       });
 
-      console.log('=== SETTING STATE ===');
+      console.log('=== SETTING STATE (ENHANCED) ===');
       console.log('Setting responses for', Object.keys(existingResponses).length, 'items');
       console.log('Setting completed items:', Array.from(completedItemsSet));
 
-      setResponses(existingResponses);
-      setCompletedItems(completedItemsSet);
+      // FIXED: Validate against current items before setting state
+      const validResponses = {};
+      const validCompletedItems = new Set();
+
+      Object.entries(existingResponses).forEach(([itemId, response]) => {
+        const itemExists = items.some(item => item.item_id === itemId);
+        if (itemExists) {
+          validResponses[itemId] = response;
+          if (completedItemsSet.has(itemId)) {
+            validCompletedItems.add(itemId);
+          }
+        } else {
+          console.warn(`Removing response for non-existent item: ${itemId}`);
+        }
+      });
+
+      console.log('Final valid responses:', Object.keys(validResponses).length);
+      console.log('Final valid completed items:', validCompletedItems.size);
+
+      setResponses(validResponses);
+      setCompletedItems(validCompletedItems);
 
       // Debug the state after setting
       setTimeout(() => {
-        console.log('=== STATE AFTER LOADING ===');
-        console.log('Responses state:', existingResponses);
-        console.log('Completed items state:', Array.from(completedItemsSet));
+        console.log('=== STATE VERIFICATION AFTER LOADING ===');
+        console.log('Responses state keys:', Object.keys(validResponses));
+        console.log('Completed items state:', Array.from(validCompletedItems));
+        
+        // Check specific items for debugging
+        Object.entries(validResponses).slice(0, 3).forEach(([itemId, resp]) => {
+          console.log(`Sample response ${itemId}:`, {
+            mainResponse: resp.response,
+            yes_no_na_value: resp.yes_no_na_value,
+            text_value: resp.text_value,
+            remarks: resp.remarks,
+            tableDataLength: resp.table_data?.length || 0
+          });
+        });
       }, 100);
     }
-  }, [existingChecklist, items]); // Added items dependency
+  }, [existingChecklist, items]); // FIXED: Added items dependency for validation
 
   // Add this effect to monitor state changes
   useEffect(() => {

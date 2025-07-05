@@ -21,25 +21,67 @@ class ChecklistService {
   }
 
   /**
-   * Get specific template with full data
-   * @param {string} templateId - Template ID
-   * @returns {Promise<Object>} Template with full JSON data
+   * Enhanced getTemplateById with comprehensive debugging
+   * Add this to your ChecklistService to replace the existing method
    */
   async getTemplateById(templateId) {
     try {
-      console.log('ChecklistService: Fetching template by ID:', templateId);
+      console.log('=== TEMPLATE FETCH DEBUG ===');
+      console.log('1. Fetching template by ID:', templateId);
+      console.log('2. API endpoint:', `${this.baseUrl}/checklist-templates/${templateId}`);
+
       const response = await apiClient.get(`${this.baseUrl}/checklist-templates/${templateId}`);
+
+      console.log('3. API response received:', {
+        status: response.status,
+        hasData: !!response.data,
+        dataType: typeof response.data,
+        dataKeys: response.data ? Object.keys(response.data) : []
+      });
+
       const template = response.data;
 
-      console.log('ChecklistService: Raw template received:', template);
+      console.log('4. Raw template analysis:', {
+        name: template?.name,
+        template_id: template?.template_id,
+        template_type: template?.template_type,
+        has_template_data: !!template?.template_data,
+        template_data_type: typeof template?.template_data,
+        template_data_length: typeof template?.template_data === 'string' ?
+          template.template_data.length :
+          (template?.template_data && typeof template.template_data === 'object' ?
+            Object.keys(template.template_data).length : 0)
+      });
+
+      // Log a sample of the template_data if it's a string
+      if (typeof template?.template_data === 'string') {
+        console.log('5. Template data sample (first 200 chars):',
+          template.template_data.substring(0, 200) + '...');
+      } else if (template?.template_data && typeof template.template_data === 'object') {
+        console.log('5. Template data object keys:', Object.keys(template.template_data));
+      }
 
       // Process the template data for form compatibility
       const processedTemplate = this.processTemplateForForm(template);
-      console.log('ChecklistService: Processed template:', processedTemplate);
+
+      console.log('6. Processed template result:', {
+        has_processed_items: !!processedTemplate.processed_items,
+        processed_items_count: processedTemplate.processed_items?.length || 0,
+        has_error: !!processedTemplate.error,
+        error: processedTemplate.error
+      });
+
       return processedTemplate;
     } catch (error) {
-      console.error('Error fetching template:', error);
-      throw new Error('Failed to fetch template');
+      console.error('=== TEMPLATE FETCH ERROR ===');
+      console.error('Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        responseData: error.response?.data,
+        url: error.config?.url
+      });
+      throw new Error('Failed to fetch template: ' + error.message);
     }
   }
 
@@ -123,7 +165,7 @@ class ChecklistService {
   }
 
   /**
-   * Update checklist responses - ENHANCED VERSION with duplicate handling
+   * Update checklist responses - ENHANCED VERSION with proper error handling
    * @param {string} checklistId - Checklist UUID
    * @param {Array} responses - Array of response objects
    * @param {string} userId - User ID (optional)
@@ -165,29 +207,43 @@ class ChecklistService {
       console.log(`ChecklistService: Deduplicated responses from ${responses.length} to ${uniqueResponses.length}`);
 
       const responsesWithValues = uniqueResponses.filter(r => {
-        const hasValue = r.yes_no_na_value !== null ||
-          r.text_value !== null ||
-          r.date_value !== null ||
-          (r.remarks !== null && r.remarks !== '');
+        // FIXED: Improved logic to detect responses with actual values
+        const hasStandardValue = r.yes_no_na_value !== null && r.yes_no_na_value !== undefined ||
+          (r.text_value !== null && r.text_value !== undefined && r.text_value.trim() !== '') ||
+          r.date_value !== null && r.date_value !== undefined;
 
-        if (!hasValue) {
+        const hasTableData = r.table_data && Array.isArray(r.table_data) && r.table_data.length > 0;
+
+        const hasRemarks = r.remarks !== null && r.remarks !== undefined && r.remarks.trim() !== '';
+
+        const hasAnyValue = hasStandardValue || hasTableData || hasRemarks;
+
+        if (!hasAnyValue) {
           console.log(`Filtering out response without values for item: ${r.item_id}`);
         }
 
-        return hasValue;
+        return hasAnyValue;
       });
 
       console.log('ChecklistService: Sending', responsesWithValues.length, 'responses with values out of', uniqueResponses.length, 'total');
 
-      // ENHANCED: Validate each response has required fields
+      if (responsesWithValues.length === 0) {
+        console.warn('ChecklistService: No responses with values to save');
+        return {
+          message: 'No responses with values to save',
+          summary: { created: 0, updated: 0, total_processed: 0 },
+          checklist_status: null
+        };
+      }
+
+      // ENHANCED: Validate and clean each response
       const validatedResponses = responsesWithValues.map((response, index) => {
-        // Ensure required fields are present
         if (!response.item_id) {
           throw new Error(`Response at index ${index} is missing item_id`);
         }
 
         // Clean and validate the response object
-        return {
+        const cleanedResponse = {
           item_id: response.item_id,
           sr_no: response.sr_no || index + 1,
           section: response.section || 'GENERAL',
@@ -203,40 +259,65 @@ class ChecklistService {
           is_mandatory: Boolean(response.is_mandatory),
           requires_evidence: Boolean(response.requires_evidence)
         };
+
+        // FIXED: Properly handle table_data
+        if (response.table_data) {
+          if (Array.isArray(response.table_data)) {
+            cleanedResponse.table_data = response.table_data;
+          } else {
+            console.warn(`Invalid table_data for item ${response.item_id}, converting to array`);
+            cleanedResponse.table_data = [];
+          }
+        }
+
+        return cleanedResponse;
       });
 
       console.log('ChecklistService: Validated responses sample:', validatedResponses.slice(0, 3));
 
-      // Prepare the request body exactly as your Lambda expects
+      // Prepare the request body
       const requestBody = {
         responses: validatedResponses,
         user_id: userId
       };
 
-      console.log('ChecklistService: Making REAL API call to:', `${this.baseUrl}/checklist/${checklistId}/responses`);
-      console.log('ChecklistService: Request body summary:', {
+      console.log('ChecklistService: Making API call to:', `${this.baseUrl}/checklist/${checklistId}/responses`);
+      console.log('ChecklistService: Request summary:', {
         responsesCount: requestBody.responses.length,
         user_id: requestBody.user_id,
         sampleResponse: requestBody.responses[0]
       });
 
-      // ✅ REAL API CALL to your Lambda
+      // ✅ REAL API CALL
       const response = await apiClient.put(`${this.baseUrl}/checklist/${checklistId}/responses`, requestBody);
 
-      console.log('ChecklistService: REAL API response received:', response);
+      console.log('ChecklistService: API response received:', {
+        status: response.status,
+        summary: response.data?.summary,
+        checklist_status: response.data?.checklist_status,
+        sample_responses: response.data?.sample_responses
+      });
 
-      // Enhanced response validation
+      // FIXED: Enhanced response validation
       if (response && response.data) {
-        console.log('ChecklistService: Update successful:', {
-          summary: response.data.summary,
-          checklist_status: response.data.checklist_status
-        });
-        return response.data;
-      } else if (response) {
-        console.log('ChecklistService: Update successful (legacy format):', response);
-        return response;
+        const result = response.data;
+
+        // Validate that the save actually worked
+        if (result.summary && result.summary.total_processed > 0) {
+          console.log('ChecklistService: Save confirmed successful:', {
+            created: result.summary.created,
+            updated: result.summary.updated,
+            total_processed: result.summary.total_processed,
+            progress: result.checklist_status?.progress_percentage
+          });
+
+          return result;
+        } else {
+          console.warn('ChecklistService: Save may have failed - no items processed');
+          return result;
+        }
       } else {
-        throw new Error('Empty response from server');
+        throw new Error('Empty or invalid response from server');
       }
 
     } catch (error) {
@@ -251,9 +332,9 @@ class ChecklistService {
 
       // Provide more specific error messages
       if (error.response?.status === 400) {
-        throw new Error('Invalid request data. Please check your responses.');
+        throw new Error('Invalid request data. Please check your responses and try again.');
       } else if (error.response?.status === 404) {
-        throw new Error('Checklist not found.');
+        throw new Error('Checklist not found or has been deleted.');
       } else if (error.response?.status === 403) {
         throw new Error('You do not have permission to update this checklist.');
       } else if (error.response?.status === 409) {
@@ -362,86 +443,292 @@ class ChecklistService {
   }
 
   /**
-   * Fixed processTemplateForForm method to handle your JSON structure
-   * Add this to your ChecklistService class
+   * ENHANCED processTemplateForForm with comprehensive debugging
+   * Add this to your ChecklistService to replace the existing method
    */
   processTemplateForForm(template) {
-    console.log('ChecklistService: Processing template for form:', template?.name || template?.template_name);
+    console.log('=== ENHANCED TEMPLATE PROCESSING DEBUG ===');
+    console.log('1. Input template:', {
+      name: template?.name,
+      template_id: template?.template_id,
+      template_type: template?.template_type,
+      hasTemplateData: !!template?.template_data,
+      templateDataType: typeof template?.template_data,
+      templateKeys: template ? Object.keys(template) : []
+    });
 
-    if (!template || !template.template_data) {
+    if (!template) {
+      console.error('❌ No template provided');
       return {
+        name: 'Unknown Template',
         items: [],
         item_types: [],
         is_mandatory: [],
-        processed_items: []
+        processed_items: [],
+        template_id: null,
+        template_type: null,
+        error: 'No template provided'
       };
     }
 
-    const templateData = template.template_data;
+    // ENHANCED: Check for template_data in multiple possible locations
+    let templateData = null;
+    if (template.template_data) {
+      templateData = template.template_data;
+      console.log('✅ Found template_data in template.template_data');
+    } else if (template.data) {
+      templateData = template.data;
+      console.log('✅ Found template_data in template.data');
+    } else if (template.content) {
+      templateData = template.content;
+      console.log('✅ Found template_data in template.content');
+    } else if (template.json_data) {
+      templateData = template.json_data;
+      console.log('✅ Found template_data in template.json_data');
+    }
+
+    console.log('2. Template data analysis:', {
+      found: !!templateData,
+      type: typeof templateData,
+      isString: typeof templateData === 'string',
+      isObject: typeof templateData === 'object',
+      keys: templateData ? Object.keys(templateData) : []
+    });
+
+    // ENHANCED: Handle JSON string parsing
+    if (typeof templateData === 'string') {
+      try {
+        console.log('🔄 Parsing template_data from JSON string...');
+        templateData = JSON.parse(templateData);
+        console.log('✅ Successfully parsed JSON string');
+      } catch (parseError) {
+        console.error('❌ Failed to parse template_data JSON:', parseError);
+        return {
+          ...template,
+          items: [],
+          item_types: [],
+          is_mandatory: [],
+          processed_items: [],
+          error: 'Invalid JSON in template_data: ' + parseError.message
+        };
+      }
+    }
+
+    if (!templateData) {
+      console.error('❌ No valid template_data found in any location');
+      console.log('Available template properties:', Object.keys(template));
+      return {
+        ...template,
+        items: [],
+        item_types: [],
+        is_mandatory: [],
+        processed_items: [],
+        error: 'Template data is missing - no template_data, data, content, or json_data found'
+      };
+    }
+
+    console.log('3. Template data structure:', {
+      hasSections: !!templateData.sections,
+      sectionsType: typeof templateData.sections,
+      sectionsIsArray: Array.isArray(templateData.sections),
+      sectionsLength: templateData.sections ? templateData.sections.length : 0,
+      templateDataKeys: Object.keys(templateData)
+    });
+
+    // ENHANCED: Better validation of template structure with detailed logging
+    if (!templateData.sections) {
+      console.error('❌ Template data has no sections property');
+      console.log('Template data structure:', templateData);
+
+      // Try alternative structures
+      if (templateData.fields && Array.isArray(templateData.fields)) {
+        console.log('🔄 Found fields at root level, converting to sections structure...');
+        templateData = {
+          sections: [{
+            section_name: 'Main Section',
+            fields: templateData.fields
+          }]
+        };
+      } else if (templateData.items && Array.isArray(templateData.items)) {
+        console.log('🔄 Found items array, converting to sections/fields structure...');
+        templateData = {
+          sections: [{
+            section_name: 'Main Section',
+            fields: templateData.items.map((item, index) => ({
+              field_id: item.id || item.field_id || `item_${index}`,
+              label: item.label || item.description || item.text || `Item ${index + 1}`,
+              field_type: item.type || item.field_type || 'yes_no',
+              is_mandatory: item.is_mandatory !== undefined ? item.is_mandatory : true,
+              pic: item.pic || '',
+              guidance: item.guidance || item.help || ''
+            }))
+          }]
+        };
+      } else {
+        return {
+          ...template,
+          items: [],
+          item_types: [],
+          is_mandatory: [],
+          processed_items: [],
+          error: 'Template sections are missing and no alternative structure found'
+        };
+      }
+    }
+
+    if (!Array.isArray(templateData.sections)) {
+      console.error('❌ Template sections is not an array:', typeof templateData.sections);
+      return {
+        ...template,
+        items: [],
+        item_types: [],
+        is_mandatory: [],
+        processed_items: [],
+        error: 'Template sections must be an array'
+      };
+    }
+
+    if (templateData.sections.length === 0) {
+      console.error('❌ Template sections array is empty');
+      return {
+        ...template,
+        items: [],
+        item_types: [],
+        is_mandatory: [],
+        processed_items: [],
+        error: 'Template sections array is empty'
+      };
+    }
+
+    console.log('✅ Template structure validated');
+    console.log('4. Processing sections:', templateData.sections.length);
+
     const processed_items = [];
     let itemCounter = 0;
     const seenItemIds = new Set();
 
-    if (templateData.sections && Array.isArray(templateData.sections)) {
-      console.log('ChecklistService: Found sections:', templateData.sections.length);
+    templateData.sections.forEach((section, sectionIndex) => {
+      const sectionName = section.section_name || section.name || `Section ${sectionIndex + 1}`;
 
-      templateData.sections.forEach((section, sectionIndex) => {
-        const sectionName = section.section_name || section.name || `Section ${sectionIndex}`;
-        console.log(`ChecklistService: Processing section ${sectionIndex}:`, sectionName);
+      console.log(`📂 Processing section ${sectionIndex}: "${sectionName}"`);
+      console.log(`   Section keys:`, Object.keys(section));
+      console.log(`   Has fields:`, !!section.fields);
+      console.log(`   Fields type:`, typeof section.fields);
+      console.log(`   Fields is array:`, Array.isArray(section.fields));
+      console.log(`   Fields length:`, section.fields ? section.fields.length : 0);
 
-        if (section.fields && Array.isArray(section.fields)) {
-          console.log(`ChecklistService: Section ${sectionName} has fields:`, section.fields.length);
+      if (!section.fields) {
+        console.warn(`⚠️  Section "${sectionName}" has no fields property`);
+        return;
+      }
 
-          section.fields.forEach((field, fieldIndex) => {
-            if (!field.field_id) {
-              console.warn('ChecklistService: Field missing field_id:', field);
-              return;
-            }
+      if (!Array.isArray(section.fields)) {
+        console.warn(`⚠️  Section "${sectionName}" fields is not an array:`, typeof section.fields);
+        return;
+      }
 
-            if (seenItemIds.has(field.field_id)) {
-              console.warn(`ChecklistService: Duplicate field_id found: ${field.field_id} (skipping)`);
-              return;
-            }
-            seenItemIds.add(field.field_id);
+      if (section.fields.length === 0) {
+        console.warn(`⚠️  Section "${sectionName}" has empty fields array`);
+        return;
+      }
 
-            console.log(`ChecklistService: Processing field ${itemCounter}:`, field.field_id, field.label?.substring(0, 50));
+      console.log(`✅ Section "${sectionName}" has ${section.fields.length} fields`);
 
-            // INCLUDE TABLE FIELDS NOW - don't skip them
-            const processedItem = {
-              item_id: field.field_id,
-              section_name: sectionName, // Use the actual section name
-              sub_section_name: null,
-              description: field.label || '',
-              check_description: field.label || field.description || '',
-              pic: field.pic || '',
-              guidance: field.guidance || field.placeholder || '',
-              response_type: this.mapFieldTypeToResponseType(field.field_type),
-              is_mandatory: field.is_mandatory !== undefined ? field.is_mandatory : true,
-              requires_evidence: field.requires_evidence || false,
-              order_index: itemCounter++,
-              // ADD TABLE STRUCTURE FOR TABLE FIELDS
-              table_structure: field.field_type === 'table' ? field.table_structure : null
-            };
+      section.fields.forEach((field, fieldIndex) => {
+        console.log(`  📝 Field ${fieldIndex}:`, {
+          field_id: field.field_id,
+          label: field.label?.substring(0, 30) + '...',
+          field_type: field.field_type,
+          is_mandatory: field.is_mandatory,
+          keys: Object.keys(field)
+        });
 
-            processed_items.push(processedItem);
-          });
+        // ENHANCED: Better field validation with detailed logging
+        if (!field.field_id) {
+          console.warn(`⚠️  Field in section "${sectionName}" at index ${fieldIndex} missing field_id`);
+          console.log(`     Field data:`, field);
+
+          // Try to generate a field_id
+          if (field.id) {
+            field.field_id = field.id;
+            console.log(`🔧 Using field.id as field_id: ${field.field_id}`);
+          } else if (field.name) {
+            field.field_id = field.name;
+            console.log(`🔧 Using field.name as field_id: ${field.field_id}`);
+          } else {
+            field.field_id = `${sectionName.toLowerCase().replace(/\s+/g, '_')}_field_${fieldIndex}`;
+            console.log(`🔧 Generated field_id: ${field.field_id}`);
+          }
         }
+
+        if (seenItemIds.has(field.field_id)) {
+          console.warn(`⚠️  Duplicate field_id found: ${field.field_id} (skipping)`);
+          return;
+        }
+        seenItemIds.add(field.field_id);
+
+        // ENHANCED: Better field processing with fallbacks
+        const processedItem = {
+          item_id: field.field_id,
+          section_name: sectionName,
+          sub_section_name: field.sub_section || field.subsection || null,
+          description: field.label || field.description || field.text || `Item ${field.field_id}`,
+          check_description: field.label || field.description || field.text || `Check item ${field.field_id}`,
+          pic: field.pic || field.person_in_charge || field.responsible || '',
+          guidance: field.guidance || field.placeholder || field.help_text || field.instructions || '',
+          response_type: this.mapFieldTypeToResponseType(field.field_type || field.type || 'yes_no'),
+          is_mandatory: field.is_mandatory !== undefined ? Boolean(field.is_mandatory) :
+            field.required !== undefined ? Boolean(field.required) : false,
+          requires_evidence: Boolean(field.requires_evidence || field.evidence_required),
+          order_index: itemCounter++,
+          table_structure: (field.field_type === 'table' || field.type === 'table') ?
+            this.validateTableStructure(field.table_structure || field.table_config) : null,
+          field_type: field.field_type || field.type || 'yes_no',
+          validation_rules: field.validation || field.rules || null,
+          default_value: field.default_value || field.default || null
+        };
+
+        processed_items.push(processedItem);
+        console.log(`✅ Processed item: ${processedItem.item_id} (${processedItem.response_type})`);
       });
+    });
+
+    console.log('5. Processing summary:', {
+      totalSections: templateData.sections.length,
+      totalFieldsProcessed: processed_items.length,
+      uniqueItemIds: seenItemIds.size,
+      mandatoryItems: processed_items.filter(item => item.is_mandatory).length
+    });
+
+    if (processed_items.length === 0) {
+      console.error('❌ No items were processed from template');
+      console.log('Template debugging info:', {
+        sections: templateData.sections.map((section, index) => ({
+          index,
+          name: section.section_name || section.name,
+          hasFields: !!section.fields,
+          fieldsCount: section.fields ? section.fields.length : 0,
+          fieldsType: typeof section.fields,
+          sampleField: section.fields && section.fields.length > 0 ? section.fields[0] : null
+        }))
+      });
+
+      return {
+        ...template,
+        items: [],
+        item_types: [],
+        is_mandatory: [],
+        processed_items: [],
+        error: 'No items could be processed from template sections'
+      };
     }
 
-    console.log('ChecklistService: Final processed template items:', processed_items.length);
-    console.log('ChecklistService: Items by section:', 
-      processed_items.reduce((acc, item) => {
-        acc[item.section_name] = (acc[item.section_name] || 0) + 1;
-        return acc;
-      }, {})
-    );
-
+    // Generate legacy arrays for compatibility
     const items = processed_items.map(item => item.description);
     const item_types = processed_items.map(item => item.response_type);
     const is_mandatory = processed_items.map(item => item.is_mandatory);
 
-    return {
+    const result = {
       ...template,
       items,
       item_types,
@@ -449,56 +736,103 @@ class ChecklistService {
       processed_items,
       total_items: processed_items.length,
       mandatory_items: processed_items.filter(item => item.is_mandatory).length,
-      unique_items: seenItemIds.size
+      unique_items: seenItemIds.size,
+      sections_summary: templateData.sections.map(section => ({
+        name: section.section_name || section.name,
+        field_count: section.fields ? section.fields.length : 0
+      }))
     };
+
+    console.log('=== TEMPLATE PROCESSING COMPLETE ===');
+    console.log('✅ Successfully processed template:', {
+      template_name: result.name,
+      total_items: result.total_items,
+      mandatory_items: result.mandatory_items,
+      sections: result.sections_summary.length,
+      first_5_items: processed_items.slice(0, 5).map(item => ({
+        id: item.item_id,
+        description: item.description.substring(0, 40) + '...',
+        type: item.response_type,
+        mandatory: item.is_mandatory
+      }))
+    });
+
+    return result;
   }
 
   /**
-   * Determine response type from item structure
-   * @param {Object} item - Item from template
-   * @returns {string} Response type
+   * FIXED: Enhanced field type mapping
    */
-  determineResponseType(item) {
-    // Check if item has specific response type
-    if (item.response_type) {
-      return item.response_type;
-    }
-
-    // Default logic based on item properties
-    if (item.yes_no_na !== undefined) {
-      return 'yes_no_na';
-    }
-
-    if (item.text_value !== undefined || item.remarks !== undefined) {
+  mapFieldTypeToResponseType(field_type) {
+    if (!field_type) {
+      console.warn('ChecklistService: No field_type provided, defaulting to text');
       return 'text';
     }
 
-    if (item.date_value !== undefined) {
-      return 'date';
+    const mapping = {
+      'text': 'text',
+      'textarea': 'text',
+      'date': 'date',
+      'datetime': 'date',
+      'yes_no': 'yes_no_na',
+      'boolean': 'yes_no_na',
+      'number': 'text',
+      'integer': 'text',
+      'decimal': 'text',
+      'table': 'table',
+      'file': 'text', // Files handled separately via evidence
+      'select': 'text',
+      'radio': 'yes_no_na',
+      'checkbox': 'yes_no_na'
+    };
+
+    const responseType = mapping[field_type.toLowerCase()] || 'text';
+
+    if (!mapping[field_type.toLowerCase()]) {
+      console.warn(`ChecklistService: Unknown field_type: ${field_type}, defaulting to text`);
     }
 
-    // Default to yes_no_na for most checklist items
-    return 'yes_no_na';
+    return responseType;
   }
 
   /**
-   * New helper method to map your field_type to response_type
+   * NEW: Validate table structure for table fields
    */
-  mapFieldTypeToResponseType(field_type) {
-    switch (field_type) {
-      case 'text':
-        return 'text';
-      case 'date':
-        return 'date';
-      case 'yes_no':
-        return 'yes_no_na';
-      case 'number':
-        return 'text'; // Numbers can be handled as text inputs
-      case 'table':
-        return 'table'; // Special handling needed
-      default:
-        console.warn(`ChecklistService: Unknown field_type: ${field_type}, defaulting to text`);
-        return 'text';
+  validateTableStructure(tableStructure) {
+    if (!tableStructure) {
+      console.warn('ChecklistService: Table field has no table_structure');
+      return null;
+    }
+
+    try {
+      // Ensure it has the required structure
+      if (!tableStructure.columns || !Array.isArray(tableStructure.columns)) {
+        console.warn('ChecklistService: Table structure missing columns array');
+        return {
+          columns: [
+            { field_id: 'item', label: 'Item', type: 'text' },
+            { field_id: 'status', label: 'Status', type: 'yes_no' }
+          ]
+        };
+      }
+
+      // Validate each column
+      const validatedColumns = tableStructure.columns.map((col, index) => ({
+        field_id: col.field_id || `col_${index}`,
+        label: col.label || `Column ${index + 1}`,
+        type: col.type || 'text',
+        required: Boolean(col.required),
+        width: col.width || null
+      }));
+
+      return {
+        ...tableStructure,
+        columns: validatedColumns
+      };
+
+    } catch (error) {
+      console.error('ChecklistService: Error validating table structure:', error);
+      return null;
     }
   }
 
@@ -743,6 +1077,96 @@ class ChecklistService {
     }
 
     return summary;
+  }
+
+  /**
+   * Debug function to test template fetching
+   * Call this from browser console: checklistService.debugTemplateAccess()
+   */
+  async debugTemplateAccess() {
+    try {
+      console.log('=== TEMPLATE ACCESS DEBUG ===');
+
+      // 1. Test getting all templates
+      console.log('1. Testing get all templates...');
+      const templates = await this.getAvailableTemplates();
+      console.log('Available templates:', templates.map(t => ({
+        id: t.template_id,
+        name: t.name,
+        type: t.template_type,
+        active: t.is_active
+      })));
+
+      if (templates.length === 0) {
+        console.error('❌ No templates found!');
+        return;
+      }
+
+      // 2. Test fetching each template individually
+      for (const template of templates) {
+        console.log(`\n2. Testing template: ${template.name} (${template.template_id})`);
+        try {
+          const fullTemplate = await this.getTemplateById(template.template_id);
+          console.log(`✅ Template ${template.name} processed successfully:`, {
+            items_count: fullTemplate.processed_items?.length || 0,
+            has_error: !!fullTemplate.error
+          });
+
+          if (fullTemplate.error) {
+            console.error(`❌ Template ${template.name} has error:`, fullTemplate.error);
+          }
+        } catch (err) {
+          console.error(`❌ Failed to fetch template ${template.name}:`, err.message);
+        }
+      }
+
+      console.log('=== TEMPLATE DEBUG COMPLETE ===');
+    } catch (error) {
+      console.error('Template debug failed:', error);
+    }
+  }
+
+  /**
+   * Debug function to check a specific checklist's template
+   * Call this from browser console: checklistService.debugChecklistTemplate(checklistId)
+   */
+  async debugChecklistTemplate(checklistId) {
+    try {
+      console.log('=== CHECKLIST TEMPLATE DEBUG ===');
+      console.log('1. Fetching checklist:', checklistId);
+
+      const checklist = await this.getChecklistById(checklistId);
+      console.log('2. Checklist data:', {
+        template_id: checklist.template_id,
+        template_name: checklist.template_name,
+        responses_count: checklist.responses?.length || 0
+      });
+
+      if (checklist.template_id) {
+        console.log('3. Fetching template for checklist...');
+        const template = await this.getTemplateById(checklist.template_id);
+        console.log('4. Template result:', {
+          name: template.name,
+          processed_items_count: template.processed_items?.length || 0,
+          error: template.error
+        });
+
+        if (template.processed_items && template.processed_items.length > 0) {
+          console.log('5. Sample template items:',
+            template.processed_items.slice(0, 3).map(item => ({
+              id: item.item_id,
+              description: item.description.substring(0, 50) + '...',
+              type: item.response_type,
+              section: item.section_name
+            }))
+          );
+        }
+      }
+
+      console.log('=== CHECKLIST TEMPLATE DEBUG COMPLETE ===');
+    } catch (error) {
+      console.error('Checklist template debug failed:', error);
+    }
   }
 }
 
