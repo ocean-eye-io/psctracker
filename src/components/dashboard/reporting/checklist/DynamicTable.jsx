@@ -1,5 +1,5 @@
-// DynamicTable.jsx - New component for handling table fields
-import React, { useState, useEffect } from 'react';
+// FIXED DynamicTable.jsx - Prevents input validation errors
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, Trash2, Edit3, Check, X } from 'lucide-react';
 
 const DynamicTable = ({ 
@@ -13,29 +13,56 @@ const DynamicTable = ({
   const [editingRow, setEditingRow] = useState(null);
   const [newRow, setNewRow] = useState({});
 
-  // Initialize new row template based on columns
-  const initializeNewRow = () => {
+  // FIXED: Memoize the template to prevent recreating on every render
+  const newRowTemplate = useMemo(() => {
     const template = {};
     if (item.table_structure?.columns) {
       item.table_structure.columns.forEach(col => {
-        template[col.column_id] = col.type === 'number' ? 0 : 
-                                  col.type === 'yes_no' ? null : '';
+        switch (col.type) {
+          case 'number':
+            template[col.column_id] = '';
+            break;
+          case 'yes_no':
+            template[col.column_id] = '';
+            break;
+          case 'date':
+            template[col.column_id] = '';
+            break;
+          default:
+            template[col.column_id] = '';
+        }
       });
     }
     return template;
-  };
-
-  // Update parent when table data changes
-  useEffect(() => {
-    onChange(tableData);
-  }, [tableData, onChange]);
-
-  // Initialize new row when component mounts
-  useEffect(() => {
-    setNewRow(initializeNewRow());
   }, [item.table_structure]);
 
-  const handleAddRow = () => {
+  // FIXED: Initialize new row only when template changes
+  useEffect(() => {
+    setNewRow(newRowTemplate);
+  }, [newRowTemplate]);
+
+  // FIXED: Only sync with parent when value prop changes (not when internal state changes)
+  useEffect(() => {
+    if (JSON.stringify(value) !== JSON.stringify(tableData)) {
+      setTableData(value || []);
+    }
+  }, [value]);
+
+  // FIXED: Use callback to prevent infinite loops with debouncing
+  const handleTableDataChange = useCallback((newData) => {
+    setTableData(newData);
+    
+    // Debounce onChange calls to prevent excessive API calls
+    if (onChange) {
+      const timeoutId = setTimeout(() => {
+        onChange(newData);
+      }, 300); // Increased debounce time
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [onChange]);
+
+  const handleAddRow = useCallback(() => {
     // Validate new row has required data
     const hasData = Object.values(newRow).some(val => 
       val !== null && val !== undefined && val !== ''
@@ -48,32 +75,36 @@ const DynamicTable = ({
 
     const rowWithId = {
       ...newRow,
-      _id: Date.now().toString() // Simple ID for row tracking
+      _id: Date.now().toString()
     };
 
-    setTableData(prev => [...prev, rowWithId]);
-    setNewRow(initializeNewRow());
-  };
+    const newTableData = [...tableData, rowWithId];
+    handleTableDataChange(newTableData);
+    setNewRow(newRowTemplate);
+  }, [newRow, tableData, newRowTemplate, handleTableDataChange]);
 
-  const handleEditRow = (index) => {
+  const handleEditRow = useCallback((index) => {
     setEditingRow(index);
-  };
+  }, []);
 
-  const handleSaveRow = (index) => {
+  const handleSaveRow = useCallback((index) => {
     setEditingRow(null);
-  };
+  }, []);
 
-  const handleCancelEdit = (index) => {
+  const handleCancelEdit = useCallback((index) => {
     setEditingRow(null);
-  };
+  }, []);
 
-  const handleDeleteRow = (index) => {
+  const handleDeleteRow = useCallback((index) => {
     if (window.confirm('Are you sure you want to delete this row?')) {
-      setTableData(prev => prev.filter((_, i) => i !== index));
+      const newTableData = tableData.filter((_, i) => i !== index);
+      handleTableDataChange(newTableData);
     }
-  };
+  }, [tableData, handleTableDataChange]);
 
-  const handleCellChange = (rowIndex, columnId, value) => {
+  const handleCellChange = useCallback((rowIndex, columnId, value) => {
+    console.log(`Cell change: row ${rowIndex}, column ${columnId}, value:`, value, typeof value);
+    
     if (rowIndex === -1) {
       // Editing new row
       setNewRow(prev => ({
@@ -82,36 +113,85 @@ const DynamicTable = ({
       }));
     } else {
       // Editing existing row
-      setTableData(prev => prev.map((row, index) => 
+      const newTableData = tableData.map((row, index) => 
         index === rowIndex 
           ? { ...row, [columnId]: value }
           : row
-      ));
+      );
+      handleTableDataChange(newTableData);
     }
-  };
+  }, [tableData, handleTableDataChange]);
 
-  const renderCell = (column, value, rowIndex, isEditing = false) => {
+  // CRITICAL FIX: Enhanced input validation and value sanitization
+  const sanitizeInputValue = useCallback((column, rawValue) => {
+    if (rawValue === null || rawValue === undefined) {
+      return '';
+    }
+
+    switch (column.type) {
+      case 'number':
+        // For number inputs, only allow valid numeric strings or empty
+        if (rawValue === '') return '';
+        const numStr = String(rawValue);
+        // Allow partial numbers like "1.", "-", etc. during typing
+        if (/^-?(\d*\.?\d*)$/.test(numStr)) {
+          return numStr;
+        }
+        return '';
+        
+      case 'date':
+        // For date inputs, ensure YYYY-MM-DD format or empty
+        if (rawValue === '') return '';
+        const dateStr = String(rawValue);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+          return dateStr;
+        }
+        return '';
+        
+      case 'yes_no':
+        // For select inputs, only allow valid options
+        const validOptions = ['', 'Yes', 'No'];
+        return validOptions.includes(rawValue) ? rawValue : '';
+        
+      default:
+        // For text inputs, convert to string
+        return String(rawValue);
+    }
+  }, []);
+
+  const renderCell = useCallback((column, value, rowIndex, isEditing = false) => {
     const cellId = `${item.item_id}_${rowIndex}_${column.column_id}`;
+    
+    // FIXED: Sanitize value before rendering
+    const sanitizedValue = sanitizeInputValue(column, value);
     
     if (!isEditing && rowIndex !== -1) {
       // Display mode
       switch (column.type) {
         case 'yes_no':
+          const displayValue = sanitizedValue || '-';
+          const cssClass = sanitizedValue ? 'yes-no-' + sanitizedValue.toLowerCase() : '';
           return (
-            <span className={`table-cell-value ${value ? 'yes-no-' + value.toLowerCase() : ''}`}>
-              {value || '-'}
+            <span className={`table-cell-value ${cssClass}`}>
+              {displayValue}
             </span>
           );
         case 'number':
           return (
             <span className="table-cell-value number">
-              {value !== null && value !== undefined ? value : '-'}
+              {sanitizedValue || '-'}
+            </span>
+          );
+        case 'date':
+          return (
+            <span className="table-cell-value date">
+              {sanitizedValue ? new Date(sanitizedValue).toLocaleDateString() : '-'}
             </span>
           );
         default:
           return (
             <span className="table-cell-value">
-              {value || '-'}
+              {sanitizedValue || '-'}
             </span>
           );
       }
@@ -123,8 +203,11 @@ const DynamicTable = ({
         return (
           <input
             type="text"
-            value={value || ''}
-            onChange={(e) => handleCellChange(rowIndex, column.column_id, e.target.value)}
+            value={sanitizedValue}
+            onChange={(e) => {
+              const newValue = e.target.value;
+              handleCellChange(rowIndex, column.column_id, newValue);
+            }}
             placeholder={`Enter ${column.label.toLowerCase()}...`}
             disabled={disabled}
             className="table-cell-input"
@@ -135,21 +218,66 @@ const DynamicTable = ({
         return (
           <input
             type="number"
-            value={value !== null && value !== undefined ? value : ''}
-            onChange={(e) => handleCellChange(rowIndex, column.column_id, 
-              e.target.value === '' ? null : parseFloat(e.target.value))}
+            value={sanitizedValue}
+            onChange={(e) => {
+              const inputValue = e.target.value;
+              console.log(`Number input change: "${inputValue}"`);
+              
+              // Allow empty string or valid number strings
+              if (inputValue === '' || /^-?(\d*\.?\d*)$/.test(inputValue)) {
+                handleCellChange(rowIndex, column.column_id, inputValue);
+              }
+            }}
+            onBlur={(e) => {
+              // On blur, convert to actual number or null
+              const inputValue = e.target.value;
+              if (inputValue === '' || inputValue === '-' || inputValue === '.') {
+                handleCellChange(rowIndex, column.column_id, '');
+              } else {
+                const numValue = parseFloat(inputValue);
+                if (!isNaN(numValue)) {
+                  handleCellChange(rowIndex, column.column_id, numValue);
+                } else {
+                  handleCellChange(rowIndex, column.column_id, '');
+                }
+              }
+            }}
             placeholder="0"
             disabled={disabled}
             className="table-cell-input number"
+            step="any"
+          />
+        );
+      
+      case 'date':
+        return (
+          <input
+            type="date"
+            value={sanitizedValue}
+            onChange={(e) => {
+              const dateValue = e.target.value;
+              console.log(`Date input change: "${dateValue}"`);
+              
+              // Only allow empty string or valid date format
+              if (dateValue === '' || /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+                handleCellChange(rowIndex, column.column_id, dateValue);
+              }
+            }}
+            disabled={disabled}
+            className="table-cell-input date"
+            min="1900-01-01"
+            max="2099-12-31"
           />
         );
       
       case 'yes_no':
         return (
           <select
-            value={value || ''}
-            onChange={(e) => handleCellChange(rowIndex, column.column_id, 
-              e.target.value === '' ? null : e.target.value)}
+            value={sanitizedValue}
+            onChange={(e) => {
+              const selectValue = e.target.value;
+              handleCellChange(rowIndex, column.column_id, selectValue);
+            }}
             disabled={disabled}
             className="table-cell-select"
           >
@@ -163,20 +291,27 @@ const DynamicTable = ({
         return (
           <input
             type="text"
-            value={value || ''}
-            onChange={(e) => handleCellChange(rowIndex, column.column_id, e.target.value)}
+            value={sanitizedValue}
+            onChange={(e) => {
+              const newValue = e.target.value;
+              handleCellChange(rowIndex, column.column_id, newValue);
+            }}
             placeholder={`Enter ${column.label.toLowerCase()}...`}
             disabled={disabled}
             className="table-cell-input"
           />
         );
     }
-  };
+  }, [item.item_id, handleCellChange, disabled, sanitizeInputValue]);
 
   if (!item.table_structure?.columns) {
     return (
       <div className="table-error">
         <p>Table configuration error: No columns defined</p>
+        <details style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+          <summary>Debug Info</summary>
+          <pre>{JSON.stringify(item, null, 2)}</pre>
+        </details>
       </div>
     );
   }
@@ -303,6 +438,16 @@ const DynamicTable = ({
         <div className="table-empty-state">
           <p>No data entered yet. Use the row above to add your first entry.</p>
         </div>
+      )}
+
+      {/* Debug panel (remove in production) */}
+      {process.env.NODE_ENV === 'development' && (
+        <details style={{ marginTop: '16px', fontSize: '12px', background: '#f8f9fa', padding: '8px' }}>
+          <summary>Debug Info (dev only)</summary>
+          <div>Table Data: {JSON.stringify(tableData, null, 2)}</div>
+          <div>New Row: {JSON.stringify(newRow, null, 2)}</div>
+          <div>Columns: {JSON.stringify(item.table_structure?.columns || [], null, 2)}</div>
+        </details>
       )}
     </div>
   );

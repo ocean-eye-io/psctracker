@@ -443,19 +443,13 @@ class ChecklistService {
   }
 
   /**
-   * ENHANCED processTemplateForForm with comprehensive debugging
-   * Add this to your ChecklistService to replace the existing method
+   * FIXED processTemplateForForm method - handles both structures
+   * Replace your existing method with this one
    */
   processTemplateForForm(template) {
-    console.log('=== ENHANCED TEMPLATE PROCESSING DEBUG ===');
-    console.log('1. Input template:', {
-      name: template?.name,
-      template_id: template?.template_id,
-      template_type: template?.template_type,
-      hasTemplateData: !!template?.template_data,
-      templateDataType: typeof template?.template_data,
-      templateKeys: template ? Object.keys(template) : []
-    });
+    console.log('=== PROCESSING TEMPLATE ===');
+    console.log('Template name:', template?.name);
+    console.log('Template type:', template?.template_type);
 
     if (!template) {
       console.error('❌ No template provided');
@@ -471,38 +465,18 @@ class ChecklistService {
       };
     }
 
-    // ENHANCED: Check for template_data in multiple possible locations
-    let templateData = null;
-    if (template.template_data) {
-      templateData = template.template_data;
-      console.log('✅ Found template_data in template.template_data');
-    } else if (template.data) {
-      templateData = template.data;
-      console.log('✅ Found template_data in template.data');
-    } else if (template.content) {
-      templateData = template.content;
-      console.log('✅ Found template_data in template.content');
-    } else if (template.json_data) {
-      templateData = template.json_data;
-      console.log('✅ Found template_data in template.json_data');
-    }
+    // Get template_data
+    let templateData = template.template_data;
+    console.log('Template data type:', typeof templateData);
 
-    console.log('2. Template data analysis:', {
-      found: !!templateData,
-      type: typeof templateData,
-      isString: typeof templateData === 'string',
-      isObject: typeof templateData === 'object',
-      keys: templateData ? Object.keys(templateData) : []
-    });
-
-    // ENHANCED: Handle JSON string parsing
+    // Parse JSON string if needed
     if (typeof templateData === 'string') {
       try {
-        console.log('🔄 Parsing template_data from JSON string...');
+        console.log('🔄 Parsing JSON string...');
         templateData = JSON.parse(templateData);
-        console.log('✅ Successfully parsed JSON string');
+        console.log('✅ JSON parsed successfully');
       } catch (parseError) {
-        console.error('❌ Failed to parse template_data JSON:', parseError);
+        console.error('❌ JSON parse error:', parseError.message);
         return {
           ...template,
           items: [],
@@ -515,211 +489,97 @@ class ChecklistService {
     }
 
     if (!templateData) {
-      console.error('❌ No valid template_data found in any location');
-      console.log('Available template properties:', Object.keys(template));
+      console.error('❌ No template_data found');
       return {
         ...template,
         items: [],
         item_types: [],
         is_mandatory: [],
         processed_items: [],
-        error: 'Template data is missing - no template_data, data, content, or json_data found'
+        error: 'Template data is missing'
       };
     }
 
-    console.log('3. Template data structure:', {
-      hasSections: !!templateData.sections,
-      sectionsType: typeof templateData.sections,
-      sectionsIsArray: Array.isArray(templateData.sections),
-      sectionsLength: templateData.sections ? templateData.sections.length : 0,
-      templateDataKeys: Object.keys(templateData)
-    });
+    console.log('Template data keys:', Object.keys(templateData));
 
-    // ENHANCED: Better validation of template structure with detailed logging
-    if (!templateData.sections) {
-      console.error('❌ Template data has no sections property');
-      console.log('Template data structure:', templateData);
-
-      // Try alternative structures
-      if (templateData.fields && Array.isArray(templateData.fields)) {
-        console.log('🔄 Found fields at root level, converting to sections structure...');
-        templateData = {
-          sections: [{
-            section_name: 'Main Section',
-            fields: templateData.fields
-          }]
-        };
-      } else if (templateData.items && Array.isArray(templateData.items)) {
-        console.log('🔄 Found items array, converting to sections/fields structure...');
-        templateData = {
-          sections: [{
-            section_name: 'Main Section',
-            fields: templateData.items.map((item, index) => ({
-              field_id: item.id || item.field_id || `item_${index}`,
-              label: item.label || item.description || item.text || `Item ${index + 1}`,
-              field_type: item.type || item.field_type || 'yes_no',
-              is_mandatory: item.is_mandatory !== undefined ? item.is_mandatory : true,
-              pic: item.pic || '',
-              guidance: item.guidance || item.help || ''
-            }))
-          }]
-        };
-      } else {
-        return {
-          ...template,
-          items: [],
-          item_types: [],
-          is_mandatory: [],
-          processed_items: [],
-          error: 'Template sections are missing and no alternative structure found'
-        };
-      }
-    }
-
-    if (!Array.isArray(templateData.sections)) {
-      console.error('❌ Template sections is not an array:', typeof templateData.sections);
+    // Validate sections exist
+    if (!templateData.sections || !Array.isArray(templateData.sections)) {
+      console.error('❌ No sections array found');
       return {
         ...template,
         items: [],
         item_types: [],
         is_mandatory: [],
         processed_items: [],
-        error: 'Template sections must be an array'
+        error: 'Template sections are missing or invalid'
       };
     }
 
-    if (templateData.sections.length === 0) {
-      console.error('❌ Template sections array is empty');
-      return {
-        ...template,
-        items: [],
-        item_types: [],
-        is_mandatory: [],
-        processed_items: [],
-        error: 'Template sections array is empty'
-      };
-    }
-
-    console.log('✅ Template structure validated');
-    console.log('4. Processing sections:', templateData.sections.length);
+    console.log('✅ Found sections:', templateData.sections.length);
 
     const processed_items = [];
     let itemCounter = 0;
     const seenItemIds = new Set();
 
+    // Process each section
     templateData.sections.forEach((section, sectionIndex) => {
       const sectionName = section.section_name || section.name || `Section ${sectionIndex + 1}`;
+      console.log(`📂 Processing section: "${sectionName}"`);
 
-      console.log(`📂 Processing section ${sectionIndex}: "${sectionName}"`);
-      console.log(`   Section keys:`, Object.keys(section));
-      console.log(`   Has fields:`, !!section.fields);
-      console.log(`   Fields type:`, typeof section.fields);
-      console.log(`   Fields is array:`, Array.isArray(section.fields));
-      console.log(`   Fields length:`, section.fields ? section.fields.length : 0);
+      // FIXED: Handle both structures
+      if (section.fields && Array.isArray(section.fields)) {
+        // Structure 1: sections → fields (5-Day Checklist)
+        console.log(`  📝 Found ${section.fields.length} fields`);
 
-      if (!section.fields) {
-        console.warn(`⚠️  Section "${sectionName}" has no fields property`);
-        return;
-      }
-
-      if (!Array.isArray(section.fields)) {
-        console.warn(`⚠️  Section "${sectionName}" fields is not an array:`, typeof section.fields);
-        return;
-      }
-
-      if (section.fields.length === 0) {
-        console.warn(`⚠️  Section "${sectionName}" has empty fields array`);
-        return;
-      }
-
-      console.log(`✅ Section "${sectionName}" has ${section.fields.length} fields`);
-
-      section.fields.forEach((field, fieldIndex) => {
-        console.log(`  📝 Field ${fieldIndex}:`, {
-          field_id: field.field_id,
-          label: field.label?.substring(0, 30) + '...',
-          field_type: field.field_type,
-          is_mandatory: field.is_mandatory,
-          keys: Object.keys(field)
+        section.fields.forEach((field, fieldIndex) => {
+          const processedItem = this.processField(field, sectionName, null, itemCounter++, seenItemIds);
+          if (processedItem) {
+            processed_items.push(processedItem);
+          }
         });
 
-        // ENHANCED: Better field validation with detailed logging
-        if (!field.field_id) {
-          console.warn(`⚠️  Field in section "${sectionName}" at index ${fieldIndex} missing field_id`);
-          console.log(`     Field data:`, field);
+      } else if (section.subsections && Array.isArray(section.subsections)) {
+        // Structure 2: sections → subsections → items (PSC Template)
+        console.log(`  📁 Found ${section.subsections.length} subsections`);
 
-          // Try to generate a field_id
-          if (field.id) {
-            field.field_id = field.id;
-            console.log(`🔧 Using field.id as field_id: ${field.field_id}`);
-          } else if (field.name) {
-            field.field_id = field.name;
-            console.log(`🔧 Using field.name as field_id: ${field.field_id}`);
+        section.subsections.forEach((subsection, subsectionIndex) => {
+          const subsectionName = subsection.subsection_name || subsection.name || `Subsection ${subsectionIndex + 1}`;
+          console.log(`    📋 Processing subsection: "${subsectionName}"`);
+
+          if (subsection.items && Array.isArray(subsection.items)) {
+            console.log(`      📝 Found ${subsection.items.length} items`);
+
+            subsection.items.forEach((item, itemIndex) => {
+              const processedItem = this.processItem(item, sectionName, subsectionName, itemCounter++, seenItemIds);
+              if (processedItem) {
+                processed_items.push(processedItem);
+              }
+            });
           } else {
-            field.field_id = `${sectionName.toLowerCase().replace(/\s+/g, '_')}_field_${fieldIndex}`;
-            console.log(`🔧 Generated field_id: ${field.field_id}`);
+            console.warn(`    ⚠️  Subsection "${subsectionName}" has no items`);
           }
-        }
+        });
 
-        if (seenItemIds.has(field.field_id)) {
-          console.warn(`⚠️  Duplicate field_id found: ${field.field_id} (skipping)`);
-          return;
-        }
-        seenItemIds.add(field.field_id);
-
-        // ENHANCED: Better field processing with fallbacks
-        const processedItem = {
-          item_id: field.field_id,
-          section_name: sectionName,
-          sub_section_name: field.sub_section || field.subsection || null,
-          description: field.label || field.description || field.text || `Item ${field.field_id}`,
-          check_description: field.label || field.description || field.text || `Check item ${field.field_id}`,
-          pic: field.pic || field.person_in_charge || field.responsible || '',
-          guidance: field.guidance || field.placeholder || field.help_text || field.instructions || '',
-          response_type: this.mapFieldTypeToResponseType(field.field_type || field.type || 'yes_no'),
-          is_mandatory: field.is_mandatory !== undefined ? Boolean(field.is_mandatory) :
-            field.required !== undefined ? Boolean(field.required) : false,
-          requires_evidence: Boolean(field.requires_evidence || field.evidence_required),
-          order_index: itemCounter++,
-          table_structure: (field.field_type === 'table' || field.type === 'table') ?
-            this.validateTableStructure(field.table_structure || field.table_config) : null,
-          field_type: field.field_type || field.type || 'yes_no',
-          validation_rules: field.validation || field.rules || null,
-          default_value: field.default_value || field.default || null
-        };
-
-        processed_items.push(processedItem);
-        console.log(`✅ Processed item: ${processedItem.item_id} (${processedItem.response_type})`);
-      });
+      } else {
+        console.warn(`  ⚠️  Section "${sectionName}" has neither fields nor subsections`);
+      }
     });
 
-    console.log('5. Processing summary:', {
-      totalSections: templateData.sections.length,
-      totalFieldsProcessed: processed_items.length,
-      uniqueItemIds: seenItemIds.size,
-      mandatoryItems: processed_items.filter(item => item.is_mandatory).length
+    console.log('✅ Processing complete:', {
+      sectionsCount: templateData.sections.length,
+      processedItemsCount: processed_items.length,
+      uniqueItemIds: seenItemIds.size
     });
 
     if (processed_items.length === 0) {
-      console.error('❌ No items were processed from template');
-      console.log('Template debugging info:', {
-        sections: templateData.sections.map((section, index) => ({
-          index,
-          name: section.section_name || section.name,
-          hasFields: !!section.fields,
-          fieldsCount: section.fields ? section.fields.length : 0,
-          fieldsType: typeof section.fields,
-          sampleField: section.fields && section.fields.length > 0 ? section.fields[0] : null
-        }))
-      });
-
+      console.error('❌ No items were processed');
       return {
         ...template,
         items: [],
         item_types: [],
         is_mandatory: [],
         processed_items: [],
-        error: 'No items could be processed from template sections'
+        error: 'No items could be processed from template'
       };
     }
 
@@ -735,29 +595,81 @@ class ChecklistService {
       is_mandatory,
       processed_items,
       total_items: processed_items.length,
-      mandatory_items: processed_items.filter(item => item.is_mandatory).length,
-      unique_items: seenItemIds.size,
-      sections_summary: templateData.sections.map(section => ({
-        name: section.section_name || section.name,
-        field_count: section.fields ? section.fields.length : 0
-      }))
+      mandatory_items: processed_items.filter(item => item.is_mandatory).length
     };
 
     console.log('=== TEMPLATE PROCESSING COMPLETE ===');
-    console.log('✅ Successfully processed template:', {
-      template_name: result.name,
-      total_items: result.total_items,
-      mandatory_items: result.mandatory_items,
-      sections: result.sections_summary.length,
-      first_5_items: processed_items.slice(0, 5).map(item => ({
-        id: item.item_id,
-        description: item.description.substring(0, 40) + '...',
-        type: item.response_type,
-        mandatory: item.is_mandatory
-      }))
-    });
+    console.log(`✅ Processed ${result.total_items} items (${result.mandatory_items} mandatory)`);
 
     return result;
+  }
+
+  /**
+   * NEW: Process field (for 5-Day Checklist structure)
+   */
+  processField(field, sectionName, subsectionName, orderIndex, seenItemIds) {
+    if (!field.field_id) {
+      console.warn('⚠️  Field missing field_id, generating one');
+      field.field_id = `field_${orderIndex}`;
+    }
+
+    if (seenItemIds.has(field.field_id)) {
+      console.warn(`⚠️  Duplicate field_id: ${field.field_id}`);
+      return null;
+    }
+
+    seenItemIds.add(field.field_id);
+
+    return {
+      item_id: field.field_id,
+      section_name: sectionName,
+      sub_section_name: subsectionName,
+      description: field.label || field.description || `Field ${field.field_id}`,
+      check_description: field.label || field.description || `Check ${field.field_id}`,
+      pic: field.pic || '',
+      guidance: field.guidance || field.placeholder || '',
+      response_type: this.mapFieldTypeToResponseType(field.field_type || 'text'),
+      is_mandatory: Boolean(field.is_mandatory),
+      requires_evidence: Boolean(field.requires_evidence),
+      order_index: orderIndex,
+      table_structure: field.field_type === 'table' ?
+        this.validateTableStructure(field.table_structure) : null,
+      field_type: field.field_type || 'text'
+    };
+  }
+
+  /**
+   * NEW: Process item (for PSC Template structure)
+   */
+  processItem(item, sectionName, subsectionName, orderIndex, seenItemIds) {
+    if (!item.item_id) {
+      console.warn('⚠️  Item missing item_id, generating one');
+      item.item_id = `item_${orderIndex}`;
+    }
+
+    if (seenItemIds.has(item.item_id)) {
+      console.warn(`⚠️  Duplicate item_id: ${item.item_id}`);
+      return null;
+    }
+
+    seenItemIds.add(item.item_id);
+
+    return {
+      item_id: item.item_id,
+      section_name: sectionName,
+      sub_section_name: subsectionName,
+      description: item.description || `Item ${item.item_id}`,
+      check_description: item.description || `Check ${item.item_id}`,
+      pic: item.pic || '',
+      guidance: item.guidance || '',
+      response_type: item.response_type || 'yes_no_na',
+      is_mandatory: Boolean(item.is_mandatory),
+      requires_evidence: Boolean(item.requires_evidence),
+      order_index: orderIndex,
+      sr_no: item.sr_no || orderIndex + 1,
+      evidence_types: item.evidence_types || [],
+      field_type: item.response_type || 'yes_no_na'
+    };
   }
 
   /**

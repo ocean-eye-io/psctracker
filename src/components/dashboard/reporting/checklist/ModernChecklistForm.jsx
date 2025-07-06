@@ -1,5 +1,5 @@
 // ModernChecklistForm.jsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   ArrowLeft,
   CheckCircle,
@@ -149,9 +149,6 @@ const ModernChecklistForm = ({
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [errors, setErrors] = useState({}); // State for field-specific errors
-
-  // NEW: State for DebugPanel visibility, lifted up to parent
-  const [showDebugPanel, setShowDebugPanel] = useState(false);
 
   // Category configuration for different item types
   const categoryConfig = {
@@ -411,35 +408,124 @@ const ModernChecklistForm = ({
     });
   }, [items, searchTerm, filterPIC, showOnlyMandatory]);
 
-  // 2. Update your handleResponseChange function to handle table data
-  const handleResponseChange = (itemId, field, value) => {
-    if (mode === 'view') return;
+  // FIXED: Enhanced handleResponseChange with better validation
+  const handleResponseChange = useCallback((itemId, field, value) => {
+    console.log(`📝 Response change: ${itemId} ${field}`, value, typeof value);
 
-    console.log('ModernChecklistForm - Response change:', itemId, field, value);
+    // CRITICAL FIX: Validate and sanitize input values based on field type
+    const sanitizeValue = (fieldType, rawValue) => {
+      if (rawValue === null || rawValue === undefined) {
+        return null;
+      }
+
+      switch (fieldType) {
+        case 'yes_no_na_value':
+          // Only allow valid yes/no/na values
+          const validYesNoNa = ['Yes', 'No', 'N/A', null];
+          return validYesNoNa.includes(rawValue) ? rawValue : null;
+
+        case 'text_value':
+          // Convert to string, allow empty
+          return rawValue === '' ? '' : String(rawValue);
+
+        case 'date_value':
+          // Validate date format (YYYY-MM-DD) or empty
+          if (rawValue === '' || rawValue === null) return null;
+          const dateStr = String(rawValue);
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            // Validate it's a real date
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) {
+              return dateStr;
+            }
+          }
+          console.warn(`Invalid date format for ${itemId}:`, rawValue);
+          return null;
+
+        case 'table_data':
+          // Validate table data structure
+          if (!rawValue) return [];
+          if (Array.isArray(rawValue)) {
+            // Clean the table data
+            return rawValue.filter(row => {
+              if (!row || typeof row !== 'object') return false;
+              // Check if row has at least one meaningful value
+              return Object.values(row).some(val =>
+                val !== null && val !== undefined && val !== '' &&
+                !String(val).startsWith('_') // Remove React keys
+              );
+            }).map(row => {
+              // Clean each row
+              const cleanRow = {};
+              Object.keys(row).forEach(key => {
+                if (!key.startsWith('_') && row[key] !== null && row[key] !== undefined) {
+                  cleanRow[key] = row[key];
+                }
+              });
+              return cleanRow;
+            });
+          }
+          console.warn(`Invalid table_data format for ${itemId}:`, rawValue);
+          return [];
+
+        case 'remarks':
+        case 'comments':
+          // Allow any string value
+          return rawValue === null ? '' : String(rawValue);
+
+        default:
+          console.warn(`Unknown field type: ${fieldType}`);
+          return rawValue;
+      }
+    };
 
     setResponses(prev => {
+      // Get the template item to determine response type and validation rules
+      const templateItem = items.find(item => item.item_id === itemId);
+
+      if (!templateItem) {
+        console.warn(`Template item not found for ${itemId}`);
+        return prev;
+      }
+
+      // Sanitize the value based on field type
+      const sanitizedValue = sanitizeValue(field, value);
+
       const updated = {
         ...prev,
         [itemId]: {
           ...prev[itemId],
-          [field]: value,
-          timestamp: new Date().toISOString()
+          item_id: itemId,
+          [field]: sanitizedValue,
+          // Include template metadata for API compatibility
+          response_type: templateItem?.response_type || 'yes_no_na',
+          section: templateItem?.section_name || 'GENERAL',
+          subsection: templateItem?.sub_section_name || null,
+          check_description: templateItem?.description || '',
+          pic: templateItem?.pic || '',
+          is_mandatory: templateItem?.is_mandatory || false,
+          requires_evidence: templateItem?.requires_evidence || false,
+          guidance: templateItem?.guidance || '',
+          sr_no: templateItem?.sr_no || templateItem?.order_index || 1
         }
       };
 
-      // Logic to update completedItems based on any response field having a value
+      // Validate the updated response for completion
       const currentItemResponse = updated[itemId];
-      const item = items.find(i => i.item_id === itemId);
-
       let hasAnyValue = false;
-      if (item?.response_type === 'table') {
-        hasAnyValue = currentItemResponse.table_data && currentItemResponse.table_data.length > 0;
+
+      if (templateItem?.response_type === 'table') {
+        hasAnyValue = currentItemResponse.table_data &&
+                     Array.isArray(currentItemResponse.table_data) &&
+                     currentItemResponse.table_data.length > 0;
       } else {
-        hasAnyValue = Object.values(currentItemResponse).some(val =>
-          val !== null && val !== undefined && val !== '' && !(Array.isArray(val) && val.length === 0)
-        );
+        hasAnyValue = (currentItemResponse.yes_no_na_value !== null && currentItemResponse.yes_no_na_value !== undefined) ||
+                      (currentItemResponse.text_value && currentItemResponse.text_value.trim() !== '') ||
+                      (currentItemResponse.date_value && currentItemResponse.date_value !== '') ||
+                      (currentItemResponse.remarks && currentItemResponse.remarks.trim() !== '');
       }
 
+      // Update completion tracking
       setCompletedItems(prevCompleted => {
         const newSet = new Set(prevCompleted);
         if (hasAnyValue) {
@@ -448,6 +534,13 @@ const ModernChecklistForm = ({
           newSet.delete(itemId);
         }
         return newSet;
+      });
+
+      console.log(`✅ Updated ${itemId} ${field}:`, {
+        originalValue: value,
+        sanitizedValue: sanitizedValue,
+        hasValue: hasAnyValue,
+        responseType: templateItem?.response_type
       });
 
       return updated;
@@ -460,7 +553,8 @@ const ModernChecklistForm = ({
         [itemId]: null
       }));
     }
-  };
+  }, [errors, items]);
+
 
   // Progress tracking
   const getProgress = () => {
@@ -524,49 +618,125 @@ const ModernChecklistForm = ({
     });
   };
 
-  // 6. DEBUGGING: Enhanced debug functions
-  const debugResponsesState = () => {
-    console.log('=== ENHANCED DEBUGGING RESPONSES STATE ===');
-    console.log('Responses object:', responses);
-    console.log('Responses keys:', Object.keys(responses));
-    console.log('Items count:', items.length);
-    console.log('Unique item IDs:', new Set(items.map(item => item.item_id)).size);
-
-    // Check for mismatched item IDs
-    const responseItemIds = Object.keys(responses);
-    const templateItemIds = items.map(item => item.item_id);
-
-    const orphanedResponses = responseItemIds.filter(id => !templateItemIds.includes(id));
-    const missingResponses = templateItemIds.filter(id => !responseItemIds.includes(id));
-
-    if (orphanedResponses.length > 0) {
-      console.warn('Orphaned responses (not in template):', orphanedResponses);
+  // 1. FIXED: Enhanced table data validation and formatting
+  const validateAndFormatTableData = (tableData) => {
+    if (!tableData || !Array.isArray(tableData)) {
+      return [];
     }
 
-    if (missingResponses.length > 0) {
-      console.log('Items without responses:', missingResponses.length);
-    }
+    // Clean and validate each row
+    return tableData.map(row => {
+      const cleanRow = {};
 
-    console.log('Completed items:', Array.from(completedItems));
-    console.log('Completed items count:', completedItems.size);
+      // Remove React internal properties and validate data
+      Object.keys(row).forEach(key => {
+        if (!key.startsWith('_') && row[key] !== null && row[key] !== undefined) {
+          // Convert values to appropriate types
+          let value = row[key];
 
-    // Sample what the first few responses look like
-    Object.keys(responses).slice(0, 3).forEach(itemId => {
-      console.log(`Response for ${itemId}:`, responses[itemId]);
-    });
+          // Handle different value types
+          if (typeof value === 'string' && value.trim() === '') {
+            return; // Skip empty strings
+          }
 
-    console.log('Items sample:', items.slice(0, 3).map(item => ({
-      item_id: item.item_id,
-      description: item.description?.substring(0, 50),
-      is_mandatory: item.is_mandatory
-    })));
+          if (typeof value === 'number' && isNaN(value)) {
+            return; // Skip invalid numbers
+          }
+
+          cleanRow[key] = value;
+        }
+      });
+
+      // Only return rows that have at least one meaningful value
+      return Object.keys(cleanRow).length > 0 ? cleanRow : null;
+    }).filter(row => row !== null);
   };
 
-  // Enhanced save and submit handlers for ModernChecklistForm
-  // These should replace the existing handlers in your component
+  // 2. FIXED: Enhanced formatResponseForAPI specifically for table handling
+  const formatResponseForAPI = useCallback((responsesToFormat) => {
+    console.log('🔄 Formatting responses for API...');
+    console.log('📊 Input responses:', responsesToFormat.length);
 
-  // FIXED: Enhanced save handler with better error handling and state management
-  const handleSave = async (isAutoSave = false) => {
+    return responsesToFormat.map(response => {
+      const formattedResponse = {
+        item_id: response.item_id,
+        sr_no: parseInt(response.sr_no) || 1,
+        section: response.section || 'GENERAL',
+        subsection: response.subsection || null,
+        check_description: response.check_description || response.description || '',
+        pic: response.pic || '',
+        response_type: response.response_type || 'yes_no_na',
+        is_mandatory: Boolean(response.is_mandatory),
+        requires_evidence: Boolean(response.requires_evidence),
+        guidance: response.guidance || ''
+      };
+
+      // Clear all response values first
+      formattedResponse.yes_no_na_value = null;
+      formattedResponse.text_value = null;
+      formattedResponse.date_value = null;
+      formattedResponse.table_data = null;
+
+      // CRITICAL FIX: Special handling for table data
+      if (response.response_type === 'table' || response.field_type === 'table') {
+        console.log(`📊 Processing table data for ${response.item_id}:`, response.table_data);
+
+        if (response.table_data && Array.isArray(response.table_data)) {
+          const cleanedTableData = validateAndFormatTableData(response.table_data);
+
+          if (cleanedTableData.length > 0) {
+            // CRITICAL: Ensure table_data is properly formatted as JSON string for API
+            formattedResponse.table_data = cleanedTableData;
+            console.log(`✅ Cleaned table data for ${response.item_id}:`, cleanedTableData);
+          } else {
+            formattedResponse.table_data = [];
+            console.log(`⚠️  Empty table data for ${response.item_id}`);
+          }
+        } else {
+          formattedResponse.table_data = [];
+          console.log(`⚠️  No valid table data for ${response.item_id}`);
+        }
+      } else {
+        // Handle other response types
+        switch (response.response_type) {
+          case 'yes_no_na':
+            if (response.yes_no_na_value !== null && response.yes_no_na_value !== undefined) {
+              formattedResponse.yes_no_na_value = response.yes_no_na_value;
+            }
+            break;
+
+          case 'text':
+            if (response.text_value && response.text_value.trim() !== '') {
+              formattedResponse.text_value = response.text_value.trim();
+            }
+            break;
+
+          case 'date':
+            if (response.date_value && response.date_value !== '') {
+              formattedResponse.date_value = response.date_value;
+            }
+            break;
+        }
+      }
+
+      // Always include remarks if present
+      formattedResponse.remarks = response.remarks && response.remarks.trim() !== '' ? response.remarks.trim() : null;
+
+      console.log(`📝 Formatted ${response.item_id}:`, {
+        type: formattedResponse.response_type,
+        has_table_data: formattedResponse.table_data ? formattedResponse.table_data.length : 0,
+        has_yes_no_na: formattedResponse.yes_no_na_value !== null,
+        has_text: formattedResponse.text_value !== null,
+        has_date: formattedResponse.date_value !== null,
+        has_remarks: formattedResponse.remarks !== null
+      });
+
+      return formattedResponse;
+    });
+  }, []);
+
+  // 3. FIXED: Enhanced handleSave with better error handling for tables
+  const handleSave = useCallback(async (isAutoSave = false) => {
     if (mode === 'view') return;
 
     // Prevent multiple simultaneous saves
@@ -584,7 +754,7 @@ const ModernChecklistForm = ({
       console.log('Checklist ID:', selectedChecklist?.checklist_id);
       console.log('User ID:', currentUser?.id);
 
-      // FIXED: Enhanced state debugging
+      // Enhanced state debugging
       console.log('Current responses state:', {
         totalResponseKeys: Object.keys(responses).length,
         sampleResponses: Object.entries(responses).slice(0, 3).map(([itemId, resp]) => ({
@@ -609,31 +779,66 @@ const ModernChecklistForm = ({
         }))
       });
 
-      // FIXED: Enhanced response transformation with validation
-      const apiResponses = transformResponsesToAPIFormat(responses, items);
-      console.log('=== API TRANSFORMATION RESULT (ENHANCED) ===');
-      console.log('Total API responses:', apiResponses.length);
+      // Get only responses with actual values
+      const responsesWithValues = Object.entries(responses)
+        .filter(([itemId, response]) => {
+          // Check if response has any meaningful value
+          const hasYesNoNa = response.yes_no_na_value !== null && response.yes_no_na_value !== undefined;
+          const hasText = response.text_value && response.text_value.trim() !== '';
+          const hasDate = response.date_value && response.date_value !== '';
+          const hasRemarks = response.remarks && response.remarks.trim() !== '';
 
-      // FIXED: Better filtering logic for responses with values
-      const responsesWithValues = apiResponses.filter(r => {
-        const originalItem = items.find(item => item.item_id === r.item_id);
-        
-        if (originalItem?.response_type === 'table') {
-          const hasTableData = r.table_data && Array.isArray(r.table_data) && r.table_data.length > 0;
-          if (hasTableData) return true;
-        }
-        
-        const hasStandardResponse = r.yes_no_na_value !== null && r.yes_no_na_value !== undefined ||
-                                   (r.text_value !== null && r.text_value !== undefined && r.text_value.trim() !== '') ||
-                                   r.date_value !== null && r.date_value !== undefined;
-        
-        const hasRemarks = r.remarks !== null && r.remarks !== undefined && r.remarks.trim() !== '';
-        
-        return hasStandardResponse || hasRemarks;
-      });
+          // CRITICAL: Enhanced table data validation
+          const hasTable = response.table_data &&
+                           Array.isArray(response.table_data) &&
+                           response.table_data.length > 0 &&
+                           response.table_data.some(row =>
+                             row && typeof row === 'object' &&
+                             Object.values(row).some(val =>
+                               val !== null && val !== undefined && val !== ''
+                             )
+                           );
 
-      console.log('Responses with values for API:', responsesWithValues.length);
-      console.log('Sample responses for API:', responsesWithValues.slice(0, 3));
+          const hasValue = hasYesNoNa || hasText || hasDate || hasTable || hasRemarks;
+
+          if (!hasValue) {
+            console.log(`⚠️  Filtering out ${itemId} - no meaningful values`);
+          } else if (hasTable) {
+            console.log(`📊 Including ${itemId} - has table data with ${response.table_data.length} rows`);
+          }
+
+          return hasValue;
+        })
+        .map(([itemId, response]) => {
+          // Get the corresponding template item
+          const templateItem = items.find(item => item.item_id === itemId);
+
+          return {
+            ...response,
+            item_id: itemId,
+            // Include template metadata
+            section: templateItem?.section_name || 'GENERAL',
+            subsection: templateItem?.sub_section_name || null,
+            check_description: templateItem?.description || response.description || '',
+            pic: templateItem?.pic || '',
+            response_type: templateItem?.response_type || 'yes_no_na',
+            is_mandatory: templateItem?.is_mandatory || false,
+            requires_evidence: templateItem?.requires_evidence || false,
+            guidance: templateItem?.guidance || '',
+            sr_no: templateItem?.sr_no || templateItem?.order_index || 1
+          };
+        });
+
+      console.log(`📊 Saving ${responsesWithValues.length} responses with values`);
+
+      // Log table responses specifically
+      const tableResponses = responsesWithValues.filter(r => r.response_type === 'table');
+      if (tableResponses.length > 0) {
+        console.log(`📊 Table responses being saved:`, tableResponses.map(r => ({
+          item_id: r.item_id,
+          rows: r.table_data?.length || 0
+        })));
+      }
 
       if (responsesWithValues.length === 0) {
         console.warn('No responses with values to save');
@@ -643,28 +848,42 @@ const ModernChecklistForm = ({
         return { success: false, reason: 'no_responses' };
       }
 
+      // Format responses properly
+      const formattedResponses = formatResponseForAPI(responsesWithValues);
+
+      console.log('📤 Formatted responses sample:', formattedResponses.slice(0, 3));
+
+      // Log any table data in formatted responses
+      const formattedTableResponses = formattedResponses.filter(r => r.table_data && r.table_data.length > 0);
+      if (formattedTableResponses.length > 0) {
+        console.log('📊 Formatted table responses:', formattedTableResponses.map(r => ({
+          item_id: r.item_id,
+          table_data: r.table_data
+        })));
+      }
+
       // Validate required fields
       if (!selectedChecklist?.checklist_id) {
         throw new Error('Checklist ID is required for saving');
       }
 
-      // FIXED: Enhanced API call with better error handling
+      // Enhanced API call with better error handling
       console.log('=== CALLING API (ENHANCED) ===');
       console.log('Endpoint: updateChecklistResponses');
       console.log('Checklist ID:', selectedChecklist.checklist_id);
-      console.log('Responses count:', responsesWithValues.length);
+      console.log('Responses count:', formattedResponses.length);
       console.log('User ID:', currentUser?.id || 'system');
 
       const result = await checklistService.updateChecklistResponses(
         selectedChecklist.checklist_id,
-        responsesWithValues,
+        formattedResponses,
         currentUser?.id || 'system'
       );
 
       console.log('=== API CALL SUCCESSFUL (ENHANCED) ===');
       console.log('Save result:', result);
 
-      // FIXED: Enhanced result validation
+      // Enhanced result validation
       if (result && result.summary) {
         console.log('Save confirmed successful:', {
           created: result.summary.created,
@@ -714,7 +933,8 @@ const ModernChecklistForm = ({
     } finally {
       setSaving(false);
     }
-  };
+  }, [selectedChecklist, currentUser, responses, items, formatResponseForAPI, mode, saving, onSave]);
+
 
   const handleSubmit = async () => {
     if (mode === 'view') return;
@@ -908,7 +1128,7 @@ const ModernChecklistForm = ({
       const cleanup = setupAutoSave();
       return cleanup;
     }
-  }, [mode, responses, saving, submitting]);
+  }, [mode, responses, saving, submitting, handleSave]);
 
 
   // Initialize responses state from existing checklist data
@@ -996,7 +1216,7 @@ const ModernChecklistForm = ({
               } else if (typeof response.table_data === 'object') {
                 tableData = [response.table_data]; // Single object, wrap in array
               }
-              
+
               if (Array.isArray(tableData) && tableData.length > 0) {
                 hasAnyValue = true;
               }
@@ -1016,17 +1236,17 @@ const ModernChecklistForm = ({
           existingResponses[response.item_id] = {
             // Legacy compatibility
             response: mainResponse,
-            
+
             // Specific field values
             yes_no_na_value: response.yes_no_na_value,
             text_value: response.text_value,
             date_value: response.date_value,
             remarks: response.remarks || '',
             comments: response.remarks || '', // Alias for compatibility
-            
+
             // FIXED: Enhanced table data handling
             table_data: tableData,
-            
+
             // Metadata
             timestamp: response.updated_at || response.created_at,
             response_id: response.response_id,
@@ -1077,7 +1297,7 @@ const ModernChecklistForm = ({
         console.log('=== STATE VERIFICATION AFTER LOADING ===');
         console.log('Responses state keys:', Object.keys(validResponses));
         console.log('Completed items state:', Array.from(validCompletedItems));
-        
+
         // Check specific items for debugging
         Object.entries(validResponses).slice(0, 3).forEach(([itemId, resp]) => {
           console.log(`Sample response ${itemId}:`, {
@@ -1111,7 +1331,7 @@ const ModernChecklistForm = ({
     if (responsesWithValues.length > 0) {
       console.log('Sample responses with values:', responsesWithValues.slice(0, 3));
     }
-  }, [responses, completedItems]);
+  }, [responses, completedItems, items]);
 
   // Also add this debug info to see what's happening with table fields
   useEffect(() => {
@@ -1130,563 +1350,86 @@ const ModernChecklistForm = ({
 
   const stats = getProgress(); // Use the new getProgress function
 
-  // Debug button component
-  // Now accepts showDebug and setShowDebug from parent
-  const DebugPanel = ({ showDebug, setShowDebug, items, responses, completedItems, mode, selectedChecklist, currentUser }) => {
-    // Existing debug functions (keep these)
-    const debugTemplateItems = () => {
-      console.log('=== DEBUGGING TEMPLATE ITEMS ===');
-      console.log('Total items:', items.length);
-      console.log('Sample items:', items.slice(0, 5).map(item => ({
-        item_id: item.item_id,
-        description: item.description?.substring(0, 50),
-        is_mandatory: item.is_mandatory,
-        section: item.section_name,
-        subsection: item.sub_section_name,
-        pic: item.pic,
-        response_type: item.response_type,
-        table_structure: item.table_structure ? 'HAS TABLE STRUCTURE' : 'NO TABLE STRUCTURE'
-      })));
-    };
+  // FIXED: Enhanced input validation helpers
+  const validateInput = {
+    number: (value) => {
+      if (value === '' || value === null || value === undefined) return '';
+      const numStr = String(value);
+      // Allow partial numbers during typing
+      if (/^-?(\d*\.?\d*)$/.test(numStr)) return numStr;
+      return '';
+    },
 
-    const debugCurrentResponses = () => {
-      console.log('=== DEBUGGING CURRENT RESPONSES ===');
-      console.log('Responses object:', responses);
-      console.log('Completed items set:', Array.from(completedItems));
-      const currentResponsesWithValues = Object.entries(responses).filter(([itemId, resp]) => {
-        const item = items.find(i => i.item_id === itemId);
-        if (item?.response_type === 'table') {
-          return resp.table_data && resp.table_data.length > 0;
-        }
-        return resp.yes_no_na_value !== null || resp.text_value !== null || resp.date_value !== null || (resp.remarks && resp.remarks.trim() !== '');
-      });
-      console.log('Responses with values (current state):', currentResponsesWithValues.length);
-      currentResponsesWithValues.slice(0, 5).forEach(([itemId, resp]) => {
-        console.log(`Item ${itemId}:`, resp);
-      });
-    };
-
-    // NEW: Test functions for real API operations
-    const testSaveWithExistingResponses = async () => {
-      console.log('=== TESTING REAL SAVE WITH EXISTING RESPONSES ===');
-
-      try {
-        // Get your current responses (the 5 that are loaded)
-        const currentResponses = responses;
-        console.log('Current responses to save:', currentResponses);
-
-        // Transform them using your transformer
-        const apiResponses = transformResponsesToAPIFormat(currentResponses, items);
-        console.log('Transformed API responses:', apiResponses.length);
-
-        // Filter to only ones with values
-        const responsesWithValues = apiResponses.filter(r => {
-          const originalItem = items.find(item => item.item_id === r.item_id);
-          if (originalItem?.response_type === 'table') {
-            return r.table_data && r.table_data.length > 0;
-          }
-          return r.yes_no_na_value !== null ||
-                 r.text_value !== null ||
-                 r.date_value !== null ||
-                 (r.remarks !== null && r.remarks !== '');
-        });
-
-        console.log('Responses with values for API:', responsesWithValues.length);
-        console.log('Sample API responses:', responsesWithValues.slice(0, 3));
-
-        // Now call the real API
-        const result = await checklistService.updateChecklistResponses(
-          selectedChecklist.checklist_id,
-          responsesWithValues,
-          currentUser?.id || 'system'
-        );
-
-        console.log('✅ REAL SAVE SUCCESSFUL:', result);
-        alert('✅ Real save successful! Check console for details.');
-        return result;
-
-      } catch (error) {
-        console.error('❌ REAL SAVE FAILED:', error);
-        console.error('Error details:', {
-          message: error.message,
-          stack: error.stack
-        });
-        alert(`❌ Real save failed: ${error.message}`);
-        throw error;
+    date: (value) => {
+      if (value === '' || value === null || value === undefined) return '';
+      const dateStr = String(value);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        const date = new Date(dateStr);
+        if (!isNaN(date.getTime())) return dateStr;
       }
-    };
+      return '';
+    },
 
-    const testNewResponseAndSave = async () => {
-      console.log('=== TESTING NEW RESPONSE AND SAVE ===');
+    text: (value) => {
+      if (value === null || value === undefined) return '';
+      return String(value);
+    }
+  };
 
-      try {
-        // Find an item that doesn't have a response yet
-        const uncompletedItem = items.find(item => !completedItems.has(item.item_id));
-
-        if (!uncompletedItem) {
-          console.log('All items are already completed, skipping new response test');
-          alert('All items are already completed!');
-          return;
-        }
-
-        console.log('Testing with uncompleted item:', uncompletedItem.item_id, uncompletedItem.description?.substring(0, 50));
-
-        // Simulate adding a response (this should trigger your handleResponse)
-        if (uncompletedItem.response_type === 'yes_no_na') {
-          handleResponseChange(uncompletedItem.item_id, 'yes_no_na_value', 'Yes');
-        } else if (uncompletedItem.response_type === 'text') {
-          handleResponseChange(uncompletedItem.item_id, 'text_value', 'Test response added for testing');
-        } else if (uncompletedItem.response_type === 'table' && uncompletedItem.table_structure) {
-          const mockRow = {};
-          uncompletedItem.table_structure.columns.forEach(col => {
-            if (col.type === 'text') mockRow[col.field_id] = 'Test Data';
-            if (col.type === 'number') mockRow[col.field_id] = 123;
-            if (col.type === 'yes_no') mockRow[col.field_id] = 'Yes';
-          });
-          handleResponseChange(uncompletedItem.item_id, 'table_data', [mockRow]);
-        } else {
-          console.warn('Skipping new response test for unsupported type:', uncompletedItem.response_type);
-          alert('Skipping new response test for unsupported item type.');
-          return;
-        }
-
-        handleResponseChange(uncompletedItem.item_id, 'remarks', 'Test remarks added for testing');
-
-
-        // Wait a moment for state to update
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        console.log('New response added, current responses count:', Object.keys(responses).length);
-
-        // Now try to save
-        const result = await handleSave(false);
-        console.log('✅ SAVE WITH NEW RESPONSE SUCCESSFUL:', result);
-        alert('✅ Save with new response successful!');
-
-        return result;
-
-      } catch (error) {
-        console.error('❌ SAVE WITH NEW RESPONSE FAILED:', error);
-        alert(`❌ Save with new response failed: ${error.message}`);
-        throw error;
-      }
-    };
-
-    const testSubmitChecklist = async () => {
-      console.log('=== TESTING REAL SUBMIT ===');
-
-      try {
-        // First save any pending changes
-        await testSaveWithExistingResponses();
-
-        // Then try to submit
-        const result = await handleSubmit();
-        console.log('✅ REAL SUBMIT SUCCESSFUL:', result);
-        alert('✅ Real submit successful!');
-
-        return result;
-
-      } catch (error) {
-        console.error('❌ REAL SUBMIT FAILED:', error);
-        console.error('Error details:', {
-          message: error.message,
-          validation: error.validation || 'No validation info'
-        });
-        alert(`❌ Real submit failed: ${error.message}`);
-        throw error;
-      }
-    };
-
-    const testAPIDirectly = async () => {
-      console.log('=== TESTING API DIRECTLY ===');
-      try {
-        const mockResponses = [{ item_id: 'test_item', yes_no_na_value: 'Yes', remarks: 'Direct test' }];
-        console.log('Attempting direct update with mock responses:', mockResponses);
-        const updateResult = await checklistService.updateChecklistResponses(
-          selectedChecklist.checklist_id,
-          mockResponses,
-          currentUser?.id || 'system'
-        );
-        console.log('Direct API Update Result:', updateResult);
-
-        console.log('Attempting direct submit...');
-        const submitResult = await checklistService.submitChecklist(
-          selectedChecklist.checklist_id,
-          currentUser?.id || 'system'
-        );
-        console.log('Direct API Submit Result:', submitResult);
-        alert('✅ Direct API test successful!');
-      } catch (err) {
-        console.error('Direct API Test Failed:', err);
-        alert(`❌ Direct API test failed: ${err.message}`);
-      }
-    };
-
-    // Add these debug functions to your DebugPanel to investigate the API response issue
-    const debugAPIResponseIssue = async () => {
-      console.log('=== DEBUGGING API RESPONSE ISSUE ===');
-
-      try {
-        // 1. Check what we're sending to save
-        console.log('1. Checking current form state before save...');
-        console.log('Current responses count:', Object.keys(responses).length);
-        console.log('Current completed items:', Array.from(completedItems));
-
-        // 2. Transform and check what we send to API
-        const apiResponses = transformResponsesToAPIFormat(responses, items);
-        const responsesWithValues = apiResponses.filter(r => {
-          const originalItem = items.find(item => item.item_id === r.item_id);
-          if (originalItem?.response_type === 'table') {
-            return r.table_data && r.table_data.length > 0;
-          }
-          return r.yes_no_na_value !== null ||
-                 r.text_value !== null ||
-                 r.date_value !== null ||
-                 (r.remarks !== null && r.remarks !== '');
-        });
-
-        console.log('2. What we SEND to save API:');
-        console.log('Total API responses:', apiResponses.length);
-        console.log('Responses with values:', responsesWithValues.length);
-        console.log('Sample API request data:', responsesWithValues.slice(0, 3));
-
-        // 3. Test the save API call
-        console.log('3. Testing save API call...');
-        const saveResult = await checklistService.updateChecklistResponses(
-          selectedChecklist.checklist_id,
-          responsesWithValues,
-          currentUser?.id || 'system'
-        );
-        console.log('Save API result:', saveResult);
-
-        // 4. Immediately fetch the checklist to see what's returned
-        console.log('4. Immediately fetching checklist after save...');
-        const fetchedChecklist = await checklistService.getChecklistById(selectedChecklist.checklist_id);
-        console.log('Fetched checklist after save:', {
-          checklist_id: fetchedChecklist.checklist_id,
-          responses_count: fetchedChecklist.responses?.length || 0,
-          responses_sample: fetchedChecklist.responses?.slice(0, 3) || [],
-          status: fetchedChecklist.status,
-          progress_percentage: fetchedChecklist.progress_percentage
-        });
-
-        // 5. Check if responses are in the right format
-        if (fetchedChecklist.responses && fetchedChecklist.responses.length > 0) {
-          console.log('5. Analyzing fetched responses structure...');
-          const sampleResponse = fetchedChecklist.responses[0];
-          console.log('Sample response structure:', {
-            has_item_id: !!sampleResponse.item_id,
-            has_yes_no_na_value: sampleResponse.yes_no_na_value !== undefined,
-            has_text_value: sampleResponse.text_value !== undefined,
-            has_date_value: sampleResponse.date_value !== undefined,
-            has_remarks: !!sampleResponse.remarks,
-            has_table_data: sampleResponse.table_data !== undefined, // Check for table_data
-            actual_structure: Object.keys(sampleResponse)
-          });
-        } else {
-          console.error('5. ❌ NO RESPONSES RETURNED FROM API!');
-          console.error('This is why your progress resets to 0%');
-        }
-
-        alert('Debug complete - check console for detailed analysis');
-
-      } catch (error) {
-        console.error('Debug failed:', error);
-        alert(`Debug failed: ${error.message}`);
-      }
-    };
-
-    const checkLambdaEndpoints = async () => {
-      console.log('=== CHECKING LAMBDA ENDPOINTS ===');
-
-      try {
-        const checklistId = selectedChecklist.checklist_id;
-
-        // 1. Check if the save endpoint exists and works
-        console.log('1. Testing save endpoint...');
-        const testSaveData = [{
-          item_id: 'test_item',
-          yes_no_na_value: 'Yes',
-          remarks: 'Test save endpoint'
-        }];
-
-        const saveResponse = await fetch(`https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws/api/checklist/${checklistId}/responses`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            responses: testSaveData,
-            user_id: 'system'
-          })
-        });
-
-        console.log('Save endpoint response status:', saveResponse.status);
-        const saveResult = await saveResponse.json();
-        console.log('Save endpoint response:', saveResult);
-
-        // 2. Check if the get endpoint exists and returns data
-        console.log('2. Testing get checklist endpoint...');
-        const getResponse = await fetch(`https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws/api/checklist/${checklistId}`);
-        console.log('Get endpoint response status:', getResponse.status);
-        const getResult = await getResponse.json();
-        console.log('Get endpoint response:', {
-          checklist_id: getResult.checklist_id,
-          responses_count: getResult.responses?.length || 0,
-          responses_sample: getResult.responses?.slice(0, 2) || [],
-          full_response_structure: Object.keys(getResult)
-        });
-
-        // 3. Check what's actually in the Lambda database
-        console.log('3. Checking database state...');
-        if (getResult.responses && getResult.responses.length > 0) {
-          console.log('✅ Database has responses');
-          console.log('Response structure check:', getResult.responses[0]);
-        } else {
-          console.error('❌ No responses in database - Lambda save endpoint may not be working');
-        }
-
-        alert('Lambda endpoint check complete - see console');
-
-      } catch (error) {
-        console.error('Lambda endpoint check failed:', error);
-        alert(`Lambda check failed: ${error.message}`);
-      }
-    };
-
-    const compareApiFormats = () => {
-      console.log('=== COMPARING API REQUEST/RESPONSE FORMATS ===');
-
-      // 1. Show what we send to the API
-      const currentResponses = responses;
-      const apiResponses = transformResponsesToAPIFormat(currentResponses, items);
-      const responsesWithValues = apiResponses.filter(r => {
-        const originalItem = items.find(item => item.item_id === r.item_id);
-        if (originalItem?.response_type === 'table') {
-          return r.table_data && r.table_data.length > 0;
-        }
-        return r.yes_no_na_value !== null ||
-               r.text_value !== null ||
-               r.date_value !== null ||
-               (r.remarks !== null && r.remarks !== '');
-      });
-
-      console.log('1. What we SEND to Lambda (PUT request format):');
-      console.log('Sample request item:', responsesWithValues[0]);
-
-      // 2. Show what we expect to get back
-      console.log('2. What we EXPECT to get back from Lambda (GET response format):');
-      console.log('Expected response format:', {
-        response_id: 'some-uuid',
-        item_id: 'psc_001',
-        yes_no_na_value: 'Yes',
-        text_value: null,
-        date_value: null,
-        remarks: 'Some remarks',
-        table_data: [], // Expected table_data
-        created_at: '2025-01-01T00:00:00Z',
-        updated_at: '2025-01-01T00:00:00Z'
-      });
-
-      // 3. Check what the template expects
-      console.log('3. Template item IDs we have in form:');
-      console.log('Sample template item IDs:', items.slice(0, 5).map(item => item.item_id));
-
-      console.log('4. Current form responses we want to save:');
-      Object.entries(currentResponses).slice(0, 3).forEach(([itemId, response]) => {
-        console.log(`  ${itemId}:`, response);
-      });
-
-      alert('API format comparison complete - check console');
-    };
-
-    // Add these buttons to your enhanced DebugPanel
-    const APIDebugButtons = () => (
-      <div style={{ marginTop: '10px' }}>
-        <div><strong>🔍 API Debug Tools:</strong></div>
-
-        <button
-          onClick={debugAPIResponseIssue}
-          style={{
-            margin: '2px 0',
-            display: 'block',
-            width: '100%',
-            padding: '8px',
-            background: '#dc2626',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '11px'
-          }}
-        >
-          🔍 Debug Save→Fetch Issue
-        </button>
-
-        <button
-          onClick={checkLambdaEndpoints}
-          style={{
-            margin: '2px 0',
-            display: 'block',
-            width: '100%',
-            padding: '8px',
-            background: '#7c3aed',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '11px'
-          }}
-        >
-          🔍 Check Lambda Endpoints
-        </button>
-
-        <button
-          onClick={compareApiFormats}
-          style={{
-            margin: '2px 0',
-            display: 'block',
-            width: '100%',
-            padding: '8px',
-            background: '#0891b2',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '11px'
-          }}
-        >
-          🔍 Compare API Formats
-        </button>
-      </div>
-    );
-
+  // FIXED: Enhanced date input renderer with validation
+  const renderDateInput = (item, value, disabled) => {
+    const getFieldError = (itemId) => errors[itemId];
+    const validatedValue = validateInput.date(value);
 
     return (
-      <div style={{ position: 'fixed', top: '10px', right: '10px', zIndex: 9999 }}>
-        <button
-          onClick={() => setShowDebug(!showDebug)}
-          style={{
-            background: '#3498db',
-            color: 'white',
-            padding: '8px 12px',
-            borderRadius: '4px',
-            border: 'none',
-            cursor: 'pointer'
+      <div className="checklist-form-response-field">
+        <input
+          type="date"
+          value={validatedValue}
+          onChange={(e) => {
+            const dateValue = e.target.value;
+            console.log(`Date input change: "${dateValue}"`);
+
+            // Only update if valid or empty
+            if (dateValue === '' || validateInput.date(dateValue) === dateValue) {
+              handleResponseChange(item.item_id, 'date_value', dateValue);
+            } else {
+              console.warn(`Invalid date value rejected: "${dateValue}"`);
+            }
           }}
-        >
-          {showDebug ? 'Hide Debug' : 'Show Debug'}
-        </button>
+          disabled={disabled}
+          className={getFieldError(item.item_id) ? 'error' : ''}
+          min="1900-01-01"
+          max="2099-12-31"
+        />
+        {getFieldError(item.item_id) && (
+          <span className="checklist-form-error-text">{getFieldError(item.item_id)}</span>
+        )}
+      </div>
+    );
+  };
 
-        {/* Conditionally render the debug content based on showDebug */}
-        <div style={{
-          background: 'white',
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          padding: '10px',
-          marginTop: '5px',
-          minWidth: '250px',
-          maxHeight: '500px',
-          overflow: 'auto',
-          fontSize: '12px',
-          // Use display: 'none' to hide it without unmounting
-          display: showDebug ? 'block' : 'none'
-        }}>
-          <div><strong>Debug Info:</strong></div>
-          <div>Items: {items.length}</div>
-          <div>Responses: {Object.keys(responses).length}</div>
-          <div>Completed: {completedItems.size}</div>
-          <div>Mode: {mode}</div>
-          <div>Checklist ID: {selectedChecklist?.checklist_id}</div>
+  // FIXED: Enhanced text input with validation
+  const renderTextInput = (item, value, disabled) => {
+    const getFieldError = (itemId) => errors[itemId];
+    const validatedValue = validateInput.text(value);
 
-          {/* Original Debug Buttons */}
-          <hr style={{ margin: '10px 0' }} />
-          <div><strong>🔍 Debug Functions:</strong></div>
-          <button onClick={debugTemplateItems} style={{ margin: '2px 0', display: 'block', width: '100%', padding: '5px', fontSize: '11px' }}>
-            Debug Template Items
-          </button>
-          <button onClick={debugCurrentResponses} style={{ margin: '2px 0', display: 'block', width: '100%', padding: '5px', fontSize: '11px' }}>
-            Debug Current Responses
-          </button>
-          <button onClick={testAPIDirectly} style={{ margin: '2px 0', display: 'block', width: '100%', padding: '5px', fontSize: '11px' }}>
-            Test API Directly (Mock)
-          </button>
-          <button onClick={() => console.log('Current state:', { responses, completedItems: Array.from(completedItems) })} style={{ margin: '2px 0', display: 'block', width: '100%', padding: '5px', fontSize: '11px' }}>
-            Log Current State
-          </button>
-
-          {/* NEW: Real Test Buttons */}
-          <hr style={{ margin: '10px 0' }} />
-          <div><strong>🧪 Real API Tests:</strong></div>
-
-          <button
-            onClick={testSaveWithExistingResponses}
-            style={{
-              margin: '2px 0',
-              display: 'block',
-              width: '100%',
-              padding: '8px',
-              background: '#10b981',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '11px'
-            }}
-          >
-            🧪 Test Real Save (Existing)
-          </button>
-
-          <button
-            onClick={testNewResponseAndSave}
-            style={{
-              margin: '2px 0',
-              display: 'block',
-              width: '100%',
-              padding: '8px',
-              background: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '11px'
-            }}
-          >
-            🧪 Test New Response + Save
-          </button>
-
-          <button
-            onClick={testSubmitChecklist}
-            style={{
-              margin: '2px 0',
-              display: 'block',
-              width: '100%',
-              padding: '8px',
-              background: '#f59e0b',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '11px'
-            }}
-          >
-            🧪 Test Real Submit
-          </button>
-
-          {/* Warning Notice */}
-          <div style={{
-            marginTop: '10px',
-            padding: '5px',
-            background: '#fef3cd',
-            border: '1px solid #f6e05e',
-            borderRadius: '3px',
-            fontSize: '10px',
-            color: '#744210'
-          }}>
-            ⚠️ Real API tests will make actual calls to your backend
-          </div>
-
-          {/* NEW: API Debug Buttons */}
-          <APIDebugButtons />
-        </div>
+    return (
+      <div className="checklist-form-response-field">
+        <textarea
+          value={validatedValue}
+          onChange={(e) => {
+            const textValue = e.target.value;
+            handleResponseChange(item.item_id, 'text_value', textValue);
+          }}
+          placeholder="Enter response..."
+          rows={3}
+          disabled={disabled}
+          className={getFieldError(item.item_id) ? 'error' : ''}
+        />
+        {getFieldError(item.item_id) && (
+          <span className="checklist-form-error-text">{getFieldError(item.item_id)}</span>
+        )}
       </div>
     );
   };
@@ -1703,6 +1446,38 @@ const ModernChecklistForm = ({
     );
   }
 
+  // CRITICAL FIX: Update your yes/no/na rendering in CompactChecklistItem
+  // Replace the yes/no rendering section with this:
+  const renderYesNoNaField = (item, currentValue, disabled) => {
+    console.log(`🎯 Rendering Yes/No/NA for ${item.item_id}, current value:`, currentValue);
+
+    return (
+      <div className="yes-no-na-container">
+        <div className="yes-no-na-buttons">
+          {['Yes', 'No', 'N/A'].map((option) => (
+            <label key={option} className={`yes-no-na-option ${currentValue === option ? 'selected' : ''}`}>
+              <input
+                type="radio"
+                name={`${item.item_id}_yes_no_na`}
+                value={option}
+                checked={currentValue === option}
+                onChange={(e) => {
+                  console.log(`🔘 Yes/No/NA change: ${item.item_id} = ${e.target.value}`);
+                  handleResponseChange(item.item_id, 'yes_no_na_value', e.target.value);
+                }}
+                disabled={disabled}
+                className="yes-no-na-radio"
+              />
+              <span className={`yes-no-na-label ${option.toLowerCase().replace('/', '-')}`}>
+                {option}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   // 5. Update your renderResponseField function to include the table case
   const renderResponseField = (item) => {
     const response = responses[item.item_id] || {};
@@ -1715,53 +1490,16 @@ const ModernChecklistForm = ({
       case 'yes_no_na':
         return (
           <div className="checklist-form-response-field">
-            <div className="checklist-form-radio-group">
-              {['Yes', 'No', 'N/A'].map(option => (
-                <label key={option} className="checklist-form-radio-option">
-                  <input
-                    type="radio"
-                    name={`response_${item.item_id}`}
-                    value={option}
-                    checked={response.yes_no_na_value === option}
-                    onChange={(e) => handleResponseChange(item.item_id, 'yes_no_na_value', e.target.value)}
-                    disabled={isReadonly}
-                  />
-                  <span>{option}</span>
-                </label>
-              ))}
-            </div>
+            {renderYesNoNaField(item, response.yes_no_na_value, isReadonly)}
             {hasError && <span className="checklist-form-error-text">{hasError}</span>}
           </div>
         );
 
       case 'text':
-        return (
-          <div className="checklist-form-response-field">
-            <textarea
-              value={response.text_value || ''}
-              onChange={(e) => handleResponseChange(item.item_id, 'text_value', e.target.value)}
-              placeholder="Enter response..."
-              rows={3}
-              disabled={isReadonly}
-              className={hasError ? 'error' : ''}
-            />
-            {hasError && <span className="checklist-form-error-text">{hasError}</span>}
-          </div>
-        );
+        return renderTextInput(item, response.text_value, isReadonly);
 
       case 'date':
-        return (
-          <div className="checklist-form-response-field">
-            <input
-              type="date"
-              value={response.date_value || ''}
-              onChange={(e) => handleResponseChange(item.item_id, 'date_value', e.target.value)}
-              disabled={isReadonly}
-              className={hasError ? 'error' : ''}
-            />
-            {hasError && <span className="checklist-form-error-text">{hasError}</span>}
-          </div>
-        );
+        return renderDateInput(item, response.date_value, isReadonly);
 
       // REPLACE THE PLACEHOLDER TABLE CASE WITH THIS FUNCTIONAL ONE
       case 'table':
@@ -1828,24 +1566,59 @@ const ModernChecklistForm = ({
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
+        /* Styles for Yes/No/NA buttons */
+        .yes-no-na-container {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .yes-no-na-buttons {
+          display: flex;
+          gap: 4px;
+        }
+        .yes-no-na-option {
+          display: flex;
+          align-items: center;
+          cursor: pointer;
+          font-size: 12px;
+          color: #4a5568;
+          border: 1px solid #e2e8f0;
+          border-radius: 4px;
+          padding: 4px 8px;
+          transition: all 0.2s ease;
+        }
+        .yes-no-na-option.selected {
+          background-color: #3498db;
+          color: white;
+          border-color: #3498db;
+        }
+        .yes-no-na-option:hover:not(.selected) {
+          background-color: #f0f4f8;
+        }
+        .yes-no-na-radio {
+          display: none; /* Hide native radio button */
+        }
+        .yes-no-na-label {
+          font-weight: 500;
+        }
+        .yes-no-na-label.yes {
+          color: #28a745; /* Green for Yes */
+        }
+        .yes-no-na-label.no {
+          color: #dc3545; /* Red for No */
+        }
+        .yes-no-na-label.n-a {
+          color: #6c757d; /* Gray for N/A */
+        }
+        .yes-no-na-option.selected .yes-no-na-label {
+          color: white; /* White text when selected */
+        }
       `}</style>
 
       <ErrorSuccessDisplay
         error={error}
         successMessage={successMessage}
         onClearError={() => setError(null)}
-      />
-
-      {/* Pass showDebugPanel and setShowDebugPanel as props */}
-      <DebugPanel
-        showDebug={showDebugPanel}
-        setShowDebug={setShowDebugPanel}
-        items={items}
-        responses={responses}
-        completedItems={completedItems}
-        mode={mode}
-        selectedChecklist={selectedChecklist}
-        currentUser={currentUser}
       />
 
       {/* Compact Header */}
@@ -2479,3 +2252,69 @@ const ErrorSuccessDisplay = ({ error, successMessage, onClearError }) => {
 
 
 export default ModernChecklistForm;
+
+// DEBUGGING: Add this function to test response saving
+window.debugResponseSaving = function() {
+  console.log('🔍 CURRENT RESPONSES STATE:');
+
+  // Try to access the responses from React state
+  const checklistElement = document.querySelector('[data-testid="checklist-form"]') ||
+                          document.querySelector('.modern-checklist-form');
+
+  if (checklistElement) {
+    console.log('✅ Found checklist form element');
+
+    // Check radio buttons
+    const radioButtons = checklistElement.querySelectorAll('input[type="radio"]:checked');
+    console.log(`🔘 Checked radio buttons: ${radioButtons.length}`);
+
+    radioButtons.forEach((radio, index) => {
+      console.log(`  ${index + 1}. ${radio.name} = ${radio.value}`);
+    });
+
+    // Check text inputs
+    const textInputs = checklistElement.querySelectorAll('input[type="text"], textarea');
+    const filledInputs = Array.from(textInputs).filter(input => input.value.trim() !== '');
+    console.log(`📝 Filled text inputs: ${filledInputs.length}`);
+
+    filledInputs.forEach((input, index) => {
+      console.log(`  ${index + 1}. ${input.name || input.id} = ${input.value}`);
+    });
+  } else {
+    console.log('❌ Could not find checklist form element');
+  }
+
+  return {
+    radioButtons: document.querySelectorAll('input[type="radio"]:checked').length,
+    textInputs: document.querySelectorAll('input[type="text"], textarea').length
+  };
+};
+
+// 4. DEBUGGING: Add this to test table data specifically
+window.debugTableData = function() {
+  console.log('🔍 DEBUGGING TABLE DATA...');
+
+  // Check for table inputs in the DOM
+  const tables = document.querySelectorAll('.dynamic-table');
+  console.log(`📊 Found ${tables.length} dynamic tables`);
+
+  tables.forEach((table, index) => {
+    const rows = table.querySelectorAll('tbody tr.data-row');
+    console.log(`  Table ${index}: ${rows.length} data rows`);
+
+    rows.forEach((row, rowIndex) => {
+      const inputs = row.querySelectorAll('input, select');
+      const rowData = {};
+      inputs.forEach(input => {
+        if (input.value) {
+          rowData[input.name || `field_${input.type}`] = input.value;
+        }
+      });
+      if (Object.keys(rowData).length > 0) {
+        console.log(`    Row ${rowIndex}:`, rowData);
+      }
+    });
+  });
+
+  return { tablesFound: tables.length };
+};
