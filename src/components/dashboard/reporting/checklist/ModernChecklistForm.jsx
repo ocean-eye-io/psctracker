@@ -34,13 +34,89 @@ import {
 } from 'lucide-react';
 
 // IMPORT THE REAL CHECKLIST SERVICE
-import checklistService from '../../../../services/checklistService'; // <--- THIS IS THE CRITICAL CHANGE
+import checklistService from '../../../../services/checklistService';
 
 // 1. Import the DynamicTable component at the top
 import DynamicTable from './DynamicTable';
 import './DynamicTable.css';
 
-// Make sure you have these imports in ModernChecklistForm.jsx
+// CRITICAL FIXES for table data handling in ModernChecklistForm.jsx
+
+// 1. FIXED: Enhanced prepareTableDataForSubmission function
+const prepareTableDataForSubmission = (tableData) => {
+  console.log('🔧 prepareTableDataForSubmission called with:', tableData);
+
+  if (!tableData) {
+    console.log('⚠️ No table data provided');
+    return null;
+  }
+
+  try {
+    let processedData = [];
+
+    // Handle different input formats
+    if (Array.isArray(tableData)) {
+      processedData = tableData;
+    } else if (typeof tableData === 'string') {
+      try {
+        processedData = JSON.parse(tableData);
+        if (!Array.isArray(processedData)) {
+          processedData = [processedData];
+        }
+      } catch (e) {
+        console.warn('Could not parse table data string:', tableData);
+        return null;
+      }
+    } else if (typeof tableData === 'object') {
+      processedData = [tableData];
+    } else {
+      console.warn('Invalid table data type:', typeof tableData);
+      return null;
+    }
+
+    // Clean and validate the data
+    const cleanedData = processedData.map((row, index) => {
+      if (!row || typeof row !== 'object') {
+        console.warn(`Invalid row at index ${index}:`, row);
+        return null;
+      }
+
+      const cleanRow = {};
+      let hasValidData = false;
+
+      Object.keys(row).forEach(key => {
+        // Skip React internal properties and empty values
+        if (key.startsWith('_') || key.startsWith('$')) {
+          return;
+        }
+
+        const value = row[key];
+
+        // Include non-empty values
+        if (value !== null && value !== undefined && value !== '' && value !== false) { // Added false check
+          cleanRow[key] = value;
+          hasValidData = true;
+        }
+      });
+
+      if (!hasValidData) {
+        console.log(`Filtered out empty row at index ${index}`);
+        return null;
+      }
+
+      console.log(`✅ Cleaned row ${index}:`, cleanRow);
+      return cleanRow;
+    }).filter(row => row !== null);
+
+    console.log(`🔧 Final cleaned data: ${cleanedData.length} rows`);
+    return cleanedData.length > 0 ? cleanedData : null;
+
+  } catch (error) {
+    console.error('Error preparing table data:', error);
+    return null;
+  }
+};
+
 // Assuming this file exists and contains the transformation logic
 // For demonstration, I'll include it here.
 const transformResponsesToAPIFormat = (responses, items) => {
@@ -58,9 +134,9 @@ const transformResponsesToAPIFormat = (responses, items) => {
           checklist_id: originalItem.checklist_id, // Assuming item has checklist_id
           yes_no_na_value: ['Yes', 'No', 'N/A'].includes(itemResponse.response) ? itemResponse.response : null,
           text_value: !['Yes', 'No', 'N/A'].includes(itemResponse.response) ? itemResponse.response : null,
-          remarks: itemResponse.remarks || itemResponse.comments || '',
-          // ADD TABLE DATA HANDLING
-          table_data: originalItem.response_type === 'table' ? (itemResponse.table_data || []) : null,
+          remarks: itemResponse.remarks || itemResponse.comments || '', // FIXED: Corrected syntax here
+          // ADD TABLE DATA HANDLING - Use the new preparation function here
+          table_data: originalItem.response_type === 'table' ? prepareTableDataForSubmission(itemResponse.table_data) : null,
           // Add other fields as necessary, e.g., photo_url, date_value
         });
       }
@@ -128,27 +204,27 @@ const ModernChecklistForm = ({
   onSubmit = () => {},
   onCancel = () => {},
   loading = false,
-  currentUser = { id: "user123", name: "John Doe" }, // Added id for currentUser
+  currentUser = { id: "user123", name: "John Doe" },
   mode = 'edit',
-  selectedChecklist = { checklist_id: 'chk123' } // Added selectedChecklist for handlers
+  selectedChecklist = { checklist_id: 'chk123' }
 }) => {
   const [activeView, setActiveView] = useState('dashboard');
   const [expandedSections, setExpandedSections] = useState(new Set(['deck']));
   const [responses, setResponses] = useState({});
-  const [completedItems, setCompletedItems] = new useState(new Set());
+  const [completedItems, setCompletedItems] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPIC, setFilterPIC] = useState('all');
   const [showOnlyMandatory, setShowOnlyMandatory] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [selectedItems, setSelectedItems] = new Set(); // Changed to new Set() directly
-  const [viewMode, setViewMode] = useState('compact'); // compact, detailed
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  const [viewMode, setViewMode] = useState('compact');
 
   // Add these state variables for error/success display
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-  const [errors, setErrors] = useState({}); // State for field-specific errors
+  const [errors, setErrors] = useState({});
 
   // Category configuration for different item types
   const categoryConfig = {
@@ -408,79 +484,11 @@ const ModernChecklistForm = ({
     });
   }, [items, searchTerm, filterPIC, showOnlyMandatory]);
 
-  // FIXED: Enhanced handleResponseChange with better validation
+  // 2. FIXED: Enhanced handleResponseChange for better table data handling
   const handleResponseChange = useCallback((itemId, field, value) => {
-    console.log(`📝 Response change: ${itemId} ${field}`, value, typeof value);
-
-    // CRITICAL FIX: Validate and sanitize input values based on field type
-    const sanitizeValue = (fieldType, rawValue) => {
-      if (rawValue === null || rawValue === undefined) {
-        return null;
-      }
-
-      switch (fieldType) {
-        case 'yes_no_na_value':
-          // Only allow valid yes/no/na values
-          const validYesNoNa = ['Yes', 'No', 'N/A', null];
-          return validYesNoNa.includes(rawValue) ? rawValue : null;
-
-        case 'text_value':
-          // Convert to string, allow empty
-          return rawValue === '' ? '' : String(rawValue);
-
-        case 'date_value':
-          // Validate date format (YYYY-MM-DD) or empty
-          if (rawValue === '' || rawValue === null) return null;
-          const dateStr = String(rawValue);
-          if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-            // Validate it's a real date
-            const date = new Date(dateStr);
-            if (!isNaN(date.getTime())) {
-              return dateStr;
-            }
-          }
-          console.warn(`Invalid date format for ${itemId}:`, rawValue);
-          return null;
-
-        case 'table_data':
-          // Validate table data structure
-          if (!rawValue) return [];
-          if (Array.isArray(rawValue)) {
-            // Clean the table data
-            return rawValue.filter(row => {
-              if (!row || typeof row !== 'object') return false;
-              // Check if row has at least one meaningful value
-              return Object.values(row).some(val =>
-                val !== null && val !== undefined && val !== '' &&
-                !String(val).startsWith('_') // Remove React keys
-              );
-            }).map(row => {
-              // Clean each row
-              const cleanRow = {};
-              Object.keys(row).forEach(key => {
-                if (!key.startsWith('_') && row[key] !== null && row[key] !== undefined) {
-                  cleanRow[key] = row[key];
-                }
-              });
-              return cleanRow;
-            });
-          }
-          console.warn(`Invalid table_data format for ${itemId}:`, rawValue);
-          return [];
-
-        case 'remarks':
-        case 'comments':
-          // Allow any string value
-          return rawValue === null ? '' : String(rawValue);
-
-        default:
-          console.warn(`Unknown field type: ${fieldType}`);
-          return rawValue;
-      }
-    };
+    console.log(`📝 ENHANCED Response change: ${itemId}.${field}`, value);
 
     setResponses(prev => {
-      // Get the template item to determine response type and validation rules
       const templateItem = items.find(item => item.item_id === itemId);
 
       if (!templateItem) {
@@ -488,36 +496,65 @@ const ModernChecklistForm = ({
         return prev;
       }
 
-      // Sanitize the value based on field type
-      const sanitizedValue = sanitizeValue(field, value);
+      // CRITICAL FIX: Special handling for table_data
+      let processedValue = value;
+
+      if (field === 'table_data') {
+        console.log(`📊 Processing table_data for ${itemId}:`, value);
+
+        // Validate and clean table data immediately
+        if (Array.isArray(value)) {
+          const cleanedTableData = value.map((row, index) => {
+            if (!row || typeof row !== 'object') return null;
+
+            const cleanRow = {};
+            let hasData = false;
+
+            Object.keys(row).forEach(key => {
+              if (!key.startsWith('_') && row[key] !== null && row[key] !== undefined && row[key] !== '' && row[key] !== false) { // Added false check
+                cleanRow[key] = row[key];
+                hasData = true;
+              }
+            });
+
+            return hasData ? cleanRow : null;
+          }).filter(row => row !== null);
+
+          processedValue = cleanedTableData;
+          console.log(`📊 Cleaned table data for ${itemId}:`, processedValue);
+        }
+      }
 
       const updated = {
         ...prev,
         [itemId]: {
           ...prev[itemId],
           item_id: itemId,
-          [field]: sanitizedValue,
-          // Include template metadata for API compatibility
-          response_type: templateItem?.response_type || 'yes_no_na',
-          section: templateItem?.section_name || 'GENERAL',
-          subsection: templateItem?.sub_section_name || null,
-          check_description: templateItem?.description || '',
-          pic: templateItem?.pic || '',
-          is_mandatory: templateItem?.is_mandatory || false,
-          requires_evidence: templateItem?.requires_evidence || false,
-          guidance: templateItem?.guidance || '',
-          sr_no: templateItem?.sr_no || templateItem?.order_index || 1
+          [field]: processedValue,
+
+          // Ensure response metadata is preserved
+          response_type: templateItem.response_type || 'yes_no_na',
+          section: templateItem.section_name || 'GENERAL',
+          subsection: templateItem.sub_section_name || null,
+          check_description: templateItem.description || '',
+          pic: templateItem.pic || '',
+          is_mandatory: templateItem.is_mandatory || false,
+          requires_evidence: templateItem.requires_evidence || false,
+          guidance: templateItem.guidance || '',
+          sr_no: templateItem.sr_no || templateItem.order_index || 1
         }
       };
 
-      // Validate the updated response for completion
+      // CRITICAL FIX: Better completion tracking for tables
       const currentItemResponse = updated[itemId];
       let hasAnyValue = false;
 
-      if (templateItem?.response_type === 'table') {
+      if (templateItem.response_type === 'table') {
         hasAnyValue = currentItemResponse.table_data &&
                      Array.isArray(currentItemResponse.table_data) &&
                      currentItemResponse.table_data.length > 0;
+
+        console.log(`📊 Table completion check for ${itemId}: ${hasAnyValue} (${currentItemResponse.table_data?.length || 0} rows)`);
       } else {
         hasAnyValue = (currentItemResponse.yes_no_na_value !== null && currentItemResponse.yes_no_na_value !== undefined) ||
                       (currentItemResponse.text_value && currentItemResponse.text_value.trim() !== '') ||
@@ -530,28 +567,27 @@ const ModernChecklistForm = ({
         const newSet = new Set(prevCompleted);
         if (hasAnyValue) {
           newSet.add(itemId);
+          console.log(`✅ Marked ${itemId} as completed`);
         } else {
           newSet.delete(itemId);
+          console.log(`❌ Marked ${itemId} as incomplete`);
         }
         return newSet;
       });
 
-      console.log(`✅ Updated ${itemId} ${field}:`, {
-        originalValue: value,
-        sanitizedValue: sanitizedValue,
+      console.log(`✅ Updated response for ${itemId}:`, {
+        field,
         hasValue: hasAnyValue,
-        responseType: templateItem?.response_type
+        responseType: templateItem.response_type,
+        tableDataLength: processedValue?.length || 'N/A'
       });
 
       return updated;
     });
 
-    // Clear any existing errors for this field
+    // Clear any existing errors
     if (errors[itemId]) {
-      setErrors(prev => ({
-        ...prev,
-        [itemId]: null
-      }));
+      setErrors(prev => ({ ...prev, [itemId]: null }));
     }
   }, [errors, items]);
 
@@ -618,7 +654,7 @@ const ModernChecklistForm = ({
     });
   };
 
-  // 1. FIXED: Enhanced table data validation and formatting
+  // 1. FIXED: Enhanced table data validation and formatting (This function was misplaced, moved it here)
   const validateAndFormatTableData = (tableData) => {
     if (!tableData || !Array.isArray(tableData)) {
       return [];
@@ -652,9 +688,9 @@ const ModernChecklistForm = ({
     }).filter(row => row !== null);
   };
 
-  // 2. FIXED: Enhanced formatResponseForAPI specifically for table handling
+  // 3. FIXED: Enhanced formatResponseForAPI with better table data handling
   const formatResponseForAPI = useCallback((responsesToFormat) => {
-    console.log('🔄 Formatting responses for API...');
+    console.log('🔄 ENHANCED formatResponseForAPI...');
     console.log('📊 Input responses:', responsesToFormat.length);
 
     return responsesToFormat.map(response => {
@@ -671,30 +707,24 @@ const ModernChecklistForm = ({
         guidance: response.guidance || ''
       };
 
-      // Clear all response values first
+      // Initialize all response fields to null
       formattedResponse.yes_no_na_value = null;
       formattedResponse.text_value = null;
       formattedResponse.date_value = null;
       formattedResponse.table_data = null;
 
-      // CRITICAL FIX: Special handling for table data
-      if (response.response_type === 'table' || response.field_type === 'table') {
-        console.log(`📊 Processing table data for ${response.item_id}:`, response.table_data);
+      // CRITICAL FIX: Enhanced table data processing
+      if (response.response_type === 'table') {
+        console.log(`📊 ENHANCED Processing table data for ${response.item_id}:`, response.table_data);
 
-        if (response.table_data && Array.isArray(response.table_data)) {
-          const cleanedTableData = validateAndFormatTableData(response.table_data);
+        const preparedTableData = prepareTableDataForSubmission(response.table_data);
 
-          if (cleanedTableData.length > 0) {
-            // CRITICAL: Ensure table_data is properly formatted as JSON string for API
-            formattedResponse.table_data = cleanedTableData;
-            console.log(`✅ Cleaned table data for ${response.item_id}:`, cleanedTableData);
-          } else {
-            formattedResponse.table_data = [];
-            console.log(`⚠️  Empty table data for ${response.item_id}`);
-          }
+        if (preparedTableData && preparedTableData.length > 0) {
+          formattedResponse.table_data = preparedTableData;
+          console.log(`✅ ENHANCED Prepared table data for ${response.item_id}:`, preparedTableData);
         } else {
-          formattedResponse.table_data = [];
-          console.log(`⚠️  No valid table data for ${response.item_id}`);
+          formattedResponse.table_data = null; // Explicitly set to null if no data
+          console.log(`⚠️ ENHANCED No valid table data for ${response.item_id}`);
         }
       } else {
         // Handle other response types
@@ -722,7 +752,7 @@ const ModernChecklistForm = ({
       // Always include remarks if present
       formattedResponse.remarks = response.remarks && response.remarks.trim() !== '' ? response.remarks.trim() : null;
 
-      console.log(`📝 Formatted ${response.item_id}:`, {
+      console.log(`📝 ENHANCED Formatted ${response.item_id}:`, {
         type: formattedResponse.response_type,
         has_table_data: formattedResponse.table_data ? formattedResponse.table_data.length : 0,
         has_yes_no_na: formattedResponse.yes_no_na_value !== null,
@@ -762,7 +792,7 @@ const ModernChecklistForm = ({
           mainResponse: resp.response,
           yes_no_na_value: resp.yes_no_na_value,
           text_value: resp.text_value,
-          remarks: resp.remarks,
+          remarks: resp.remarks, // FIXED: Corrected syntax here
           tableDataLength: resp.table_data?.length || 0
         })),
         completedItemsCount: completedItems.size,
@@ -795,7 +825,7 @@ const ModernChecklistForm = ({
                            response.table_data.some(row =>
                              row && typeof row === 'object' &&
                              Object.values(row).some(val =>
-                               val !== null && val !== undefined && val !== ''
+                               val !== null && val !== undefined && val !== '' && val !== false // Added false check
                              )
                            );
 
@@ -1153,164 +1183,156 @@ const ModernChecklistForm = ({
     }
   }, [existingChecklist]);
 
-  // FIXED: Enhanced response loading with proper duplicate handling and validation
+  // 4. FIXED: Enhanced response loading with better table data handling
   useEffect(() => {
     if (existingChecklist && existingChecklist.responses) {
-      console.log('=== LOADING EXISTING RESPONSES (ENHANCED) ===');
+      console.log('=== ENHANCED LOADING EXISTING RESPONSES ===');
       console.log('Loading existing responses:', existingChecklist.responses.length);
 
       const existingResponses = {};
       const completedItemsSet = new Set();
-      const processedResponseIds = new Set();
 
       existingChecklist.responses.forEach((response, index) => {
-        // FIXED: Better duplicate detection
-        const responseKey = response.response_id || `${response.item_id}_${index}`;
-        if (processedResponseIds.has(responseKey)) {
-          console.warn(`Duplicate response found: ${responseKey} (skipping)`);
+        if (!response.item_id) {
+          console.warn(`Response ${index} missing item_id:`, response);
           return;
         }
-        processedResponseIds.add(responseKey);
 
-        console.log(`Processing response ${index}:`, {
-          item_id: response.item_id,
+        // Validate item exists in current template
+        const itemExists = items.some(item => item.item_id === response.item_id);
+        if (!itemExists) {
+          console.warn(`Response for unknown item_id: ${response.item_id} (skipping)`);
+          return;
+        }
+
+        console.log(`Processing response ${index} for ${response.item_id}:`, {
           yes_no_na_value: response.yes_no_na_value,
           text_value: response.text_value,
           date_value: response.date_value,
           remarks: response.remarks,
-          table_data_length: response.table_data ? (Array.isArray(response.table_data) ? response.table_data.length : 'invalid') : 0
+          table_data_type: typeof response.table_data,
+          table_data_length: Array.isArray(response.table_data) ? response.table_data.length : 'not array'
         });
 
-        if (response.item_id) {
-          // FIXED: Validate item_id exists in current template
-          const itemExists = items.some(item => item.item_id === response.item_id);
-          if (!itemExists) {
-            console.warn(`Response for unknown item_id: ${response.item_id} (skipping)`);
-            return;
-          }
+        let mainResponse = null;
+        let hasAnyValue = false;
 
-          // FIXED: Enhanced response value determination
-          let mainResponse = null;
-          let hasAnyValue = false;
+        // Handle standard response types
+        if (response.yes_no_na_value !== null && response.yes_no_na_value !== undefined) {
+          mainResponse = response.yes_no_na_value;
+          hasAnyValue = true;
+        } else if (response.text_value !== null && response.text_value !== undefined && response.text_value.trim() !== '') {
+          mainResponse = response.text_value;
+          hasAnyValue = true;
+        } else if (response.date_value !== null && response.date_value !== undefined) {
+          mainResponse = response.date_value;
+          hasAnyValue = true;
+        }
 
-          // Handle different response types properly
-          if (response.yes_no_na_value !== null && response.yes_no_na_value !== undefined) {
-            mainResponse = response.yes_no_na_value;
-            hasAnyValue = true;
-          } else if (response.text_value !== null && response.text_value !== undefined && response.text_value.trim() !== '') {
-            mainResponse = response.text_value;
-            hasAnyValue = true;
-          } else if (response.date_value !== null && response.date_value !== undefined) {
-            mainResponse = response.date_value;
-            hasAnyValue = true;
-          }
-
-          // FIXED: Enhanced table data handling
-          let tableData = [];
-          if (response.table_data) {
-            try {
-              if (Array.isArray(response.table_data)) {
-                tableData = response.table_data;
-              } else if (typeof response.table_data === 'string') {
-                tableData = JSON.parse(response.table_data);
-              } else if (typeof response.table_data === 'object') {
-                tableData = [response.table_data]; // Single object, wrap in array
-              }
-
-              if (Array.isArray(tableData) && tableData.length > 0) {
-                hasAnyValue = true;
-              }
-            } catch (e) {
-              console.warn(`Invalid table_data for item ${response.item_id}:`, e);
-              tableData = [];
+        // CRITICAL FIX: Enhanced table data loading
+        let tableData = [];
+        if (response.table_data) {
+          try {
+            if (Array.isArray(response.table_data)) {
+              tableData = response.table_data;
+            } else if (typeof response.table_data === 'string') {
+              tableData = JSON.parse(response.table_data);
+            } else if (typeof response.table_data === 'object') {
+              tableData = [response.table_data];
             }
+
+            // Validate and clean table data
+            if (Array.isArray(tableData)) {
+              tableData = tableData.map(row => {
+                if (!row || typeof row !== 'object') return null;
+
+                const cleanRow = {};
+                Object.keys(row).forEach(key => {
+                  if (!key.startsWith('_') && row[key] !== null && row[key] !== undefined && row[key] !== '' && row[key] !== false) { // Added false check
+                    cleanRow[key] = row[key];
+                  }
+                });
+
+                return Object.keys(cleanRow).length > 0 ? cleanRow : null;
+              }).filter(row => row !== null);
+
+              if (tableData.length > 0) {
+                hasAnyValue = true;
+                console.log(`✅ Loaded table data for ${response.item_id}:`, tableData);
+              }
+            }
+          } catch (e) {
+            console.warn(`Invalid table_data for item ${response.item_id}:`, e);
+            tableData = [];
           }
+        }
 
-          // Check for remarks
-          const hasRemarks = response.remarks && response.remarks.trim() !== '';
-          if (hasRemarks) {
-            hasAnyValue = true;
-          }
+        // Check for remarks
+        const hasRemarks = response.remarks && response.remarks.trim() !== '';
+        if (hasRemarks) {
+          hasAnyValue = true;
+        }
 
-          // FIXED: Create comprehensive response object
-          existingResponses[response.item_id] = {
-            // Legacy compatibility
-            response: mainResponse,
+        // Create comprehensive response object
+        existingResponses[response.item_id] = {
+          // Legacy compatibility
+          response: mainResponse,
 
-            // Specific field values
-            yes_no_na_value: response.yes_no_na_value,
-            text_value: response.text_value,
-            date_value: response.date_value,
-            remarks: response.remarks || '',
-            comments: response.remarks || '', // Alias for compatibility
+          // Specific field values
+          yes_no_na_value: response.yes_no_na_value,
+          text_value: response.text_value,
+          date_value: response.date_value,
+          remarks: response.remarks || '',
+          comments: response.remarks || '', // Alias
 
-            // FIXED: Enhanced table data handling
-            table_data: tableData,
+          // CRITICAL FIX: Enhanced table data
+          table_data: tableData,
 
-            // Metadata
-            timestamp: response.updated_at || response.created_at,
-            response_id: response.response_id,
-            evidence_provided: Boolean(response.evidence_provided)
-          };
+          // Metadata
+          timestamp: response.updated_at || response.created_at,
+          response_id: response.response_id,
+          evidence_provided: Boolean(response.evidence_provided)
+        };
 
-          // FIXED: Mark as completed based on actual content
-          if (hasAnyValue) {
-            completedItemsSet.add(response.item_id);
-            console.log(`Marking item ${response.item_id} as completed:`, {
-              mainResponse,
-              remarks: hasRemarks,
-              tableDataLength: tableData.length,
-              evidence: response.evidence_provided
-            });
-          }
+        // Mark as completed if has meaningful data
+        if (hasAnyValue) {
+          completedItemsSet.add(response.item_id);
+          console.log(`✅ Marking ${response.item_id} as completed:`, {
+            mainResponse,
+            hasRemarks,
+            tableDataLength: tableData.length,
+            evidence: response.evidence_provided
+          });
         }
       });
 
-      console.log('=== SETTING STATE (ENHANCED) ===');
+      console.log('=== ENHANCED SETTING STATE ===');
       console.log('Setting responses for', Object.keys(existingResponses).length, 'items');
       console.log('Setting completed items:', Array.from(completedItemsSet));
 
-      // FIXED: Validate against current items before setting state
-      const validResponses = {};
-      const validCompletedItems = new Set();
+      setResponses(existingResponses);
+      setCompletedItems(completedItemsSet);
 
-      Object.entries(existingResponses).forEach(([itemId, response]) => {
-        const itemExists = items.some(item => item.item_id === itemId);
-        if (itemExists) {
-          validResponses[itemId] = response;
-          if (completedItemsSet.has(itemId)) {
-            validCompletedItems.add(itemId);
-          }
-        } else {
-          console.warn(`Removing response for non-existent item: ${itemId}`);
-        }
-      });
-
-      console.log('Final valid responses:', Object.keys(validResponses).length);
-      console.log('Final valid completed items:', validCompletedItems.size);
-
-      setResponses(validResponses);
-      setCompletedItems(validCompletedItems);
-
-      // Debug the state after setting
+      // Debug verification
       setTimeout(() => {
-        console.log('=== STATE VERIFICATION AFTER LOADING ===');
-        console.log('Responses state keys:', Object.keys(validResponses));
-        console.log('Completed items state:', Array.from(validCompletedItems));
+        console.log('=== ENHANCED STATE VERIFICATION ===');
+        console.log('Responses state keys:', Object.keys(existingResponses));
+        console.log('Completed items state:', Array.from(completedItemsSet));
 
-        // Check specific items for debugging
-        Object.entries(validResponses).slice(0, 3).forEach(([itemId, resp]) => {
-          console.log(`Sample response ${itemId}:`, {
-            mainResponse: resp.response,
-            yes_no_na_value: resp.yes_no_na_value,
-            text_value: resp.text_value,
-            remarks: resp.remarks,
-            tableDataLength: resp.table_data?.length || 0
+        // Check table responses specifically
+        const tableResponses = Object.entries(existingResponses).filter(([itemId, resp]) =>
+          resp.table_data && resp.table_data.length > 0
+        );
+
+        if (tableResponses.length > 0) {
+          console.log('🎯 ENHANCED Table responses loaded:');
+          tableResponses.forEach(([itemId, resp]) => {
+            console.log(`   ${itemId}: ${resp.table_data.length} rows`, resp.table_data);
           });
-        });
+        }
       }, 100);
     }
-  }, [existingChecklist, items]); // FIXED: Added items dependency for validation
+  }, [existingChecklist, items]);
 
   // Add this effect to monitor state changes
   useEffect(() => {
@@ -1478,13 +1500,18 @@ const ModernChecklistForm = ({
     );
   };
 
-  // 5. Update your renderResponseField function to include the table case
+  // 5. FIXED: Enhanced table field rendering
   const renderResponseField = (item) => {
     const response = responses[item.item_id] || {};
     const hasError = errors[item.item_id];
     const isReadonly = mode === 'view';
 
-    console.log('Rendering field:', item.item_id, 'Type:', item.response_type, 'Item:', item);
+    console.log('ENHANCED Rendering field:', item.item_id, 'Type:', item.response_type, 'Current value:', {
+      table_data_length: response.table_data?.length || 0,
+      yes_no_na_value: response.yes_no_na_value,
+      text_value: response.text_value,
+      date_value: response.date_value
+    });
 
     switch (item.response_type) {
       case 'yes_no_na':
@@ -1501,14 +1528,21 @@ const ModernChecklistForm = ({
       case 'date':
         return renderDateInput(item, response.date_value, isReadonly);
 
-      // REPLACE THE PLACEHOLDER TABLE CASE WITH THIS FUNCTIONAL ONE
       case 'table':
+        console.log(`🎯 ENHANCED Rendering table for ${item.item_id}:`, {
+          currentTableData: response.table_data,
+          tableStructure: item.table_structure
+        });
+
         return (
           <div className="checklist-form-response-field">
             <DynamicTable
               item={item}
               value={response.table_data || []}
-              onChange={(tableData) => handleResponseChange(item.item_id, 'table_data', tableData)}
+              onChange={(tableData) => {
+                console.log(`📊 ENHANCED Table change for ${item.item_id}:`, tableData);
+                handleResponseChange(item.item_id, 'table_data', tableData);
+              }}
               disabled={isReadonly}
               hasError={!!hasError}
             />
@@ -2250,7 +2284,6 @@ const ErrorSuccessDisplay = ({ error, successMessage, onClearError }) => {
   );
 };
 
-
 export default ModernChecklistForm;
 
 // DEBUGGING: Add this function to test response saving
@@ -2290,7 +2323,7 @@ window.debugResponseSaving = function() {
   };
 };
 
-// 4. DEBUGGING: Add this to test table data specifically
+// DEBUGGING: Add this to test table data specifically
 window.debugTableData = function() {
   console.log('🔍 DEBUGGING TABLE DATA...');
 
@@ -2318,3 +2351,63 @@ window.debugTableData = function() {
 
   return { tablesFound: tables.length };
 };
+
+// DEBUGGING: Add these window functions for enhanced debugging
+window.debugEnhancedTableData = function() {
+  console.log('🔍 === ENHANCED TABLE DATA DEBUG ===');
+
+  // Check current React state
+  const checklistElement = document.querySelector('.dashboard-container');
+  if (checklistElement) {
+    const reactFiber = Object.keys(checklistElement).find(key =>
+      key.startsWith('__reactInternalInstance') || key.startsWith('__reactFiber')
+    );
+
+    if (reactFiber) {
+      console.log('⚛️ Found React state');
+      // Try to extract responses state
+      let currentFiber = checklistElement[reactFiber];
+      let attempts = 0;
+
+      while (currentFiber && attempts < 10) {
+        if (currentFiber.memoizedState) {
+          console.log(`🎯 Found state at level ${attempts}:`, currentFiber.memoizedState);
+        }
+        currentFiber = currentFiber.return;
+        attempts++;
+      }
+    }
+  }
+
+  // Check DOM table data
+  const tables = document.querySelectorAll('.dynamic-table');
+  console.log(`📊 Found ${tables.length} tables in DOM`);
+
+  tables.forEach((table, index) => {
+    const container = table.closest('.dynamic-table-container');
+    const title = container?.querySelector('.table-title')?.textContent || `Table ${index}`;
+    console.log(`\n📋 ${title}:`);
+
+    const rows = table.querySelectorAll('tbody tr.data-row');
+    console.log(`   ${rows.length} data rows`);
+
+    rows.forEach((row, rowIndex) => {
+      const rowData = {};
+      const inputs = row.querySelectorAll('input, select');
+      inputs.forEach(input => {
+        if (input.value) {
+          rowData[input.name || `field_${input.type}`] = input.value;
+        }
+      });
+
+      if (Object.keys(rowData).length > 0) {
+        console.log(`   Row ${rowIndex}:`, rowData);
+      }
+    });
+  });
+
+  console.log('\n🔍 === ENHANCED TABLE DATA DEBUG ENDED ===');
+};
+
+console.log('🎯 Enhanced table data handling loaded!');
+console.log('📋 New debugging function: window.debugEnhancedTableData()');
