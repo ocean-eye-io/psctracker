@@ -1,4 +1,3 @@
-// src/components/dashboard/fleet/FleetDashboard.jsx
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Search, Filter, Download,
@@ -21,6 +20,9 @@ import PropTypes from 'prop-types';
 // and handles its own FontAwesome imports.
 // import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 // import { faPencilAlt, faCheck, faTimes, faSpinner } from '@fortawesome/free-solid-svg-icons';
+
+// 1. Import the defects service at the top of your FleetDashboard.jsx
+import defectsService from '../../../services/defectsService'; 
 
 // --- FleetDashboard Component ---
 const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
@@ -980,6 +982,60 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     setShowSearch(false);
   };
 
+  // 2. Add this function inside your FleetDashboard component
+  const handleLoadDefects = useCallback(async (vesselId) => {
+    try {
+      console.log(`Loading defects for vessel ID: ${vesselId}`);
+      
+      // Mock data for testing - replace with real API call later
+      const mockDefects = [
+        {
+          id: 1,
+          vessel_id: vesselId,
+          equipment_name: "Main Engine",
+          description: "Fuel injector malfunction causing reduced performance",
+          action_planned: "Replace fuel injector unit and test system",
+          criticality: "high",
+          status_vessel: "open",
+          created_date: new Date().toISOString(),
+          target_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          id: 2,
+          vessel_id: vesselId,
+          equipment_name: "Navigation System",
+          description: "GPS signal intermittent during heavy weather",
+          action_planned: "Calibrate GPS antenna and check connections",
+          criticality: "medium",
+          status_vessel: "open",
+          created_date: new Date().toISOString(),
+          target_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          id: 3,
+          vessel_id: vesselId,
+          equipment_name: "Deck Equipment",
+          description: "Minor hydraulic leak in crane system",
+          action_planned: "Replace hydraulic seals and test operation",
+          criticality: "low",
+          status_vessel: "open",
+          created_date: new Date().toISOString(),
+          target_date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
+        }
+      ];
+
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      console.log(`Returning ${mockDefects.length} defects for vessel ${vesselId}`);
+      return mockDefects;
+      
+    } catch (error) {
+      console.error('Failed to load defects:', error);
+      throw error;
+    }
+  }, []);
+
   return (
     <div className="dashboard-container" onClick={closeAllDropdowns}>
       <div className="filter-bar">
@@ -1383,6 +1439,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
                 onUpdateVessel={handleVesselUpdate} // Keep this for other updates
                 onUpdateOverride={handleUpdateOverride} // New prop for ETA/ETB/ETD
                 savingStates={savingStates} // Pass saving states
+                onLoadDefects={handleLoadDefects} // ADD THIS LINE
               />
             )}
           </div>
