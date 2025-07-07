@@ -1927,8 +1927,14 @@ const VesselTable = ({
           isOpen={defectsModalOpen}
           onClose={handleCloseDefectsModal}
           vesselName={selectedVesselForDefects?.vessel_name || ''}
-          vesselId={selectedVesselForDefects?.id} // FIXED: Pass vessel ID here
-          onLoadDefects={loadVesselDefects}
+          vesselId={selectedVesselForDefects?.id}
+          onLoadDefects={(vesselIdFromModal) => {
+            const vesselNameForLoad = selectedVesselForDefects?.vessel_name;
+            console.log(`[VesselTable] Passing to onLoadDefects: vesselName=${vesselNameForLoad}, userId=${userId}`);
+            return loadVesselDefects(vesselNameForLoad, userId);
+          }}  
+
+          
         />
       )}
 
