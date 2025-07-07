@@ -38,8 +38,7 @@ const VesselTable = ({
   fieldMappings,
   onUpdateVessel,
   onUpdateOverride,
-  savingStates,
-  onLoadDefects = null // ADD DEFAULT PARAMETER HERE
+  onLoadDefects // ADD DEFAULT PARAMETER HERE
 }) => {
   const tableRef = useRef(null);
   const headerRef = useRef(null);
@@ -83,6 +82,12 @@ const VesselTable = ({
   const [defectsModalOpen, setDefectsModalOpen] = useState(false);
   const [selectedVesselForDefects, setSelectedVesselForDefects] = useState(null);
   const [vesselDefects, setVesselDefects] = useState({}); // Cache defects data
+  const loadingVessels = useRef(new Set()); // To prevent duplicate API calls
+
+  // Add a useEffect to monitor vesselDefects state changes
+  React.useEffect(() => {
+    console.log("[VesselTable] vesselDefects state updated:", vesselDefects);
+  }, [vesselDefects]);
 
   // Helper function to check if a date is in the past
   const isDateInPast = useCallback((dateString) => {
@@ -288,38 +293,83 @@ const VesselTable = ({
     setSelectedPortDocumentCount(0);
   }, []);
 
-  // Add this function to load defects for a vessel
-  const loadVesselDefects = useCallback(async (vesselId) => {
-    // Add safety check for onLoadDefects
+  // Helper to normalize vessel names for cache keys
+  const normalizeVesselNameForCache = useCallback((name) => {
+    if (!name) return '';
+    return name.toLowerCase().replace(/\s+/g, '_').trim();
+  }, []);
+
+  // 1. UPDATE: loadVesselDefects function - Change from vessel ID to vessel name
+  const loadVesselDefects = useCallback(async (vesselName, userId) => {
     if (!onLoadDefects) {
-      console.warn('onLoadDefects prop not provided to VesselTable');
+      console.warn('[VesselTable] loadVesselDefects: onLoadDefects prop not provided.');
+      return [];
+    }
+    if (!vesselName || !userId) {
+      console.warn('[VesselTable] loadVesselDefects: Missing vesselName or userId.');
       return [];
     }
 
-    try {
-      const data = await onLoadDefects(vesselId);
+    const normalizedVesselName = normalizeVesselNameForCache(vesselName);
+    console.log(`[VesselTable] loadVesselDefects: Attempting to load defects for normalized vessel name: "${normalizedVesselName}"`);
 
-      // Cache the defects data
-      setVesselDefects(prev => ({
-        ...prev,
-        [vesselId]: data
+    // Check if already loading or loaded
+    if (loadingVessels.current.has(normalizedVesselName)) {
+      console.log(`[VesselTable] loadVesselDefects: Already loading for "${normalizedVesselName}". Skipping.`);
+      return vesselDefects[normalizedVesselName] || []; // Return existing if already loading
+    }
+    if (vesselDefects[normalizedVesselName]) {
+      console.log(`[VesselTable] loadVesselDefects: Defects already in state for "${normalizedVesselName}". Skipping fetch.`);
+      return vesselDefects[normalizedVesselName];
+    }
+
+    loadingVessels.current.add(normalizedVesselName);
+    try {
+      console.log(`[VesselTable] loadVesselDefects: Calling onLoadDefects for "${vesselName}" with userId: ${userId}`);
+      const defects = await onLoadDefects(vesselName, userId); // This calls defectsService.getVesselDefectsByName
+      console.log(`[VesselTable] loadVesselDefects: onLoadDefects returned:`, defects); // ADDED LOG
+      console.log(`[VesselTable] loadVesselDefects: Received ${defects.length} defects for "${normalizedVesselName}" from API.`);
+
+      // IMPORTANT: Ensure the defects array contains objects with a 'Status' or 'status' field
+      // and 'Criticality' or 'criticality' field for filtering later.
+      // Also, ensure the vessel_name in the returned defects matches the normalized name.
+      const processedDefects = defects.map(d => ({
+        ...d,
+        // Ensure consistent casing for status and criticality for filtering
+        Status: d.Status?.toLowerCase() || d.status?.toLowerCase(),
+        Criticality: d.Criticality?.toLowerCase() || d.criticality?.toLowerCase(),
+        // Ensure vessel_name in defect matches the normalized key
+        vessel_name: normalizeVesselNameForCache(d.vessel_name || vesselName)
       }));
 
-      return data;
-    } catch (error) {
-      console.error('Error loading vessel defects:', error);
-      throw error;
-    }
-  }, [onLoadDefects]);
 
-  // Add this function to handle defect badge clicks
+      setVesselDefects(prev => {
+        const newState = {
+          ...prev,
+          [normalizedVesselName]: processedDefects
+        };
+        console.log(`[VesselTable] loadVesselDefects: Updating vesselDefects state for "${normalizedVesselName}". New state keys:`, Object.keys(newState));
+        return newState;
+      });
+      return processedDefects;
+    } catch (error) {
+      console.error(`[VesselTable] Error loading defects for ${vesselName}:`, error);
+      return [];
+    } finally {
+      loadingVessels.current.delete(normalizedVesselName);
+    }
+  }, [onLoadDefects, vesselDefects, normalizeVesselNameForCache]); // Add normalizeVesselNameForCache to dependencies
+
+
+  // 3. UPDATE: handleDefectBadgeClick function - Pass vessel object
   const handleDefectBadgeClick = useCallback((vessel) => {
     if (!onLoadDefects) {
       console.warn('Defects feature not available - onLoadDefects prop missing');
       return;
     }
 
-    setSelectedVesselForDefects(vessel);
+    console.log('Opening defects modal for vessel:', vessel.vessel_name);
+    setSelectedVesselForDefects(vessel); // Pass full vessel object
     setDefectsModalOpen(true);
   }, [onLoadDefects]);
 
@@ -329,25 +379,55 @@ const VesselTable = ({
     setSelectedVesselForDefects(null);
   }, []);
 
-  // Add this function to get defect counts for a vessel
+  // 2. UPDATE: getVesselDefectCounts function - Use vessel name instead of ID
   const getVesselDefectCounts = useCallback((vessel) => {
-    // Return zero counts if onLoadDefects is not available
     if (!onLoadDefects) {
       return { total: 0, high: 0, medium: 0, low: 0 };
     }
 
-    const cachedDefects = vesselDefects[vessel.id] || [];
-    const openDefects = cachedDefects.filter(defect =>
-      defect.status_vessel?.toLowerCase() === 'open'
-    );
+    const vesselName = vessel.vessel_name;
+    if (!vesselName) {
+      console.warn('[VesselTable] getVesselDefectCounts: No vessel name found for defect count lookup');
+      return { total: 0, high: 0, medium: 0, low: 0 };
+    }
+
+    const normalizedVesselName = normalizeVesselNameForCache(vesselName);
+    console.log(`[VesselTable] getVesselDefectCounts: Looking up defects for normalized vessel name: "${normalizedVesselName}"`);
+
+    const cachedDefects = vesselDefects[normalizedVesselName] || [];
+    console.log(`[VesselTable] getVesselDefectCounts: Cached defects for "${normalizedVesselName}": Array(${cachedDefects.length})`, cachedDefects);
+
+    const openDefects = cachedDefects.filter(defect => {
+      // Use the normalized 'Status' field from processedDefects
+      return defect.Status === 'open';
+    });
+
+    console.log(`[VesselTable] getVesselDefectCounts: Open defects for vessel name "${normalizedVesselName}": Array(${openDefects.length})`);
+
+    const highCount = openDefects.filter(defect => {
+      // Use the normalized 'Criticality' field from processedDefects
+      return defect.Criticality === 'high';
+    }).length;
+    const mediumCount = openDefects.filter(defect => {
+      // Use the normalized 'Criticality' field from processedDefects
+      return defect.Criticality === 'medium';
+    }).length;
+    const lowCount = openDefects.filter(defect => {
+      // Use the normalized 'Criticality' field from processedDefects
+      return defect.Criticality === 'low';
+    }).length;
+
+    const totalOpenDefects = highCount + mediumCount + lowCount;
+
+    console.log(`[VesselTable] getVesselDefectCounts: Final counts for "${normalizedVesselName}": Total Open: ${totalOpenDefects}, High: ${highCount}, Medium: ${mediumCount}, Low: ${lowCount}`);
 
     return {
-      total: openDefects.length,
-      high: openDefects.filter(d => d.criticality?.toLowerCase() === 'high').length,
-      medium: openDefects.filter(d => d.criticality?.toLowerCase() === 'medium').length,
-      low: openDefects.filter(d => d.criticality?.toLowerCase() === 'low').length
+      total: totalOpenDefects,
+      high: highCount,
+      medium: mediumCount,
+      low: lowCount,
     };
-  }, [onLoadDefects, vesselDefects]);
+  }, [onLoadDefects, vesselDefects, normalizeVesselNameForCache]);
 
   // Replace your existing filteredVessels useMemo with this:
   const filteredVessels = useMemo(() => {
@@ -676,41 +756,44 @@ const VesselTable = ({
 
   // 7. PERFORMANCE OPTIMIZATION - Add debouncing for preloading:
 
-  // Update your preloading useEffect with better performance:
+  // 4. UPDATE: Preloading useEffect - Use vessel names
   useEffect(() => {
-    if (!onLoadDefects) return;
+    if (!onLoadDefects || !userId) return; // Ensure userId is available
 
     const preloadDefectCounts = async () => {
-      const visibleVessels = (filterActive ? filterActiveData : dateFilteredVessels).slice(0, 10); // Reduced from 20 to 10
+      console.log('[VesselTable] Starting defect preloading by vessel name...');
 
-      // Process in smaller batches
-      const batchSize = 3;
-      for (let i = 0; i < visibleVessels.length; i += batchSize) {
-        const batch = visibleVessels.slice(i, i + batchSize);
+      // Preload for all vessels currently in the filtered view, not just the first 5
+      const vesselsToPreload = (filterActive ? filterActiveData : dateFilteredVessels);
+      console.log('[VesselTable] Vessels to preload defects for:', vesselsToPreload.map(v => ({
+        name: v.vessel_name
+      })));
 
-        await Promise.all(
-          batch.map(async (vessel) => {
-            if (vessel.id && !vesselDefects[vessel.id]) {
-              try {
-                await loadVesselDefects(vessel.id);
-              } catch (error) {
-                console.warn(`Failed to preload defects for vessel ${vessel.id}:`, error);
-              }
-            }
-          })
-        );
+      for (const vessel of vesselsToPreload) {
+        const vesselName = vessel.vessel_name;
+        const normalizedVesselName = normalizeVesselNameForCache(vesselName);
 
-        // Longer delay between batches to be API-friendly
-        if (i + batchSize < visibleVessels.length) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+        if (vesselName && !vesselDefects[normalizedVesselName] && !loadingVessels.current.has(normalizedVesselName)) {
+          try {
+            console.log(`[VesselTable] Preloading defects for vessel name: ${vesselName}`);
+            await loadVesselDefects(vesselName, userId); // Pass userId here
+            console.log(`[VesselTable] Preloaded defects for vessel name: ${vesselName}`);
+          } catch (error) {
+            console.warn(`[VesselTable] Failed to preload defects for vessel name ${vesselName}:`, error);
+          }
+
+          // await new Promise(resolve => setTimeout(resolve, 300)); // Small delay - removed for faster loading
+        } else if (vesselDefects[normalizedVesselName]) {
+          console.log(`[VesselTable] Defects already cached for vessel name: ${vesselName}: Array(${vesselDefects[normalizedVesselName].length})`);
+        } else if (loadingVessels.current.has(normalizedVesselName)) {
+          console.log(`[VesselTable] Defects already loading for vessel name: ${vesselName}.`);
         }
       }
     };
 
-    // Longer debounce timeout
-    const timeoutId = setTimeout(preloadDefectCounts, 1000);
+    const timeoutId = setTimeout(preloadDefectCounts, 500);
     return () => clearTimeout(timeoutId);
-  }, [filterActive, filterActiveData, dateFilteredVessels, vesselDefects, onLoadDefects, loadVesselDefects]);
+  }, [filterActive, filterActiveData, dateFilteredVessels, vesselDefects, onLoadDefects, loadVesselDefects, userId, normalizeVesselNameForCache]); // Added normalizeVesselNameForCache to dependencies
 
   // Enhanced format function that can handle both date and date+time
   const formatDateTime = (dateString, includeTime = false) => {
@@ -1160,7 +1243,7 @@ const VesselTable = ({
               onResetToOriginal={() => onUpdateOverride(rowData.id, field.dbField, null)} // Pass null to clear override
               type="datetime-local"
               placeholder="N/A"
-              isSaving={savingStates[`${rowData.id}-${field.dbField}`]}
+              // isSaving={savingStates[`${rowData.id}-${field.dbField}`]} // savingStates prop is not passed
               hasOverride={hasOverride}
               isInvalidDate={isInvalidDate} // Pass the new prop
               validationMessage={validationMessage} // Pass the new prop
@@ -1180,13 +1263,15 @@ const VesselTable = ({
           );
         }
 
-        // Modify your vessel_name column rendering (around line 900 in your existing code)
-        // Find this section and update it:
-
+        // 5. UPDATE: Vessel name cell rendering - Make sure defect indicator gets proper data
         if (fieldId === 'vessel_name') {
           const statusInfo = getVesselStatus(rowData);
           const flagValue = getVesselFlag(rowData);
-          const defectCounts = getVesselDefectCounts(rowData);
+
+          // FIXED: Make sure we're passing the right vessel data
+          console.log(`Rendering vessel name for ${rowData.vessel_name} (ID: ${rowData.id})`);
+          let defectCounts = getVesselDefectCounts(rowData); // Pass full rowData
+          console.log(`Defect counts for ${rowData.vessel_name}:`, defectCounts);
 
           const vesselDetails = {
             ...rowData,
@@ -1223,21 +1308,17 @@ const VesselTable = ({
                   }}
                   aria-label="Set vessel flag"
                 >
-                  <Flag
-                    size={14}
-                    style={{
-                      color: flagValue === 'green' ? '#2EE086' :
-                        flagValue === 'yellow' ? '#FFD426' :
-                          flagValue === 'red' ? '#FF5252' :
-                            '#A0A0A0',
-                      filter: flagValue !== 'none' ? `drop-shadow(0 0 3px ${
-                        flagValue === 'green' ? 'rgba(46, 224, 134, 0.6)' :
-                          flagValue === 'yellow' ? 'rgba(255, 212, 38, 0.6)' :
-                            flagValue === 'red' ? 'rgba(255, 82, 82, 0.6)' :
-                              'rgba(160, 160, 160, 0.3)'
-                        })` : 'none'
-                    }}
-                  />
+                  <Flag size={14} style={{
+                    color: flagValue === 'green' ? '#2EE086' :
+                      flagValue === 'yellow' ? '#FFD426' :
+                        flagValue === 'red' ? '#FF5252' : '#A0A0A0',
+                    filter: flagValue !== 'none' ? `drop-shadow(0 0 3px ${
+                      flagValue === 'green' ? 'rgba(46, 224, 134, 0.6)' :
+                        flagValue === 'yellow' ? 'rgba(255, 212, 38, 0.6)' :
+                          flagValue === 'red' ? 'rgba(255, 82, 82, 0.6)' :
+                            'rgba(160, 160, 160, 0.3)'
+                      })` : 'none'
+                  }} />
                 </button>
               </div>
 
@@ -1246,20 +1327,23 @@ const VesselTable = ({
                 <span className="vessel-name">{(value || '-').toUpperCase()}</span>
               </VesselDetailsTooltip>
 
-              {/* FIXED: Use IntuitiveDefectIndicator instead of DefectBadge */}
-              {onLoadDefects && (
+              {/* FIXED: Always show defect indicator for debugging */}
+              {onLoadDefects ? (
                 <IntuitiveDefectIndicator
                   defectCount={defectCounts.total}
                   highCount={defectCounts.high}
                   mediumCount={defectCounts.medium}
                   lowCount={defectCounts.low}
-                  variant="wrench" // Use the most intuitive variant
+                  variant="wrench"
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
-                    handleDefectBadgeClick(rowData);
+                    console.log('Defect indicator clicked for vessel:', rowData.vessel_name);
+                    handleDefectBadgeClick(rowData); // Pass full vessel object
                   }}
                 />
+              ) : (
+                <span style={{ color: 'red', fontSize: '10px' }}>No onLoadDefects</span>
               )}
             </div>
           );
@@ -1586,6 +1670,68 @@ const VesselTable = ({
     }
   };
 
+  // QUICK DEBUGGING STEPS:
+  // Step 1: Check if onLoadDefects is being passed correctly
+  console.log('onLoadDefects prop:', onLoadDefects);
+
+  // Step 2: Check if vessels have valid IDs
+  console.log('First vessel ID:', vessels[0]?.id);
+
+  // 7. ADD: Debug logging at the top of your component
+  useEffect(() => {
+    console.log('=== VESSELDEFECTS STATE DEBUG ===');
+    console.log('Current vesselDefects cache keys:', Object.keys(vesselDefects));
+    console.log('Cache contents:', vesselDefects);
+    console.log('onLoadDefects available:', !!onLoadDefects);
+    console.log('Sample vessel names:', vessels.slice(0, 3).map(v => v.vessel_name));
+  }, [vesselDefects, onLoadDefects, vessels]);
+
+  // 8. ADD: Test function to manually trigger defect loading
+  const testDefectLoading = useCallback(async () => {
+    if (!onLoadDefects || vessels.length === 0 || !userId) return;
+
+    // Test with both LA DIGUE and SDTR CELESTE
+    const vesselsToTest = [
+      vessels.find(v => v.vessel_name.toLowerCase() === "la digue"),
+      vessels.find(v => v.vessel_name.toLowerCase() === "sdtr celeste")
+    ].filter(Boolean); // Filter out any undefined if vessel not found
+
+    console.log('=== TESTING DEFECT LOADING FOR SPECIFIC VESSELS ===');
+
+    for (const testVessel of vesselsToTest) {
+      console.log(`Testing vessel: ${testVessel.vessel_name} (ID: ${testVessel.id})`);
+      try {
+        const result = await loadVesselDefects(testVessel.vessel_name, userId); // Pass userId
+        console.log(`Test result (from loadVesselDefects) for ${testVessel.vessel_name}:`, result);
+
+        const counts = getVesselDefectCounts(testVessel);
+        console.log(`Test counts (from getVesselDefectCounts) for ${testVessel.vessel_name}:`, counts);
+      } catch (error) {
+        console.error(`Test failed for ${testVessel.vessel_name}:`, error);
+      }
+    }
+  }, [onLoadDefects, vessels, loadVesselDefects, getVesselDefectCounts, userId]);
+
+  // Call the test when vessels load:
+  useEffect(() => {
+    if (vessels.length > 0 && userId) {
+      setTimeout(testDefectLoading, 2000); // Test after 2 seconds
+    }
+  }, [vessels, testDefectLoading, userId]);
+
+  // 11. ADD: Clear defects cache function for testing
+  const clearDefectsCache = useCallback(() => {
+    console.log('Clearing defects cache...');
+    setVesselDefects({});
+  }, []);
+
+  // You can call this from console: clearDefectsCache()
+  window.clearDefectsCache = clearDefectsCache;
+
+  // NEW: Debugging helper for normalization
+  window.testNormalizeVesselName = normalizeVesselNameForCache;
+
+
   return (
     <div ref={tableRef} className="responsive-table-container">
       {/* Custom CSS for responsive design */}
@@ -1609,7 +1755,7 @@ const VesselTable = ({
             }
 
             .vessel-name-cell {
-              max-width: 120px;
+              max-width: 140px; /* Adjusted for better fit */
             }
 
             .vessel-name {
@@ -1781,7 +1927,7 @@ const VesselTable = ({
           isOpen={defectsModalOpen}
           onClose={handleCloseDefectsModal}
           vesselName={selectedVesselForDefects?.vessel_name || ''}
-          vesselId={selectedVesselForDefects?.id}
+          vesselId={selectedVesselForDefects?.id} // FIXED: Pass vessel ID here
           onLoadDefects={loadVesselDefects}
         />
       )}
@@ -1805,7 +1951,7 @@ VesselTable.propTypes = {
   fieldMappings: PropTypes.object.isRequired,
   onUpdateVessel: PropTypes.func.isRequired,
   onUpdateOverride: PropTypes.func.isRequired,
-  savingStates: PropTypes.object.isRequired,
+  // savingStates: PropTypes.object.isRequired, // This prop is not being passed, so commenting out
   onLoadDefects: PropTypes.func, // Remove .isRequired
 };
 

@@ -23,13 +23,34 @@ const EnhancedDefectsModal = ({
       
       onLoadDefects(vesselId)
         .then(data => {
-          const openDefects = data.filter(defect => 
+          console.log('Raw defects data received:', data);
+          
+          // Map the fields to match our display expectations
+          const mappedDefects = data.map(defect => ({
+            id: defect.id,
+            equipment_name: defect.Equipments || 'Unknown Equipment',
+            description: defect.Description || '',
+            action_planned: defect['Action Planned'] || defect.Action_Planned || '',
+            criticality: defect.Criticality?.toLowerCase() || 'unknown',
+            status_vessel: defect.Status || defect.Status_Vessel || 'unknown',
+            vessel_id: defect.vessel_id,
+            vessel_name: defect.vessel_name,
+            date_reported: defect['Date Reported'] || defect.Date_Reported,
+            target_date: defect.target_date,
+            comments: defect.Comments || ''
+          }));
+          
+          // Filter only open defects
+          const openDefects = mappedDefects.filter(defect => 
             defect.status_vessel?.toLowerCase() === 'open'
           );
+          
+          console.log(`Filtered ${openDefects.length} open defects from ${mappedDefects.length} total`);
           setDefects(openDefects);
           setLoading(false);
         })
         .catch(err => {
+          console.error('Error loading defects:', err);
           setError('Failed to load defects');
           setLoading(false);
         });
@@ -40,14 +61,12 @@ const EnhancedDefectsModal = ({
   useEffect(() => {
     let filtered = [...defects];
     
-    // Apply criticality filter
     if (activeFilter !== 'all') {
       filtered = defects.filter(defect => 
         defect.criticality?.toLowerCase() === activeFilter.toLowerCase()
       );
     }
     
-    // Apply search filter
     if (searchQuery.trim()) {
       filtered = filtered.filter(defect => 
         defect.equipment_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -56,7 +75,6 @@ const EnhancedDefectsModal = ({
       );
     }
     
-    // Sort by criticality (high -> medium -> low)
     filtered.sort((a, b) => {
       const criticalityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
       const aOrder = criticalityOrder[a.criticality?.toLowerCase()] || 0;
@@ -67,15 +85,14 @@ const EnhancedDefectsModal = ({
     setFilteredDefects(filtered);
   }, [defects, activeFilter, searchQuery]);
 
-  // Get criticality info for styling
   const getCriticalityInfo = (criticality) => {
     const level = criticality?.toLowerCase();
     switch (level) {
       case 'high':
         return {
           color: '#dc3545',
-          bg: '#fff5f5',
-          border: '#fed7d7',
+          bg: '#fff1f2',
+          border: '#fecaca',
           icon: AlertTriangle,
           label: 'CRITICAL'
         };
@@ -83,7 +100,7 @@ const EnhancedDefectsModal = ({
         return {
           color: '#f59e0b',
           bg: '#fffbeb',
-          border: '#fde68a',
+          border: '#fed7aa',
           icon: Clock,
           label: 'MEDIUM'
         };
@@ -106,7 +123,6 @@ const EnhancedDefectsModal = ({
     }
   };
 
-  // Filter counts
   const counts = {
     all: defects.length,
     high: defects.filter(d => d.criticality?.toLowerCase() === 'high').length,
@@ -120,7 +136,7 @@ const EnhancedDefectsModal = ({
     <>
       <style>
         {`
-          .modern-defects-overlay {
+          .compact-defects-overlay {
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, 0.4);
@@ -129,7 +145,7 @@ const EnhancedDefectsModal = ({
             display: flex;
             align-items: center;
             justify-content: center;
-            animation: fadeIn 0.15s ease-out;
+            animation: fadeIn 0.12s ease-out;
           }
 
           @keyframes fadeIn {
@@ -140,7 +156,7 @@ const EnhancedDefectsModal = ({
           @keyframes slideUp {
             from {
               opacity: 0;
-              transform: translateY(16px) scale(0.98);
+              transform: translateY(12px) scale(0.99);
             }
             to {
               opacity: 1;
@@ -148,364 +164,409 @@ const EnhancedDefectsModal = ({
             }
           }
 
-          .modern-defects-modal {
+          .compact-defects-modal {
             background: #ffffff;
-            border-radius: 12px;
+            border-radius: 10px;
             width: 90%;
-            max-width: 700px;
-            max-height: 85vh;
+            max-width: 640px;
+            max-height: 82vh;
             overflow: hidden;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            animation: slideUp 0.2s ease-out;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            animation: slideUp 0.15s ease-out;
             display: flex;
             flex-direction: column;
             border: 1px solid #e5e7eb;
           }
 
-          /* Header */
-          .modern-header {
-            padding: 24px;
-            border-bottom: 1px solid #f3f4f6;
-            background: #fafafa;
+          /* Compact Header */
+          .compact-header {
+            padding: 18px 20px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
           }
 
-          .modern-header-top {
+          .compact-header-top {
             display: flex;
-            justify-content: between;
-            align-items: flex-start;
-            margin-bottom: 20px;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
           }
 
-          .modern-title-group {
+          .compact-title-group {
             flex: 1;
           }
 
-          .modern-title {
+          .compact-title {
             display: flex;
             align-items: center;
             gap: 8px;
-            margin: 0 0 4px 0;
-            color: #111827;
-            font-size: 18px;
-            font-weight: 600;
-          }
-
-          .modern-subtitle {
-            color: #6b7280;
-            font-size: 14px;
             margin: 0;
+            color: #0f172a;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.2;
           }
 
-          .modern-close {
-            background: #f3f4f6;
+          .compact-subtitle {
+            color: #64748b;
+            font-size: 13px;
+            margin: 2px 0 0 0;
+            font-weight: 500;
+          }
+
+          .compact-close {
+            background: #f1f5f9;
             border: none;
-            color: #6b7280;
-            width: 32px;
-            height: 32px;
+            color: #64748b;
+            width: 28px;
+            height: 28px;
             border-radius: 6px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.15s ease;
+            transition: all 0.12s ease;
           }
 
-          .modern-close:hover {
-            background: #e5e7eb;
-            color: #374151;
+          .compact-close:hover {
+            background: #e2e8f0;
+            color: #475569;
+            transform: scale(1.05);
           }
 
-          /* Search */
-          .modern-search {
+          /* Compact Search */
+          .compact-search {
             position: relative;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
           }
 
-          .modern-search-icon {
+          .compact-search-icon {
             position: absolute;
-            left: 12px;
+            left: 10px;
             top: 50%;
             transform: translateY(-50%);
-            color: #9ca3af;
+            color: #94a3b8;
           }
 
-          .modern-search-input {
+          .compact-search-input {
             width: 100%;
             background: #ffffff;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            padding: 10px 12px 10px 40px;
-            color: #111827;
-            font-size: 14px;
-            transition: all 0.15s ease;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 8px 10px 8px 32px;
+            color: #0f172a;
+            font-size: 13px;
+            transition: all 0.12s ease;
           }
 
-          .modern-search-input:focus {
+          .compact-search-input:focus {
             outline: none;
             border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.08);
           }
 
-          .modern-search-input::placeholder {
-            color: #9ca3af;
+          .compact-search-input::placeholder {
+            color: #94a3b8;
           }
 
-          /* Filters */
-          .modern-filters {
+          /* Compact Filters */
+          .compact-filters {
             display: flex;
-            gap: 8px;
+            gap: 6px;
           }
 
-          .modern-filter-btn {
-            padding: 8px 16px;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
+          .compact-filter-btn {
+            padding: 6px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
             background: #ffffff;
-            color: #374151;
+            color: #475569;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 500;
-            transition: all 0.15s ease;
+            transition: all 0.12s ease;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             white-space: nowrap;
+            line-height: 1;
           }
 
-          .modern-filter-btn:hover {
-            background: #f9fafb;
-            border-color: #d1d5db;
+          .compact-filter-btn:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
           }
 
-          .modern-filter-btn.active {
+          .compact-filter-btn.active {
             background: #3b82f6;
             border-color: #3b82f6;
             color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
           }
 
-          .modern-filter-count {
-            background: rgba(255, 255, 255, 0.2);
+          .compact-filter-count {
+            background: rgba(255, 255, 255, 0.25);
             color: inherit;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 11px;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 10px;
             font-weight: 600;
-            min-width: 18px;
+            min-width: 16px;
             text-align: center;
+            line-height: 1.2;
           }
 
-          .modern-filter-btn:not(.active) .modern-filter-count {
-            background: #f3f4f6;
-            color: #6b7280;
+          .compact-filter-btn:not(.active) .compact-filter-count {
+            background: #f1f5f9;
+            color: #64748b;
           }
 
-          /* Body */
-          .modern-body {
+          /* Compact Body */
+          .compact-body {
             flex: 1;
             overflow-y: auto;
             padding: 0;
           }
 
-          .modern-loading {
+          .compact-loading {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 60px 24px;
-            color: #6b7280;
+            padding: 40px 20px;
+            color: #64748b;
           }
 
-          .modern-spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid #f3f4f6;
+          .compact-spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #f1f5f9;
             border-radius: 50%;
             border-top: 2px solid #3b82f6;
-            animation: spin 1s linear infinite;
-            margin-bottom: 12px;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 10px;
           }
 
           @keyframes spin {
             to { transform: rotate(360deg); }
           }
 
-          .modern-error {
+          .compact-error {
             background: #fef2f2;
             border: 1px solid #fecaca;
             color: #dc2626;
-            padding: 16px 24px;
+            padding: 12px 20px;
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 14px;
+            font-size: 13px;
           }
 
-          .modern-empty {
+          .compact-empty {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 60px 24px;
-            color: #6b7280;
+            padding: 40px 20px;
+            color: #64748b;
             text-align: center;
           }
 
-          .modern-empty h3 {
-            margin: 12px 0 4px 0;
-            color: #374151;
-            font-size: 16px;
+          .compact-empty h3 {
+            margin: 10px 0 4px 0;
+            color: #334155;
+            font-size: 15px;
             font-weight: 500;
           }
 
-          .modern-empty p {
+          .compact-empty p {
             margin: 0;
-            font-size: 14px;
+            font-size: 13px;
           }
 
-          /* Defect List */
-          .modern-defect-list {
+          /* Compact Defect List */
+          .compact-defect-list {
             padding: 0;
           }
 
-          .modern-defect-item {
-            padding: 20px 24px;
-            border-bottom: 1px solid #f3f4f6;
-            transition: background-color 0.15s ease;
+          .compact-defect-item {
+            padding: 14px 20px;
+            border-bottom: 1px solid #f8fafc;
+            transition: all 0.12s ease;
+            position: relative;
           }
 
-          .modern-defect-item:hover {
-            background: #f9fafb;
+          .compact-defect-item:hover {
+            background: #f8fafc;
+            transform: translateX(2px);
           }
 
-          .modern-defect-item:last-child {
+          .compact-defect-item:last-child {
             border-bottom: none;
           }
 
-          .modern-defect-header {
+          .compact-defect-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+            gap: 12px;
           }
 
-          .modern-equipment-name {
-            font-size: 16px;
+          .compact-equipment-name {
+            font-size: 14px;
             font-weight: 600;
-            color: #111827;
+            color: #0f172a;
             margin: 0;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            flex: 1;
+            line-height: 1.3;
           }
 
-          .modern-priority-dot {
-            width: 6px;
-            height: 6px;
+          .compact-priority-dot {
+            width: 5px;
+            height: 5px;
             border-radius: 50%;
             background: var(--dot-color);
             flex-shrink: 0;
+            margin-top: 1px;
           }
 
-          .modern-priority-badge {
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
+          .compact-priority-badge {
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 9px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
             background: var(--badge-bg);
             color: var(--badge-color);
             border: 1px solid var(--badge-border);
+            line-height: 1.2;
+            flex-shrink: 0;
           }
 
-          .modern-description {
-            color: #4b5563;
-            font-size: 14px;
-            line-height: 1.5;
-            margin: 0 0 12px 0;
+          .compact-description {
+            color: #475569;
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 0 0 8px 0;
           }
 
-          .modern-action {
+          .compact-action {
             background: var(--action-bg);
             border: 1px solid var(--action-border);
-            border-radius: 6px;
-            padding: 12px;
+            border-radius: 4px;
+            padding: 8px 10px;
           }
 
-          .modern-action-label {
-            color: #6b7280;
-            font-size: 11px;
-            margin-bottom: 4px;
+          .compact-action-label {
+            color: #64748b;
+            font-size: 9px;
+            margin-bottom: 2px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
             font-weight: 600;
+            line-height: 1;
           }
 
-          .modern-action-text {
-            color: #374151;
-            font-size: 14px;
-            line-height: 1.4;
+          .compact-action-text {
+            color: #334155;
+            font-size: 12px;
+            line-height: 1.3;
             margin: 0;
           }
 
-          /* Mobile */
+          /* Priority indicator line */
+          .compact-defect-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--priority-color);
+            opacity: 0.6;
+          }
+
+          /* Mobile optimizations */
           @media (max-width: 768px) {
-            .modern-defects-modal {
+            .compact-defects-modal {
               width: 95%;
-              max-height: 90vh;
+              max-height: 88vh;
             }
 
-            .modern-header {
-              padding: 20px;
+            .compact-header {
+              padding: 16px 18px 14px;
             }
 
-            .modern-title {
-              font-size: 16px;
+            .compact-title {
+              font-size: 15px;
             }
 
-            .modern-filters {
+            .compact-filters {
               flex-wrap: wrap;
+              gap: 4px;
             }
 
-            .modern-defect-item {
-              padding: 16px 20px;
+            .compact-filter-btn {
+              font-size: 11px;
+              padding: 5px 10px;
+            }
+
+            .compact-defect-item {
+              padding: 12px 18px;
+            }
+
+            .compact-defect-header {
+              flex-direction: column;
+              align-items: flex-start;
+              gap: 6px;
+            }
+
+            .compact-priority-badge {
+              align-self: flex-start;
             }
           }
         `}
       </style>
 
-      <div className="modern-defects-overlay" onClick={onClose}>
-        <div className="modern-defects-modal" onClick={e => e.stopPropagation()}>
+      <div className="compact-defects-overlay" onClick={onClose}>
+        <div className="compact-defects-modal" onClick={e => e.stopPropagation()}>
           
-          {/* Header */}
-          <div className="modern-header">
-            <div className="modern-header-top">
-              <div className="modern-title-group">
-                <h2 className="modern-title">
-                  <Settings size={18} />
+          {/* Compact Header */}
+          <div className="compact-header">
+            <div className="compact-header-top">
+              <div className="compact-title-group">
+                <h2 className="compact-title">
+                  <Settings size={16} />
                   Equipment Defects
                 </h2>
-                <p className="modern-subtitle">{vesselName}</p>
+                <p className="compact-subtitle">{vesselName}</p>
               </div>
-              <button className="modern-close" onClick={onClose}>
-                <X size={16} />
+              <button className="compact-close" onClick={onClose}>
+                <X size={14} />
               </button>
             </div>
             
-            {/* Search */}
-            <div className="modern-search">
-              <Search size={16} className="modern-search-icon" />
+            {/* Compact Search */}
+            <div className="compact-search">
+              <Search size={14} className="compact-search-icon" />
               <input
                 type="text"
-                className="modern-search-input"
+                className="compact-search-input"
                 placeholder="Search equipment, description, or action..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
 
-            {/* Filters */}
-            <div className="modern-filters">
+            {/* Compact Filters */}
+            <div className="compact-filters">
               {[
                 { id: 'all', label: 'All', count: counts.all },
                 { id: 'high', label: 'Critical', count: counts.high },
@@ -514,37 +575,37 @@ const EnhancedDefectsModal = ({
               ].map(filter => (
                 <button
                   key={filter.id}
-                  className={`modern-filter-btn ${activeFilter === filter.id ? 'active' : ''}`}
+                  className={`compact-filter-btn ${activeFilter === filter.id ? 'active' : ''}`}
                   onClick={() => setActiveFilter(filter.id)}
                 >
                   {filter.label}
                   {filter.count > 0 && (
-                    <span className="modern-filter-count">{filter.count}</span>
+                    <span className="compact-filter-count">{filter.count}</span>
                   )}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Body */}
-          <div className="modern-body">
+          {/* Compact Body */}
+          <div className="compact-body">
             {loading && (
-              <div className="modern-loading">
-                <div className="modern-spinner"></div>
+              <div className="compact-loading">
+                <div className="compact-spinner"></div>
                 <p>Loading defects...</p>
               </div>
             )}
 
             {error && (
-              <div className="modern-error">
-                <AlertTriangle size={16} />
+              <div className="compact-error">
+                <AlertTriangle size={14} />
                 {error}
               </div>
             )}
 
             {!loading && !error && filteredDefects.length === 0 && (
-              <div className="modern-empty">
-                <CheckCircle size={48} color="#d1d5db" />
+              <div className="compact-empty">
+                <CheckCircle size={40} color="#cbd5e1" />
                 <h3>No Issues Found</h3>
                 <p>
                   {searchQuery.trim() 
@@ -557,24 +618,26 @@ const EnhancedDefectsModal = ({
             )}
 
             {!loading && !error && filteredDefects.length > 0 && (
-              <div className="modern-defect-list">
+              <div className="compact-defect-list">
                 {filteredDefects.map((defect, index) => {
                   const criticalityInfo = getCriticalityInfo(defect.criticality);
                   
                   return (
-                    <div key={`${defect.id || index}`} className="modern-defect-item">
-                      <div className="modern-defect-header">
-                        <h4 
-                          className="modern-equipment-name"
-                          style={{
-                            '--dot-color': criticalityInfo.color
-                          }}
-                        >
-                          <div className="modern-priority-dot"></div>
+                    <div 
+                      key={`${defect.id || index}`} 
+                      className="compact-defect-item"
+                      style={{
+                        '--dot-color': criticalityInfo.color,
+                        '--priority-color': criticalityInfo.color
+                      }}
+                    >
+                      <div className="compact-defect-header">
+                        <h4 className="compact-equipment-name">
+                          <div className="compact-priority-dot"></div>
                           {defect.equipment_name || 'Unknown Equipment'}
                         </h4>
                         <div 
-                          className="modern-priority-badge"
+                          className="compact-priority-badge"
                           style={{
                             '--badge-bg': criticalityInfo.bg,
                             '--badge-color': criticalityInfo.color,
@@ -586,23 +649,23 @@ const EnhancedDefectsModal = ({
                       </div>
                       
                       {defect.description && (
-                        <p className="modern-description">
+                        <p className="compact-description">
                           {defect.description}
                         </p>
                       )}
                       
                       {defect.action_planned && (
                         <div 
-                          className="modern-action"
+                          className="compact-action"
                           style={{
                             '--action-bg': criticalityInfo.bg,
                             '--action-border': criticalityInfo.border
                           }}
                         >
-                          <div className="modern-action-label">
+                          <div className="compact-action-label">
                             Planned Action
                           </div>
-                          <p className="modern-action-text">
+                          <p className="compact-action-text">
                             {defect.action_planned}
                           </p>
                         </div>

@@ -16,35 +16,36 @@ import PortVesselRiskChart from './charts/PortVesselRiskChart';
 import PSCKpisChart from './charts/PSCKpisChart';
 import DeficiencyCodeChart from './charts/DeficiencyCodeChart';
 import PropTypes from 'prop-types';
-// No longer need FontAwesome icons here as EditableField is imported from common
-// and handles its own FontAwesome imports.
-// import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// import { faPencilAlt, faCheck, faTimes, faSpinner } from '@fortawesome/free-solid-svg-icons';
 
-// 1. Import the defects service at the top of your FleetDashboard.jsx
-import defectsService from '../../../services/defectsService'; 
+// Import the updated defects service and auth context
+import defectsService from '../../../services/defectsService';
+import { useAuth } from '../../../context/AuthContext'; // Import auth context
 
-// --- FleetDashboard Component ---
+// Add this section to your FleetDashboard component, right after the PropTypes definition
 const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
-  // State variables
+  // Get auth context
+  const { currentUser, loading: authLoading } = useAuth();
+  const userId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
+
+  // State variables (keep all your existing state variables)
   const [vessels, setVessels] = useState([]);
   const [filteredVessels, setFilteredVessels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Filter state variables
+  // Filter state variables (keep all existing filter states)
   const [portFilters, setPortFilters] = useState([]);
   const [statusFilters, setStatusFilters] = useState([]);
   const [docFilters, setDocFilters] = useState([]);
   const [voyageStatusFilter, setVoyageStatusFilter] = useState('Current Voyages');
 
-  // Store processed data by status for filter operations
+  // Store processed data by status for filter operations (keep existing)
   const [activeVessels, setActiveVessels] = useState([]);
   const [inactiveVessels, setInactiveVessels] = useState([]);
   const [allProcessedVessels, setAllProcessedVessels] = useState([]);
 
-  // Dropdown visibility state
+  // Dropdown visibility state (keep existing)
   const [showVoyageStatusDropdown, setShowVoyageStatusDropdown] = useState(false);
   const [showPortDropdown, setShowPortDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
@@ -63,16 +64,163 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const [timelineFilter, setTimelineFilter] = useState(null);
   const [pscDeficiencyData, setPscDeficiencyData] = useState([]);
   const [loadingPscData, setLoadingPscData] = useState(true);
-  const [savingStates, setSavingStates] = useState({}); // To manage saving state for individual fields
+  const [savingStates, setSavingStates] = useState({});
 
-  // API endpoints
+  // Add defect stats state
+  const [defectStats, setDefectStats] = useState({
+    total: 0,
+    open: 0,
+    inProgress: 0,
+    closed: 0,
+    overdue: 0
+  });
+
+  // API endpoints (keep your existing endpoints)
   const BASE_API_URL = 'https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws';
   const VESSELS_WITH_OVERRIDES_API_URL = `${BASE_API_URL}/api/vessels-with-overrides`;
   const VESSEL_OVERRIDE_API_URL = `${BASE_API_URL}/api/vessel-override`;
-  const ORIGINAL_VESSELS_API_URL = `${BASE_API_URL}/api/vessels`; // Original endpoint, if still used for other purposes
+  const ORIGINAL_VESSELS_API_URL = `${BASE_API_URL}/api/vessels`;
   const PSC_API_URL = `${BASE_API_URL}/api/psc-deficiencies`;
 
-  // Add a handler function for timeline filter changes
+  // Initialize defects service with user ID when auth changes
+  useEffect(() => {
+    const currentUserId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
+    if (currentUserId) {
+      console.log('FleetDashboard: Setting defects service userId:', currentUserId);
+      defectsService.setUserId(currentUserId);
+    } else {
+      console.log('FleetDashboard: No user ID available for defects service');
+    }
+  }, [currentUser]);
+
+  // Load defect statistics
+  const loadDefectStats = useCallback(async () => {
+    try {
+      const stats = await defectsService.getDefectStats();
+      setDefectStats(stats);
+      console.log('Loaded defect stats:', stats);
+    } catch (error) {
+      console.error('Error loading defect stats:', error);
+      // Keep default stats on error
+    }
+  }, []);
+
+  // Load defect stats on component mount and when user changes
+  useEffect(() => {
+    if (currentUser) {
+      loadDefectStats();
+    }
+  }, [currentUser, loadDefectStats]);
+
+  // Updated handleLoadDefects function with proper error handling
+  const handleLoadDefects = useCallback(async (vesselName) => {
+    try {
+      console.log(`Loading defects for vessel NAME: ${vesselName}`);
+      
+      if (!currentUser) {
+        console.warn('No authenticated user, cannot load defects');
+        return [];
+      }
+      
+      // IMPORTANT: Use same userId extraction as DefectsDashboard
+      const currentUserId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
+      if (!currentUserId) {
+        console.warn('No user ID found in currentUser object:', currentUser);
+        return [];
+      }
+      
+      console.log('FleetDashboard: Using userId for defects:', currentUserId);
+      
+      // Make sure defects service has the right user ID
+      defectsService.setUserId(currentUserId);
+      
+      // Use vessel name for lookup
+      const normalizedVesselName = vesselName.toLowerCase().trim();
+      const defects = await defectsService.getVesselDefectsByName(vesselName);
+      
+      console.log(`Loaded ${defects.length} defects for vessel ${vesselName}`);
+      return defects;
+      
+    } catch (error) {
+      console.error('Failed to load defects:', error);
+      return [];
+    }
+  }, [currentUser]);
+
+  // Function to refresh defects cache when needed
+  const refreshDefectsCache = useCallback(() => {
+    defectsService.clearCache();
+    loadDefectStats(); // Reload stats after clearing cache
+  }, [loadDefectStats]);
+
+  // Add defect actions for the dashboard
+  const handleCreateDefect = useCallback(async (defectData) => {
+    try {
+      console.log('Creating new defect:', defectData);
+      
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
+      
+      const newDefect = await defectsService.createDefect(defectData);
+      console.log('Created defect:', newDefect);
+      
+      // Refresh stats after creating
+      loadDefectStats();
+      
+      return newDefect;
+    } catch (error) {
+      console.error('Error creating defect:', error);
+      setError(`Failed to create defect: ${error.message}`);
+      throw error;
+    }
+  }, [currentUser, loadDefectStats]);
+
+  const handleUpdateDefect = useCallback(async (defectId, defectData) => {
+    try {
+      console.log('Updating defect:', defectId, defectData);
+      
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
+      
+      const updatedDefect = await defectsService.updateDefect(defectId, defectData);
+      console.log('Updated defect:', updatedDefect);
+      
+      // Refresh stats after updating
+      loadDefectStats();
+      
+      return updatedDefect;
+    } catch (error) {
+      console.error('Error updating defect:', error);
+      setError(`Failed to update defect: ${error.message}`);
+      throw error;
+    }
+  }, [currentUser, loadDefectStats]);
+
+  const handleDeleteDefect = useCallback(async (defectId) => {
+    try {
+      console.log('Deleting defect:', defectId);
+      
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
+      
+      const result = await defectsService.deleteDefect(defectId);
+      console.log('Deleted defect result:', result);
+      
+      // Refresh stats after deleting
+      loadDefectStats();
+      
+      return result;
+    } catch (error) {
+      console.error('Error deleting defect:', error);
+      setError(`Failed to delete defect: ${error.message}`);
+      throw error;
+    }
+  }, [currentUser, loadDefectStats]);
+
+  // Keep all your existing functions exactly as they are
   const handleTimelineFilterChange = (timeRange) => {
     setTimelineFilter(timeRange);
 
@@ -695,9 +843,12 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     }
 
     // Get the current user ID from your authentication context
-    // Replace 'your_user_id_here' with the actual user ID from your auth context
-    // Example: const currentUserId = auth.currentUser?.uid; or auth.currentUser?.email;
-    const currentUserId = 'your_user_id_here'; // IMPORTANT: You need to pass a user_id
+    const currentUserId = currentUser?.userId || currentUser?.user_id || currentUser?.id; // Use currentUser.userId or fallback to getUserId
+
+    if (!currentUserId) {
+      setError('User not authenticated. Please log in to update fields.');
+      return;
+    }
 
     const fieldKey = `${vesselId}-${fieldName}`;
     setSavingStates(prev => ({ ...prev, [fieldKey]: true }));
@@ -982,72 +1133,27 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     setShowSearch(false);
   };
 
-  // 2. Add this function inside your FleetDashboard component
-  const handleLoadDefects = useCallback(async (vesselId) => {
-    try {
-      console.log(`Loading defects for vessel ID: ${vesselId}`);
-      
-      // Mock data for testing - replace with real API call later
-      const mockDefects = [
-        {
-          id: 1,
-          vessel_id: vesselId,
-          equipment_name: "Main Engine",
-          description: "Fuel injector malfunction causing reduced performance",
-          action_planned: "Replace fuel injector unit and test system",
-          criticality: "high",
-          status_vessel: "open",
-          created_date: new Date().toISOString(),
-          target_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: 2,
-          vessel_id: vesselId,
-          equipment_name: "Navigation System",
-          description: "GPS signal intermittent during heavy weather",
-          action_planned: "Calibrate GPS antenna and check connections",
-          criticality: "medium",
-          status_vessel: "open",
-          created_date: new Date().toISOString(),
-          target_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: 3,
-          vessel_id: vesselId,
-          equipment_name: "Deck Equipment",
-          description: "Minor hydraulic leak in crane system",
-          action_planned: "Replace hydraulic seals and test operation",
-          criticality: "low",
-          status_vessel: "open",
-          created_date: new Date().toISOString(),
-          target_date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
-        }
-      ];
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      console.log(`Returning ${mockDefects.length} defects for vessel ${vesselId}`);
-      return mockDefects;
-      
-    } catch (error) {
-      console.error('Failed to load defects:', error);
-      throw error;
-    }
-  }, []);
-
+  // In your return statement, update the VesselTable props:
   return (
     <div className="dashboard-container" onClick={closeAllDropdowns}>
+      {/* Keep all your existing filter bar JSX */}
       <div className="filter-bar">
         <div className="filter-section-left">
           <h1 className="dashboard-title">Fleet</h1>
           <div className="vessel-counter">
             <Ship size={14} />
             <span>{vesselCount}</span>
-
           </div>
 
-          {/* Search control - Now in the left section */}
+          {/* Add defect stats display */}
+          {defectStats.total > 0 && (
+            <div className="defect-counter">
+              <AlertTriangle size={14} />
+              <span>{defectStats.open} open defects</span>
+            </div>
+          )}
+
+          {/* Your existing search container */}
           <div className="search-container">
             <button
               className="search-toggle"
@@ -1074,6 +1180,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
           </div>
         </div>
 
+        {/* Keep all your existing filter controls */}
         <div className="filter-label">
           <Filter size={14} />
         </div>
@@ -1300,7 +1407,10 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         </div>
 
         <div className="filter-section-right">
-          <button className="control-btn refresh-btn" onClick={fetchVesselData} title="Refresh data">
+          <button className="control-btn refresh-btn" onClick={() => {
+            fetchVesselData();
+            refreshDefectsCache(); // Also refresh defects when refreshing
+          }} title="Refresh data">
             <RefreshCw size={14} className={loading ? "spinning" : ""} />
           </button>
 
@@ -1324,75 +1434,38 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         </div>
       )}
 
+      {/* Keep your existing charts section */}
       <div className="dashboard-charts">
-        {/* <div className="dashboard-card"> */}
         <div className="dashboard-card-body">
           {loading ? (
             <div className="chart-loading">
               <div className="loading-spinner"></div>
-              {/* <span>Loading chart data...</span> */}
             </div>
           ) : (
-            // <ArrivalsByPortChart
-            //   data={vesselsByPortData}
-            //   onFilterChange={handleChartFilterChange}
-            //   activeFilter={chartPortFilter}
-            // />
-
             <PSCDeficienciesChart
               data={pscDeficiencyData}
               onFilterChange={() => { }}
               activeFilter={null}
             />
-
           )}
         </div>
-        {/* </div> */}
 
-        {/* <div className="dashboard-card"> */}
         <div className="dashboard-card-body">
           {loading ? (
             <div className="chart-loading">
               <div className="loading-spinner"></div>
-              {/* <span>Loading chart data...</span> */}
             </div>
           ) : (
-            // <ArrivalTimelineChart
-            //   data={arrivalTimelineData}
-            //   onFilterChange={handleTimelineFilterChange}
-            //   activeFilter={timelineFilter}
-            // />
-
-            // <PortVesselRiskChart
-            //   data={portVesselRiskData}
-            //   onFilterChange={(filter) => {
-            //     // Handle filter changes if needed
-            //     console.log('Risk chart filter changed:', filter);
-            //     // You can add filter handling logic here
-            //   }}
-            //   activeFilter={null}
-            // />
-            // In your dashboard component:
             <DeficiencyCodeChart
               data={pscDeficiencyData}
               onFilterChange={() => { }}
               activeFilter={null}
             />
-            // <PSCKpisChart
-            //   data={pscDeficiencyData}
-            //   onFilterChange={(filter) => {
-            //     // Handle filter changes if needed
-            //     console.log('PSC KPI chart filter changed:', filter);
-            //     // You can add filter handling logic here
-            //   }}
-            //   activeFilter={null}
-            // />
-
           )}
         </div>
-        {/* </div> */}
       </div>
 
+      {/* Updated vessel table wrapper with defect integration */}
       <div className="vessel-table-wrapper">
         {loading ? (
           <div className="loading-container">
@@ -1403,7 +1476,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
           <div className="no-results">
             <p>No vessels match your current filters. Try adjusting your search or filters.</p>
             <button className="reset-filters" onClick={resetFilters}>
-              Reset Filters
+                  Reset Filters
             </button>
           </div>
         ) : (
@@ -1419,42 +1492,35 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
               }}
             />
 
-            {loading ? (
-              <div className="loading-container">
-                <div className="loading-spinner"></div>
-                <p>Loading fleet data...</p>
-              </div>
-            ) : filteredCount === 0 ? (
-              <div className="no-results">
-                <p>No vessels match your current filters. Try adjusting your search or filters.</p>
-                <button className="reset-filters" onClick={resetFilters}>
-                  Reset Filters
-                </button>
-              </div>
-            ) : (
-              <VesselTable
-                vessels={filteredVessels}
-                onOpenRemarks={handleOpenComments}
-                fieldMappings={fieldMappings}
-                onUpdateVessel={handleVesselUpdate} // Keep this for other updates
-                onUpdateOverride={handleUpdateOverride} // New prop for ETA/ETB/ETD
-                savingStates={savingStates} // Pass saving states
-                onLoadDefects={handleLoadDefects} // ADD THIS LINE
-              />
-            )}
+            <VesselTable
+              vessels={filteredVessels}
+              onOpenRemarks={handleOpenComments}
+              fieldMappings={fieldMappings}
+              onUpdateVessel={handleVesselUpdate}
+              onUpdateOverride={handleUpdateOverride}
+              savingStates={savingStates}
+              onLoadDefects={handleLoadDefects} // Updated defects handler
+              onCreateDefect={handleCreateDefect} // New handler
+              onUpdateDefect={handleUpdateDefect} // New handler
+              onDeleteDefect={handleDeleteDefect} // New handler
+              defectStats={defectStats} // Pass defect stats
+              currentUser={currentUser} // Pass current user
+            />
           </div>
         )}
       </div>
 
+      {/* Keep your existing footer and modals */}
       <div className="dashboard-footer">
         <div className="data-source">
-          Data sources: AIS, Noon Report, Vessel Emails
+          Data sources: AIS, Noon Report, Vessel Emails, Equipment Defects
         </div>
       </div>
+
       <MapModal
         isOpen={mapModalOpen}
         onClose={() => setMapModalOpen(false)}
-        vessels={vessels} // Use all vessels, not just filtered ones
+        vessels={vessels}
       />
 
       <CommentsModal
