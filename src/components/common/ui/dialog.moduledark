@@ -1,0 +1,170 @@
+/* src/components/common/ui/dialog.module.css */
+
+/* Keyframe Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes zoomIn {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  
+  /* Dialog Portal */
+  .dialogPortal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Dialog Overlay */
+  .dialogOverlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(2px);
+    z-index: 9999;
+    animation: fadeIn 0.2s ease-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Dialog Content */
+  .dialogContent {
+    background: linear-gradient(145deg, #0a1725, #112032);
+    border-radius: 8px;
+    width: 90%; /* Responsive width */
+    max-width: 580px; /* Maximum width */
+    max-height: 90vh; /* Maximum height */
+    overflow: hidden; /* Ensures content doesn't spill out */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(59, 173, 229, 0.2);
+    display: flex;
+    flex-direction: column;
+    animation: zoomIn 0.3s ease-out;
+    z-index: 10000;
+    position: relative;
+    margin: 0 auto; /* Center horizontally */
+  }
+  
+  /* Responsive adjustments for smaller screens */
+  @media (max-width: 640px) {
+    .dialogContent {
+      width: 95%; /* Even more width on small screens */
+      max-height: 85vh; /* Slightly smaller max height on mobile */
+    }
+  }
+  
+  /* Dialog Header */
+  .dialogHeader {
+    padding: 20px;
+    border-bottom: 1px solid rgba(59, 173, 229, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .dialogTitle {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #3BADE5;
+  }
+  
+  .dialogDescription {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  /* Dialog Body */
+  .dialogBody {
+    padding: 20px;
+    overflow-y: auto; /* Enable vertical scrolling */
+    flex: 1; /* Allows body to take available space and push footer down */
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: rgba(59, 173, 229, 0.3) rgba(11, 22, 35, 0.1); /* Firefox */
+  }
+  
+  /* Custom scrollbar for Webkit browsers */
+  .dialogBody::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .dialogBody::-webkit-scrollbar-track {
+    background: rgba(11, 22, 35, 0.1);
+  }
+  
+  .dialogBody::-webkit-scrollbar-thumb {
+    background-color: rgba(59, 173, 229, 0.3);
+    border-radius: 3px;
+  }
+  
+  /* Dialog Footer */
+  .dialogFooter {
+    padding: 20px;
+    border-top: 1px solid rgba(59, 173, 229, 0.1);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  
+  /* Dialog Buttons */
+  .dialogButton {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  
+  .dialogButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  /* Save Button Variant */
+  .dialogButton.save {
+    background-color: #3BADE5;
+    color: #0a1725;
+    border: 1px solid #3BADE5;
+  }
+  
+  .dialogButton.save:hover:not(:disabled) {
+    background-color: #2a9cd4;
+    border-color: #2a9cd4;
+  }
+  
+  /* Cancel Button Variant */
+  .dialogButton.cancel {
+    background-color: transparent;
+    color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(59, 173, 229, 0.3);
+  }
+  
+  .dialogButton.cancel:hover:not(:disabled) {
+    background-color: rgba(59, 173, 229, 0.1);
+    border-color: rgba(59, 173, 229, 0.5);
+  }
+  
+  /* Destructive Button Variant (e.g., for discard) */
+  .dialogButton.destructive {
+    background-color: rgba(231, 76, 60, 0.8);
+    border-color: rgba(231, 76, 60, 0.3);
+    color: white;
+  }
+  
+  .dialogButton.destructive:hover:not(:disabled) {
+    background-color: rgba(231, 76, 60, 1);
+  }

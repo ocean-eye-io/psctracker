@@ -139,14 +139,14 @@ export const fleetFieldMappings = {
     },
     amsa_last_inspection_date: {
       dbField: 'amsa_last_inspection_date',
-      label: 'AMSA Last Inspection Date',
+      label: 'AMSA/MNZ Last Inspection Date',
       priority: 16,
       type: 'date',
       //width: '120px'
     },
     amsa_last_inspection_port: {
       dbField: 'amsa_last_inspection_port',
-      label: 'AMSA Last Inspection Port',
+      label: 'AMSA/MNZ Last Inspection Port',
       priority: 17,
       //width: '120px'
     }

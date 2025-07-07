@@ -1,4 +1,4 @@
-// FloatingPagination.jsx - Truly Floating and Compact
+// FloatingPagination.jsx - Light Theme Version
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
@@ -56,20 +56,20 @@ const FloatingPagination = ({
 
   const containerStyle = {
     ...getPositionStyle(),
-    background: 'rgba(10, 23, 37, 0.95)',
+    background: 'rgba(255, 255, 255, 0.95)', // Light background
     backdropFilter: 'blur(10px)',
     WebkitBackdropFilter: 'blur(10px)',
-    border: '1px solid rgba(59, 173, 229, 0.3)',
+    border: '1px solid rgba(0, 123, 255, 0.2)', // Light blue border
     borderRadius: '20px',
     padding: '3px 6px',
     display: 'flex',
     alignItems: 'center',
     gap: '4px',
     boxShadow: `
-      0 4px 20px rgba(0, 0, 0, 0.4),
-      0 0 15px rgba(59, 173, 229, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1)
-    `,
+      0 4px 20px rgba(0, 0, 0, 0.15),
+      0 0 15px rgba(0, 123, 255, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5)
+    `, // Light shadows
     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
     opacity: isVisible ? 1 : 0,
     transform: `${position === 'bottom-center' ? 'translateX(-50%)' : ''} translateY(${isVisible ? '0' : '20px'})`,
@@ -77,7 +77,7 @@ const FloatingPagination = ({
   };
 
   const buttonBaseStyle = {
-    background: 'rgba(59, 173, 229, 0.15)',
+    background: 'rgba(0, 123, 255, 0.08)', // Light blue background
     border: 'none',
     borderRadius: '50%',
     display: 'flex',
@@ -85,7 +85,7 @@ const FloatingPagination = ({
     justifyContent: 'center',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
-    color: '#3BADE5',
+    color: '#007bff', // Standard blue
   };
 
   const smallButtonStyle = {
@@ -104,11 +104,11 @@ const FloatingPagination = ({
     ...buttonBaseStyle,
     opacity: 0.3,
     cursor: 'not-allowed',
-    color: 'rgba(244, 244, 244, 0.3)',
+    color: 'rgba(51, 51, 51, 0.3)', // Muted dark text for disabled
   };
 
   const pageInfoStyle = {
-    color: '#f4f4f4',
+    color: '#333333', // Dark text
     fontSize: '11px',
     fontWeight: '600',
     padding: '0 8px',
@@ -125,14 +125,14 @@ const FloatingPagination = ({
 
   const handleButtonHover = (e, isDisabled) => {
     if (!isDisabled) {
-      e.currentTarget.style.background = 'rgba(59, 173, 229, 0.3)';
+      e.currentTarget.style.background = 'rgba(0, 123, 255, 0.15)'; // Darker light blue on hover
       e.currentTarget.style.transform = 'scale(1.1)';
     }
   };
 
   const handleButtonLeave = (e, isDisabled) => {
     if (!isDisabled) {
-      e.currentTarget.style.background = 'rgba(59, 173, 229, 0.15)';
+      e.currentTarget.style.background = 'rgba(0, 123, 255, 0.08)'; // Back to light blue
       e.currentTarget.style.transform = 'scale(1)';
     }
   };
@@ -171,7 +171,7 @@ const FloatingPagination = ({
       <div style={pageInfoStyle}>
         <div style={{ 
           fontSize: '12px', 
-          background: 'linear-gradient(135deg, #3BADE5, #2A95C5)',
+          background: 'linear-gradient(135deg, #333333, #555555)', // Dark gradient for light theme
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
@@ -179,7 +179,7 @@ const FloatingPagination = ({
           {currentPage}/{totalPages}
         </div>
         <div style={{ 
-          color: 'rgba(244, 244, 244, 0.6)',
+          color: 'rgba(51, 51, 51, 0.6)', // Muted dark text
           fontSize: '9px',
         }}>
           {startItem}-{endItem}

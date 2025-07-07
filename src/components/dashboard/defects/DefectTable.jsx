@@ -12,7 +12,7 @@ import { useToast } from '../../common/ui/ToastContext';
 import { usePermissions } from '../../../context/PermissionContext'; // NEW: Import permissions hook
 import styles from './defect.module.css';
 
-const PER_PAGE = 10;
+const PER_PAGE = 15;
 
 // Enhanced Badge Components - Subtle and Professional
 const StatusBadge = ({ status, variant = 'subtle', size = 'medium' }) => {
@@ -983,7 +983,7 @@ const DefectTable = ({
           </button>
           
           {/* NEW: Enhanced Import Button with permission checks */}
-          <button
+          {/* <button
             onClick={onImport}
             className={`${styles.enhancedHeaderButton} ${styles.import} ${
               !effectivePermissions.actionPermissions.import ? styles.disabled : ''
@@ -996,7 +996,7 @@ const DefectTable = ({
           >
             <Upload size={16} />
             Import VIR Excel
-          </button>
+          </button> */}
           
           {/* NEW: Enhanced Add Defect Button with permission checks */}
           <button

@@ -14,6 +14,7 @@ import {
   Clock
 } from 'lucide-react';
 import VesselReportingTable from './VesselReportingTable';
+import ChecklistPage from './checklist/ChecklistPage';
 import { reportingFieldMappings } from './ReportingFieldMappings';
 import vesselReportingService from '../../../services/vesselReportingService';
 import { useAuth } from '../../../context/AuthContext';
@@ -28,8 +29,8 @@ const VesselReportingPage = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Filter state variables
-  const [voyageStatusFilter, setVoyageStatusFilter] = useState('All Voyages');
+  // Filter state variables - DEFAULT TO CURRENT VOYAGES
+  const [voyageStatusFilter, setVoyageStatusFilter] = useState('Current Voyages');
   const [vesselNameFilters, setVesselNameFilters] = useState([]);
   const [checklistStatusFilters, setChecklistStatusFilters] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(new Date());
@@ -39,6 +40,13 @@ const VesselReportingPage = () => {
   const [showVesselNameDropdown, setShowVesselNameDropdown] = useState(false);
   const [showChecklistStatusDropdown, setShowChecklistStatusDropdown] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+
+  // Checklist integration state
+  const [selectedVessel, setSelectedVessel] = useState(null);
+  const [showChecklistPage, setShowChecklistPage] = useState(false);
+
+  // Saving states for editable fields
+  const [savingStates, setSavingStates] = useState({});
 
   // Auth and Permission contexts
   const { currentUser, loading: authLoading } = useAuth();
@@ -60,8 +68,12 @@ const VesselReportingPage = () => {
   const [allProcessedVessels, setAllProcessedVessels] = useState([]);
   const [userAssignments, setUserAssignments] = useState([]);
 
+  // API endpoints - SAME AS FLEETDASHBOARD
+  const BASE_API_URL = 'https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws';
+  const VESSEL_OVERRIDE_API_URL = `${BASE_API_URL}/api/vessel-override`;
+
   // User ID from auth context
-  const userId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
+  const userId = currentUser?.sub || currentUser?.email || currentUser?.username || currentUser?.userId || currentUser?.user_id || currentUser?.id;
 
   console.log("VesselReportingPage: Rendering with permissions:", {
     permissions,
@@ -71,6 +83,157 @@ const VesselReportingPage = () => {
     roleName,
     userId
   });
+
+  // Checklist handlers
+  const handleOpenChecklist = useCallback((vessel) => {
+    console.log('Opening checklist for vessel:', vessel);
+    
+    const vesselForChecklist = {
+      ...vessel,
+      id: vessel.id,
+      voyage_id: vessel.id,
+      vessel_name: vessel.vessel_name,
+      imo_no: vessel.imo_no,
+      eta: vessel.user_eta || vessel.eta,
+      etb: vessel.user_etb || vessel.etb,
+      etd: vessel.user_etd || vessel.etd,
+      departure_port: vessel.departure_port,
+      arrival_port: vessel.arrival_port,
+      event_type: vessel.event_type
+    };
+    
+    setSelectedVessel(vesselForChecklist);
+    setShowChecklistPage(true);
+  }, []);
+
+  const handleCloseChecklist = useCallback(() => {
+    setShowChecklistPage(false);
+    setSelectedVessel(null);
+    fetchVesselData();
+  }, []);
+
+  const handleOpenRemarks = useCallback((vessel) => {
+    console.log('Opening remarks for vessel:', vessel);
+    // The CommentTooltip component handles the editing inline, same as VesselTable
+  }, []);
+
+  // Handle vessel updates (for dropdown fields like checklist_received, sanz)
+  const handleUpdateVessel = useCallback(async (vesselId, field, value) => {
+    if (!vesselId || !field) {
+      console.error('Invalid vessel ID or field for update');
+      return;
+    }
+
+    try {
+      console.log(`Updating vessel ${vesselId} field ${field} to:`, value);
+      
+      await vesselReportingService.updateVessel(vesselId, { [field]: value });
+      
+      // Update local state
+      setVessels(prevVessels => 
+        prevVessels.map(vessel => 
+          vessel.id === vesselId 
+            ? { ...vessel, [field]: value }
+            : vessel
+        )
+      );
+
+      console.log(`Successfully updated vessel ${vesselId} field ${field}`);
+    } catch (error) {
+      console.error(`Error updating vessel ${vesselId} field ${field}:`, error);
+      setError(`Failed to update ${field}. Please try again.`);
+      setTimeout(() => setError(null), 5000);
+    }
+  }, []);
+
+  // Handle override updates (for ETA, ETB, ETD editable fields)
+  // COPIED EXACTLY FROM FLEETDASHBOARD
+  const handleUpdateOverride = useCallback(async (vesselId, fieldName, newValue) => {
+    const vesselToUpdate = vessels.find(v => v.id === vesselId);
+
+    // The vesselToUpdate.id is already the correct vessel_comment_id from psc_tracker_comments
+    const vesselCommentId = vesselToUpdate?.id;
+
+    if (!vesselCommentId) {
+      console.error(`Vessel Comment ID (pc.id) not found for vessel ID: ${vesselId}`);
+      setError('Could not update field: Missing necessary ID.');
+      return;
+    }
+
+    // Use the real user ID from auth context
+    const currentUserId = userId;
+
+    if (!currentUserId) {
+      console.error('No user ID available for override update');
+      setError('Authentication required. Please log in again.');
+      return;
+    }
+
+    const fieldKey = `${vesselId}-${fieldName}`;
+    setSavingStates(prev => ({ ...prev, [fieldKey]: true }));
+
+    try {
+      console.log(`Updating override for vessel ${vesselId} field ${fieldName} to:`, newValue);
+
+      const response = await fetch(VESSEL_OVERRIDE_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          vessel_comment_id: vesselCommentId, // Corrected: Use vesselToUpdate.id
+          field_name: fieldName,
+          override_value: newValue, // Corrected: Use override_value as per Lambda
+          user_id: currentUserId, // IMPORTANT: Pass the actual user ID
+          original_value: vesselToUpdate[fieldName] // Pass the original value for logging
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      // Update the vessels state with the result
+      setVessels(prevVessels =>
+        prevVessels.map(vessel =>
+          vessel.id === vesselId
+            ? {
+                ...vessel,
+                // Update the specific override field based on the fieldName
+                user_eta: result.user_eta,
+                user_etb: result.user_etb,
+                user_etd: result.user_etd,
+              }
+            : vessel
+        )
+      );
+      
+      // Also update filteredVessels
+      setFilteredVessels(prevFiltered =>
+        prevFiltered.map(vessel =>
+          vessel.id === vesselId
+            ? {
+                ...vessel,
+                user_eta: result.user_eta,
+                user_etb: result.user_etb,
+                user_etd: result.user_etd,
+              }
+            : vessel
+        )
+      );
+      
+      console.log(`Successfully updated ${fieldName} for vessel ${vesselId}`);
+
+    } catch (err) {
+      setError(`Failed to update ${fieldName}: ${err.message || 'Network error'}`);
+      console.error(`Error updating ${fieldName} for vessel ${vesselId}:`, err);
+    } finally {
+      setSavingStates(prev => ({ ...prev, [fieldKey]: false }));
+    }
+  }, [vessels, userId, VESSEL_OVERRIDE_API_URL]);
 
   // Fetch vessel data using the service
   const fetchVesselData = useCallback(async () => {
@@ -305,6 +468,41 @@ const VesselReportingPage = () => {
     return vesselReportingService.getReportingStats(vessels);
   }, [vessels]);
 
+  // Handle remarks save - same as VesselTable approach
+  const handleSaveRemarks = useCallback(async (vesselId, remarks) => {
+    try {
+      console.log(`Saving remarks for vessel ${vesselId}:`, remarks);
+      
+      await vesselReportingService.updateVessel(vesselId, { comments: remarks });
+      
+      // Update local state
+      setVessels(prevVessels => 
+        prevVessels.map(vessel => 
+          vessel.id === vesselId 
+            ? { ...vessel, comments: remarks }
+            : vessel
+        )
+      );
+
+      console.log(`Successfully saved remarks for vessel ${vesselId}`);
+      
+      return true; // Success
+    } catch (error) {
+      console.error(`Error saving remarks for vessel ${vesselId}:`, error);
+      throw error; // Let the component handle the error display
+    }
+  }, []);
+
+  // Check for checklist page display
+  if (showChecklistPage && selectedVessel) {
+    return (
+      <ChecklistPage
+        vessel={selectedVessel}
+        onBack={handleCloseChecklist}
+      />
+    );
+  }
+
   // Loading state for entire dashboard
   if (authLoading || permissionsLoading) {
     return (
@@ -437,49 +635,6 @@ const VesselReportingPage = () => {
           </div>
         </div>
       </header>
-
-      {/* Enhanced Stats Cards */}
-      {/* <div className="stats-container">
-        <div className="stat-card">
-          <div className="stat-card-content">
-            <div className="stat-card-title">Total Vessels</div>
-            <div className="stat-card-value">{stats.total}</div>
-          </div>
-          <div className="stat-card-icon">
-            <Ship size={20} />
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-card-content">
-            <div className="stat-card-title">Active Voyages</div>
-            <div className="stat-card-value">{stats.active}</div>
-          </div>
-          <div className="stat-card-icon">
-            <Calendar size={20} />
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-card-content">
-            <div className="stat-card-title">Completed Checklists</div>
-            <div className="stat-card-value">{stats.checklistStats.completed}</div>
-          </div>
-          <div className="stat-card-icon">
-            <FileText size={20} />
-          </div>
-        </div>
-
-        <div className={`stat-card ${stats.overdue > 0 ? 'alert' : ''}`}>
-          <div className="stat-card-content">
-            <div className="stat-card-title">Overdue ETAs</div>
-            <div className="stat-card-value">{stats.overdue}</div>
-          </div>
-          <div className="stat-card-icon">
-            <AlertTriangle size={20} />
-          </div>
-        </div>
-      </div> */}
 
       {/* Enhanced Filter Bar */}
       <div className="filter-bar">
@@ -730,6 +885,11 @@ const VesselReportingPage = () => {
             fieldMappings={reportingFieldMappings}
             loading={loading}
             currentUser={currentUser}
+            onOpenChecklist={handleOpenChecklist}
+            onUpdateVessel={handleUpdateVessel}
+            onUpdateOverride={handleUpdateOverride}
+            onOpenRemarks={handleOpenRemarks}
+            savingStates={savingStates}
           />
         )}
       </div>
@@ -748,7 +908,7 @@ const VesselReportingPage = () => {
           <span>Last refreshed: {lastUpdated.toLocaleString()}</span>
         </div>
         <div className="watermark">
-          Vessel Reporting Dashboard v2.0
+          Vessel Reporting Dashboard v2.0 - Enhanced
         </div>
       </div>
     </div>

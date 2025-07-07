@@ -1,0 +1,159 @@
+/* src/components/common/Table/TrafficLightFilter.css */
+.traffic-light-filter-container {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .filter-button {
+    background: rgba(59, 173, 229, 0.1);
+    border: 1px solid rgba(59, 173, 229, 0.2);
+    border-radius: 4px;
+    color: #3BADE5;
+    cursor: pointer;
+    padding: 4px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.25s ease;
+    font-size: 12px;
+    position: relative;
+  }
+  
+  .filter-button:hover {
+    background: rgba(59, 173, 229, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  .filter-button.active {
+    background: rgba(59, 173, 229, 0.25);
+    box-shadow: 0 0 0 1px rgba(59, 173, 229, 0.5);
+  }
+  
+  .filter-button.has-filters {
+    background: rgba(59, 173, 229, 0.3);
+  }
+  
+  .filter-count {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(59, 173, 229, 0.9);
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    position: absolute;
+    top: -5px;
+    right: -5px;
+  }
+  
+  .filter-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 180px;
+    background-color: #162d48;
+    border-radius: 6px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(77, 195, 255, 0.3);
+    overflow: hidden;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+  }
+  
+  .filter-header {
+    padding: 8px 12px;
+    background: linear-gradient(180deg, #1a3652, #0f2337);
+    border-bottom: 1px solid rgba(77, 195, 255, 0.2);
+  }
+  
+  .filter-header h4 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+  }
+  
+  .filter-options {
+    display: flex;
+    flex-direction: column;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  
+  .filter-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    text-align: left;
+    cursor: pointer;
+    color: #f4f4f4;
+    transition: all 0.15s ease;
+  }
+  
+  .filter-option:last-child {
+    border-bottom: none;
+  }
+  
+  .filter-option:hover {
+    background-color: rgba(59, 173, 229, 0.15);
+  }
+  
+  .filter-option.selected {
+    background-color: rgba(59, 173, 229, 0.2);
+  }
+  
+  .option-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+  }
+  
+  .status-dot.green {
+    background-color: #2EE086;
+    box-shadow: 0 0 6px rgba(46, 224, 134, 0.8);
+  }
+  
+  .status-dot.yellow {
+    background-color: #FFD426;
+    box-shadow: 0 0 6px rgba(255, 212, 38, 0.8);
+  }
+  
+  .status-dot.red {
+    background-color: #FF5252;
+    box-shadow: 0 0 6px rgba(255, 82, 82, 0.8);
+  }
+  
+  .status-dot.grey {
+    background-color: #A0A0A0;
+    box-shadow: 0 0 6px rgba(160, 160, 160, 0.8);
+  }
+  
+  .check-icon {
+    color: #3BADE5;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }

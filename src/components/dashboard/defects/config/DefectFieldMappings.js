@@ -319,20 +319,20 @@ export const DEFECT_FIELDS = {
 
   // Expanded View Fields (updated with conditional display)
   EXPANDED: {
-    description: {
-      id: 'description',
-      label: 'Description',
-      dbField: 'Description',
-      priority: 1,
-      section: 'details'
-    },
-    actionPlanned: {
-      id: 'actionPlanned',
-      label: 'Action Planned',
-      dbField: 'Action Planned',
-      priority: 2,
-      section: 'details'
-    },
+    // description: {
+    //   id: 'description',
+    //   label: 'Description',
+    //   dbField: 'Description',
+    //   priority: 1,
+    //   section: 'details'
+    // },
+    // actionPlanned: {
+    //   id: 'actionPlanned',
+    //   label: 'Action Planned',
+    //   dbField: 'Action Planned',
+    //   priority: 2,
+    //   section: 'details'
+    // },
     comments: {
       id: 'comments',
       label: 'Follow-Up',

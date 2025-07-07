@@ -1,4 +1,4 @@
-// src/components/dashboard/defects/charts/TotalDefectsChart.jsx - Compact Redesign
+// src/components/dashboard/defects/charts/TotalDefectsChart.jsx - Light Theme Version
 import React, { useMemo } from 'react';
 import { TrendingUp, Activity, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 
@@ -17,24 +17,24 @@ const TotalDefectsChart = ({ data = [] }) => {
       { 
         name: 'OPEN', 
         value: counts['OPEN'], 
-        color: '#E74C3C', 
-        bgColor: 'rgba(231, 76, 60, 0.1)',
+        color: '#dc3545', // Standard red
+        bgColor: 'rgba(220, 53, 69, 0.08)', // Light red background
         icon: AlertCircle,
         label: 'Open'
       },
       { 
         name: 'IN PROGRESS', 
         value: counts['IN PROGRESS'], 
-        color: '#F1C40F', 
-        bgColor: 'rgba(241, 196, 15, 0.1)',
+        color: '#ffc107', // Standard yellow
+        bgColor: 'rgba(255, 193, 7, 0.08)', // Light yellow background
         icon: Clock,
         label: 'In Progress'
       },
       { 
         name: 'CLOSED', 
         value: counts['CLOSED'], 
-        color: '#2ECC71', 
-        bgColor: 'rgba(46, 204, 113, 0.1)',
+        color: '#28a745', // Standard green
+        bgColor: 'rgba(40, 167, 69, 0.08)', // Light green background
         icon: CheckCircle,
         label: 'Closed'
       }
@@ -66,18 +66,18 @@ const TotalDefectsChart = ({ data = [] }) => {
       {/* Header with main metrics */}
       <div style={styles.header}>
         <div style={styles.titleSection}>
-          <Activity size={16} color="#3BADE5" />
+          <Activity size={16} color="#007bff" />
           <h3 style={styles.title}>Total Defects</h3>
         </div>
         <div style={styles.mainMetric}>
           <span style={styles.totalNumber}>{totalDefects}</span>
           <div style={styles.subMetrics}>
             <div style={styles.subMetric}>
-              <span style={{...styles.subValue, color: '#E74C3C'}}>{activeDefects}</span>
+              <span style={{...styles.subValue, color: '#dc3545'}}>{activeDefects}</span>
               <span style={styles.subLabel}>Active</span>
             </div>
             <div style={styles.subMetric}>
-              <span style={{...styles.subValue, color: '#2ECC71'}}>{completionRate.toFixed(1)}%</span>
+              <span style={{...styles.subValue, color: '#28a745'}}>{completionRate.toFixed(1)}%</span>
               <span style={styles.subLabel}>Complete</span>
             </div>
           </div>
@@ -128,7 +128,7 @@ const TotalDefectsChart = ({ data = [] }) => {
           <span style={styles.progressLabelRight}>
             {activeDefects > 0 && (
               <>
-                <TrendingUp size={10} color="#E74C3C" />
+                <TrendingUp size={10} color="#dc3545" />
                 {activeDefects} pending
               </>
             )}
@@ -142,15 +142,16 @@ const TotalDefectsChart = ({ data = [] }) => {
 const styles = {
   container: {
     padding: '16px',
-    backgroundColor: 'rgba(14, 30, 47, 0.5)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)', // Light background
     borderRadius: '12px',
-    border: '1px solid rgba(244, 244, 244, 0.05)',
+    border: '1px solid rgba(0, 0, 0, 0.08)', // Light border
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',
     maxHeight: '280px',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)' // Light shadow
   },
   
   header: {
@@ -167,11 +168,11 @@ const styles = {
   },
   
   title: {
-    color: '#f4f4f4',
+    color: '#333333', // Dark text
     fontSize: '16px',
     fontWeight: '600',
     margin: 0,
-    background: 'linear-gradient(135deg, #3BADE5, #2A95C5)',
+    background: 'linear-gradient(135deg, #333333, #555555)', // Dark gradient
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
     backgroundClip: 'text'
@@ -186,7 +187,7 @@ const styles = {
   totalNumber: {
     fontSize: '32px',
     fontWeight: '700',
-    color: '#3BADE5',
+    color: '#007bff', // Standard blue
     lineHeight: 1
   },
   
@@ -210,7 +211,7 @@ const styles = {
   
   subLabel: {
     fontSize: '9px',
-    color: 'rgba(244, 244, 244, 0.6)',
+    color: 'rgba(51, 51, 51, 0.6)', // Muted dark text
     textTransform: 'uppercase',
     letterSpacing: '0.5px'
   },
@@ -225,7 +226,7 @@ const styles = {
   statusCard: {
     padding: '10px',
     borderRadius: '8px',
-    border: '1px solid rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(0, 0, 0, 0.05)', // Light border
     display: 'flex',
     flexDirection: 'column',
     gap: '4px',
@@ -242,7 +243,7 @@ const styles = {
   
   statusPercentage: {
     fontSize: '10px',
-    color: 'rgba(244, 244, 244, 0.6)',
+    color: 'rgba(51, 51, 51, 0.6)', // Muted dark text
     fontWeight: '500'
   },
   
@@ -255,7 +256,7 @@ const styles = {
   
   statusLabel: {
     fontSize: '10px',
-    color: 'rgba(244, 244, 244, 0.8)',
+    color: 'rgba(51, 51, 51, 0.8)', // Dark text
     fontWeight: '500',
     marginTop: 'auto'
   },
@@ -267,10 +268,11 @@ const styles = {
   progressBar: {
     display: 'flex',
     height: '6px',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.08)', // Light progress background
     borderRadius: '3px',
     overflow: 'hidden',
-    marginBottom: '6px'
+    marginBottom: '6px',
+    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)' // Light inner shadow
   },
   
   progressLabels: {
@@ -281,13 +283,13 @@ const styles = {
   
   progressLabelLeft: {
     fontSize: '10px',
-    color: 'rgba(244, 244, 244, 0.6)',
+    color: 'rgba(51, 51, 51, 0.6)', // Muted dark text
     fontWeight: '500'
   },
   
   progressLabelRight: {
     fontSize: '9px',
-    color: 'rgba(244, 244, 244, 0.6)',
+    color: 'rgba(51, 51, 51, 0.6)', // Muted dark text
     display: 'flex',
     alignItems: 'center',
     gap: '4px'
@@ -303,7 +305,7 @@ const styles = {
   },
   
   noDataText: {
-    color: 'rgba(244, 244, 244, 0.6)',
+    color: 'rgba(51, 51, 51, 0.6)', // Muted dark text
     fontSize: '12px',
     margin: 0
   }
