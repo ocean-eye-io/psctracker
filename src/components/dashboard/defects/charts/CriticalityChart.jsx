@@ -1,4 +1,4 @@
-// src/components/dashboard/defects/charts/CriticalityChart.jsx - Ultra Compact Redesign
+// src/components/dashboard/defects/charts/CriticalityChart.jsx - Light Theme Version
 import React, { useMemo } from 'react';
 import { AlertTriangle, Clock, Shield, Target } from 'lucide-react';
 
@@ -12,9 +12,9 @@ const CriticalityChart = ({ data = [] }) => {
       }
     });
     return [
-      { name: 'High', value: counts['High'], color: '#E74C3C', icon: AlertTriangle },
-      { name: 'Medium', value: counts['Medium'], color: '#F1C40F', icon: Clock },
-      { name: 'Low', value: counts['Low'], color: '#3498DB', icon: Shield }
+      { name: 'High', value: counts['High'], color: '#dc3545', icon: AlertTriangle },
+      { name: 'Medium', value: counts['Medium'], color: '#ffc107', icon: Clock },
+      { name: 'Low', value: counts['Low'], color: '#007bff', icon: Shield }
     ];
   }, [data]);
 
@@ -28,7 +28,6 @@ const CriticalityChart = ({ data = [] }) => {
   }, [highPriorityCount, totalCriticality]);
 
   const urgentDefects = useMemo(() => {
-    // Count high priority + open status defects
     return data.filter(defect => 
       defect.Criticality === 'High' && 
       (defect.Status || defect['Status (Vessel)'] || '').toUpperCase() === 'OPEN'
@@ -51,16 +50,16 @@ const CriticalityChart = ({ data = [] }) => {
       {/* Header with key metrics */}
       <div style={styles.header}>
         <div style={styles.titleSection}>
-          <Target size={16} color="#3BADE5" />
+          <Target size={16} color="#007bff" />
           <h3 style={styles.title}>Criticality Breakdown</h3>
         </div>
         <div style={styles.keyMetrics}>
           <div style={styles.keyMetric}>
-            <span style={{...styles.keyValue, color: '#E74C3C'}}>{urgentDefects}</span>
+            <span style={{...styles.keyValue, color: '#dc3545'}}>{urgentDefects}</span>
             <span style={styles.keyLabel}>Urgent</span>
           </div>
           <div style={styles.keyMetric}>
-            <span style={{...styles.keyValue, color: '#F1C40F'}}>{criticalRatio.toFixed(1)}%</span>
+            <span style={{...styles.keyValue, color: '#ffc107'}}>{criticalRatio.toFixed(1)}%</span>
             <span style={styles.keyLabel}>Critical</span>
           </div>
         </div>
@@ -75,7 +74,7 @@ const CriticalityChart = ({ data = [] }) => {
           return (
             <div key={item.name} style={styles.priorityCard}>
               <div style={styles.priorityTop}>
-                <div style={{...styles.priorityIcon, backgroundColor: `${item.color}20`}}>
+                <div style={{...styles.priorityIcon, backgroundColor: `${item.color}15`}}>
                   <IconComponent size={14} color={item.color} />
                 </div>
                 <span style={styles.priorityPercent}>{percentage.toFixed(0)}%</span>
@@ -138,16 +137,6 @@ const CriticalityChart = ({ data = [] }) => {
           </div>
         </div>
       </div>
-
-      {/* Action indicator */}
-      {/* {urgentDefects > 0 && (
-        <div style={styles.actionIndicator}>
-          <div style={styles.actionDot} />
-          <span style={styles.actionText}>
-            {urgentDefects} urgent defect{urgentDefects !== 1 ? 's' : ''} require immediate action
-          </span>
-        </div>
-      )} */}
     </div>
   );
 };
@@ -155,15 +144,16 @@ const CriticalityChart = ({ data = [] }) => {
 const styles = {
   container: {
     padding: '4px',
-    backgroundColor: 'rgba(14, 30, 47, 0.5)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)', // Light background
     borderRadius: '12px',
-    border: '1px solid rgba(244, 244, 244, 0.05)',
+    border: '1px solid rgba(0, 0, 0, 0.08)', // Light border
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',
     maxHeight: '280px',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)' // Light shadow
   },
   
   header: {
@@ -180,11 +170,11 @@ const styles = {
   },
   
   title: {
-    color: '#f4f4f4',
+    color: '#333333', // Dark text on light background
     fontSize: '16px',
     fontWeight: '600',
     margin: 0,
-    background: 'linear-gradient(135deg, #3BADE5, #2A95C5)',
+    background: 'linear-gradient(135deg, #333333, #555555)', // Dark gradient for text
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
     backgroundClip: 'text'
@@ -209,7 +199,7 @@ const styles = {
   
   keyLabel: {
     fontSize: '9px',
-    color: 'rgba(244, 244, 244, 0.6)',
+    color: 'rgba(51, 51, 51, 0.6)', // Muted dark text
     textTransform: 'uppercase',
     letterSpacing: '0.5px'
   },
@@ -223,13 +213,14 @@ const styles = {
   
   priorityCard: {
     padding: '8px',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    backgroundColor: 'rgba(0, 0, 0, 0.02)', // Very subtle light background
     borderRadius: '6px',
-    border: '1px solid rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(0, 0, 0, 0.05)', // Light border
     display: 'flex',
     flexDirection: 'column',
     gap: '3px',
-    minHeight: '70px'
+    minHeight: '70px',
+    transition: 'all 0.2s ease'
   },
   
   priorityTop: {
@@ -249,7 +240,7 @@ const styles = {
   
   priorityPercent: {
     fontSize: '9px',
-    color: 'rgba(244, 244, 244, 0.6)',
+    color: 'rgba(51, 51, 51, 0.6)', // Muted dark text
     fontWeight: '500'
   },
   
@@ -261,14 +252,14 @@ const styles = {
   
   priorityLabel: {
     fontSize: '9px',
-    color: 'rgba(244, 244, 244, 0.8)',
+    color: 'rgba(51, 51, 51, 0.8)', // Dark text
     fontWeight: '500'
   },
   
   miniBar: {
     width: '100%',
     height: '2px',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.1)', // Light progress background
     borderRadius: '1px',
     overflow: 'hidden',
     marginTop: 'auto'
@@ -290,7 +281,7 @@ const styles = {
   
   progressLabel: {
     fontSize: '10px',
-    color: 'rgba(244, 244, 244, 0.6)',
+    color: 'rgba(51, 51, 51, 0.6)', // Muted dark text
     fontWeight: '500',
     marginBottom: '6px'
   },
@@ -298,11 +289,11 @@ const styles = {
   horizontalProgressBar: {
     display: 'flex',
     height: '8px',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.08)', // Light progress background
     borderRadius: '4px',
     overflow: 'hidden',
     marginBottom: '8px',
-    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.2)'
+    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)' // Light inner shadow
   },
   
   progressLegend: {
@@ -326,32 +317,8 @@ const styles = {
   
   legendText: {
     fontSize: '9px',
-    color: 'rgba(244, 244, 244, 0.8)',
+    color: 'rgba(51, 51, 51, 0.8)', // Dark text
     fontWeight: '500'
-  },
-  
-  actionIndicator: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '6px 8px',
-    backgroundColor: 'rgba(231, 76, 60, 0.1)',
-    border: '1px solid rgba(231, 76, 60, 0.3)',
-    borderRadius: '4px'
-  },
-  
-  actionDot: {
-    width: '6px',
-    height: '6px',
-    backgroundColor: '#E74C3C',
-    borderRadius: '50%',
-    animation: 'pulse 2s infinite'
-  },
-  
-  actionText: {
-    fontSize: '9px',
-    color: 'rgba(244, 244, 244, 0.8)',
-    lineHeight: 1.3
   },
   
   noDataContainer: {
@@ -364,7 +331,7 @@ const styles = {
   },
   
   noDataText: {
-    color: 'rgba(244, 244, 244, 0.6)',
+    color: 'rgba(51, 51, 51, 0.6)', // Muted dark text
     fontSize: '12px',
     margin: 0
   }
