@@ -983,7 +983,7 @@ const DefectTable = ({
           </button>
           
           {/* NEW: Enhanced Import Button with permission checks */}
-          <button
+          {/* <button
             onClick={onImport}
             className={`${styles.enhancedHeaderButton} ${styles.import} ${
               !effectivePermissions.actionPermissions.import ? styles.disabled : ''
@@ -996,7 +996,7 @@ const DefectTable = ({
           >
             <Upload size={16} />
             Import VIR Excel
-          </button>
+          </button> */}
           
           {/* NEW: Enhanced Add Defect Button with permission checks */}
           <button
