@@ -155,80 +155,81 @@ const DocumentModal = ({
   if (!isOpen) return null;
 
   return (
-    <div style={overlayStyle}>
-      <div style={modalStyle}>
+    <div className="comments-modal-overlay">
+      <div className="comments-modal">
         {/* Header */}
-        <div style={headerStyle}>
-          <div style={headerContentStyle}>
-            <h2 style={titleStyle}>
+        <div className="comments-modal-header">
+          <div>
+            <h2 className="comments-modal-title">
               Documents for {portName}
             </h2>
-            <p style={subtitleStyle}>
+            <p className="comments-modal-subtitle">
               {loading ? 'Loading...' : `${documents.length} document${documents.length === 1 ? '' : 's'}`}
             </p>
           </div>
           
-          <div style={headerActionsStyle}>
+          <div className="filter-section-right"> {/* Reusing filter-section-right for button grouping */}
             <button
               onClick={fetchDocuments}
               disabled={loading}
-              style={refreshButtonStyle}
+              className={`control-btn ${loading ? 'spinning' : ''}`}
               title="Refresh documents"
             >
-              <RefreshCw size={18} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+              <RefreshCw size={18} />
             </button>
             
-            <button onClick={onClose} style={closeButtonStyle}>
+            <button onClick={onClose} className="comments-modal-close">
               <X size={20} />
             </button>
           </div>
         </div>
 
         {/* Content */}
-        <div style={contentStyle}>
+        <div className="comments-modal-body">
           {loading ? (
-            <div style={loadingStateStyle}>
-              <Loader2 size={32} style={{ color: '#3b82f6', animation: 'spin 1s linear infinite' }} />
-              <p>Loading documents...</p>
+            <div className="loading-container"> {/* Reusing loading-container */}
+              <Loader2 size={32} className="loading-spinner" />
+              <p className="loading-message">Loading documents...</p>
             </div>
           ) : error ? (
-            <div style={errorStateStyle}>
-              <AlertCircle size={32} style={{ color: '#ef4444' }} />
+            <div className="comments-error"> {/* Reusing comments-error */}
+              <AlertCircle size={20} />
               <p>Error loading documents: {error}</p>
-              <button onClick={fetchDocuments} style={retryButtonStyle}>
+              <button onClick={fetchDocuments} className="reset-filters"> {/* Reusing reset-filters */}
                 Try Again
               </button>
             </div>
           ) : documents.length === 0 ? (
-            <div style={emptyStateStyle}>
-              <FileText size={48} style={{ color: '#6b7280' }} />
-              <h3 style={emptyTitleStyle}>No documents found</h3>
-              <p style={emptyTextStyle}>No documents have been uploaded for this port yet.</p>
+            <div className="no-results"> {/* Reusing no-results */}
+              <FileText size={48} style={{ color: 'var(--text-muted-light)' }} />
+              <h3 style={{ color: 'var(--text-dark)', fontSize: '18px', margin: '16px 0 8px' }}>No documents found</h3>
+              <p style={{ color: 'var(--text-muted-light)', fontSize: '14px', margin: '0' }}>No documents have been uploaded for this port yet.</p>
             </div>
           ) : (
-            <div style={documentsListStyle}>
+            <div className="filter-dropdown-items" style={{ maxHeight: 'unset', padding: '0' }}> {/* Reusing filter-dropdown-items for list styling */}
               {documents.map((doc, index) => (
-                <div key={doc.id} style={documentItemStyle}>
-                  <div style={documentContentStyle}>
-                    <div style={fileIconContainerStyle}>
-                      <FileText size={18} style={{ color: '#3bade5' }} />
+                <div key={doc.id} className="filter-checkbox-item" style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', background: 'rgba(0, 123, 255, 0.1)', borderRadius: '6px', flexShrink: 0 }}>
+                      <FileText size={18} style={{ color: 'var(--primary-accent-light)' }} />
                     </div>
-                    <div style={fileNameContainerStyle}>
-                      <span style={fileNameStyle} title={doc.original_file_name}>
+                    <div className="text-ellipsis" style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ color: 'var(--text-dark)', fontSize: '14px', fontWeight: 500 }}>
                         {doc.original_file_name}
                       </span>
                     </div>
                   </div>
                   
-                  <div style={actionsContainerStyle}>
+                  <div className="filter-section-right" style={{ gap: '4px', marginLeft: '0' }}> {/* Reusing filter-section-right for button grouping */}
                     <button
                       onClick={() => handleView(doc)}
                       disabled={isActionLoading(`view-${doc.id}`)}
-                      style={actionButtonStyle}
+                      className="action-button"
                       title="View document"
+                      style={{ padding: '8px', width: '36px', height: '36px' }}
                     >
                       {isActionLoading(`view-${doc.id}`) ? (
-                        <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                        <Loader2 size={16} className="spinning" />
                       ) : (
                         <Eye size={16} />
                       )}
@@ -237,11 +238,12 @@ const DocumentModal = ({
                     <button
                       onClick={() => handleDownload(doc)}
                       disabled={isActionLoading(`download-${doc.id}`)}
-                      style={actionButtonStyle}
+                      className="action-button"
                       title="Download document"
+                      style={{ padding: '8px', width: '36px', height: '36px' }}
                     >
                       {isActionLoading(`download-${doc.id}`) ? (
-                        <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                        <Loader2 size={16} className="spinning" />
                       ) : (
                         <Download size={16} />
                       )}
@@ -250,11 +252,12 @@ const DocumentModal = ({
                     <button
                       onClick={() => handleDelete(doc)}
                       disabled={isActionLoading(`delete-${doc.id}`)}
-                      style={{...actionButtonStyle, ...deleteButtonStyle}}
+                      className="action-button"
+                      style={{ padding: '8px', width: '36px', height: '36px', color: 'var(--danger-color-light)', borderColor: 'rgba(220, 53, 69, 0.2)' }}
                       title="Delete document"
                     >
                       {isActionLoading(`delete-${doc.id}`) ? (
-                        <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                        <Loader2 size={16} className="spinning" />
                       ) : (
                         <Trash2 size={16} />
                       )}
@@ -268,230 +271,6 @@ const DocumentModal = ({
       </div>
     </div>
   );
-};
-
-// Styles
-const overlayStyle = {
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  background: 'rgba(0, 0, 0, 0.6)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 1000,
-  padding: '20px'
-};
-
-const modalStyle = {
-  background: '#0e1e2f',
-  borderRadius: '12px',
-  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)',
-  maxWidth: '600px',
-  width: '100%',
-  maxHeight: '70vh',
-  display: 'flex',
-  flexDirection: 'column',
-  border: '1px solid rgba(244, 244, 244, 0.1)'
-};
-
-const headerStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'flex-start',
-  padding: '24px',
-  borderBottom: '1px solid rgba(244, 244, 244, 0.1)',
-  background: 'linear-gradient(180deg, #0a1725, #112032)',
-  borderRadius: '12px 12px 0 0'
-};
-
-const headerContentStyle = {};
-
-const titleStyle = {
-  margin: 0,
-  color: '#f4f4f4',
-  fontSize: '20px',
-  fontWeight: 600
-};
-
-const subtitleStyle = {
-  margin: '4px 0 0',
-  color: 'rgba(244, 244, 244, 0.6)',
-  fontSize: '14px'
-};
-
-const headerActionsStyle = {
-  display: 'flex',
-  gap: '8px',
-  alignItems: 'center'
-};
-
-const refreshButtonStyle = {
-  background: 'transparent',
-  border: 'none',
-  color: 'rgba(244, 244, 244, 0.6)',
-  cursor: 'pointer',
-  padding: '8px',
-  borderRadius: '6px',
-  transition: 'all 0.2s ease',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center'
-};
-
-const closeButtonStyle = {
-  background: 'transparent',
-  border: 'none',
-  color: 'rgba(244, 244, 244, 0.6)',
-  cursor: 'pointer',
-  padding: '8px',
-  borderRadius: '6px',
-  transition: 'all 0.2s ease',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center'
-};
-
-const contentStyle = {
-  flex: 1,
-  overflowY: 'auto',
-  padding: '16px 24px 24px'
-};
-
-const loadingStateStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  textAlign: 'center',
-  padding: '40px 20px',
-  color: 'rgba(244, 244, 244, 0.6)'
-};
-
-const errorStateStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  textAlign: 'center',
-  padding: '40px 20px',
-  color: 'rgba(244, 244, 244, 0.6)'
-};
-
-const emptyStateStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  textAlign: 'center',
-  padding: '40px 20px',
-  color: 'rgba(244, 244, 244, 0.6)'
-};
-
-const emptyTitleStyle = {
-  margin: '16px 0 8px',
-  color: '#f4f4f4',
-  fontSize: '18px'
-};
-
-const emptyTextStyle = {
-  margin: '0',
-  fontSize: '14px'
-};
-
-const retryButtonStyle = {
-  marginTop: '16px',
-  background: '#3b82f6',
-  color: 'white',
-  border: 'none',
-  padding: '8px 16px',
-  borderRadius: '6px',
-  cursor: 'pointer',
-  fontSize: '14px',
-  transition: 'background 0.2s ease'
-};
-
-const documentsListStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '8px'
-};
-
-const documentItemStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  background: 'rgba(244, 244, 244, 0.03)',
-  border: '1px solid rgba(244, 244, 244, 0.08)',
-  borderRadius: '8px',
-  padding: '12px 16px',
-  transition: 'all 0.2s ease',
-  ':hover': {
-    background: 'rgba(244, 244, 244, 0.06)',
-    borderColor: 'rgba(59, 173, 229, 0.2)'
-  }
-};
-
-const documentContentStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '12px',
-  flex: 1,
-  minWidth: 0
-};
-
-const fileIconContainerStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: '32px',
-  height: '32px',
-  background: 'rgba(59, 173, 229, 0.1)',
-  borderRadius: '6px',
-  flexShrink: 0
-};
-
-const fileNameContainerStyle = {
-  flex: 1,
-  minWidth: 0
-};
-
-const fileNameStyle = {
-  color: '#f4f4f4',
-  fontSize: '14px',
-  fontWeight: 500,
-  display: 'block',
-  whiteSpace: 'nowrap',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis'
-};
-
-const actionsContainerStyle = {
-  display: 'flex',
-  gap: '4px',
-  flexShrink: 0
-};
-
-const actionButtonStyle = {
-  background: 'transparent',
-  border: '1px solid rgba(244, 244, 244, 0.1)',
-  color: 'rgba(244, 244, 244, 0.7)',
-  cursor: 'pointer',
-  padding: '8px',
-  borderRadius: '6px',
-  transition: 'all 0.2s ease',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: '36px',
-  height: '36px'
-};
-
-const deleteButtonStyle = {
-  color: '#ef4444',
-  borderColor: 'rgba(239, 68, 68, 0.2)'
 };
 
 export default DocumentModal;
