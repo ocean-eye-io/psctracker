@@ -12,7 +12,7 @@ import { useToast } from '../../common/ui/ToastContext';
 import { usePermissions } from '../../../context/PermissionContext'; // NEW: Import permissions hook
 import styles from './defect.module.css';
 
-const PER_PAGE = 10;
+const PER_PAGE = 15;
 
 // Enhanced Badge Components - Subtle and Professional
 const StatusBadge = ({ status, variant = 'subtle', size = 'medium' }) => {
