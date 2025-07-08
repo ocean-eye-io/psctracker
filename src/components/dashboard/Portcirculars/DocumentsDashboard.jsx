@@ -428,7 +428,8 @@ const DocumentsDashboard = ({
   return (
     <div style={{
       width: '100%',
-      height: '100vh',
+      height: '100vh-60px',
+      marginTop: '40px',
       backgroundColor: '#f8fafc', /* Light background */
       color: '#1e293b', /* Darker text for contrast */
       display: 'flex',
@@ -437,7 +438,7 @@ const DocumentsDashboard = ({
     }}>
       {/* Header */}
       <div style={{
-        padding: '12px 16px',
+        padding: '4px 8px',
         backgroundColor: '#ffffff', /* White header */
         borderBottom: '1px solid #e2e8f0', /* Light border */
         flexShrink: 0,
@@ -476,7 +477,7 @@ const DocumentsDashboard = ({
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: '8px' }}>
         {/* Stats Grid */}
         <div style={{
           display: 'grid',
@@ -491,7 +492,7 @@ const DocumentsDashboard = ({
             { label: 'Size', value: formatFileSize(totalSize), icon: Cloud }
           ].map((stat, i) => (
             <div key={`stat-${i}`} style={{
-              padding: '12px',
+              padding: '8px',
               backgroundColor: '#ffffff', /* White card background */
               border: '1px solid #e2e8f0', /* Light card border */
               borderRadius: '8px',
@@ -512,7 +513,7 @@ const DocumentsDashboard = ({
         {/* Messages */}
         {error && (
           <div style={{
-            padding: '12px',
+            padding: '8px',
             backgroundColor: 'rgba(252, 165, 165, 0.1)', /* Light red background */
             border: '1px solid rgba(239, 68, 68, 0.2)', /* Red border */
             borderRadius: '6px',
@@ -535,7 +536,7 @@ const DocumentsDashboard = ({
 
         {successMessage && (
           <div style={{
-            padding: '12px',
+            padding: '8px',
             backgroundColor: 'rgba(134, 239, 172, 0.1)', /* Light green background */
             border: '1px solid rgba(34, 197, 94, 0.2)', /* Green border */
             borderRadius: '6px',
@@ -565,7 +566,7 @@ const DocumentsDashboard = ({
           boxShadow: '0 1px 3px rgba(0,0,0,0.05)' /* Subtle shadow */
         }}>
           <div style={{
-            padding: '16px',
+            padding: '8px',
             borderBottom: '1px solid #e2e8f0', /* Light border */
             display: 'flex',
             alignItems: 'center',
@@ -575,7 +576,7 @@ const DocumentsDashboard = ({
             <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#1e293b' /* Darker text */ }}>Upload Documents</h2>
           </div>
           
-          <div style={{ padding: '16px' }}>
+          <div style={{ padding: '8px' }}>
             {/* Port Selection */}
             <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#334155' /* Darker text */ }}>
@@ -638,7 +639,7 @@ const DocumentsDashboard = ({
                         key={`upload-port-${port.id}`}
                         onClick={() => handleUploadPortSelect(port)}
                         style={{
-                          padding: '12px',
+                          padding: '8px',
                           cursor: 'pointer',
                           borderBottom: '1px solid #f1f5f9', /* Lighter border for items */
                           transition: 'background-color 0.2s ease'
@@ -657,7 +658,7 @@ const DocumentsDashboard = ({
               {selectedUploadPort && (
                 <div style={{
                   marginTop: '8px',
-                  padding: '8px 12px',
+                  padding: '8px 8px',
                   backgroundColor: 'rgba(34, 197, 94, 0.1)', /* Light green background */
                   border: '1px solid rgba(34, 197, 94, 0.2)', /* Green border */
                   borderRadius: '6px',
@@ -682,7 +683,7 @@ const DocumentsDashboard = ({
                 style={{
                   border: `2px dashed ${dragActive ? '#2563eb' : '#cbd5e1'}`, /* Blue or light dashed border */
                   borderRadius: '8px',
-                  padding: '24px',
+                  padding: '12px',
                   textAlign: 'center',
                   cursor: selectedUploadPort ? 'pointer' : 'not-allowed',
                   opacity: selectedUploadPort ? 1 : 0.6,
@@ -744,7 +745,7 @@ const DocumentsDashboard = ({
                           setUploadProgress({});
                         }}
                         style={{
-                          padding: '6px 12px',
+                          padding: '6px 8px',
                           backgroundColor: '#f1f5f9', /* Light button background */
                           border: '1px solid #cbd5e1', /* Light button border */
                           borderRadius: '4px',
@@ -762,7 +763,7 @@ const DocumentsDashboard = ({
                         onClick={uploadAllFiles}
                         disabled={isUploading || selectedFiles.filter(f => f.status === 'pending').length === 0}
                         style={{
-                          padding: '6px 12px',
+                          padding: '6px 8px',
                           backgroundColor: '#2563eb', /* Blue button */
                           border: 'none',
                           borderRadius: '4px',
@@ -795,7 +796,7 @@ const DocumentsDashboard = ({
                           display: 'flex',
                           alignItems: 'center',
                           gap: '12px',
-                          padding: '12px',
+                          padding: '8px',
                           backgroundColor: '#f8fafc', /* Lighter background for file items */
                           border: `1px solid ${
                             fileItem.status === 'completed' ? '#22c55e' : 
@@ -882,7 +883,7 @@ const DocumentsDashboard = ({
           boxShadow: '0 1px 3px rgba(0,0,0,0.05)' /* Subtle shadow */
         }}>
           <div style={{
-            padding: '16px',
+            padding: '8px',
             borderBottom: '1px solid #e2e8f0', /* Light border */
             display: 'flex',
             alignItems: 'center',
@@ -892,7 +893,7 @@ const DocumentsDashboard = ({
             <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#1e293b' /* Darker text */ }}>View Documents</h2>
           </div>
 
-          <div style={{ padding: '16px' }}>
+          <div style={{ padding: '8px' }}>
             {/* Port Selection and Search */}
             <div style={{
               display: 'grid',
@@ -961,7 +962,7 @@ const DocumentsDashboard = ({
                           key={`view-port-${port.id}`}
                           onClick={() => handleViewPortSelect(port)}
                           style={{
-                            padding: '12px',
+                            padding: '8px',
                             cursor: 'pointer',
                             borderBottom: '1px solid #f1f5f9', /* Lighter border for items */
                             transition: 'background-color 0.2s ease'
@@ -1065,7 +1066,7 @@ const DocumentsDashboard = ({
                     <div style={{ fontSize: '16px', fontWeight: '500', color: '#1e293b' /* Darker text */ }}>Loading documents...</div>
                   </div>
                 ) : filteredDocuments.length > 0 ? (
-                  <div style={{ padding: '16px' }}>
+                  <div style={{ padding: '8px' }}>
                     <div style={{ marginBottom: '16px', fontSize: '14px', color: '#64748b' /* Muted text */ }}>
                       Found {filteredDocuments.length} document{filteredDocuments.length !== 1 ? 's' : ''}
                     </div>
@@ -1078,7 +1079,7 @@ const DocumentsDashboard = ({
                             display: 'flex',
                             alignItems: 'center',
                             gap: '12px',
-                            padding: '12px',
+                            padding: '8px',
                             backgroundColor: '#f8fafc', /* Lighter background for document items */
                             borderRadius: '6px',
                             border: '1px solid #e2e8f0', /* Light border */
@@ -1186,7 +1187,7 @@ const DocumentsDashboard = ({
                           setUploadPortSearch(getSelectedPortInfo(selectedViewPort));
                         }}
                         style={{
-                          padding: '8px 16px',
+                          padding: '4px 8px',
                           backgroundColor: '#2563eb', /* Blue button */
                           border: 'none',
                           borderRadius: '6px',
@@ -1211,7 +1212,7 @@ const DocumentsDashboard = ({
             ) : (
               <div style={{
                 textAlign: 'center',
-                padding: '48px 16px',
+                padding: '24px 8px',
                 border: '1px solid #e2e8f0', /* Light border */
                 borderRadius: '8px',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.05)' /* Subtle shadow */
