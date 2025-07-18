@@ -30,6 +30,9 @@ import portMappingService from '../../../services/PortMappingService';
 import IntuitiveDefectIndicator from '../../../components/common/IntuitiveDefectIndicator';
 import EnhancedDefectsModal from '../../../components/common/EnhancedDefectsModal';
 
+// Add these imports at the top of your existing VesselTable.jsx
+import userTablePreferencesService from '../../../services/UserTablePreferencesService';
+
 
 // 2. FIX THE COMPONENT SIGNATURE - Replace defaultProps with default parameters
 const VesselTable = ({
@@ -83,6 +86,10 @@ const VesselTable = ({
   const [selectedVesselForDefects, setSelectedVesselForDefects] = useState(null);
   const [vesselDefects, setVesselDefects] = useState({}); // Cache defects data
   const loadingVessels = useRef(new Set()); // To prevent duplicate API calls
+
+  // Add these state variables after your existing state declarations
+  const [userColumnWidths, setUserColumnWidths] = useState({});
+  const [preferencesLoading, setPreferencesLoading] = useState(true);
 
   // Add a useEffect to monitor vesselDefects state changes
   React.useEffect(() => {
@@ -754,6 +761,53 @@ const VesselTable = ({
     setFilterActive(true);
   }, [dateFilteredVessels, statusFilters, flagFilters, getVesselFlag, getVesselStatus]);
 
+  // Add this useEffect to load user preferences when component mounts
+  useEffect(() => {
+    const loadUserPreferences = async () => {
+      if (!userId) {
+        setPreferencesLoading(false);
+        return;
+      }
+
+      try {
+        setPreferencesLoading(true);
+        const preferences = await userTablePreferencesService.getTablePreferences(userId, 'vesselTable');
+
+        if (preferences.columnWidths) {
+          console.log('Loaded user column widths:', preferences.columnWidths);
+          setUserColumnWidths(preferences.columnWidths);
+        }
+      } catch (error) {
+        console.error('Error loading user table preferences:', error);
+      } finally {
+        setPreferencesLoading(false);
+      }
+    };
+
+    loadUserPreferences();
+  }, [userId]);
+
+  // Add this function to handle column resize
+  const handleColumnResize = useCallback(async (columnField, newWidth) => {
+    console.log(`Resizing column ${columnField} to ${newWidth}`);
+
+    // Update local state immediately for responsive UI
+    setUserColumnWidths(prev => ({
+      ...prev,
+      [columnField]: newWidth
+    }));
+
+    // Save to user preferences (debounced)
+    if (userId) {
+      try {
+        await userTablePreferencesService.updateColumnWidth(userId, 'vesselTable', columnField, newWidth);
+        console.log(`Saved column width for ${columnField}: ${newWidth}`);
+      } catch (error) {
+        console.error('Error saving column width:', error);
+      }
+    }
+  }, [userId]);
+
   // 7. PERFORMANCE OPTIMIZATION - Add debouncing for preloading:
 
   // 4. UPDATE: Preloading useEffect - Use vessel names
@@ -1160,6 +1214,12 @@ const VesselTable = ({
             columnWidth = '180px';
             break;
         }
+      }
+
+      // Override with user-defined width if available
+      const userWidth = userColumnWidths[field.dbField];
+      if (userWidth) {
+        columnWidth = userWidth;
       }
 
       // Create a basic column config
@@ -1731,6 +1791,22 @@ const VesselTable = ({
   // NEW: Debugging helper for normalization
   window.testNormalizeVesselName = normalizeVesselNameForCache;
 
+  // Add this reset function for testing/debugging
+  const resetColumnWidths = useCallback(async () => {
+    if (userId) {
+      try {
+        await userTablePreferencesService.resetToDefault(userId, 'vesselTable');
+        setUserColumnWidths({});
+        console.log('Column widths reset to default');
+      } catch (error) {
+        console.error('Error resetting column widths:', error);
+      }
+    }
+  }, [userId]);
+
+  // Make reset function available for testing
+  window.resetVesselTableColumnWidths = resetColumnWidths;
+
 
   return (
     <div ref={tableRef} className="responsive-table-container">
@@ -1741,6 +1817,17 @@ const VesselTable = ({
           .responsive-table-container {
             max-width: 100%;
             overflow-x: hidden;
+          }
+
+          /* Add these new styles for resize indicators */
+          .data-table {
+            table-layout: fixed; /* Important for column resizing */
+          }
+
+          .data-table th,
+          .data-table td {
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
 
           /* Mobile Styles */
@@ -1789,6 +1876,16 @@ const VesselTable = ({
               display: flex;
               align-items: center;
               gap: 4px;
+            }
+
+            /* Adjust resize handles for mobile */
+            .resize-handle {
+              width: 10px;
+            }
+
+            .resize-hover-zone {
+              width: 14px;
+              right: -5px;
             }
           }
 
@@ -1919,6 +2016,9 @@ const VesselTable = ({
         defaultSortKey="eta"
         defaultSortDirection="desc"
         className={`vessel-data-table ${filterActive ? 'filtered-table' : ''}`}
+        // NEW PROPS for column resizing
+        onColumnResize={handleColumnResize}
+        userColumnWidths={userColumnWidths}
       />
 
       {/* FIXED: Use EnhancedDefectsModal */}
@@ -1932,9 +2032,9 @@ const VesselTable = ({
             const vesselNameForLoad = selectedVesselForDefects?.vessel_name;
             console.log(`[VesselTable] Passing to onLoadDefects: vesselName=${vesselNameForLoad}, userId=${userId}`);
             return loadVesselDefects(vesselNameForLoad, userId);
-          }}  
+          }}
 
-          
+
         />
       )}
 

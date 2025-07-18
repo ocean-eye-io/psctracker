@@ -1,6 +1,7 @@
 // src/components/common/Table/Table.jsx
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import TableRow from './TableRow';
+import ResizableTableHeader from './ResizableTableHeader';
 import { ChevronDown } from 'lucide-react';
 import './tableStyles.css';
 
@@ -13,7 +14,9 @@ const Table = ({
   defaultSortKey,
   defaultSortDirection = 'asc',
   onRowClick,
-  className = ''
+  className = '',
+  onColumnResize, // NEW PROP for handling column resize
+  userColumnWidths = {} // NEW PROP for user-defined column widths
 }) => {
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [sortConfig, setSortConfig] = useState({ 
@@ -43,6 +46,18 @@ const Table = ({
       key,
       direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc',
     }));
+  };
+
+  // Get effective column width (user preference or default)
+  const getColumnWidth = (column) => {
+    return userColumnWidths[column.field] || column.width;
+  };
+
+  // Handle column resize
+  const handleColumnResize = (columnField, newWidth) => {
+    if (onColumnResize) {
+      onColumnResize(columnField, newWidth);
+    }
   };
 
   // Check scroll position to show/hide shadows
@@ -123,23 +138,43 @@ const Table = ({
         onScroll={handleScroll}
       >
         <table className="data-table">
-        
           <thead>
             <tr>
               {expandedContent && <th style={{ width: '32px' }}></th>}
-              {columns.map((column) => (
-                <th 
-                  key={column.field}
-                  style={{ 
-                    width: column.width,
-                    minWidth: column.minWidth,
-                  }}
-                  onClick={() => column.sortable !== false && !column.headerRenderer && handleSort(column.field)}
-                  className={`${column.sortable !== false ? 'sortable-header' : ''} ${column.headerClassName || ''}`}
-                >
-                  {column.headerRenderer ? (
-                    column.headerRenderer()
-                  ) : (
+              {columns.map((column, index) => {
+                const effectiveWidth = getColumnWidth(column);
+                const headerStyle = {
+                  width: effectiveWidth,
+                  minWidth: column.minWidth,
+                };
+
+                // Check if column has custom header renderer
+                if (column.headerRenderer) {
+                  return (
+                    <ResizableTableHeader
+                      key={column.field}
+                      column={column}
+                      index={index}
+                      onColumnResize={handleColumnResize}
+                      style={headerStyle}
+                      className={`${column.headerClassName || ''} custom-header`}
+                    >
+                      {column.headerRenderer()}
+                    </ResizableTableHeader>
+                  );
+                }
+
+                // Default sortable header
+                return (
+                  <ResizableTableHeader
+                    key={column.field}
+                    column={column}
+                    index={index}
+                    onColumnResize={handleColumnResize}
+                    onClick={() => column.sortable !== false && handleSort(column.field)}
+                    style={headerStyle}
+                    className={`${column.headerClassName || ''} ${column.sortable !== false ? 'sortable-header' : ''}`}
+                  >
                     <div className="table-header-content">
                       {column.label}
                       {column.sortable !== false && sortConfig.key === column.field && (
@@ -152,9 +187,9 @@ const Table = ({
                         />
                       )}
                     </div>
-                  )}
-                </th>
-              ))}
+                  </ResizableTableHeader>
+                );
+              })}
               {actions && <th style={{ width: actions.width || '100px' }}>{actions.label || 'Actions'}</th>}
             </tr>
           </thead>
@@ -164,7 +199,10 @@ const Table = ({
                 <TableRow
                   key={row[uniqueIdField]}
                   rowData={row}
-                  columns={columns}
+                  columns={columns.map(col => ({
+                    ...col,
+                    width: getColumnWidth(col) // Pass effective width to rows
+                  }))}
                   isExpanded={expandedRows.has(row[uniqueIdField])}
                   onToggleExpand={() => toggleRowExpansion(row[uniqueIdField])}
                   expandedContent={expandedContent ? expandedContent(row) : null}
