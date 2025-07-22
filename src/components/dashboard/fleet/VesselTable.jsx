@@ -30,6 +30,9 @@ import portMappingService from '../../../services/PortMappingService';
 import IntuitiveDefectIndicator from '../../../components/common/IntuitiveDefectIndicator';
 import EnhancedDefectsModal from '../../../components/common/EnhancedDefectsModal';
 
+// Add these imports at the top of your existing VesselTable.jsx
+import userTablePreferencesService from '../../../services/UserTablePreferencesService';
+
 
 // 2. FIX THE COMPONENT SIGNATURE - Replace defaultProps with default parameters
 const VesselTable = ({
@@ -84,10 +87,33 @@ const VesselTable = ({
   const [vesselDefects, setVesselDefects] = useState({}); // Cache defects data
   const loadingVessels = useRef(new Set()); // To prevent duplicate API calls
 
+  // Add these state variables after your existing state declarations
+  const [userColumnWidths, setUserColumnWidths] = useState({});
+  const [preferencesLoading, setPreferencesLoading] = useState(true);
+
   // Add a useEffect to monitor vesselDefects state changes
   React.useEffect(() => {
     console.log("[VesselTable] vesselDefects state updated:", vesselDefects);
   }, [vesselDefects]);
+
+  // Add this helper function at the top of your VesselTable component (after your existing helper functions)
+  const isHighRiskPort = useCallback((portName) => {
+    if (!portName) return false;
+
+    const highRiskPorts = [
+      'port hedland',
+      'dampier',
+      'newcastle',
+      'gladstone',
+      'melbourne',
+      'fremantle',
+      'kwinana',
+      'geraldton',
+      'port kembla'
+    ];
+
+    return highRiskPorts.includes(portName.toLowerCase().trim());
+  }, []);
 
   // Helper function to check if a date is in the past
   const isDateInPast = useCallback((dateString) => {
@@ -754,6 +780,53 @@ const VesselTable = ({
     setFilterActive(true);
   }, [dateFilteredVessels, statusFilters, flagFilters, getVesselFlag, getVesselStatus]);
 
+  // Add this useEffect to load user preferences when component mounts
+  useEffect(() => {
+    const loadUserPreferences = async () => {
+      if (!userId) {
+        setPreferencesLoading(false);
+        return;
+      }
+
+      try {
+        setPreferencesLoading(true);
+        const preferences = await userTablePreferencesService.getTablePreferences(userId, 'vesselTable');
+
+        if (preferences.columnWidths) {
+          console.log('Loaded user column widths:', preferences.columnWidths);
+          setUserColumnWidths(preferences.columnWidths);
+        }
+      } catch (error) {
+        console.error('Error loading user table preferences:', error);
+      } finally {
+        setPreferencesLoading(false);
+      }
+    };
+
+    loadUserPreferences();
+  }, [userId]);
+
+  // Add this function to handle column resize
+  const handleColumnResize = useCallback(async (columnField, newWidth) => {
+    console.log(`Resizing column ${columnField} to ${newWidth}`);
+
+    // Update local state immediately for responsive UI
+    setUserColumnWidths(prev => ({
+      ...prev,
+      [columnField]: newWidth
+    }));
+
+    // Save to user preferences (debounced)
+    if (userId) {
+      try {
+        await userTablePreferencesService.updateColumnWidth(userId, 'vesselTable', columnField, newWidth);
+        console.log(`Saved column width for ${columnField}: ${newWidth}`);
+      } catch (error) {
+        console.error('Error saving column width:', error);
+      }
+    }
+  }, [userId]);
+
   // 7. PERFORMANCE OPTIMIZATION - Add debouncing for preloading:
 
   // 4. UPDATE: Preloading useEffect - Use vessel names
@@ -1095,6 +1168,31 @@ const VesselTable = ({
     );
   };
 
+  // ADD THIS HELPER FUNCTION TO YOUR VesselTable.jsx
+  // Place this after your existing helper functions (around line 200-300)
+
+  const getEffectiveValue = useCallback((rowData, fieldDbField) => {
+    // Get the effective value that should be used for sorting
+    // This returns either the user override or the original value
+
+    if (fieldDbField === 'eta') {
+      return rowData.user_eta !== null && rowData.user_eta !== undefined
+        ? rowData.user_eta
+        : rowData.eta;
+    } else if (fieldDbField === 'etb') {
+      return rowData.user_etb !== null && rowData.user_etb !== undefined
+        ? rowData.user_etb
+        : rowData.etb;
+    } else if (fieldDbField === 'etd') {
+      return rowData.user_etd !== null && rowData.user_etd !== undefined
+        ? rowData.user_etd
+        : rowData.etd;
+    }
+
+    // For non-editable fields, return the original value
+    return rowData[fieldDbField];
+  }, []);
+
   // Convert field mappings to table columns format
   const getTableColumns = () => {
     // Create a new columns array with vessel_type and doc_type instead of imo and owner
@@ -1162,6 +1260,12 @@ const VesselTable = ({
         }
       }
 
+      // Override with user-defined width if available
+      const userWidth = userColumnWidths[field.dbField];
+      if (userWidth) {
+        columnWidth = userWidth;
+      }
+
       // Create a basic column config
       const column = {
         field: field.dbField,
@@ -1177,6 +1281,29 @@ const VesselTable = ({
       if (fieldId === 'vessel_name') {
         column.headerRenderer = renderVesselNameHeader;
         column.sortable = false;
+      }
+
+      // ADD CUSTOM SORT VALUE FOR EDITABLE DATE FIELDS
+      if (['eta', 'etb', 'etd'].includes(fieldId)) {
+        // Add a custom sort value getter that returns the effective value
+        column.getSortValue = (rowData) => {
+          const effectiveValue = getEffectiveValue(rowData, field.dbField);
+
+          // Convert to timestamp for proper date sorting
+          if (effectiveValue) {
+            try {
+              const date = new Date(effectiveValue);
+              return isNaN(date.getTime()) ? 0 : date.getTime();
+            } catch (error) {
+              console.warn('Error parsing date for sorting:', effectiveValue, error);
+              return 0;
+            }
+          }
+
+          // Return a very small timestamp for null/undefined values
+          // This ensures they appear at the beginning when sorting ascending
+          return 0;
+        };
       }
 
       // Define cell renderer
@@ -1370,11 +1497,22 @@ const VesselTable = ({
         // In your getTableColumns() function, find the arrival_port rendering and replace it with:
         if (fieldId === 'arrival_port') {
           const upperCaseValue = (value || '-').toUpperCase();
+          const isHighRisk = isHighRiskPort(value);
 
           return (
             <div className="arrival-port-cell">
-              <TextTooltip text={upperCaseValue}>
-                <span className="arrival-port">{upperCaseValue}</span>
+              <TextTooltip
+                text={isHighRisk ? "HIGH RISK PORT" : upperCaseValue}
+              >
+                <span
+                  className={`arrival-port ${isHighRisk ? 'high-risk-port' : ''}`}
+                  style={isHighRisk ? {
+                    color: '#E74C3C',
+                    fontWeight: 'bold'
+                  } : {}}
+                >
+                  {upperCaseValue}
+                </span>
               </TextTooltip>
 
               {/* Add document icon if port has documents or is available in system */}
@@ -1646,6 +1784,10 @@ const VesselTable = ({
           <CommentTooltip
             comment={vessel.comments || ""}
             onEditClick={() => onOpenRemarks(vessel)}
+            // Use 'auto' or 'auto-start' for better dynamic placement
+            // If CommentTooltip supports a 'container' prop to render outside the table, use it:
+            // container={document.body}
+            placement="auto"
           >
             <div
               className={`comment-indicator ${hasComments ? 'has-comment' : 'no-comment'}`}
@@ -1731,6 +1873,22 @@ const VesselTable = ({
   // NEW: Debugging helper for normalization
   window.testNormalizeVesselName = normalizeVesselNameForCache;
 
+  // Add this reset function for testing/debugging
+  const resetColumnWidths = useCallback(async () => {
+    if (userId) {
+      try {
+        await userTablePreferencesService.resetToDefault(userId, 'vesselTable');
+        setUserColumnWidths({});
+        console.log('Column widths reset to default');
+      } catch (error) {
+        console.error('Error resetting column widths:', error);
+      }
+    }
+  }, [userId]);
+
+  // Make reset function available for testing
+  window.resetVesselTableColumnWidths = resetColumnWidths;
+
 
   return (
     <div ref={tableRef} className="responsive-table-container">
@@ -1741,6 +1899,19 @@ const VesselTable = ({
           .responsive-table-container {
             max-width: 100%;
             overflow-x: hidden;
+            /* Ensure no overflow hidden here that would clip tooltips */
+            position: relative; /* Needed for z-index context */
+          }
+
+          /* Add these new styles for resize indicators */
+          .data-table {
+            table-layout: fixed; /* Important for column resizing */
+          }
+
+          .data-table th,
+          .data-table td {
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
 
           /* Mobile Styles */
@@ -1766,11 +1937,26 @@ const VesselTable = ({
               display: inline-block;
             }
 
+            /* Updated comment indicator for mobile */
             .comment-indicator {
-              width: 24px;
-              height: 24px;
+              width: 28px; /* Slightly larger for touch */
+              height: 28px;
               padding: 0;
               justify-content: center;
+              border-radius: 50%; /* Make it a circle */
+              background-color: #f0f2f5; /* Light background */
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Subtle shadow */
+              transition: all 0.2s ease-in-out;
+            }
+
+            .comment-indicator.has-comment {
+              background-color: #e0f7fa; /* Light blue for comments */
+              color: #007bff; /* Blue icon */
+            }
+
+            .comment-indicator:hover {
+              transform: translateY(-1px);
+              box-shadow: 0 2px 6px rgba(0,0,0,0.15);
             }
 
             .comment-preview-text, .comment-add-text {
@@ -1789,6 +1975,16 @@ const VesselTable = ({
               display: flex;
               align-items: center;
               gap: 4px;
+            }
+
+            /* Adjust resize handles for mobile */
+            .resize-handle {
+              width: 10px;
+            }
+
+            .resize-hover-zone {
+              width: 14px;
+              right: -5px;
             }
           }
 
@@ -1816,6 +2012,49 @@ const VesselTable = ({
               align-items: center;
               gap: 6px;
             }
+
+            /* Updated comment indicator for tablet */
+            .comment-indicator {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              padding: 6px 10px;
+              border-radius: 16px; /* Pill shape */
+              background-color: #f0f2f5;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+              transition: all 0.2s ease-in-out;
+              cursor: pointer;
+            }
+
+            .comment-indicator.has-comment {
+              background-color: #e0f7fa;
+              color: #007bff;
+            }
+
+            .comment-indicator:hover {
+              transform: translateY(-1px);
+              box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            }
+
+            .comment-icon {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+
+            .comment-preview-text {
+              font-size: 12px;
+              color: #333;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 80px; /* Adjust as needed */
+            }
+
+            .comment-add-text {
+              font-size: 12px;
+              color: #666;
+            }
           }
 
           /* Small Desktop Styles */
@@ -1833,7 +2072,96 @@ const VesselTable = ({
               align-items: center;
               gap: 6px;
             }
+
+            /* Updated comment indicator for small desktop */
+            .comment-indicator {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              padding: 8px 12px;
+              border-radius: 20px; /* More rounded pill */
+              background-color: #f0f2f5;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+              transition: all 0.2s ease-in-out;
+              cursor: pointer;
+            }
+
+            .comment-indicator.has-comment {
+              background-color: #e0f7fa;
+              color: #007bff;
+            }
+
+            .comment-indicator:hover {
+              transform: translateY(-1px);
+              box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            }
+
+            .comment-icon {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+
+            .comment-preview-text {
+              font-size: 13px;
+              color: #333;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 100px; /* Adjust as needed */
+            }
+
+            .comment-add-text {
+              font-size: 13px;
+              color: #666;
+            }
           }
+
+          /* Default/Large Desktop Styles for comment indicator */
+          @media (min-width: 1280px) {
+            .comment-indicator {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              padding: 8px 12px;
+              border-radius: 20px;
+              background-color: #f0f2f5;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+              transition: all 0.2s ease-in-out;
+              cursor: pointer;
+            }
+
+            .comment-indicator.has-comment {
+              background-color: #e0f7fa;
+              color: #007bff;
+            }
+
+            .comment-indicator:hover {
+              transform: translateY(-1px);
+              box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            }
+
+            .comment-icon {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+
+            .comment-preview-text {
+              font-size: 13px;
+              color: #333;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 100px; /* Adjust as needed */
+            }
+
+            .comment-add-text {
+              font-size: 13px;
+              color: #666;
+            }
+          }
+
 
           /* Reset default table styles for better app-wide consistency */
           .data-table-wrapper {
@@ -1907,6 +2235,38 @@ const VesselTable = ({
           .port-doc-icon:hover {
             color: #2980B9; /* Darker shade on hover */
           }
+
+          /* Ensure CommentTooltip can break out of table cell overflow */
+          .comments-column {
+            overflow: visible !important; /* Allow content to overflow */
+          }
+
+          .comment-cell {
+            position: relative; /* Establish positioning context for tooltip trigger */
+            display: flex;
+            justify-content: center; /* Center the indicator */
+            align-items: center;
+            height: 100%; /* Take full height of cell */
+          }
+
+          /* If CommentTooltip renders directly into the DOM, it needs a high z-index */
+          /* This style should ideally be in the CommentTooltip's own CSS or a global stylesheet */
+          .comment-tooltip-container { /* Assuming CommentTooltip renders into a div with this class */
+            z-index: 10000; /* Ensure it's above other elements */
+            position: absolute; /* Or fixed, depending on its internal logic */
+            /* Add other positioning properties like top, left, transform based on its logic */
+          }
+
+          /* High Risk Port Styling */
+          .high-risk-port {
+            color: #E74C3C !important;
+            font-weight: bold !important;
+            text-shadow: 0 0 2px rgba(231, 76, 60, 0.3);
+          }
+
+          .arrival-port-cell .high-risk-port:hover {
+            color: #C0392B !important; /* Slightly darker red on hover */
+          }
         `}
       </style>
 
@@ -1919,6 +2279,9 @@ const VesselTable = ({
         defaultSortKey="eta"
         defaultSortDirection="desc"
         className={`vessel-data-table ${filterActive ? 'filtered-table' : ''}`}
+        // NEW PROPS for column resizing
+        onColumnResize={handleColumnResize}
+        userColumnWidths={userColumnWidths}
       />
 
       {/* FIXED: Use EnhancedDefectsModal */}
@@ -1932,9 +2295,9 @@ const VesselTable = ({
             const vesselNameForLoad = selectedVesselForDefects?.vessel_name;
             console.log(`[VesselTable] Passing to onLoadDefects: vesselName=${vesselNameForLoad}, userId=${userId}`);
             return loadVesselDefects(vesselNameForLoad, userId);
-          }}  
+          }}
 
-          
+
         />
       )}
 

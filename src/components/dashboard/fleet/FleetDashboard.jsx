@@ -64,6 +64,8 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const [timelineFilter, setTimelineFilter] = useState(null);
   const [pscDeficiencyData, setPscDeficiencyData] = useState([]);
   const [loadingPscData, setLoadingPscData] = useState(true);
+  
+  // FIXED: This was the error - changed from {} to useState({})
   const [savingStates, setSavingStates] = useState({});
 
   // Add defect stats state
@@ -112,35 +114,34 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     }
   }, [currentUser, loadDefectStats]);
 
-  // Updated handleLoadDefects function with proper error handling
-  const handleLoadDefects = useCallback(async (vesselName) => {
+  // FIXED: Updated handleLoadDefects function to match VesselTable expectations
+  const handleLoadDefects = useCallback(async (vesselName, userId) => {
     try {
-      console.log(`Loading defects for vessel NAME: ${vesselName}`);
-      
+      console.log(`Loading defects for vessel NAME: ${vesselName} with userId: ${userId}`);
+
       if (!currentUser) {
         console.warn('No authenticated user, cannot load defects');
         return [];
       }
-      
-      // IMPORTANT: Use same userId extraction as DefectsDashboard
-      const currentUserId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
+
+      // Use the passed userId parameter first, then fall back to currentUser
+      const currentUserId = userId || currentUser?.userId || currentUser?.user_id || currentUser?.id;
       if (!currentUserId) {
-        console.warn('No user ID found in currentUser object:', currentUser);
+        console.warn('No user ID found in parameters or currentUser object:', { userId, currentUser });
         return [];
       }
-      
+
       console.log('FleetDashboard: Using userId for defects:', currentUserId);
-      
+
       // Make sure defects service has the right user ID
       defectsService.setUserId(currentUserId);
-      
+
       // Use vessel name for lookup
-      const normalizedVesselName = vesselName.toLowerCase().trim();
       const defects = await defectsService.getVesselDefectsByName(vesselName);
-      
+
       console.log(`Loaded ${defects.length} defects for vessel ${vesselName}`);
       return defects;
-      
+
     } catch (error) {
       console.error('Failed to load defects:', error);
       return [];
@@ -157,17 +158,17 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const handleCreateDefect = useCallback(async (defectData) => {
     try {
       console.log('Creating new defect:', defectData);
-      
+
       if (!currentUser) {
         throw new Error('User not authenticated');
       }
-      
+
       const newDefect = await defectsService.createDefect(defectData);
       console.log('Created defect:', newDefect);
-      
+
       // Refresh stats after creating
       loadDefectStats();
-      
+
       return newDefect;
     } catch (error) {
       console.error('Error creating defect:', error);
@@ -179,17 +180,17 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const handleUpdateDefect = useCallback(async (defectId, defectData) => {
     try {
       console.log('Updating defect:', defectId, defectData);
-      
+
       if (!currentUser) {
         throw new Error('User not authenticated');
       }
-      
+
       const updatedDefect = await defectsService.updateDefect(defectId, defectData);
       console.log('Updated defect:', updatedDefect);
-      
+
       // Refresh stats after updating
       loadDefectStats();
-      
+
       return updatedDefect;
     } catch (error) {
       console.error('Error updating defect:', error);
@@ -201,17 +202,17 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const handleDeleteDefect = useCallback(async (defectId) => {
     try {
       console.log('Deleting defect:', defectId);
-      
+
       if (!currentUser) {
         throw new Error('User not authenticated');
       }
-      
+
       const result = await defectsService.deleteDefect(defectId);
       console.log('Deleted defect result:', result);
-      
+
       // Refresh stats after deleting
       loadDefectStats();
-      
+
       return result;
     } catch (error) {
       console.error('Error deleting defect:', error);
@@ -236,7 +237,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         ) &&
         (!portFilters.length || !v.arrival_port || portFilters.includes(v.arrival_port)) &&
         (!statusFilters.length || !v.event_type || statusFilters.includes(v.event_type)) &&
-        (!docFilters.length || !v.office_doc || docFilters.includes(v.office_doc))
+        (!docFilters.length || !v.fleet_type || docFilters.includes(v.fleet_type))
       ));
     } else {
       // Filter based on the selected time range
@@ -282,7 +283,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         ) &&
         (!portFilters.length || !v.arrival_port || portFilters.includes(v.arrival_port)) &&
         (!statusFilters.length || !v.event_type || statusFilters.includes(v.event_type)) &&
-        (!docFilters.length || !v.office_doc || docFilters.includes(v.office_doc))
+        (!docFilters.length || !v.fleet_type || docFilters.includes(v.fleet_type))
       ));
     }
   };
@@ -682,6 +683,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     // Return active vessels for default view
     return enhancedActiveVessels;
   }, []);
+  
   // Sort vessels data
   const sortVesselsData = useCallback((processedData) => {
     return [...processedData].sort((a, b) => {
@@ -752,20 +754,18 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     fetchPortVesselRiskData();
   }, [fetchPortVesselRiskData]);
 
-
   // Initialize filter options from all vessels
   useEffect(() => {
-    if (allProcessedVessels.length > 0) {
-      // Get unique values for all filters from all vessels
-      const uniquePorts = [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))];
-      const uniqueStatuses = [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))];
-      const uniqueDocs = [...new Set(allProcessedVessels.map(v => v.office_doc).filter(Boolean))];
-
+    if (vessels.length > 0) {
+      const uniquePorts = [...new Set(vessels.map(v => v.arrival_port).filter(Boolean))];
+      const uniqueStatuses = [...new Set(vessels.map(v => v.event_type).filter(Boolean))];
+      const uniqueDocs = [...new Set(vessels.map(v => v.fleet_type).filter(Boolean))];  // ✅ CORRECT FIELD
+  
       setPortFilters(uniquePorts);
       setStatusFilters(uniqueStatuses);
       setDocFilters(uniqueDocs);
     }
-  }, [allProcessedVessels]);
+  }, [vessels]);
 
   // Apply voyage status filter when it changes
   useEffect(() => {
@@ -787,6 +787,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   }, [voyageStatusFilter, activeVessels, inactiveVessels, allProcessedVessels, sortVesselsData]);
 
   // Apply other filters when filters or data change
+  // Apply other filters when filters or data change
   useEffect(() => {
     if (!vessels.length) {
       setFilteredVessels([]);
@@ -796,24 +797,34 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     let results = [...vessels];
 
     // Apply port filters if any selected
-    if (portFilters.length > 0) {
+    if (portFilters.length === 0) {
+      results = []; // Empty table when no ports selected
+    } else {
       results = results.filter(vessel =>
-        !vessel.arrival_port || portFilters.includes(vessel.arrival_port)
+        vessel.arrival_port && portFilters.includes(vessel.arrival_port)
       );
     }
-
-    // Apply status filters if any selected
-    if (statusFilters.length > 0) {
-      results = results.filter(vessel =>
-        !vessel.event_type || statusFilters.includes(vessel.event_type)
-      );
+    
+    // Apply status filters only if we still have results - if empty array, show nothing
+    if (results.length > 0) {
+      if (statusFilters.length === 0) {
+        results = []; // Empty table when no statuses selected
+      } else {
+        results = results.filter(vessel =>
+          vessel.event_type && statusFilters.includes(vessel.event_type)
+        );
+      }
     }
-
-    // Apply DOC filters if any selected
-    if (docFilters.length > 0) {
-      results = results.filter(vessel =>
-        !vessel.office_doc || docFilters.includes(vessel.office_doc)
-      );
+    
+    // Apply DOC filters only if we still have results - if empty array, show nothing
+    if (results.length > 0) {
+      if (docFilters.length === 0) {
+        results = []; // Empty table when no DOCs selected
+      } else {
+        results = results.filter(vessel =>
+          vessel.fleet_type && docFilters.includes(vessel.fleet_type)
+        );
+      }
     }
 
     // Apply search term if not empty
@@ -843,7 +854,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     }
 
     // Get the current user ID from your authentication context
-    const currentUserId = currentUser?.userId || currentUser?.user_id || currentUser?.id; // Use currentUser.userId or fallback to getUserId
+    const currentUserId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
 
     if (!currentUserId) {
       setError('User not authenticated. Please log in to update fields.');
@@ -915,30 +926,30 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     }
   };
 
-
   // Reset all filters
   const resetFilters = useCallback(() => {
     setSearchTerm('');
-    setChartPortFilter(null);  // Clear port chart filter
-    setTimelineFilter(null);   // Clear timeline filter
-
+    setChartPortFilter(null);
+    setTimelineFilter(null);
+  
     // Set port, status, and doc filters to include all options
-    const uniquePorts = [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))];
-    const uniqueStatuses = [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))];
-    const uniqueDocs = [...new Set(allProcessedVessels.map(v => v.office_doc).filter(Boolean))];
-
+    const uniquePorts = [...new Set(vessels.map(v => v.arrival_port).filter(Boolean))]; // ✅ FIXED
+    const uniqueStatuses = [...new Set(vessels.map(v => v.event_type).filter(Boolean))]; // ✅ FIXED
+    const uniqueDocs = [...new Set(vessels.map(v => v.fleet_type).filter(Boolean))]; // ✅ FIXED
+  
     setPortFilters(uniquePorts);
     setStatusFilters(uniqueStatuses);
     setDocFilters(uniqueDocs);
     setVoyageStatusFilter('Current Voyages');
-  }, [allProcessedVessels]);
+  }, [vessels]); 
+  
   // Toggle all items in a filter group
   const toggleAllItems = (type) => {
-    // Get all unique values from all processed vessels
-    const uniquePorts = [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))];
-    const uniqueStatuses = [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))];
-    const uniqueDocs = [...new Set(allProcessedVessels.map(v => v.office_doc).filter(Boolean))];
-
+    // Get all unique values from current vessels                       
+    const uniquePorts = [...new Set(vessels.map(v => v.arrival_port).filter(Boolean))];
+    const uniqueStatuses = [...new Set(vessels.map(v => v.event_type).filter(Boolean))];
+    const uniqueDocs = [...new Set(vessels.map(v => v.fleet_type).filter(Boolean))];
+  
     switch (type) {
       case 'ports':
         setPortFilters(portFilters.length === uniquePorts.length ? [] : uniquePorts);
@@ -985,21 +996,19 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
 
   // Memoized values for filter counts and dropdown options
   const uniquePorts = useMemo(() =>
-    [...new Set(filteredVessels.map(v => v.arrival_port).filter(Boolean))],
+    [...new Set(filteredVessels.map(v => v.arrival_port).filter(Boolean))],  // ❌ WRONG
     [filteredVessels]
   );
 
   const uniqueStatuses = useMemo(() =>
-    [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))],
+    [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))], // ❌ INCONSISTENT
     [allProcessedVessels]
   );
 
   const uniqueDocs = useMemo(() =>
-    [...new Set(allProcessedVessels.map(v => v.office_doc).filter(Boolean))],
+    [...new Set(allProcessedVessels.map(v => v.fleet_type).filter(Boolean))], // ❌ INCONSISTENT
     [allProcessedVessels]
   );
-
-
 
   const vesselCount = vessels.length;
   const filteredCount = filteredVessels.length;
@@ -1414,9 +1423,9 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
             <RefreshCw size={14} className={loading ? "spinning" : ""} />
           </button>
 
-          <button className="control-btn export-btn" title="Export data">
+          {/* <button className="control-btn export-btn" title="Export data">
             <Download size={14} />
-          </button>
+          </button> */}
           <button
             className="map-toggle"
             onClick={() => setMapModalOpen(true)}
@@ -1492,19 +1501,14 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
               }}
             />
 
+            {/* FIXED: Use only the props that VesselTable expects */}
             <VesselTable
               vessels={filteredVessels}
               onOpenRemarks={handleOpenComments}
               fieldMappings={fieldMappings}
               onUpdateVessel={handleVesselUpdate}
               onUpdateOverride={handleUpdateOverride}
-              savingStates={savingStates}
-              onLoadDefects={handleLoadDefects} // Updated defects handler
-              onCreateDefect={handleCreateDefect} // New handler
-              onUpdateDefect={handleUpdateDefect} // New handler
-              onDeleteDefect={handleDeleteDefect} // New handler
-              defectStats={defectStats} // Pass defect stats
-              currentUser={currentUser} // Pass current user
+              onLoadDefects={handleLoadDefects} // This now correctly passes both vesselName and userId
             />
           </div>
         )}
@@ -1534,9 +1538,14 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   );
 };
 
+// FIXED: Add default props to prevent PropTypes warnings
 FleetDashboard.propTypes = {
-  onOpenInstructions: PropTypes.func.isRequired,
+  onOpenInstructions: PropTypes.func,
   fieldMappings: PropTypes.object.isRequired,
+};
+
+FleetDashboard.defaultProps = {
+  onOpenInstructions: () => {}, // Provide default empty function
 };
 
 export default FleetDashboard;

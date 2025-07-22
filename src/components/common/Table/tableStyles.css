@@ -1206,6 +1206,49 @@
   font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
+/* Very subtle right border indicator for resizable columns */
+.data-table th:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 25%;
+  right: 0;
+  width: 1px;
+  height: 50%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(244, 244, 244, 0.3) 20%,
+    rgba(244, 244, 244, 0.5) 50%,
+    rgba(244, 244, 244, 0.3) 80%,
+    transparent 100%
+  );
+  opacity: 0.6;
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+/* Enhance the indicator on hover */
+.data-table th:not(:last-child):hover::after {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(59, 173, 229, 0.4) 20%,
+    rgba(59, 173, 229, 0.7) 50%,
+    rgba(59, 173, 229, 0.4) 80%,
+    transparent 100%
+  );
+  opacity: 0.8;
+  width: 2px;
+  right: -0.5px;
+}
+
+/* Add a subtle cursor change hint */
+.data-table th:not(:last-child) {
+  cursor: col-resize;
+  /* Add a very subtle box-shadow to hint at interactivity */
+  box-shadow: inset -1px 0 0 rgba(244, 244, 244, 0.08);
+}
+
 /* ===== COMMENT STYLES ===== */
 .comment-cell {
   position: relative;
