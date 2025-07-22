@@ -1,149 +1,119 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 
-const CommentTooltip = ({ children, comment, onEditClick }) => {
+const CommentTooltip = ({ 
+  children, 
+  comment, 
+  onEditClick, 
+  usePortal = true,
+  placement = 'auto',
+  container,
+  boundary = 'viewport',
+  preventOverflow = true 
+}) => {
   const [isVisible, setIsVisible] = useState(false);
-  const [isTooltipHovered, setIsTooltipHovered] = useState(false);
-  const [position, setPosition] = useState({ top: 0, left: 0, right: 'auto', placement: 'right' });
-  
+  const [position, setPosition] = useState({ top: 0, left: 0 });
   const triggerRef = useRef(null);
   const tooltipRef = useRef(null);
-  
-  // Function to show tooltip
-  const showTooltip = () => {
-    if (!comment || !comment.trim()) return;
+
+  const calculatePosition = () => {
+    if (!triggerRef.current) return;
+
+    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
     
-    if (triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      const windowWidth = window.innerWidth;
+    let top = triggerRect.bottom + 8;
+    let left = triggerRect.left + (triggerRect.width / 2);
+
+    // Adjust if tooltip would go off-screen
+    if (tooltipRef.current) {
+      const tooltipRect = tooltipRef.current.getBoundingClientRect();
       
-      // Determine if tooltip should appear on left or right
-      const rightSpace = windowWidth - rect.right;
-      const placement = rightSpace < 230 ? 'left' : 'right';
-      
-      setPosition({
-        top: rect.top + window.scrollY,
-        left: placement === 'right' ? rect.right + 8 : 'auto',
-        right: placement === 'left' ? (windowWidth - rect.left + 8) : 'auto',
-        placement
-      });
-      
-      setIsVisible(true);
-    }
-  };
-  
-  // Hide tooltip
-  const hideTooltip = () => {
-    setIsVisible(false);
-  };
-  
-  // Handle clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        isVisible && 
-        tooltipRef.current && 
-        !tooltipRef.current.contains(event.target) &&
-        triggerRef.current && 
-        !triggerRef.current.contains(event.target)
-      ) {
-        hideTooltip();
+      // Horizontal boundary check
+      if (left + tooltipRect.width / 2 > viewportWidth - 20) {
+        left = viewportWidth - tooltipRect.width - 20;
       }
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isVisible]);
-  
-  // Handle ESC key to close tooltip
-  useEffect(() => {
-    const handleEscKey = (event) => {
-      if (event.key === 'Escape' && isVisible) {
-        hideTooltip();
+      if (left - tooltipRect.width / 2 < 20) {
+        left = tooltipRect.width / 2 + 20;
       }
-    };
-    
-    document.addEventListener('keydown', handleEscKey);
-    return () => {
-      document.removeEventListener('keydown', handleEscKey);
-    };
-  }, [isVisible]);
-  
-  // Check if there's an actual comment
-  const hasComment = comment && comment.trim().length > 0;
-  
-  // Handle click on the trigger element
-  const handleTriggerClick = (e) => {
-    e.stopPropagation();
-    if (!hasComment) {
-      // If no comment, directly open the edit modal
-      onEditClick();
+
+      // Vertical boundary check
+      if (top + tooltipRect.height > viewportHeight - 20) {
+        top = triggerRect.top - tooltipRect.height - 8;
+      }
     }
+
+    setPosition({ top, left });
   };
-  
+
+  useEffect(() => {
+    if (isVisible) {
+      calculatePosition();
+      const handleScroll = () => calculatePosition();
+      const handleResize = () => calculatePosition();
+      
+      window.addEventListener('scroll', handleScroll);
+      window.addEventListener('resize', handleResize);
+      
+      return () => {
+        window.removeEventListener('scroll', handleScroll);
+        window.removeEventListener('resize', handleResize);
+      };
+    }
+  }, [isVisible]);
+
+  const tooltipContent = (
+    <div
+      ref={tooltipRef}
+      className="comment-tooltip-content"
+      style={{
+        position: 'fixed',
+        top: position.top,
+        left: position.left,
+        transform: 'translateX(-50%)',
+        zIndex: 10001,
+      }}
+    >
+      {comment || 'No comments'}
+      {onEditClick && (
+        <button
+          onClick={onEditClick}
+          style={{
+            marginLeft: '8px',
+            background: 'rgba(255,255,255,0.2)',
+            border: 'none',
+            color: 'white',
+            padding: '2px 6px',
+            borderRadius: '3px',
+            cursor: 'pointer'
+          }}
+        >
+          Edit
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <>
-      <div 
+      <div
         ref={triggerRef}
-        onClick={handleTriggerClick}
-        onMouseEnter={() => {
-          if (hasComment) {
-            showTooltip();
-          }
-        }}
-        onMouseLeave={() => {
-          setTimeout(() => {
-            if (!isTooltipHovered) {
-              hideTooltip();
-            }
-          }, 200);
-        }}
-        className="tooltip-trigger"
-        style={{ cursor: 'pointer' }}
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+        onClick={() => setIsVisible(!isVisible)}
       >
         {children}
       </div>
       
-      {isVisible && hasComment && ReactDOM.createPortal(
-        <div 
-          ref={tooltipRef}
-          className={`comment-tooltip-portal tooltip-${position.placement}`}
-          style={{
-            position: 'absolute',
-            top: `${position.top}px`,
-            left: position.left,
-            right: position.right,
-            zIndex: 10000
-          }}
-          onMouseEnter={() => setIsTooltipHovered(true)}
-          onMouseLeave={() => {
-            setIsTooltipHovered(false);
-            setTimeout(() => hideTooltip(), 100);
-          }}
-        >
-          <div className="comment-tooltip-content">
-            <div className="tooltip-header">
-              <span>Comment</span>
-              <button 
-                className="tooltip-edit-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEditClick();
-                  hideTooltip();
-                }}
-              >
-                Edit
-              </button>
-            </div>
-            <div className="tooltip-body">
-              {comment}
-            </div>
-          </div>
+      {isVisible && usePortal && ReactDOM.createPortal(
+        <div className="comment-tooltip-portal">
+          {tooltipContent}
         </div>,
-        document.body
+        container || document.body
       )}
+      
+      {isVisible && !usePortal && tooltipContent}
     </>
   );
 };

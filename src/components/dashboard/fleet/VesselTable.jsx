@@ -1706,6 +1706,10 @@ const VesselTable = ({
           <CommentTooltip
             comment={vessel.comments || ""}
             onEditClick={() => onOpenRemarks(vessel)}
+            // Use 'auto' or 'auto-start' for better dynamic placement
+            // If CommentTooltip supports a 'container' prop to render outside the table, use it:
+            // container={document.body}
+            placement="auto"
           >
             <div
               className={`comment-indicator ${hasComments ? 'has-comment' : 'no-comment'}`}
@@ -1817,6 +1821,8 @@ const VesselTable = ({
           .responsive-table-container {
             max-width: 100%;
             overflow-x: hidden;
+            /* Ensure no overflow hidden here that would clip tooltips */
+            position: relative; /* Needed for z-index context */
           }
 
           /* Add these new styles for resize indicators */
@@ -1853,11 +1859,26 @@ const VesselTable = ({
               display: inline-block;
             }
 
+            /* Updated comment indicator for mobile */
             .comment-indicator {
-              width: 24px;
-              height: 24px;
+              width: 28px; /* Slightly larger for touch */
+              height: 28px;
               padding: 0;
               justify-content: center;
+              border-radius: 50%; /* Make it a circle */
+              background-color: #f0f2f5; /* Light background */
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Subtle shadow */
+              transition: all 0.2s ease-in-out;
+            }
+
+            .comment-indicator.has-comment {
+              background-color: #e0f7fa; /* Light blue for comments */
+              color: #007bff; /* Blue icon */
+            }
+
+            .comment-indicator:hover {
+              transform: translateY(-1px);
+              box-shadow: 0 2px 6px rgba(0,0,0,0.15);
             }
 
             .comment-preview-text, .comment-add-text {
@@ -1913,6 +1934,49 @@ const VesselTable = ({
               align-items: center;
               gap: 6px;
             }
+
+            /* Updated comment indicator for tablet */
+            .comment-indicator {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              padding: 6px 10px;
+              border-radius: 16px; /* Pill shape */
+              background-color: #f0f2f5;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+              transition: all 0.2s ease-in-out;
+              cursor: pointer;
+            }
+
+            .comment-indicator.has-comment {
+              background-color: #e0f7fa;
+              color: #007bff;
+            }
+
+            .comment-indicator:hover {
+              transform: translateY(-1px);
+              box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            }
+
+            .comment-icon {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+
+            .comment-preview-text {
+              font-size: 12px;
+              color: #333;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 80px; /* Adjust as needed */
+            }
+
+            .comment-add-text {
+              font-size: 12px;
+              color: #666;
+            }
           }
 
           /* Small Desktop Styles */
@@ -1930,7 +1994,96 @@ const VesselTable = ({
               align-items: center;
               gap: 6px;
             }
+
+            /* Updated comment indicator for small desktop */
+            .comment-indicator {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              padding: 8px 12px;
+              border-radius: 20px; /* More rounded pill */
+              background-color: #f0f2f5;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+              transition: all 0.2s ease-in-out;
+              cursor: pointer;
+            }
+
+            .comment-indicator.has-comment {
+              background-color: #e0f7fa;
+              color: #007bff;
+            }
+
+            .comment-indicator:hover {
+              transform: translateY(-1px);
+              box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            }
+
+            .comment-icon {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+
+            .comment-preview-text {
+              font-size: 13px;
+              color: #333;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 100px; /* Adjust as needed */
+            }
+
+            .comment-add-text {
+              font-size: 13px;
+              color: #666;
+            }
           }
+
+          /* Default/Large Desktop Styles for comment indicator */
+          @media (min-width: 1280px) {
+            .comment-indicator {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              padding: 8px 12px;
+              border-radius: 20px;
+              background-color: #f0f2f5;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+              transition: all 0.2s ease-in-out;
+              cursor: pointer;
+            }
+
+            .comment-indicator.has-comment {
+              background-color: #e0f7fa;
+              color: #007bff;
+            }
+
+            .comment-indicator:hover {
+              transform: translateY(-1px);
+              box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            }
+
+            .comment-icon {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+
+            .comment-preview-text {
+              font-size: 13px;
+              color: #333;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 100px; /* Adjust as needed */
+            }
+
+            .comment-add-text {
+              font-size: 13px;
+              color: #666;
+            }
+          }
+
 
           /* Reset default table styles for better app-wide consistency */
           .data-table-wrapper {
@@ -2003,6 +2156,27 @@ const VesselTable = ({
 
           .port-doc-icon:hover {
             color: #2980B9; /* Darker shade on hover */
+          }
+
+          /* Ensure CommentTooltip can break out of table cell overflow */
+          .comments-column {
+            overflow: visible !important; /* Allow content to overflow */
+          }
+
+          .comment-cell {
+            position: relative; /* Establish positioning context for tooltip trigger */
+            display: flex;
+            justify-content: center; /* Center the indicator */
+            align-items: center;
+            height: 100%; /* Take full height of cell */
+          }
+
+          /* If CommentTooltip renders directly into the DOM, it needs a high z-index */
+          /* This style should ideally be in the CommentTooltip's own CSS or a global stylesheet */
+          .comment-tooltip-container { /* Assuming CommentTooltip renders into a div with this class */
+            z-index: 10000; /* Ensure it's above other elements */
+            position: absolute; /* Or fixed, depending on its internal logic */
+            /* Add other positioning properties like top, left, transform based on its logic */
           }
         `}
       </style>
