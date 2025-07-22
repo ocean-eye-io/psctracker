@@ -1206,6 +1206,16 @@
   font-family: 'Nunito', sans-serif; /* Ensure Nunito font */
 }
 
+.data-table th:not(:last-child) {
+  cursor: col-resize;
+  border-right: 1px solid rgba(244, 244, 244, 0.1);
+  transition: border-color 0.2s ease;
+}
+
+.data-table th:not(:last-child):hover {
+  border-right-color: rgba(59, 173, 229, 0.4);
+}
+
 /* ===== COMMENT STYLES ===== */
 .comment-cell {
   position: relative;
