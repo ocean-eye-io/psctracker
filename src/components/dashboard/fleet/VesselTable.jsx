@@ -1149,6 +1149,31 @@ const VesselTable = ({
     );
   };
 
+  // ADD THIS HELPER FUNCTION TO YOUR VesselTable.jsx
+  // Place this after your existing helper functions (around line 200-300)
+
+  const getEffectiveValue = useCallback((rowData, fieldDbField) => {
+    // Get the effective value that should be used for sorting
+    // This returns either the user override or the original value
+
+    if (fieldDbField === 'eta') {
+      return rowData.user_eta !== null && rowData.user_eta !== undefined
+        ? rowData.user_eta
+        : rowData.eta;
+    } else if (fieldDbField === 'etb') {
+      return rowData.user_etb !== null && rowData.user_etb !== undefined
+        ? rowData.user_etb
+        : rowData.etb;
+    } else if (fieldDbField === 'etd') {
+      return rowData.user_etd !== null && rowData.user_etd !== undefined
+        ? rowData.user_etd
+        : rowData.etd;
+    }
+
+    // For non-editable fields, return the original value
+    return rowData[fieldDbField];
+  }, []);
+
   // Convert field mappings to table columns format
   const getTableColumns = () => {
     // Create a new columns array with vessel_type and doc_type instead of imo and owner
@@ -1237,6 +1262,29 @@ const VesselTable = ({
       if (fieldId === 'vessel_name') {
         column.headerRenderer = renderVesselNameHeader;
         column.sortable = false;
+      }
+
+      // ADD CUSTOM SORT VALUE FOR EDITABLE DATE FIELDS
+      if (['eta', 'etb', 'etd'].includes(fieldId)) {
+        // Add a custom sort value getter that returns the effective value
+        column.getSortValue = (rowData) => {
+          const effectiveValue = getEffectiveValue(rowData, field.dbField);
+
+          // Convert to timestamp for proper date sorting
+          if (effectiveValue) {
+            try {
+              const date = new Date(effectiveValue);
+              return isNaN(date.getTime()) ? 0 : date.getTime();
+            } catch (error) {
+              console.warn('Error parsing date for sorting:', effectiveValue, error);
+              return 0;
+            }
+          }
+
+          // Return a very small timestamp for null/undefined values
+          // This ensures they appear at the beginning when sorting ascending
+          return 0;
+        };
       }
 
       // Define cell renderer

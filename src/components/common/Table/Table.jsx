@@ -92,23 +92,39 @@ const Table = ({
     }
   }, []);
 
-  // Sort the data based on sort configuration
+  // UPDATED: Sort the data based on sort configuration with support for custom sort values
   const sortedData = useMemo(() => {
     if (!sortConfig.key) return data;
     
     return [...data].sort((a, b) => {
+      // Find the column configuration for the current sort key
+      const column = columns.find(col => col.field === sortConfig.key);
+      
+      let aValue, bValue;
+      
+      // Check if the column has a custom sort value getter
+      if (column && column.getSortValue) {
+        aValue = column.getSortValue(a);
+        bValue = column.getSortValue(b);
+      } else {
+        // Use the original logic for fields without custom sort
+        aValue = a[sortConfig.key];
+        bValue = b[sortConfig.key];
+      }
+      
       // Handle null/undefined values
-      if (a[sortConfig.key] === null || a[sortConfig.key] === undefined) return 1;
-      if (b[sortConfig.key] === null || b[sortConfig.key] === undefined) return -1;
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
       
       // Compare based on data type
-      const aValue = a[sortConfig.key];
-      const bValue = b[sortConfig.key];
-      
       let result;
       
+      // For custom sort values (like timestamps from getSortValue), do numeric comparison
+      if (column && column.getSortValue) {
+        result = aValue - bValue;
+      }
       // Date comparison
-      if (aValue instanceof Date && bValue instanceof Date) {
+      else if (aValue instanceof Date && bValue instanceof Date) {
         result = aValue.getTime() - bValue.getTime();
       }
       // String comparison
@@ -122,7 +138,7 @@ const Table = ({
       
       return sortConfig.direction === 'asc' ? result : -result;
     });
-  }, [data, sortConfig]);
+  }, [data, sortConfig, columns]); // Added columns to dependencies
 
   return (
     <div className={`data-table-container ${className}`}>
