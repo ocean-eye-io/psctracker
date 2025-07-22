@@ -1413,9 +1413,9 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
             <RefreshCw size={14} className={loading ? "spinning" : ""} />
           </button>
 
-          <button className="control-btn export-btn" title="Export data">
+          {/* <button className="control-btn export-btn" title="Export data">
             <Download size={14} />
-          </button>
+          </button> */}
           <button
             className="map-toggle"
             onClick={() => setMapModalOpen(true)}
