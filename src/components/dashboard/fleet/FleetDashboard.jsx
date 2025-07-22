@@ -237,7 +237,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         ) &&
         (!portFilters.length || !v.arrival_port || portFilters.includes(v.arrival_port)) &&
         (!statusFilters.length || !v.event_type || statusFilters.includes(v.event_type)) &&
-        (!docFilters.length || !v.office_doc || docFilters.includes(v.office_doc))
+        (!docFilters.length || !v.fleet_type || docFilters.includes(v.fleet_type))
       ));
     } else {
       // Filter based on the selected time range
@@ -283,7 +283,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         ) &&
         (!portFilters.length || !v.arrival_port || portFilters.includes(v.arrival_port)) &&
         (!statusFilters.length || !v.event_type || statusFilters.includes(v.event_type)) &&
-        (!docFilters.length || !v.office_doc || docFilters.includes(v.office_doc))
+        (!docFilters.length || !v.fleet_type || docFilters.includes(v.fleet_type))
       ));
     }
   };
@@ -756,17 +756,16 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
 
   // Initialize filter options from all vessels
   useEffect(() => {
-    if (allProcessedVessels.length > 0) {
-      // Get unique values for all filters from all vessels
-      const uniquePorts = [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))];
-      const uniqueStatuses = [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))];
-      const uniqueDocs = [...new Set(allProcessedVessels.map(v => v.office_doc).filter(Boolean))];
-
+    if (vessels.length > 0) {
+      const uniquePorts = [...new Set(vessels.map(v => v.arrival_port).filter(Boolean))];
+      const uniqueStatuses = [...new Set(vessels.map(v => v.event_type).filter(Boolean))];
+      const uniqueDocs = [...new Set(vessels.map(v => v.fleet_type).filter(Boolean))];  // ✅ CORRECT FIELD
+  
       setPortFilters(uniquePorts);
       setStatusFilters(uniqueStatuses);
       setDocFilters(uniqueDocs);
     }
-  }, [allProcessedVessels]);
+  }, [vessels]);
 
   // Apply voyage status filter when it changes
   useEffect(() => {
@@ -788,6 +787,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   }, [voyageStatusFilter, activeVessels, inactiveVessels, allProcessedVessels, sortVesselsData]);
 
   // Apply other filters when filters or data change
+  // Apply other filters when filters or data change
   useEffect(() => {
     if (!vessels.length) {
       setFilteredVessels([]);
@@ -797,24 +797,34 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     let results = [...vessels];
 
     // Apply port filters if any selected
-    if (portFilters.length > 0) {
+    if (portFilters.length === 0) {
+      results = []; // Empty table when no ports selected
+    } else {
       results = results.filter(vessel =>
-        !vessel.arrival_port || portFilters.includes(vessel.arrival_port)
+        vessel.arrival_port && portFilters.includes(vessel.arrival_port)
       );
     }
-
-    // Apply status filters if any selected
-    if (statusFilters.length > 0) {
-      results = results.filter(vessel =>
-        !vessel.event_type || statusFilters.includes(vessel.event_type)
-      );
+    
+    // Apply status filters only if we still have results - if empty array, show nothing
+    if (results.length > 0) {
+      if (statusFilters.length === 0) {
+        results = []; // Empty table when no statuses selected
+      } else {
+        results = results.filter(vessel =>
+          vessel.event_type && statusFilters.includes(vessel.event_type)
+        );
+      }
     }
-
-    // Apply DOC filters if any selected
-    if (docFilters.length > 0) {
-      results = results.filter(vessel =>
-        !vessel.office_doc || docFilters.includes(vessel.office_doc)
-      );
+    
+    // Apply DOC filters only if we still have results - if empty array, show nothing
+    if (results.length > 0) {
+      if (docFilters.length === 0) {
+        results = []; // Empty table when no DOCs selected
+      } else {
+        results = results.filter(vessel =>
+          vessel.fleet_type && docFilters.includes(vessel.fleet_type)
+        );
+      }
     }
 
     // Apply search term if not empty
@@ -919,27 +929,27 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   // Reset all filters
   const resetFilters = useCallback(() => {
     setSearchTerm('');
-    setChartPortFilter(null);  // Clear port chart filter
-    setTimelineFilter(null);   // Clear timeline filter
-
+    setChartPortFilter(null);
+    setTimelineFilter(null);
+  
     // Set port, status, and doc filters to include all options
-    const uniquePorts = [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))];
-    const uniqueStatuses = [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))];
-    const uniqueDocs = [...new Set(allProcessedVessels.map(v => v.office_doc).filter(Boolean))];
-
+    const uniquePorts = [...new Set(vessels.map(v => v.arrival_port).filter(Boolean))]; // ✅ FIXED
+    const uniqueStatuses = [...new Set(vessels.map(v => v.event_type).filter(Boolean))]; // ✅ FIXED
+    const uniqueDocs = [...new Set(vessels.map(v => v.fleet_type).filter(Boolean))]; // ✅ FIXED
+  
     setPortFilters(uniquePorts);
     setStatusFilters(uniqueStatuses);
     setDocFilters(uniqueDocs);
     setVoyageStatusFilter('Current Voyages');
-  }, [allProcessedVessels]);
+  }, [vessels]); 
   
   // Toggle all items in a filter group
   const toggleAllItems = (type) => {
-    // Get all unique values from all processed vessels
-    const uniquePorts = [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))];
-    const uniqueStatuses = [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))];
-    const uniqueDocs = [...new Set(allProcessedVessels.map(v => v.office_doc).filter(Boolean))];
-
+    // Get all unique values from current vessels                       
+    const uniquePorts = [...new Set(vessels.map(v => v.arrival_port).filter(Boolean))];
+    const uniqueStatuses = [...new Set(vessels.map(v => v.event_type).filter(Boolean))];
+    const uniqueDocs = [...new Set(vessels.map(v => v.fleet_type).filter(Boolean))];
+  
     switch (type) {
       case 'ports':
         setPortFilters(portFilters.length === uniquePorts.length ? [] : uniquePorts);
@@ -986,17 +996,17 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
 
   // Memoized values for filter counts and dropdown options
   const uniquePorts = useMemo(() =>
-    [...new Set(filteredVessels.map(v => v.arrival_port).filter(Boolean))],
+    [...new Set(filteredVessels.map(v => v.arrival_port).filter(Boolean))],  // ❌ WRONG
     [filteredVessels]
   );
 
   const uniqueStatuses = useMemo(() =>
-    [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))],
+    [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))], // ❌ INCONSISTENT
     [allProcessedVessels]
   );
 
   const uniqueDocs = useMemo(() =>
-    [...new Set(allProcessedVessels.map(v => v.office_doc).filter(Boolean))],
+    [...new Set(allProcessedVessels.map(v => v.fleet_type).filter(Boolean))], // ❌ INCONSISTENT
     [allProcessedVessels]
   );
 
