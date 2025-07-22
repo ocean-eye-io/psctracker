@@ -96,6 +96,25 @@ const VesselTable = ({
     console.log("[VesselTable] vesselDefects state updated:", vesselDefects);
   }, [vesselDefects]);
 
+  // Add this helper function at the top of your VesselTable component (after your existing helper functions)
+  const isHighRiskPort = useCallback((portName) => {
+    if (!portName) return false;
+
+    const highRiskPorts = [
+      'port hedland',
+      'dampier',
+      'newcastle',
+      'gladstone',
+      'melbourne',
+      'fremantle',
+      'kwinana',
+      'geraldton',
+      'port kembla'
+    ];
+
+    return highRiskPorts.includes(portName.toLowerCase().trim());
+  }, []);
+
   // Helper function to check if a date is in the past
   const isDateInPast = useCallback((dateString) => {
     if (!dateString) return false;
@@ -1478,11 +1497,22 @@ const VesselTable = ({
         // In your getTableColumns() function, find the arrival_port rendering and replace it with:
         if (fieldId === 'arrival_port') {
           const upperCaseValue = (value || '-').toUpperCase();
+          const isHighRisk = isHighRiskPort(value);
 
           return (
             <div className="arrival-port-cell">
-              <TextTooltip text={upperCaseValue}>
-                <span className="arrival-port">{upperCaseValue}</span>
+              <TextTooltip
+                text={isHighRisk ? "HIGH RISK PORT" : upperCaseValue}
+              >
+                <span
+                  className={`arrival-port ${isHighRisk ? 'high-risk-port' : ''}`}
+                  style={isHighRisk ? {
+                    color: '#E74C3C',
+                    fontWeight: 'bold'
+                  } : {}}
+                >
+                  {upperCaseValue}
+                </span>
               </TextTooltip>
 
               {/* Add document icon if port has documents or is available in system */}
@@ -2225,6 +2255,17 @@ const VesselTable = ({
             z-index: 10000; /* Ensure it's above other elements */
             position: absolute; /* Or fixed, depending on its internal logic */
             /* Add other positioning properties like top, left, transform based on its logic */
+          }
+
+          /* High Risk Port Styling */
+          .high-risk-port {
+            color: #E74C3C !important;
+            font-weight: bold !important;
+            text-shadow: 0 0 2px rgba(231, 76, 60, 0.3);
+          }
+
+          .arrival-port-cell .high-risk-port:hover {
+            color: #C0392B !important; /* Slightly darker red on hover */
           }
         `}
       </style>
