@@ -1288,21 +1288,21 @@ const VesselTable = ({
         // Add a custom sort value getter that returns the effective value
         column.getSortValue = (rowData) => {
           const effectiveValue = getEffectiveValue(rowData, field.dbField);
-      
+
           // Convert to timestamp for proper date sorting
           if (effectiveValue) {
             try {
               const date = new Date(effectiveValue);
-              return isNaN(date.getTime()) ? Number.MAX_SAFE_INTEGER : date.getTime();
+              return isNaN(date.getTime()) ? 0 : date.getTime();
             } catch (error) {
               console.warn('Error parsing date for sorting:', effectiveValue, error);
-              return Number.MAX_SAFE_INTEGER;
+              return 0;
             }
           }
-      
-          // Return MAX_SAFE_INTEGER for null/undefined values
-          // This ensures they appear at the END when sorting ascending
-          return Number.MAX_SAFE_INTEGER;
+
+          // Return a very small timestamp for null/undefined values
+          // This ensures they appear at the beginning when sorting ascending
+          return 0;
         };
       }
 
@@ -2277,7 +2277,7 @@ const VesselTable = ({
         actions={commentsColumn}
         uniqueIdField="uniqueKey"
         defaultSortKey="eta"
-        defaultSortDirection="asc"
+        defaultSortDirection="desc"
         className={`vessel-data-table ${filterActive ? 'filtered-table' : ''}`}
         // NEW PROPS for column resizing
         onColumnResize={handleColumnResize}
