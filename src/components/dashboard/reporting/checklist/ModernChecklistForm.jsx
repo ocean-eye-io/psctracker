@@ -38,7 +38,8 @@ import checklistService from '../../../../services/checklistService';
 
 // 1. Import the DynamicTable component at the top
 import DynamicTable from './DynamicTable';
-import './DynamicTable.css';
+// Assuming DynamicTable.css is already imported globally or handled by your build system
+// import './DynamicTable.css'; // Keep this if it's a direct import for DynamicTable
 
 // CRITICAL FIXES for table data handling in ModernChecklistForm.jsx
 
@@ -966,6 +967,8 @@ const ModernChecklistForm = ({
   }, [selectedChecklist, currentUser, responses, items, formatResponseForAPI, mode, saving, onSave]);
 
 
+  
+
   const handleSubmit = async () => {
     if (mode === 'view') return;
 
@@ -979,61 +982,11 @@ const ModernChecklistForm = ({
     setError(null);
 
     try {
-      console.log('=== SUBMIT OPERATION STARTED ===');
+      console.log('=== SUBMIT OPERATION STARTED (ENHANCED) ===');
       console.log('Checklist ID:', selectedChecklist?.checklist_id);
-      console.log('User ID:', currentUser?.id);
+      console.log('User ID:', currentUser?.id || 'system'); // FIXED: Fallback to 'system'
 
-      // Transform responses to API format for validation
-      const apiResponses = transformResponsesToAPIFormat(responses, items);
-
-      // Enhanced validation before submission
-      const validation = validateResponsesForSubmission(apiResponses, items);
-
-      console.log('=== SUBMISSION VALIDATION ===');
-      console.log('Validation result:', validation);
-
-      if (!validation.isValid) {
-        let errorMessage = 'Cannot submit checklist:\n\n';
-
-        if (validation.mandatoryIncomplete.length > 0) {
-          errorMessage += `Missing ${validation.mandatoryIncomplete.length} mandatory items:\n\n`;
-
-          // Group by section for better readability
-          const bySectionMap = {};
-          validation.mandatoryIncomplete.forEach(item => {
-            const section = item.section || 'Other';
-            if (!bySectionMap[section]) bySectionMap[section] = [];
-            bySectionMap[section].push(item);
-          });
-
-          Object.entries(bySectionMap).forEach(([section, sectionItems]) => {
-            errorMessage += `${section}:\n`;
-            sectionItems.slice(0, 5).forEach(item => { // Limit to first 5 per section
-              const desc = item.description.length > 60
-                ? item.description.substring(0, 60) + '...'
-                : item.description;
-              errorMessage += `  • ${desc}\n`;
-            });
-            if (sectionItems.length > 5) {
-              errorMessage += `  • ... and ${sectionItems.length - 5} more\n`;
-            }
-            errorMessage += '\n';
-          });
-        }
-
-        if (validation.errors.length > 0) {
-          errorMessage += 'Other issues:\n';
-          validation.errors.forEach(error => {
-            errorMessage += `• ${error}\n`;
-          });
-        }
-
-        console.log('Validation failed, showing error to user');
-        setError(errorMessage);
-        return { success: false, reason: 'validation_failed', validation };
-      }
-
-      // First save the current responses (include all responses, not just ones with values)
+      // First save all current responses
       console.log('=== SAVING BEFORE SUBMIT ===');
       const saveResult = await handleSave(false);
 
@@ -1041,20 +994,32 @@ const ModernChecklistForm = ({
         throw new Error(`Failed to save before submit: ${saveResult.error || saveResult.reason}`);
       }
 
-      // Then submit the checklist
-      console.log('=== SUBMITTING CHECKLIST ===');
+      console.log('Save successful, proceeding with submission...');
+
+      // Validate that we have the checklist ID
+      if (!selectedChecklist?.checklist_id) {
+        throw new Error('Checklist ID is required for submission');
+      }
+
+      // SIMPLIFIED SUBMISSION - Just like save but for submit endpoint
+      console.log('=== CALLING SUBMIT API (SIMPLIFIED) ===');
+      console.log('Endpoint: submitChecklist');
+      console.log('Checklist ID:', selectedChecklist.checklist_id);
+      console.log('User ID:', currentUser?.id || 'system');
+
+      // Use the same pattern as save - just call the submit service
       const submitResult = await checklistService.submitChecklist(
         selectedChecklist.checklist_id,
-        currentUser?.id || 'system'
+        currentUser?.id || 'system' // FIXED: Always provide a user ID
       );
 
-      console.log('=== SUBMIT SUCCESSFUL ===');
+      console.log('=== SUBMIT API SUCCESSFUL ===');
       console.log('Submit result:', submitResult);
 
       // Show success message
       setSuccessMessage('Checklist submitted successfully! 🎉');
 
-      // Call parent handler
+      // Call parent handler if provided
       if (onSubmit) {
         console.log('Calling parent onSubmit handler...');
         await onSubmit(responses);
@@ -1071,12 +1036,12 @@ const ModernChecklistForm = ({
       return { success: true, result: submitResult };
 
     } catch (error) {
-      console.error('=== SUBMIT OPERATION FAILED ===');
+      console.error('=== SUBMIT OPERATION FAILED (ENHANCED) ===');
       console.error('Error details:', {
         message: error.message,
         stack: error.stack,
         checklistId: selectedChecklist?.checklist_id,
-        userId: currentUser?.id
+        userId: currentUser?.id || 'system'
       });
 
       const errorMessage = error.message || 'Failed to submit checklist. Please try again.';
@@ -1580,9 +1545,24 @@ const ModernChecklistForm = ({
 
 
   return (
-    <div className="dashboard-container" style={{ background: '#f8fafc', minHeight: '100vh' }}>
+    <div className="dashboard-container" style={{ background: 'var(--background-light)', minHeight: '100%' }}>
       {/* Add this CSS for the animation (put in your component or CSS file) */}
-      <style>{`
+      <style jsx>{`
+        /* Variables for consistent light theme */
+        :root {
+          --form-bg-light: var(--background-light, #f8f9fa);
+          --form-card-bg: var(--card-bg-light, #ffffff);
+          --form-border-light: var(--border-light, #e2e8f0);
+          --form-text-dark: var(--text-dark, #1e293b);
+          --form-text-muted: var(--text-muted-light, #64748b);
+          --form-primary-color: var(--checklist-primary, #3498DB);
+          --form-success-color: var(--checklist-success, #10b981);
+          --form-danger-color: var(--checklist-danger, #ef4444);
+          --form-warning-color: var(--checklist-warning, #F39C12);
+          --form-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+          --form-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
         @keyframes slideDown {
           from {
             opacity: 0;
@@ -1600,7 +1580,563 @@ const ModernChecklistForm = ({
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
-        /* Styles for Yes/No/NA buttons */
+
+        /* Global Form Styles */
+        .dashboard-container {
+          background: var(--form-bg-light);
+          color: var(--form-text-dark);
+          display: flex;
+          flex-direction: column;
+          height: 100%; /* Ensure it takes full height of its parent (modal body) */
+        }
+
+        /* Header */
+        .dashboard-header {
+          background: var(--form-card-bg);
+          border-bottom: 1px solid var(--form-border-light);
+          padding: 12px 20px; /* Slightly more padding */
+          box-shadow: var(--form-shadow-sm);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        .dashboard-title {
+          display: flex;
+          align-items: center;
+          gap: 16px; /* Increased gap */
+        }
+
+        .dashboard-title h1 {
+          margin: 0;
+          font-size: 18px; /* Slightly larger title */
+          font-weight: 700; /* Bolder */
+          color: var(--form-text-dark);
+        }
+
+        .dashboard-title .vessel-info-compact {
+          display: flex;
+          align-items: center;
+          gap: 16px; /* Increased gap */
+          font-size: 13px; /* Slightly larger font */
+          color: var(--form-text-muted);
+        }
+
+        .dashboard-title .vessel-info-compact span {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .dashboard-controls {
+          display: flex;
+          align-items: center;
+          gap: 12px; /* Increased gap */
+        }
+
+        .dashboard-controls .progress-display {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+          font-weight: 600; /* Bolder */
+          color: var(--form-text-dark);
+        }
+
+        .dashboard-controls .progress-circle {
+          width: 44px; /* Slightly larger circle */
+          height: 44px;
+          position: relative;
+        }
+
+        .dashboard-controls .progress-circle svg {
+          width: 100%;
+          height: 100%;
+          transform: rotate(-90deg);
+        }
+
+        .dashboard-controls .progress-circle path {
+          stroke-width: 3; /* Thicker stroke */
+        }
+
+        .dashboard-controls .progress-circle .bg-path {
+          stroke: var(--form-border-light);
+        }
+
+        .dashboard-controls .progress-circle .fill-path {
+          stroke: var(--form-primary-color);
+        }
+
+        .dashboard-controls button {
+          padding: 8px 16px; /* Larger buttons */
+          border-radius: 8px; /* More rounded */
+          font-size: 13px; /* Slightly larger font */
+          font-weight: 600; /* Bolder */
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          cursor: pointer;
+        }
+
+        .dashboard-controls button.save-btn {
+          background: var(--form-card-bg);
+          border: 1px solid var(--form-border-light);
+          color: var(--form-text-dark);
+        }
+
+        .dashboard-controls button.save-btn:hover:not(:disabled) {
+          background: var(--form-border-light);
+          transform: translateY(-1px);
+          box-shadow: var(--form-shadow-sm);
+        }
+
+        .dashboard-controls button.submit-btn {
+          background: var(--form-success-color);
+          border: 1px solid var(--form-success-color);
+          color: white;
+        }
+
+        .dashboard-controls button.submit-btn:hover:not(:disabled) {
+          background: #0e9f6e; /* Darker green on hover */
+          border-color: #0e9f6e;
+          transform: translateY(-1px);
+          box-shadow: var(--form-shadow-sm);
+        }
+
+        .dashboard-controls button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+          background: var(--form-card-bg);
+          border-bottom: 1px solid var(--form-border-light);
+          padding: 10px 20px; /* More padding */
+          display: flex;
+          align-items: center;
+          gap: 12px; /* Increased gap */
+          flex-wrap: wrap;
+          box-shadow: var(--form-shadow-sm);
+          z-index: 5; /* Ensure it's above content when scrolling */
+        }
+
+        .filter-bar .search-input-wrapper {
+          position: relative;
+          flex: 1;
+          min-width: 220px; /* Increased min-width */
+        }
+
+        .filter-bar .search-input-wrapper input {
+          width: 100%;
+          padding: 6px 12px 6px 36px; /* Adjusted padding for icon */
+          border: 1px solid var(--form-border-light);
+          border-radius: 6px; /* More rounded */
+          font-size: 13px; /* Slightly larger font */
+          height: 32px; /* Consistent height */
+          background: var(--form-bg-light); /* Subtle background */
+          color: var(--form-text-dark);
+          transition: all 0.2s ease;
+        }
+
+        .filter-bar .search-input-wrapper input:focus {
+          outline: none;
+          border-color: var(--form-primary-color);
+          box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .filter-bar .search-input-wrapper svg {
+          position: absolute;
+          left: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--form-text-muted);
+        }
+
+        .filter-bar select {
+          padding: 6px 12px;
+          border: 1px solid var(--form-border-light);
+          border-radius: 6px;
+          font-size: 13px;
+          height: 32px;
+          background: var(--form-bg-light);
+          color: var(--form-text-dark);
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .filter-bar select:focus {
+          outline: none;
+          border-color: var(--form-primary-color);
+          box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .filter-bar .mandatory-toggle-btn {
+          padding: 6px 12px;
+          border: 1px solid var(--form-border-light);
+          border-radius: 6px;
+          font-size: 13px;
+          height: 32px;
+          background: var(--form-card-bg);
+          color: var(--form-text-muted);
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .filter-bar .mandatory-toggle-btn.active {
+          background: var(--form-danger-color);
+          color: white;
+          border-color: var(--form-danger-color);
+        }
+
+        .filter-bar .mandatory-toggle-btn:hover:not(.active) {
+          background: var(--form-border-light);
+        }
+
+        .filter-bar .progress-summary {
+          display: flex;
+          gap: 8px; /* Increased gap */
+          font-size: 12px; /* Slightly larger font */
+          color: var(--form-text-muted);
+          font-weight: 500;
+        }
+
+        /* Main Content - Two Column Layout */
+        .main-content-layout {
+          display: flex;
+          flex: 1; /* Takes remaining height */
+          overflow: hidden; /* Ensures internal scrolling */
+        }
+
+        /* Left Sidebar - Section Navigation */
+        .section-sidebar {
+          width: 300px; /* Wider sidebar */
+          background: var(--form-card-bg);
+          border-right: 1px solid var(--form-border-light);
+          overflow-y: auto;
+          padding: 12px; /* More padding */
+          flex-shrink: 0; /* Prevent shrinking */
+          box-shadow: var(--form-shadow-sm);
+        }
+
+        .section-item {
+          margin-bottom: 6px; /* Slightly more space */
+        }
+
+        .section-item-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px; /* More padding */
+          cursor: pointer;
+          border-radius: 8px; /* More rounded */
+          background: transparent;
+          border: 1px solid transparent;
+          transition: all 0.2s ease;
+        }
+
+        .section-item-header:hover {
+          background: var(--form-bg-light);
+          border-color: var(--form-border-light);
+        }
+
+        .section-item-header.expanded {
+          background: var(--form-bg-light);
+          border-color: var(--form-primary-color); /* Highlight expanded section */
+          box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+        }
+
+        .section-item-header .icon-wrapper {
+          width: 32px; /* Larger icon wrapper */
+          height: 32px;
+          border-radius: 6px; /* Square-ish rounded */
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .section-item-header .section-info {
+          flex: 1;
+          margin-left: 12px; /* More space */
+        }
+
+        .section-item-header .section-name {
+          font-size: 14px; /* Larger font */
+          font-weight: 600;
+          color: var(--form-text-dark);
+        }
+
+        .section-item-header .item-count {
+          font-size: 11px;
+          color: var(--form-text-muted);
+        }
+
+        .section-item-header .progress-percent {
+          font-size: 12px;
+          font-weight: 600;
+          margin-right: 8px;
+        }
+
+        .section-progress-bar {
+          height: 3px; /* Thicker progress bar */
+          background: var(--form-border-light);
+          margin: 4px 10px 6px; /* Adjusted margins */
+          border-radius: 2px;
+          overflow: hidden;
+        }
+
+        .section-progress-fill {
+          height: 100%;
+          transition: width 0.3s ease;
+        }
+
+        .subsection-item {
+          margin-left: 24px; /* Deeper indentation */
+          margin-bottom: 4px;
+        }
+
+        .subsection-item-label {
+          padding: 6px 10px;
+          font-size: 11px;
+          color: var(--form-text-muted);
+          background: var(--form-bg-light);
+          border-radius: 6px;
+          border: 1px solid var(--form-border-light);
+          font-weight: 500;
+        }
+
+        /* Right Content - Checklist Items */
+        .checklist-items-content {
+          flex: 1;
+          overflow-y: auto;
+          padding: 12px; /* More padding */
+          background: var(--form-bg-light);
+        }
+
+        .checklist-section-group {
+          margin-bottom: 20px; /* More space between sections */
+        }
+
+        .checklist-section-group h3 {
+          margin: 0 0 12px 0; /* More space below header */
+          font-size: 16px; /* Larger font */
+          font-weight: 700; /* Bolder */
+          color: var(--form-text-dark);
+          padding: 10px 16px; /* More padding */
+          background: var(--form-card-bg);
+          border-radius: 8px; /* More rounded */
+          border: 1px solid var(--form-border-light);
+          box-shadow: var(--form-shadow-sm);
+        }
+
+        .checklist-items-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); /* Adjusted min-width for items */
+          gap: 10px; /* More gap between items */
+        }
+
+        /* CompactChecklistItem Styles */
+        .compact-checklist-item {
+          background: var(--form-card-bg);
+          border: 1px solid var(--form-border-light);
+          border-radius: 8px; /* More rounded */
+          padding: 12px; /* More padding */
+          position: relative;
+          transition: all 0.2s ease;
+          box-shadow: var(--form-shadow-sm);
+        }
+
+        .compact-checklist-item.completed {
+          border-color: var(--form-success-color);
+          box-shadow: 0 2px 6px rgba(16, 185, 129, 0.15);
+        }
+
+        .compact-checklist-item:hover {
+          transform: translateY(-2px);
+          box-shadow: var(--form-shadow-md);
+        }
+
+        .compact-checklist-item .mandatory-corner {
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 0;
+          height: 0;
+          border-left: 12px solid transparent; /* Larger corner */
+          border-top: 12px solid var(--form-danger-color); /* Red for mandatory */
+          border-top-right-radius: 8px; /* Match item border radius */
+        }
+
+        .compact-checklist-item .item-header-row {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px; /* More gap */
+          margin-bottom: 8px; /* More space below header */
+        }
+
+        .compact-checklist-item .item-description {
+          flex: 1;
+          font-size: 13px; /* Slightly larger font */
+          font-weight: 600; /* Bolder */
+          color: var(--form-text-dark);
+          line-height: 1.5; /* Better line height */
+        }
+
+        .compact-checklist-item .item-description div {
+          margin-top: 4px; /* Space between lines in formatted description */
+        }
+
+        .compact-checklist-item .item-description strong {
+          color: var(--form-primary-color); /* Highlight numbering */
+        }
+
+        .compact-checklist-item .item-pic {
+          font-size: 11px; /* Slightly larger font */
+          color: var(--form-text-muted);
+          display: flex;
+          align-items: center;
+          gap: 4px; /* More gap */
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+
+        .compact-checklist-item .completion-icon {
+          color: var(--form-success-color);
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+
+        .checklist-form-response-field {
+          margin-top: 10px; /* More space above response field */
+        }
+
+        .checklist-form-response-field input,
+        .checklist-form-response-field textarea {
+          width: 100%;
+          background: var(--form-bg-light); /* Light background for inputs */
+          border: 1px solid var(--form-border-light);
+          border-radius: 6px; /* More rounded */
+          padding: 8px 12px;
+          color: var(--form-text-dark);
+          font-size: 13px;
+          transition: all 0.2s ease;
+        }
+
+        .checklist-form-response-field input:focus,
+        .checklist-form-response-field textarea:focus {
+          outline: none;
+          border-color: var(--form-primary-color);
+          box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .checklist-form-response-field input.error,
+        .checklist-form-response-field textarea.error {
+          border-color: var(--form-danger-color);
+        }
+
+        .checklist-form-response-field input:disabled,
+        .checklist-form-response-field textarea:disabled {
+          background: var(--form-border-light); /* Disabled background */
+          cursor: not-allowed;
+          opacity: 0.8;
+        }
+
+        .checklist-form-error-text {
+          color: var(--form-danger-color);
+          font-size: 11px;
+          margin-top: 4px;
+          display: block;
+        }
+
+        .item-action-buttons {
+          display: flex;
+          gap: 4px;
+          justify-content: flex-end;
+          margin-top: 10px; /* More space */
+        }
+
+        .item-action-buttons button {
+          padding: 4px 8px; /* Slightly larger */
+          background: var(--form-bg-light);
+          border: 1px solid var(--form-border-light);
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 10px; /* Slightly larger */
+          color: var(--form-text-muted);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          transition: all 0.2s ease;
+        }
+
+        .item-action-buttons button:hover {
+          background: var(--form-border-light);
+          color: var(--form-text-dark);
+        }
+
+        /* Expandable Details */
+        .expandable-details {
+          margin-top: 12px; /* More space */
+          padding: 10px; /* More padding */
+          background: var(--form-bg-light);
+          border-radius: 6px;
+          border: 1px solid var(--form-border-light);
+        }
+
+        .expandable-details .detail-label {
+          font-size: 10px; /* Slightly larger */
+          color: var(--form-text-muted);
+          font-weight: 600;
+          margin-bottom: 4px;
+        }
+
+        .expandable-details .detail-content {
+          font-size: 11px; /* Slightly larger */
+          color: var(--form-text-dark);
+          line-height: 1.4;
+        }
+
+        .expandable-details textarea {
+          background: var(--form-card-bg); /* White background for comments */
+        }
+
+        .expandable-details .additional-actions {
+          display: flex;
+          gap: 6px; /* More space */
+          justify-content: flex-end;
+          margin-top: 10px;
+        }
+
+        .expandable-details .additional-actions button {
+          padding: 4px 8px;
+          background: var(--form-card-bg);
+          border: 1px solid var(--form-border-light);
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 10px;
+          color: var(--form-text-muted);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          transition: all 0.2s ease;
+        }
+
+        .expandable-details .additional-actions button:hover {
+          background: var(--form-bg-light);
+          color: var(--form-text-dark);
+        }
+
+        .response-timestamp {
+          font-size: 9px; /* Slightly larger */
+          color: var(--form-text-muted);
+          margin-top: 6px;
+          text-align: right;
+        }
+
+        /* Yes/No/NA Buttons */
         .yes-no-na-container {
           display: flex;
           align-items: center;
@@ -1608,44 +2144,171 @@ const ModernChecklistForm = ({
         }
         .yes-no-na-buttons {
           display: flex;
-          gap: 4px;
+          gap: 6px; /* More space between buttons */
         }
         .yes-no-na-option {
           display: flex;
           align-items: center;
           cursor: pointer;
-          font-size: 12px;
-          color: #4a5568;
-          border: 1px solid #e2e8f0;
-          border-radius: 4px;
-          padding: 4px 8px;
+          font-size: 13px; /* Larger font */
+          color: var(--form-text-dark);
+          border: 1px solid var(--form-border-light);
+          border-radius: 6px; /* More rounded */
+          padding: 6px 12px; /* More padding */
           transition: all 0.2s ease;
+          background: var(--form-bg-light); /* Light background */
         }
         .yes-no-na-option.selected {
-          background-color: #3498db;
+          background-color: var(--form-primary-color);
           color: white;
-          border-color: #3498db;
+          border-color: var(--form-primary-color);
+          box-shadow: 0 2px 4px rgba(52, 152, 219, 0.2);
         }
         .yes-no-na-option:hover:not(.selected) {
-          background-color: #f0f4f8;
+          background-color: var(--form-border-light);
         }
         .yes-no-na-radio {
           display: none; /* Hide native radio button */
         }
         .yes-no-na-label {
-          font-weight: 500;
+          font-weight: 600; /* Bolder */
         }
         .yes-no-na-label.yes {
-          color: #28a745; /* Green for Yes */
+          color: var(--form-success-color); /* Green for Yes */
         }
         .yes-no-na-label.no {
-          color: #dc3545; /* Red for No */
+          color: var(--form-danger-color); /* Red for No */
         }
         .yes-no-na-label.n-a {
-          color: #6c757d; /* Gray for N/A */
+          color: var(--form-text-muted); /* Gray for N/A */
         }
         .yes-no-na-option.selected .yes-no-na-label {
           color: white; /* White text when selected */
+        }
+
+        /* Error/Success Display */
+        .error-success-display {
+          position: fixed;
+          top: 80px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 1000;
+          width: 90%;
+          max-width: 600px;
+        }
+
+        .error-message-box {
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          border-radius: 8px; /* More rounded */
+          padding: 16px 20px; /* More padding */
+          margin-bottom: 12px; /* More margin */
+          color: var(--form-danger-color);
+          display: flex;
+          align-items: flex-start;
+          gap: 12px; /* More gap */
+          animation: slideDown 0.3s ease-out;
+          box-shadow: var(--form-shadow-sm);
+        }
+
+        .error-message-box .error-title {
+          font-weight: 600;
+          margin-bottom: 6px;
+        }
+
+        .error-message-box .error-text {
+          font-size: 14px;
+          white-space: pre-line;
+        }
+
+        .error-message-box .close-btn {
+          background: none;
+          border: none;
+          color: var(--form-danger-color);
+          cursor: pointer;
+          font-size: 20px; /* Larger X */
+          padding: 0;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+        }
+
+        .error-message-box .close-btn:hover {
+          opacity: 0.7;
+        }
+
+        .success-message-box {
+          background: rgba(34, 197, 94, 0.1);
+          border: 1px solid rgba(34, 197, 94, 0.3);
+          border-radius: 8px;
+          padding: 16px 20px;
+          color: var(--form-success-color);
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          animation: slideDown 0.3s ease-out;
+          box-shadow: var(--form-shadow-sm);
+        }
+
+        .success-message-box .success-text {
+          font-weight: 600;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 1024px) {
+          .section-sidebar {
+            width: 250px; /* Slightly narrower sidebar */
+          }
+          .checklist-items-grid {
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Adjust for smaller screens */
+          }
+        }
+
+        @media (max-width: 768px) {
+          .dashboard-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 16px;
+          }
+          .dashboard-controls {
+            width: 100%;
+            justify-content: flex-end;
+          }
+          .filter-bar {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 10px 16px;
+          }
+          .filter-bar .search-input-wrapper {
+            min-width: unset;
+          }
+          .main-content-layout {
+            flex-direction: column;
+            height: auto; /* Allow content to dictate height */
+          }
+          .section-sidebar {
+            width: 100%;
+            border-right: none;
+            border-bottom: 1px solid var(--form-border-light);
+            padding: 12px 16px;
+            box-shadow: none;
+          }
+          .checklist-items-content {
+            padding: 12px 16px;
+          }
+          .checklist-items-grid {
+            grid-template-columns: 1fr; /* Single column on small screens */
+          }
+          .compact-checklist-item {
+            padding: 10px;
+          }
+          .yes-no-na-buttons {
+            flex-wrap: wrap; /* Allow buttons to wrap */
+          }
         }
       `}</style>
 
@@ -1656,27 +2319,22 @@ const ModernChecklistForm = ({
       />
 
       {/* Compact Header */}
-      <header className="dashboard-header" style={{
-        background: 'white',
-        borderBottom: '1px solid #e2e8f0',
-        padding: '8px 16px',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-      }}>
-        <div className="dashboard-title" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <header className="dashboard-header">
+        <div className="dashboard-title">
           <button onClick={onCancel} className="control-btn" style={{ padding: '4px' }}>
             <ArrowLeft size={16} />
           </button>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Ship size={20} style={{ color: '#3498DB' }} />
+            <Ship size={20} style={{ color: 'var(--form-primary-color)' }} />
             <div>
-              <h1 style={{ margin: '0', fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>
+              <h1>
                 {template?.name || 'Maritime Checklist'}
               </h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', color: '#64748b' }}>
-                <span>{vessel?.vessel_name}</span>
-                <span>IMO: {vessel?.imo_no}</span>
-                <span>{currentTime.toLocaleTimeString()}</span>
+              <div className="vessel-info-compact">
+                <span><Ship size={12} /> {vessel?.vessel_name || 'Unknown Vessel'}</span>
+                <span>IMO: {vessel?.imo_no || 'Unknown'}</span>
+                <span><Clock size={12} /> {currentTime.toLocaleTimeString()}</span>
                 <span className={`badge ${mode === 'view' ? 'badge-success' : 'badge-info'}`} style={{ fontSize: '10px' }}>
                   {mode === 'view' ? 'READ ONLY' : 'EDITING'}
                 </span>
@@ -1685,22 +2343,20 @@ const ModernChecklistForm = ({
           </div>
         </div>
 
-        <div className="dashboard-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500', color: '#1e293b' }}>
+        <div className="dashboard-controls">
+          <div className="progress-display">
             <span>{stats.percentage}%</span>
-            <div style={{ width: '40px', height: '40px', position: 'relative' }}>
-              <svg style={{ width: '40px', height: '40px', transform: 'rotate(-90deg)' }} viewBox="0 0 36 36">
+            <div className="progress-circle">
+              <svg viewBox="0 0 36 36">
                 <path
+                  className="bg-path"
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   fill="none"
-                  stroke="#e2e8f0"
-                  strokeWidth="2"
                 />
                 <path
+                  className="fill-path"
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   fill="none"
-                  stroke="#3498DB"
-                  strokeWidth="2"
                   strokeDasharray={`${stats.percentage}, 100`}
                 />
               </svg>
@@ -1708,21 +2364,11 @@ const ModernChecklistForm = ({
           </div>
 
           {mode === 'edit' && (
-            <div style={{ display: 'flex', gap: '4px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
               <button
                 onClick={() => handleSave(false)}
                 disabled={saving}
-                style={{
-                  padding: '6px 12px',
-                  background: '#f1f5f9',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  cursor: 'pointer'
-                }}
+                className="save-btn"
               >
                 {saving ? <RefreshCw size={12} className="spinning" /> : <Save size={12} />}
                 Save
@@ -1731,18 +2377,7 @@ const ModernChecklistForm = ({
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                style={{
-                  padding: '6px 12px',
-                  background: '#10b981',
-                  border: '1px solid #10b981',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  color: 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  cursor: 'pointer'
-                }}
+                className="submit-btn"
               >
                 {submitting ? <RefreshCw size={12} className="spinning" /> : <Send size={12} />}
                 Submit
@@ -1753,43 +2388,20 @@ const ModernChecklistForm = ({
       </header>
 
       {/* Compact Filter Bar */}
-      <div style={{
-        background: 'white',
-        borderBottom: '1px solid #e2e8f0',
-        padding: '6px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        flexWrap: 'wrap'
-      }}>
-        <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
-          <Search size={14} style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+      <div className="filter-bar">
+        <div className="search-input-wrapper">
+          <Search size={14} />
           <input
             type="text"
             placeholder="Search checklist items..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '4px 8px 4px 28px',
-              border: '1px solid #e2e8f0',
-              borderRadius: '4px',
-              fontSize: '12px',
-              height: '24px'
-            }}
           />
         </div>
 
         <select
           value={filterPIC}
           onChange={(e) => setFilterPIC(e.target.value)}
-          style={{
-            padding: '4px 8px',
-            border: '1px solid #e2e8f0',
-            borderRadius: '4px',
-            fontSize: '12px',
-            height: '24px'
-          }}
         >
           <option value="all">All Personnel</option>
           {uniquePICs.map(pic => (
@@ -1799,21 +2411,13 @@ const ModernChecklistForm = ({
 
         <button
           onClick={() => setShowOnlyMandatory(!showOnlyMandatory)}
-          style={{
-            padding: '4px 8px',
-            border: '1px solid #e2e8f0',
-            borderRadius: '4px',
-            fontSize: '12px',
-            height: '24px',
-            background: showOnlyMandatory ? '#ef4444' : 'white',
-            color: showOnlyMandatory ? 'white' : '#64748b',
-            cursor: 'pointer'
-          }}
+          className={`mandatory-toggle-btn ${showOnlyMandatory ? 'active' : ''}`}
         >
+          <Filter size={12} />
           {showOnlyMandatory ? 'Mandatory Only' : 'Show All'}
         </button>
 
-        <div style={{ display: 'flex', gap: '4px', fontSize: '11px', color: '#64748b' }}>
+        <div className="progress-summary">
           <span>{stats.completed}/{stats.total} Complete</span>
           <span>•</span>
           <span>{stats.mandatoryCompleted}/{stats.mandatory} Mandatory</span>
@@ -1821,16 +2425,10 @@ const ModernChecklistForm = ({
       </div>
 
       {/* Main Content - Two Column Layout */}
-      <div style={{ display: 'flex', height: 'calc(100vh - 120px)' }}>
+      <div className="main-content-layout">
 
         {/* Left Sidebar - Section Navigation */}
-        <div style={{
-          width: '280px',
-          background: 'white',
-          borderRight: '1px solid #e2e8f0',
-          overflowY: 'auto',
-          padding: '8px'
-        }}>
+        <div className="section-sidebar">
           {sections.map((section, sectionIndex) => {
             const sectionItems = section.items || [];
             const completedCount = sectionItems.filter(item => completedItems.has(item.item_id)).length;
@@ -1838,43 +2436,27 @@ const ModernChecklistForm = ({
             const isExpanded = expandedSections.has(section.section_id);
 
             return (
-              <div key={`sidebar_${section.section_id}_${sectionIndex}`} style={{ marginBottom: '4px' }}>
+              <div key={`sidebar_${section.section_id}_${sectionIndex}`} className="section-item">
                 <div
                   onClick={() => toggleSection(section.section_id)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px',
-                    cursor: 'pointer',
-                    borderRadius: '6px',
-                    background: isExpanded ? '#f1f5f9' : 'transparent',
-                    border: isExpanded ? '1px solid #e2e8f0' : '1px solid transparent',
-                    transition: 'all 0.2s ease'
-                  }}
+                  className={`section-item-header ${isExpanded ? 'expanded' : ''}`}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{
-                      width: '24px',
-                      height: '24px',
-                      borderRadius: '4px',
+                    <div className="icon-wrapper" style={{
                       background: section.color + '20',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
                       color: section.color
                     }}>
                       {section.icon}
                     </div>
-                    <div>
-                      <div style={{ fontSize: '13px', fontWeight: '500', color: '#1e293b' }}>{section.section_name}</div>
-                      <div style={{ fontSize: '10px', color: '#64748b' }}>
+                    <div className="section-info">
+                      <div className="section-name">{section.section_name}</div>
+                      <div className="item-count">
                         {completedCount}/{sectionItems.length} items
                       </div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: '500', color: section.color }}>
+                    <div className="progress-percent" style={{ color: section.color }}>
                       {Math.round(progress)}%
                     </div>
                     {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -1882,34 +2464,20 @@ const ModernChecklistForm = ({
                 </div>
 
                 {/* Progress Bar */}
-                <div style={{
-                  height: '2px',
-                  background: '#f1f5f9',
-                  margin: '2px 8px 4px',
-                  borderRadius: '1px',
-                  overflow: 'hidden'
-                }}>
+                <div className="section-progress-bar">
                   <div
+                    className="section-progress-fill"
                     style={{
-                      height: '100%',
                       background: section.color,
                       width: `${progress}%`,
-                      transition: 'width 0.3s ease'
                     }}
                   />
                 </div>
 
                 {/* Subsections */}
                 {isExpanded && section.subsections?.map((subsection, subIndex) => (
-                  <div key={`sidebar_sub_${section.section_id}_${subIndex}`} style={{ marginLeft: '16px', marginBottom: '2px' }}>
-                    <div style={{
-                      padding: '4px 8px',
-                      fontSize: '11px',
-                      color: '#64748b',
-                      background: '#f8fafc',
-                      borderRadius: '4px',
-                      border: '1px solid #f1f5f9'
-                    }}>
+                  <div key={`sidebar_sub_${section.section_id}_${subIndex}`} className="subsection-item">
+                    <div className="subsection-item-label">
                       {subsection.subsection_name} ({subsection.items?.length || 0})
                     </div>
                   </div>
@@ -1920,35 +2488,17 @@ const ModernChecklistForm = ({
         </div>
 
         {/* Right Content - Checklist Items */}
-        <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '8px',
-          background: '#f8fafc'
-        }}>
+        <div className="checklist-items-content">
           {sections.filter(section => expandedSections.has(section.section_id)).map((section) => (
-            <div key={`section_${section.section_id}`} style={{ marginBottom: '16px' }}>
+            <div key={`section_${section.section_id}`} className="checklist-section-group">
               {section.subsections?.map((subsection, subsectionIndex) => (
-                <div key={`${section.section_id}_${subsection.id}_${subsectionIndex}`} style={{ marginBottom: '12px' }}>
-                  <h3 style={{
-                    margin: '0 0 8px 0',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: '#1e293b',
-                    padding: '6px 12px',
-                    background: 'white',
-                    borderRadius: '6px',
-                    border: '1px solid #e2e8f0'
-                  }}>
+                <div key={`${section.section_id}_${subsection.id}_${subsectionIndex}`} style={{ marginBottom: '16px' }}>
+                  <h3>
                     {subsection.subsection_name}
                   </h3>
 
                   {/* Grid Layout for Items */}
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-                    gap: '6px'
-                  }}>
+                  <div className="checklist-items-grid">
                     {(subsection.items || []).map((item, itemIndex) => (
                       <CompactChecklistItem
                         key={`${item.item_id}_${itemIndex}`}
@@ -2012,7 +2562,7 @@ const CompactChecklistItem = ({ item, responses, isCompleted, onResponse, onResp
             fontSize: '12px',
             lineHeight: '1.4'
           }}>
-            <strong style={{ color: '#3498DB' }}>{trimmedLine.match(/^[a-z0-9]\)/)[0]}</strong>
+            <strong style={{ color: 'var(--form-primary-color)' }}>{trimmedLine.match(/^[a-z0-9]\)/)[0]}</strong>
             <span style={{ marginLeft: '4px' }}>{trimmedLine.replace(/^[a-z0-9]\)\s*/, '')}</span>
           </div>
         );
@@ -2032,60 +2582,30 @@ const CompactChecklistItem = ({ item, responses, isCompleted, onResponse, onResp
   };
 
   return (
-    <div style={{
-      background: 'white',
-      border: `1px solid ${isCompleted ? '#10b981' : '#e2e8f0'}`,
-      borderRadius: '6px',
-      padding: '8px',
-      position: 'relative',
-      transition: 'all 0.2s ease',
-      boxShadow: isCompleted ? '0 2px 4px rgba(16, 185, 129, 0.1)' : '0 1px 3px rgba(0, 0, 0, 0.1)'
-    }}>
+    <div className={`compact-checklist-item ${isCompleted ? 'completed' : ''}`}>
 
       {/* Mandatory Corner */}
       {item.is_mandatory && (
-        <div style={{
-          position: 'absolute',
-          top: '0',
-          right: '0',
-          width: '0',
-          height: '0',
-          borderLeft: '10px solid transparent',
-          borderTop: '10px solid #ef4444'
-        }} />
+        <div className="mandatory-corner" />
       )}
 
       {/* Main Content Row */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '6px' }}>
+      <div className="item-header-row">
 
         {/* Check Description - Now takes full width without category badge */}
-        <div style={{
-          flex: 1,
-          fontSize: '12px',
-          fontWeight: '500',
-          color: '#1e293b',
-          lineHeight: '1.4'
-        }}>
+        <div className="item-description">
           {formatDescription(item.description)}
         </div>
 
         {/* PIC */}
-        <div style={{
-          fontSize: '10px',
-          color: '#64748b',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '2px',
-          flexShrink: 0,
-          marginTop: '2px'
-        }}>
+        <div className="item-pic">
           <User size={10} />
           {item.pic}
         </div>
 
         {/* Completion Status */}
         {isCompleted && (
-          <CheckCircle size={16} style={{ color: '#10b981', flexShrink: 0, marginTop: '2px' }} />
+          <CheckCircle size={16} className="completion-icon" />
         )}
       </div>
 
@@ -2093,40 +2613,26 @@ const CompactChecklistItem = ({ item, responses, isCompleted, onResponse, onResp
       {renderResponseField(item)}
 
       {/* Action Buttons */}
-      <div style={{ display: 'flex', gap: '2px', justifyContent: 'flex-end', marginTop: '8px' }}>
+      <div className="item-action-buttons">
         <button
           onClick={() => setShowDetails(!showDetails)}
-          style={{
-            padding: '2px 4px',
-            background: 'transparent',
-            border: '1px solid #e2e8f0',
-            borderRadius: '3px',
-            cursor: 'pointer',
-            fontSize: '9px',
-            color: '#64748b'
-          }}
         >
           <MoreHorizontal size={10} />
+          {showDetails ? 'Less' : 'More'}
         </button>
       </div>
 
       {/* Expandable Details */}
       {showDetails && (
-        <div style={{
-          marginTop: '8px',
-          padding: '6px',
-          background: '#f8fafc',
-          borderRadius: '4px',
-          border: '1px solid #f1f5f9'
-        }}>
+        <div className="expandable-details">
 
           {/* Guidance */}
           {item.guidance && (
             <div style={{ marginBottom: '6px' }}>
-              <div style={{ fontSize: '9px', color: '#64748b', fontWeight: '500', marginBottom: '2px' }}>
+              <div className="detail-label">
                 Guidance:
               </div>
-              <div style={{ fontSize: '10px', color: '#374151', lineHeight: '1.3' }}>
+              <div className="detail-content">
                 {item.guidance}
               </div>
             </div>
@@ -2134,7 +2640,7 @@ const CompactChecklistItem = ({ item, responses, isCompleted, onResponse, onResp
 
           {/* Comments */}
           <div style={{ marginBottom: '6px' }}>
-            <div style={{ fontSize: '9px', color: '#64748b', fontWeight: '500', marginBottom: '2px' }}>
+            <div className="detail-label">
               Comments:
             </div>
             <textarea
@@ -2142,53 +2648,17 @@ const CompactChecklistItem = ({ item, responses, isCompleted, onResponse, onResp
               onChange={(e) => onResponseChange(item.item_id, 'remarks', e.target.value)}
               disabled={mode === 'view'}
               placeholder="Add comments..."
-              style={{
-                width: '100%',
-                height: '40px',
-                padding: '4px',
-                border: '1px solid #e2e8f0',
-                borderRadius: '3px',
-                fontSize: '10px',
-                resize: 'none',
-                background: mode === 'view' ? '#f9fafb' : 'white'
-              }}
             />
           </div>
 
           {/* Additional Actions */}
-          <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
-            <button
-              style={{
-                padding: '2px 6px',
-                background: '#f3f4f6',
-                border: '1px solid #e5e7eb',
-                borderRadius: '3px',
-                cursor: 'pointer',
-                fontSize: '9px',
-                color: '#374151',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '2px'
-              }}
-            >
+          <div className="additional-actions">
+            <button>
               <Camera size={8} />
               Photo
             </button>
 
-            <button
-              style={{
-                padding: '2px 6px',
-                background: '#f3f4f6',
-                border: '1px solid #e5e7eb',
-                borderRadius: '3px',
-                cursor: 'pointer',
-                fontSize: '9px',
-                color: '#374151',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '2px'
-              }}
-            >
+            <button>
               <FileText size={8} />
               Note
             </button>
@@ -2196,12 +2666,7 @@ const CompactChecklistItem = ({ item, responses, isCompleted, onResponse, onResp
 
           {/* Response Timestamp */}
           {response.timestamp && (
-            <div style={{
-              fontSize: '8px',
-              color: '#9ca3af',
-              marginTop: '4px',
-              textAlign: 'right'
-            }}>
+            <div className="response-timestamp">
               Updated: {new Date(response.timestamp).toLocaleString()}
             </div>
           )}
@@ -2216,48 +2681,17 @@ const ErrorSuccessDisplay = ({ error, successMessage, onClearError }) => {
   if (!error && !successMessage) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: '80px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      zIndex: 1000,
-      width: '90%',
-      maxWidth: '600px'
-    }}>
+    <div className="error-success-display">
       {error && (
-        <div style={{
-          background: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
-          borderRadius: '6px',
-          padding: '12px 16px',
-          marginBottom: '8px',
-          color: '#dc2626',
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: '8px',
-          animation: 'slideDown 0.3s ease-out'
-        }}>
+        <div className="error-message-box">
           <AlertCircle size={16} style={{ marginTop: '2px', flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: '500', marginBottom: '4px' }}>Error</div>
-            <div style={{ fontSize: '14px', whiteSpace: 'pre-line' }}>{error}</div>
+            <div className="error-title">Error</div>
+            <div className="error-text">{error}</div>
           </div>
           <button
             onClick={onClearError}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#dc2626',
-              cursor: 'pointer',
-              fontSize: '18px',
-              padding: '0',
-              width: '20px',
-              height: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
+            className="close-btn"
           >
             ×
           </button>
@@ -2265,19 +2699,9 @@ const ErrorSuccessDisplay = ({ error, successMessage, onClearError }) => {
       )}
 
       {successMessage && (
-        <div style={{
-          background: 'rgba(34, 197, 94, 0.1)',
-          border: '1px solid rgba(34, 197, 94, 0.3)',
-          borderRadius: '6px',
-          padding: '12px 16px',
-          color: '#16a34a',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          animation: 'slideDown 0.3s ease-out'
-        }}>
+        <div className="success-message-box">
           <CheckCircle size={16} />
-          <div style={{ fontWeight: '500' }}>{successMessage}</div>
+          <div className="success-text">{successMessage}</div>
         </div>
       )}
     </div>

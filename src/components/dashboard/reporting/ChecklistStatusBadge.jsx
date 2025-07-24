@@ -1,269 +1,359 @@
+// src/components/dashboard/reporting/ChecklistStatusBadge.jsx
 import React, { useMemo } from 'react';
 import {
-  FileText,
   CheckCircle,
   Clock,
   AlertTriangle,
-  Calendar,
-  Ship
+  FileText,
+  Edit3,
+  Eye,
+  Plus
 } from 'lucide-react';
+import PropTypes from 'prop-types';
 
-const ChecklistStatusBadge = ({ 
-  vessel, 
-  onOpenChecklist, 
-  className = '' 
+const ChecklistStatusBadge = ({
+  vessel,
+  onOpenChecklist,
+  className = '',
+  status: overrideStatus = null
 }) => {
-  // Calculate urgency and status based on vessel data
-  const badgeInfo = useMemo(() => {
-    // Determine urgency based on ETA
-    let urgency = null;
-    let statusText = 'Start Checklist';
-    let actionText = 'Start';
-    let badgeVariant = 'pending';
-
-    if (vessel.eta) {
-      const eta = new Date(vessel.eta);
-      const now = new Date();
-      const daysToEta = Math.ceil((eta - now) / (1000 * 60 * 60 * 24));
-      
-      if (daysToEta < 0) {
-        urgency = 'overdue';
-        statusText = 'Overdue';
-        actionText = 'Urgent';
-        badgeVariant = 'overdue';
-      } else if (daysToEta <= 1) {
-        urgency = 'critical';
-        statusText = 'Critical';
-        actionText = 'Critical';
-        badgeVariant = 'critical';
-      } else if (daysToEta <= 3) {
-        urgency = 'urgent';
-        statusText = 'Due Soon';
-        actionText = 'Urgent';
-        badgeVariant = 'urgent';
-      } else if (daysToEta <= 5) {
-        urgency = 'warning';
-        statusText = 'Due in 5 Days';
-        actionText = 'Start';
-        badgeVariant = 'warning';
-      }
+  // Determine checklist status
+  const checklistStatus = useMemo(() => {
+    // Use override status if provided (for immediate updates)
+    if (overrideStatus) {
+      return overrideStatus;
     }
 
-    // Check if there's any existing checklist status from the vessel data
+    // Check vessel's checklistStatus field
     if (vessel.checklistStatus) {
-      switch (vessel.checklistStatus) {
-        case 'completed':
-        case 'complete':
-          statusText = 'Completed';
-          actionText = 'View';
-          badgeVariant = 'complete';
-          break;
-        case 'in_progress':
-          statusText = 'In Progress';
-          actionText = 'Continue';
-          badgeVariant = 'in-progress';
-          break;
-        case 'submitted':
-          statusText = 'Submitted';
-          actionText = 'View';
-          badgeVariant = 'complete';
-          break;
-        default:
-          // Keep the urgency-based status
-          break;
+      return vessel.checklistStatus;
+    }
+
+    // Fallback to checklist_received field
+    if (vessel.checklist_received !== undefined && vessel.checklist_received !== null) {
+      if (typeof vessel.checklist_received === 'boolean') {
+        return vessel.checklist_received ? 'complete' : 'pending';
+      }
+      
+      if (typeof vessel.checklist_received === 'string') {
+        const status = vessel.checklist_received.toLowerCase();
+        if (status.includes('complete') || status.includes('submitted')) {
+          return 'complete';
+        } else if (status.includes('progress') || status.includes('draft')) {
+          return 'in_progress';
+        }
       }
     }
 
-    return {
-      urgency,
-      statusText,
-      actionText,
-      badgeVariant
-    };
-  }, [vessel.eta, vessel.checklistStatus]);
+    // Default to pending
+    return 'pending';
+  }, [vessel, overrideStatus]);
 
-  // Get badge styling based on status and urgency
-  const getBadgeClass = () => {
-    const baseClass = 'checklist-status-badge';
-    
-    switch (badgeInfo.badgeVariant) {
-      case 'complete': return `${baseClass} complete`;
-      case 'in-progress': return `${baseClass} in-progress`;
-      case 'overdue': return `${baseClass} overdue`;
-      case 'critical': return `${baseClass} critical`;
-      case 'urgent': return `${baseClass} urgent`;
-      case 'warning': return `${baseClass} warning`;
-      default: return `${baseClass} pending`;
+  // Get status configuration
+  const getStatusConfig = (status) => {
+    switch (status) {
+      case 'complete':
+        return {
+          icon: <CheckCircle size={14} />,
+          label: 'Complete',
+          actionIcon: <Eye size={12} />,
+          actionLabel: 'View',
+          color: '#2ECC71',
+          bgColor: 'rgba(46, 204, 113, 0.1)',
+          borderColor: 'rgba(46, 204, 113, 0.3)',
+          hoverBg: 'rgba(46, 204, 113, 0.2)',
+          clickable: true
+        };
+      case 'in_progress':
+        return {
+          icon: <Clock size={14} />,
+          label: 'In Progress',
+          actionIcon: <Edit3 size={12} />,
+          actionLabel: 'Continue',
+          color: '#F39C12',
+          bgColor: 'rgba(243, 156, 18, 0.1)',
+          borderColor: 'rgba(243, 156, 18, 0.3)',
+          hoverBg: 'rgba(243, 156, 18, 0.2)',
+          clickable: true
+        };
+      case 'draft':
+        return {
+          icon: <FileText size={14} />,
+          label: 'Draft',
+          actionIcon: <Edit3 size={12} />,
+          actionLabel: 'Edit',
+          color: '#3498DB',
+          bgColor: 'rgba(52, 152, 219, 0.1)',
+          borderColor: 'rgba(52, 152, 219, 0.3)',
+          hoverBg: 'rgba(52, 152, 219, 0.2)',
+          clickable: true
+        };
+      default: // 'pending'
+        return {
+          icon: <AlertTriangle size={14} />,
+          label: 'Pending',
+          actionIcon: <Plus size={12} />,
+          actionLabel: 'Start',
+          color: '#E74C3C',
+          bgColor: 'rgba(231, 76, 60, 0.1)',
+          borderColor: 'rgba(231, 76, 60, 0.3)',
+          hoverBg: 'rgba(231, 76, 60, 0.2)',
+          clickable: true
+        };
     }
   };
 
-  // Get icon based on status
-  const getStatusIcon = () => {
-    switch (badgeInfo.badgeVariant) {
-      case 'complete': return <CheckCircle size={16} />;
-      case 'in-progress': return <Clock size={16} />;
-      case 'overdue':
-      case 'critical': return <AlertTriangle size={16} />;
-      default: return <FileText size={16} />;
-    }
-  };
+  const statusConfig = getStatusConfig(checklistStatus);
 
   // Handle click
-  const handleClick = () => {
-    if (onOpenChecklist) {
+  const handleClick = (e) => {
+    e.stopPropagation(); // Prevent row click if this is in a table row
+    
+    if (statusConfig.clickable && onOpenChecklist) {
+      console.log('ChecklistStatusBadge: Opening checklist for', vessel.vessel_name, 'Status:', checklistStatus);
       onOpenChecklist(vessel);
     }
   };
 
   return (
-    <div className={`checklist-badge-container ${className}`}>
-      <style jsx>{`
-        .checklist-badge-container {
-          position: relative;
-          display: inline-block;
-          width: 100%;
-        }
+    <div
+      className={`checklist-status-badge ${statusConfig.clickable ? 'clickable' : ''} ${className}`}
+      onClick={handleClick}
+      style={{
+        '--status-color': statusConfig.color,
+        '--status-bg': statusConfig.bgColor,
+        '--status-border': statusConfig.borderColor,
+        '--status-hover-bg': statusConfig.hoverBg
+      }}
+      title={`5-Day Checklist: ${statusConfig.label} - Click to ${statusConfig.actionLabel.toLowerCase()}`}
+    >
+      <div className="badge-content">
+        <div className="badge-main">
+          <div className="badge-icon">
+            {statusConfig.icon}
+          </div>
+          <span className="badge-label">{statusConfig.label}</span>
+        </div>
+        
+        {statusConfig.clickable && (
+          <div className="badge-action">
+            {statusConfig.actionIcon}
+          </div>
+        )}
+      </div>
 
+      {/* Styles */}
+      <style jsx>{`
         .checklist-status-badge {
-          display: flex;
+          display: inline-flex;
           align-items: center;
-          gap: 6px;
-          padding: 8px 12px;
+          padding: 6px 10px;
           border-radius: 6px;
-          border: 1px solid;
-          cursor: pointer;
-          transition: all 0.2s ease;
           font-size: 12px;
           font-weight: 500;
-          min-width: 100px;
-          justify-content: center;
+          border: 1px solid var(--status-border);
+          background: var(--status-bg);
+          color: var(--status-color);
+          min-width: 90px;
+          justify-content: space-between;
+          transition: all 0.2s ease;
           position: relative;
           overflow: hidden;
-          width: 100%;
         }
 
-        .checklist-status-badge:hover {
+        .checklist-status-badge.clickable {
+          cursor: pointer;
+          user-select: none;
+        }
+
+        .checklist-status-badge.clickable:hover {
+          background: var(--status-hover-bg);
           transform: translateY(-1px);
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        /* Status variants */
-        .checklist-status-badge.complete {
-          background: rgba(46, 204, 113, 0.15);
-          border-color: rgba(46, 204, 113, 0.3);
-          color: #2ECC71;
-        }
-
-        .checklist-status-badge.in-progress {
-          background: rgba(241, 196, 15, 0.15);
-          border-color: rgba(241, 196, 15, 0.3);
-          color: #F1C40F;
-        }
-
-        .checklist-status-badge.pending {
-          background: rgba(59, 173, 229, 0.15);
-          border-color: rgba(59, 173, 229, 0.3);
-          color: #3BADE5;
-        }
-
-        .checklist-status-badge.warning {
-          background: rgba(230, 126, 34, 0.15);
-          border-color: rgba(230, 126, 34, 0.3);
-          color: #E67E22;
-        }
-
-        /* Urgency variants */
-        .checklist-status-badge.overdue,
-        .checklist-status-badge.critical {
-          background: rgba(231, 76, 60, 0.15);
-          border-color: rgba(231, 76, 60, 0.4);
-          color: #E74C3C;
-          animation: pulse-urgent 2s infinite;
-        }
-
-        .checklist-status-badge.urgent {
-          background: rgba(230, 126, 34, 0.15);
-          border-color: rgba(230, 126, 34, 0.4);
-          color: #E67E22;
-          animation: pulse-warning 2s infinite;
-        }
-
-        @keyframes pulse-urgent {
-          0%, 100% { 
-            box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4);
-          }
-          50% { 
-            box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.1);
-          }
-        }
-
-        @keyframes pulse-warning {
-          0%, 100% { 
-            box-shadow: 0 0 0 0 rgba(230, 126, 34, 0.4);
-          }
-          50% { 
-            box-shadow: 0 0 0 4px rgba(230, 126, 34, 0.1);
-          }
+        .checklist-status-badge.clickable:active {
+          transform: translateY(0);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
         .badge-content {
           display: flex;
           align-items: center;
+          justify-content: space-between;
+          width: 100%;
           gap: 6px;
-          position: relative;
-          z-index: 1;
         }
 
-        .badge-text {
-          font-weight: 600;
-          line-height: 1;
+        .badge-main {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          flex: 1;
+        }
+
+        .badge-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .badge-label {
           white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          font-weight: 500;
         }
 
-        /* Mobile responsiveness */
+        .badge-action {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 16px;
+          height: 16px;
+          border-radius: 3px;
+          background: rgba(255, 255, 255, 0.1);
+          flex-shrink: 0;
+          opacity: 0.7;
+          transition: all 0.2s ease;
+        }
+
+        .checklist-status-badge.clickable:hover .badge-action {
+          opacity: 1;
+          background: rgba(255, 255, 255, 0.2);
+          transform: scale(1.1);
+        }
+
+        /* Add subtle animation on hover */
+        .checklist-status-badge.clickable::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.1),
+            transparent
+          );
+          transition: left 0.5s ease;
+        }
+
+        .checklist-status-badge.clickable:hover::before {
+          left: 100%;
+        }
+
+        /* Responsive adjustments */
         @media (max-width: 768px) {
           .checklist-status-badge {
-            min-width: 80px;
-            padding: 6px 8px;
+            min-width: 70px;
+            padding: 4px 8px;
             font-size: 11px;
-            gap: 4px;
           }
 
-          .badge-text {
+          .badge-label {
+            display: none;
+          }
+
+          .badge-main {
+            justify-content: center;
+          }
+
+          .badge-action {
+            width: 14px;
+            height: 14px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .checklist-status-badge {
+            min-width: 60px;
+            padding: 3px 6px;
+          }
+
+          .badge-action {
+            width: 12px;
+            height: 12px;
+          }
+        }
+
+        /* Focus styles for accessibility */
+        .checklist-status-badge.clickable:focus {
+          outline: 2px solid var(--status-color);
+          outline-offset: 2px;
+        }
+
+        /* Disabled state */
+        .checklist-status-badge.disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          pointer-events: none;
+        }
+
+        /* Loading state */
+        .checklist-status-badge.loading {
+          position: relative;
+        }
+
+        .checklist-status-badge.loading::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: inherit;
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 0.5;
+          }
+          50% {
+            opacity: 1;
+          }
+        }
+
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+          .checklist-status-badge {
+            border-width: 2px;
+          }
+        }
+
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+          .checklist-status-badge,
+          .badge-action,
+          .checklist-status-badge::before {
+            transition: none;
+          }
+
+          .checklist-status-badge.clickable:hover::before {
             display: none;
           }
         }
-
-        @media (min-width: 769px) and (max-width: 1023px) {
-          .checklist-status-badge {
-            min-width: 90px;
-            padding: 7px 10px;
-            font-size: 11px;
-          }
-        }
       `}</style>
-
-      <div
-        className={getBadgeClass()}
-        onClick={handleClick}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            handleClick();
-          }
-        }}
-        aria-label={`${badgeInfo.statusText} - Click to open checklists for ${vessel.vessel_name}`}
-        title={`${badgeInfo.statusText} - Click to open checklists for ${vessel.vessel_name}`}
-      >
-        <div className="badge-content">
-          {getStatusIcon()}
-          <span className="badge-text">{badgeInfo.actionText}</span>
-        </div>
-      </div>
     </div>
   );
+};
+
+ChecklistStatusBadge.propTypes = {
+  vessel: PropTypes.object.isRequired,
+  onOpenChecklist: PropTypes.func,
+  className: PropTypes.string,
+  status: PropTypes.string
+};
+
+ChecklistStatusBadge.defaultProps = {
+  onOpenChecklist: null,
+  className: '',
+  status: null
 };
 
 export default ChecklistStatusBadge;

@@ -1,384 +1,564 @@
-/* DynamicTable.css - Styles for the dynamic table component */
+/* Minimal Dynamic Table CSS - Nunito Font & Compact Design */
 
+:root {
+  /* Modern Color Palette */
+  --dt-bg-primary: #ffffff;
+  --dt-bg-secondary: #f8fafc;
+  --dt-bg-tertiary: #f1f5f9;
+  --dt-border-light: #e2e8f0;
+  --dt-border-medium: #cbd5e1;
+  --dt-text-primary: #1e293b;
+  --dt-text-secondary: #64748b;
+  --dt-text-muted: #94a3b8;
+  
+  /* Accent Colors */
+  --dt-primary: #3b82f6;
+  --dt-primary-light: #dbeafe;
+  --dt-primary-dark: #1d4ed8;
+  --dt-success: #10b981;
+  --dt-success-light: #d1fae5;
+  --dt-success-dark: #047857;
+  --dt-danger: #ef4444;
+  --dt-danger-light: #fee2e2;
+  --dt-danger-dark: #dc2626;
+  
+  /* Shadows & Effects */
+  --dt-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --dt-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --dt-radius-sm: 4px;
+  --dt-radius-md: 6px;
+  --dt-radius-lg: 8px;
+  
+  /* Transitions */
+  --dt-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --dt-transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== MAIN CONTAINER ===== */
 .dynamic-table-container {
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    background: #fafafa;
+  background: var(--dt-bg-primary);
+  border: 1px solid var(--dt-border-light);
+  border-radius: var(--dt-radius-lg);
+  box-shadow: var(--dt-shadow-sm);
+  margin: 16px 0;
+  overflow: hidden;
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  transition: var(--dt-transition);
+}
+
+.dynamic-table-container.disabled-table {
+  opacity: 0.6;
+  pointer-events: none;
+  filter: grayscale(0.3);
+}
+
+.dynamic-table-container.has-error {
+  border-color: var(--dt-danger);
+  box-shadow: 0 0 0 3px var(--dt-danger-light);
+}
+
+/* ===== TABLE WRAPPER ===== */
+.dynamic-table-wrapper {
+  overflow-x: auto;
+  max-height: 500px;
+  overflow-y: auto;
+  background: var(--dt-bg-primary);
+}
+
+/* Custom Scrollbar */
+.dynamic-table-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.dynamic-table-wrapper::-webkit-scrollbar-track {
+  background: var(--dt-bg-secondary);
+}
+
+.dynamic-table-wrapper::-webkit-scrollbar-thumb {
+  background: var(--dt-border-medium);
+  border-radius: 3px;
+}
+
+.dynamic-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--dt-text-muted);
+}
+
+/* ===== MAIN TABLE ===== */
+.dynamic-table {
+  width: 100%;
+  border-collapse: separate; /* Changed to separate for better border control */
+  border-spacing: 0;
+  background: var(--dt-bg-primary);
+  font-size: 12px;
+  min-width: 600px;
+  font-family: 'Nunito', sans-serif;
+  border: 1px solid var(--dt-border-light);
+  border-radius: var(--dt-radius-md);
+  overflow: hidden;
+}
+
+/* ===== TABLE HEAD ===== */
+.dynamic-table thead {
+  background: var(--dt-bg-secondary);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.dynamic-table th {
+  padding: 6px 8px; /* Reduced padding significantly */
+  text-align: left; /* Force left alignment */
+  border-right: 1px solid rgba(226, 232, 240, 0.3); /* Very subtle vertical borders */
+  border-bottom: 1px solid var(--dt-border-light);
+  font-weight: 500;
+  font-size: 10px; /* Very small font size */
+  color: var(--dt-text-secondary);
+  white-space: nowrap;
+  background: var(--dt-bg-secondary);
+  position: relative;
+  transition: var(--dt-transition);
+  font-family: 'Nunito', sans-serif;
+}
+
+.dynamic-table th:last-child {
+  border-right: none; /* Remove border on last column */
+}
+
+.dynamic-table th:hover {
+  background: var(--dt-bg-tertiary);
+}
+
+.dynamic-table-column-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* Force left alignment */
+  gap: 2px; /* Minimal gap */
+  min-height: 16px; /* Very small minimum height */
+}
+
+.dynamic-table-column-label {
+  font-size: 10px; /* Very small font size */
+  font-weight: 500;
+  color: var(--dt-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* Force left alignment */
+  gap: 2px;
+  font-family: 'Nunito', sans-serif;
+  text-transform: uppercase; /* Make headers uppercase for better readability at small size */
+  letter-spacing: 0.5px;
+}
+
+.dynamic-table-mandatory-indicator {
+  color: var(--dt-danger);
+  font-weight: 600;
+  margin-left: 1px;
+  font-size: 10px;
+}
+
+/* Hide type display completely */
+.dynamic-table-column-type {
+  display: none;
+}
+
+.dynamic-table-actions-column {
+  width: 80px;
+  text-align: left; /* Changed to left alignment */
+  font-size: 9px; /* Very small font */
+  font-weight: 500;
+  color: var(--dt-text-muted);
+  font-family: 'Nunito', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ===== TABLE BODY ===== */
+.dynamic-table tbody tr {
+  border-bottom: 1px solid rgba(226, 232, 240, 0.4); /* Subtle horizontal borders */
+  transition: var(--dt-transition-fast);
+}
+
+.dynamic-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.dynamic-table-data-row:hover {
+  background: var(--dt-bg-secondary);
+  transform: translateY(-1px);
+  box-shadow: var(--dt-shadow-sm);
+}
+
+.dynamic-table-new-row {
+  background: linear-gradient(135deg, var(--dt-primary-light) 0%, var(--dt-bg-secondary) 100%);
+  border: 2px dashed var(--dt-primary);
+  border-left: none;
+  border-right: none;
+}
+
+/* ===== TABLE CELLS ===== */
+.dynamic-table-cell,
+.dynamic-table-new-cell {
+  padding: 6px 8px; /* Reduced padding */
+  vertical-align: middle;
+  text-align: left; /* Force left alignment for all cells */
+  border-right: 1px solid rgba(226, 232, 240, 0.3); /* Very subtle vertical borders */
+  border-bottom: 1px solid rgba(226, 232, 240, 0.4); /* Subtle horizontal borders */
+  transition: var(--dt-transition-fast);
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+}
+
+.dynamic-table-cell:last-child,
+.dynamic-table-new-cell:last-child {
+  border-right: none; /* Remove border on last column */
+}
+
+.dynamic-table-new-cell {
+  background: rgba(59, 130, 246, 0.02);
+}
+
+/* ===== CELL VALUES ===== */
+.dynamic-table-cell-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start; /* Force left alignment */
+  padding: 2px 4px; /* Smaller padding */
+  border-radius: var(--dt-radius-sm);
+  font-size: 12px;
+  min-height: 18px; /* Smaller height */
+  transition: var(--dt-transition);
+  font-family: 'Nunito', sans-serif;
+  text-align: left; /* Force left alignment */
+}
+
+.dynamic-table-cell-empty {
+  color: var(--dt-text-muted);
+  font-style: italic;
+  opacity: 0.7;
+  text-align: left; /* Force left alignment */
+}
+
+.dynamic-table-cell-yes-no-yes {
+  background: var(--dt-success-light);
+  color: var(--dt-success-dark);
+  border: 1px solid var(--dt-success);
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'Nunito', sans-serif;
+  text-align: left; /* Force left alignment */
+  justify-content: flex-start; /* Force left alignment */
+}
+
+.dynamic-table-cell-yes-no-no {
+  background: var(--dt-danger-light);
+  color: var(--dt-danger-dark);
+  border: 1px solid var(--dt-danger);
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'Nunito', sans-serif;
+  text-align: left; /* Force left alignment */
+  justify-content: flex-start; /* Force left alignment */
+}
+
+.dynamic-table-cell-number {
+  text-align: left; /* Changed from right to left */
+  font-variant-numeric: tabular-nums;
+  background: var(--dt-bg-secondary);
+  border: 1px solid var(--dt-border-light);
+  font-family: 'Nunito', monospace;
+  justify-content: flex-start; /* Force left alignment */
+}
+
+/* ===== FORM INPUTS ===== */
+.dynamic-table-input,
+.dynamic-table-select {
+  width: 100%;
+  padding: 4px 6px; /* Smaller padding */
+  border: 1px solid var(--dt-border-light);
+  border-radius: var(--dt-radius-sm);
+  font-size: 11px; /* Smaller font */
+  background: var(--dt-bg-primary);
+  color: var(--dt-text-primary);
+  transition: var(--dt-transition);
+  outline: none;
+  font-family: 'Nunito', sans-serif;
+  text-align: left; /* Force left alignment */
+}
+
+.dynamic-table-input:focus,
+.dynamic-table-select:focus {
+  border-color: var(--dt-primary);
+  box-shadow: 0 0 0 2px var(--dt-primary-light);
+  background: var(--dt-bg-primary);
+}
+
+.dynamic-table-input:disabled,
+.dynamic-table-select:disabled {
+  background: var(--dt-bg-tertiary);
+  color: var(--dt-text-muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.dynamic-table-input-number {
+  text-align: left; /* Changed from right to left */
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== ACTION BUTTONS ===== */
+.dynamic-table-actions-cell {
+  text-align: left; /* Changed to left alignment */
+  padding: 6px 4px; /* Smaller padding */
+  white-space: nowrap;
+}
+
+.dynamic-table-action-buttons {
+  display: flex;
+  gap: 3px; /* Smaller gap */
+  justify-content: flex-start; /* Changed to left alignment */
+  align-items: center;
+}
+
+.dynamic-table-action-buttons.editing {
+  gap: 4px;
+}
+
+.dynamic-table-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px; /* Smaller gap */
+  padding: 4px 6px; /* Smaller padding */
+  border: 1px solid transparent;
+  border-radius: var(--dt-radius-sm);
+  cursor: pointer;
+  font-size: 10px; /* Smaller font */
+  font-weight: 500;
+  transition: var(--dt-transition);
+  min-width: 24px; /* Smaller buttons */
+  height: 24px;
+  text-decoration: none;
+  outline: none;
+  font-family: 'Nunito', sans-serif;
+}
+
+.dynamic-table-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--dt-shadow-sm);
+}
+
+.dynamic-table-action-btn:active {
+  transform: translateY(0);
+}
+
+/* Button Variants */
+.dynamic-table-add-btn {
+  background: var(--dt-primary);
+  color: white;
+  border-color: var(--dt-primary);
+  padding: 4px 8px; /* Slightly larger for text */
+  min-width: auto;
+  font-weight: 500;
+}
+
+.dynamic-table-add-btn:hover {
+  background: var(--dt-primary-dark);
+  border-color: var(--dt-primary-dark);
+}
+
+.dynamic-table-edit-btn {
+  background: var(--dt-bg-tertiary);
+  color: var(--dt-text-secondary);
+  border-color: var(--dt-border-light);
+}
+
+.dynamic-table-edit-btn:hover {
+  background: var(--dt-primary-light);
+  color: var(--dt-primary);
+  border-color: var(--dt-primary);
+}
+
+.dynamic-table-delete-btn {
+  background: var(--dt-danger-light);
+  color: var(--dt-danger);
+  border-color: var(--dt-danger);
+}
+
+.dynamic-table-delete-btn:hover {
+  background: var(--dt-danger);
+  color: white;
+  border-color: var(--dt-danger-dark);
+}
+
+.dynamic-table-save-btn {
+  background: var(--dt-success);
+  color: white;
+  border-color: var(--dt-success);
+}
+
+.dynamic-table-save-btn:hover {
+  background: var(--dt-success-dark);
+  border-color: var(--dt-success-dark);
+}
+
+.dynamic-table-cancel-btn {
+  background: var(--dt-bg-tertiary);
+  color: var(--dt-text-secondary);
+  border-color: var(--dt-border-medium);
+}
+
+.dynamic-table-cancel-btn:hover {
+  background: var(--dt-text-muted);
+  color: white;
+  border-color: var(--dt-text-secondary);
+}
+
+/* ===== EMPTY STATE ===== */
+.dynamic-table-empty-state {
+  padding: 30px 20px; /* Reduced padding */
+  text-align: center;
+  color: var(--dt-text-muted);
+  background: var(--dt-bg-secondary);
+  border-top: 1px solid var(--dt-border-light);
+  font-family: 'Nunito', sans-serif;
+}
+
+.dynamic-table-empty-state p {
+  margin: 0;
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* ===== ERROR STATE ===== */
+.dynamic-table-error-message {
+  padding: 10px 12px; /* Reduced padding */
+  background: var(--dt-danger-light);
+  color: var(--dt-danger-dark);
+  border-top: 1px solid var(--dt-danger);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Nunito', sans-serif;
+}
+
+.dynamic-table-error-message::before {
+  content: "⚠";
+  font-size: 14px;
+}
+
+/* ===== COLUMN TYPE SPECIFIC STYLES ===== */
+.dynamic-table-column-text { min-width: 120px; }
+.dynamic-table-column-number { min-width: 80px; }
+.dynamic-table-column-yes_no { min-width: 80px; }
+.dynamic-table-column-date { min-width: 110px; }
+
+.dynamic-table-cell-text { 
+  min-width: 120px; 
+  max-width: 200px; 
+  text-align: left; /* Force left alignment */
+}
+.dynamic-table-cell-number { 
+  min-width: 80px; 
+  text-align: left; /* Changed from right to left */
+}
+.dynamic-table-cell-yes_no { 
+  min-width: 80px; 
+  text-align: left; /* Changed from center to left */
+}
+.dynamic-table-cell-date { 
+  min-width: 110px;
+  text-align: left; /* Force left alignment */
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+  .dynamic-table-container {
     margin: 12px 0;
-    overflow: hidden;
-    transition: all 0.3s ease;
+    border-radius: var(--dt-radius-md);
   }
   
-  .dynamic-table-container.has-error {
-    border-color: #f44336;
-    background: #ffebee;
-  }
-  
-  .table-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
-    background: linear-gradient(135deg, #4CAF50, #45a049);
-    color: white;
-    font-weight: 500;
-  }
-  
-  .table-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  
-  .table-icon {
-    font-size: 18px;
-  }
-  
-  .table-info {
-    font-size: 14px;
-    opacity: 0.9;
-  }
-  
-  .table-wrapper {
-    overflow-x: auto;
+  .dynamic-table-wrapper {
     max-height: 400px;
-    overflow-y: auto;
   }
   
   .dynamic-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    font-size: 14px;
+    font-size: 11px;
+    min-width: 500px;
   }
   
-  .dynamic-table thead {
-    background: #f5f5f5;
-    position: sticky;
-    top: 0;
-    z-index: 10;
+  .dynamic-table th,
+  .dynamic-table-cell,
+  .dynamic-table-new-cell {
+    padding: 4px 6px; /* Even smaller on mobile */
   }
   
   .dynamic-table th {
-    padding: 12px 8px;
-    text-align: left;
-    border-bottom: 2px solid #ddd;
-    font-weight: 600;
-    color: #333;
+    font-size: 9px;
   }
   
-  .column-header {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+  .dynamic-table-column-label {
+    font-size: 9px;
   }
   
-  .column-label {
-    font-size: 13px;
-    font-weight: 600;
+  .dynamic-table-input,
+  .dynamic-table-select {
+    font-size: 10px;
+    padding: 3px 4px;
   }
   
-  .column-type {
-    font-size: 11px;
-    color: #666;
-    font-weight: normal;
-    font-style: italic;
-  }
-  
-  .dynamic-table td {
-    padding: 8px;
-    border-bottom: 1px solid #eee;
-    vertical-align: top;
-  }
-  
-  .data-row {
-    transition: background-color 0.2s ease;
-  }
-  
-  .data-row:hover {
-    background-color: #f9f9f9;
-  }
-  
-  .new-row {
-    background-color: #f0f8ff;
-    border-top: 2px solid #4CAF50;
-  }
-  
-  .new-cell {
-    padding: 12px 8px;
-  }
-  
-  /* Cell input styles */
-  .table-cell-input,
-  .table-cell-select {
-    width: 100%;
-    padding: 6px 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 13px;
-    background: white;
-    transition: border-color 0.2s ease;
-  }
-  
-  .table-cell-input:focus,
-  .table-cell-select:focus {
-    outline: none;
-    border-color: #4CAF50;
-    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
-  }
-  
-  .table-cell-input.number {
-    text-align: right;
-  }
-  
-  /* Cell value display styles */
-  .table-cell-value {
-    display: inline-block;
-    padding: 4px 6px;
-    border-radius: 3px;
-    min-height: 20px;
+  .dynamic-table-action-btn {
     min-width: 20px;
+    height: 20px;
+    padding: 2px 4px;
+    font-size: 9px;
   }
   
-  .table-cell-value.number {
-    text-align: right;
-    font-family: 'Courier New', monospace;
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
+  .dynamic-table-actions-column {
+    width: 60px;
   }
-  
-  .table-cell-value.yes-no-yes {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-    font-weight: 500;
+}
+
+/* ===== DARK MODE SUPPORT ===== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --dt-bg-primary: #1e293b;
+    --dt-bg-secondary: #334155;
+    --dt-bg-tertiary: #475569;
+    --dt-border-light: #475569;
+    --dt-border-medium: #64748b;
+    --dt-text-primary: #f1f5f9;
+    --dt-text-secondary: #cbd5e1;
+    --dt-text-muted: #94a3b8;
+    --dt-primary-light: rgba(59, 130, 246, 0.2);
+    --dt-success-light: rgba(16, 185, 129, 0.2);
+    --dt-danger-light: rgba(239, 68, 68, 0.2);
   }
-  
-  .table-cell-value.yes-no-no {
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-    font-weight: 500;
+}
+
+/* ===== ACCESSIBILITY ===== */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
-  
-  /* Action buttons */
-  .actions-column {
-    width: 120px;
-    text-align: center;
-  }
-  
-  .actions-cell {
-    text-align: center;
-    white-space: nowrap;
-  }
-  
-  .action-buttons {
-    display: flex;
-    gap: 4px;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .action-buttons.editing {
-    gap: 6px;
-  }
-  
-  .action-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 6px 8px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    min-width: 32px;
-    height: 32px;
-  }
-  
-  .action-btn.add {
-    background: #4CAF50;
-    color: white;
-    padding: 8px 12px;
-    min-width: auto;
-  }
-  
-  .action-btn.add:hover {
-    background: #45a049;
-    transform: translateY(-1px);
-  }
-  
-  .action-btn.edit {
-    background: #2196F3;
-    color: white;
-  }
-  
-  .action-btn.edit:hover {
-    background: #1976D2;
-  }
-  
-  .action-btn.delete {
-    background: #f44336;
-    color: white;
-  }
-  
-  .action-btn.delete:hover {
-    background: #d32f2f;
-  }
-  
-  .action-btn.save {
-    background: #4CAF50;
-    color: white;
-  }
-  
-  .action-btn.save:hover {
-    background: #45a049;
-  }
-  
-  .action-btn.cancel {
-    background: #757575;
-    color: white;
-  }
-  
-  .action-btn.cancel:hover {
-    background: #616161;
-  }
-  
-  /* Column type specific styles */
-  .column-text {
-    min-width: 150px;
-  }
-  
-  .column-number {
-    min-width: 100px;
-  }
-  
-  .column-yes_no {
-    min-width: 120px;
-  }
-  
-  .cell-text {
-    min-width: 150px;
-  }
-  
-  .cell-number {
-    min-width: 100px;
-    text-align: right;
-  }
-  
-  .cell-yes_no {
-    min-width: 120px;
-    text-align: center;
-  }
-  
-  /* Error states */
-  .table-error-message {
-    padding: 12px 16px;
-    background: #ffebee;
-    color: #c62828;
-    border-top: 1px solid #f44336;
-    font-size: 14px;
-  }
-  
-  .table-error {
-    padding: 20px;
-    text-align: center;
-    color: #f44336;
-    background: #ffebee;
-  }
-  
-  /* Empty state */
-  .table-empty-state {
-    padding: 20px;
-    text-align: center;
-    color: #666;
-    font-style: italic;
-    background: #f8f9fa;
-    border-top: 1px solid #dee2e6;
-  }
-  
-  .table-empty-state p {
-    margin: 0;
-    font-size: 14px;
-  }
-  
-  /* Responsive design */
-  @media (max-width: 768px) {
-    .table-wrapper {
-      max-height: 300px;
-    }
-    
-    .dynamic-table {
-      font-size: 12px;
-    }
-    
-    .dynamic-table th,
-    .dynamic-table td {
-      padding: 6px 4px;
-    }
-    
-    .table-cell-input,
-    .table-cell-select {
-      font-size: 12px;
-      padding: 4px 6px;
-    }
-    
-    .action-btn {
-      min-width: 28px;
-      height: 28px;
-      padding: 4px 6px;
-    }
-    
-    .column-header {
-      gap: 1px;
-    }
-    
-    .column-label {
-      font-size: 11px;
-    }
-    
-    .column-type {
-      font-size: 9px;
-    }
-  }
-  
-  /* Dark mode support (if needed) */
-  @media (prefers-color-scheme: dark) {
-    .dynamic-table-container {
-      background: #2a2a2a;
-      border-color: #555;
-    }
-    
-    .dynamic-table {
-      background: #333;
-      color: #fff;
-    }
-    
-    .dynamic-table th {
-      background: #444;
-      color: #fff;
-      border-bottom-color: #555;
-    }
-    
-    .dynamic-table td {
-      border-bottom-color: #555;
-    }
-    
-    .data-row:hover {
-      background-color: #3a3a3a;
-    }
-    
-    .new-row {
-      background-color: #2a3a4a;
-    }
-    
-    .table-cell-input,
-    .table-cell-select {
-      background: #444;
-      color: #fff;
-      border-color: #555;
-    }
-  }
+}
+
+/* Focus styles for keyboard navigation */
+.dynamic-table-action-btn:focus-visible {
+  outline: 2px solid var(--dt-primary);
+  outline-offset: 2px;
+}
+
+.dynamic-table th:focus-visible {
+  outline: 2px solid var(--dt-primary);
+  outline-offset: -2px;
+}
