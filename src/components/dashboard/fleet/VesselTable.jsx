@@ -268,25 +268,29 @@ const VesselTable = ({
     }
 
     // Add checklist status
-    if (vessel.checklist_received !== undefined) {
-      const checklistStatus = normalizeChecklistValue(vessel.checklist_received);
+    // This logic is now primarily driven by computed_checklist_status from backend
+    // The frontend's checklist_received value is what the user has set,
+    // but the overall status should reflect the computed one.
+    if (vessel.computed_checklist_status !== undefined) {
+      const computedStatus = vessel.computed_checklist_status;
       let status;
 
-      if (checklistStatus === 'Acknowledged') {
-        status = 'green';
-      } else if (checklistStatus === 'Submitted') {
-        status = 'yellow';
-      } else { // 'Pending'
-        status = 'red';
+      if (computedStatus === 'Submitted') {
+        status = 'green'; // If backend says submitted, it's green
+      } else if (computedStatus === 'Acknowledged') {
+        status = 'yellow'; // If backend says acknowledged, it's yellow
+      } else { // 'Pending' or 'Not Started'
+        status = 'red'; // If backend says pending/not started, it's red
       }
 
       updateWorstStatus(status);
       factors.push({
-        name: 'Checklist',
-        value: checklistStatus,
+        name: 'Pre-Arrival Checklist',
+        value: computedStatus,
         status: status
       });
     }
+
 
     // If no factors were evaluated, use grey as default
     if (factors.length === 0) {
@@ -1459,7 +1463,7 @@ const VesselTable = ({
                 <IntuitiveDefectIndicator
                   defectCount={defectCounts.total}
                   highCount={defectCounts.high}
-                  mediumCount={defectCounts.medium}
+                  mediumCount={defectCounts.Cmedium}
                   lowCount={defectCounts.low}
                   variant="wrench"
                   onClick={(e) => {
@@ -1584,16 +1588,33 @@ const VesselTable = ({
         }
 
         if (fieldId === 'checklist_received') {
-          const normalizedValue = normalizeChecklistValue(value);
+          const computedChecklistStatus = rowData.computed_checklist_status;
+          let dropdownValue = "Pending"; // Default display value
+          let dropdownOptions = ["Pending", "Acknowledged"]; // Default options
+          let isDisabled = false;
+
+          if (computedChecklistStatus === 'Submitted') {
+            dropdownValue = "Submitted";
+            dropdownOptions = ["Submitted"]; // Only 'Submitted' can be selected
+            isDisabled = true; // Disable dropdown
+          } else {
+            // If not submitted from backend, allow user to set to Acknowledged
+            // The default display is 'Pending' unless user has previously set 'Acknowledged'
+            // We use the 'value' prop (which is rowData.checklist_received) for the current state
+            dropdownValue = normalizeChecklistValue(value);
+            dropdownOptions = ["Pending", "Acknowledged"];
+            isDisabled = false;
+          }
 
           return (
             <DropdownField
-              value={normalizedValue}
+              value={dropdownValue}
               vessel={rowData}
               onUpdate={onUpdateVessel}
               field="checklist_received"
-              options={["Pending", "Acknowledged", "Submitted"]}
+              options={dropdownOptions}
               className={shouldHideColumn(fieldId) ? 'hidden-column' : ''}
+              isDisabled={isDisabled} // Pass the isDisabled prop
             />
           );
         }

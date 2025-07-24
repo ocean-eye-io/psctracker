@@ -17,45 +17,39 @@ const ChecklistStatusBadge = ({
   className = '',
   status: overrideStatus = null
 }) => {
-  // Determine checklist status
+  // UPDATED: Simplified checklist status determination to mirror modal's direct status usage
   const checklistStatus = useMemo(() => {
-    // Use override status if provided (for immediate updates)
+    console.log(`🎯 ChecklistStatusBadge: Determining status for ${vessel.vessel_name}:`, {
+      overrideStatus,
+      vesselStatus: vessel.status, // NEW: Check for vessel.status directly
+      // Removed other legacy status fields for simplification
+    });
+
+    // Priority 1: Use override status if provided (for immediate UI updates)
     if (overrideStatus) {
+      console.log(`✅ Using override status: ${overrideStatus}`);
       return overrideStatus;
     }
 
-    // Check vessel's checklistStatus field
-    if (vessel.checklistStatus) {
-      return vessel.checklistStatus;
+    // Priority 2: Use the direct 'status' field from the vessel object (as updated by modal)
+    if (vessel.status) {
+      console.log(`✅ Using vessel.status: ${vessel.status}`);
+      return vessel.status;
     }
 
-    // Fallback to checklist_received field
-    if (vessel.checklist_received !== undefined && vessel.checklist_received !== null) {
-      if (typeof vessel.checklist_received === 'boolean') {
-        return vessel.checklist_received ? 'complete' : 'pending';
-      }
-      
-      if (typeof vessel.checklist_received === 'string') {
-        const status = vessel.checklist_received.toLowerCase();
-        if (status.includes('complete') || status.includes('submitted')) {
-          return 'complete';
-        } else if (status.includes('progress') || status.includes('draft')) {
-          return 'in_progress';
-        }
-      }
-    }
-
-    // Default to pending
+    // Default to pending if no direct status is found
+    console.log(`📝 Using default status: pending`);
     return 'pending';
   }, [vessel, overrideStatus]);
 
-  // Get status configuration
+  // UPDATED: Get status configuration with submitted status support
   const getStatusConfig = (status) => {
     switch (status) {
       case 'complete':
+      case 'submitted': // UPDATED: Handle submitted status
         return {
           icon: <CheckCircle size={14} />,
-          label: 'Complete',
+          label: 'Submitted', // Changed label to 'Submitted'
           actionIcon: <Eye size={12} />,
           actionLabel: 'View',
           color: '#2ECC71',
@@ -65,6 +59,7 @@ const ChecklistStatusBadge = ({
           clickable: true
         };
       case 'in_progress':
+      case 'progress': // ADDED: Handle 'progress' variant
         return {
           icon: <Clock size={14} />,
           label: 'In Progress',
@@ -115,6 +110,18 @@ const ChecklistStatusBadge = ({
     }
   };
 
+  // UPDATED: Enhanced tooltip with debug info in development
+  const getTooltipText = () => {
+    const baseTooltip = `5-Day Checklist: ${statusConfig.label} - Click to ${statusConfig.actionLabel.toLowerCase()}`;
+    
+    if (process.env.NODE_ENV === 'development') {
+      // Debug info now only shows the direct vessel.status
+      return `${baseTooltip}\n\nDebug Info:\nFinal: ${checklistStatus}`;
+    }
+    
+    return baseTooltip;
+  };
+
   return (
     <div
       className={`checklist-status-badge ${statusConfig.clickable ? 'clickable' : ''} ${className}`}
@@ -125,7 +132,7 @@ const ChecklistStatusBadge = ({
         '--status-border': statusConfig.borderColor,
         '--status-hover-bg': statusConfig.hoverBg
       }}
-      title={`5-Day Checklist: ${statusConfig.label} - Click to ${statusConfig.actionLabel.toLowerCase()}`}
+      title={getTooltipText()}
     >
       <div className="badge-content">
         <div className="badge-main">
@@ -141,6 +148,18 @@ const ChecklistStatusBadge = ({
           </div>
         )}
       </div>
+
+      {/* UPDATED: Debug indicator in development reflects new status source */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="debug-indicator" title={`Status Source: ${
+          overrideStatus ? 'Override' :
+          vessel.status ? 'Vessel Direct Status' :
+          'Default'
+        }`}>
+          {overrideStatus ? '🔄' :
+           vessel.status ? '✅' : '📝'}
+        </div>
+      )}
 
       {/* Styles */}
       <style jsx>{`
@@ -225,6 +244,23 @@ const ChecklistStatusBadge = ({
           transform: scale(1.1);
         }
 
+        /* NEW: Debug indicator styles */
+        .debug-indicator {
+          position: absolute;
+          top: -2px;
+          right: -2px;
+          width: 12px;
+          height: 12px;
+          background: rgba(0, 0, 0, 0.7);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 8px;
+          z-index: 10;
+          pointer-events: none;
+        }
+
         /* Add subtle animation on hover */
         .checklist-status-badge.clickable::before {
           content: '';
@@ -266,6 +302,12 @@ const ChecklistStatusBadge = ({
             width: 14px;
             height: 14px;
           }
+
+          .debug-indicator {
+            width: 10px;
+            height: 10px;
+            font-size: 7px;
+          }
         }
 
         @media (max-width: 480px) {
@@ -277,6 +319,12 @@ const ChecklistStatusBadge = ({
           .badge-action {
             width: 12px;
             height: 12px;
+          }
+
+          .debug-indicator {
+            width: 8px;
+            height: 8px;
+            font-size: 6px;
           }
         }
 

@@ -79,7 +79,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
 
   // API endpoints (keep your existing endpoints)
   const BASE_API_URL = 'https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws';
-  const VESSELS_WITH_OVERRIDES_API_URL = `${BASE_API_URL}/api/vessels-with-overrides`;
+  const VESSELS_WITH_OVERRIDE_API_URL = `${BASE_API_URL}/api/vessels-with-overrides`; // Renamed for clarity
   const VESSEL_OVERRIDE_API_URL = `${BASE_API_URL}/api/vessel-override`;
   const ORIGINAL_VESSELS_API_URL = `${BASE_API_URL}/api/vessels`;
   const PSC_API_URL = `${BASE_API_URL}/api/psc-deficiencies`;
@@ -496,7 +496,8 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         status: sdtrFaithRaw.status,
         current_status: sdtrFaithRaw.current_status,
         report_date: sdtrFaithRaw.report_date,
-        rds_load_date: sdtrFaithRaw.rds_load_date
+        rds_load_date: sdtrFaithRaw.rds_load_date,
+        computed_checklist_status: sdtrFaithRaw.computed_checklist_status // Log new field
       });
     } else {
       console.log('SDTR FAITH NOT FOUND in raw data');
@@ -667,7 +668,8 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         uniqueKey,
         isActiveVessel: isActive,
         reportDate: parseDate(vessel.report_date), // Add parsed report date
-        event_type: formattedStatus // Apply the formatted status
+        event_type: formattedStatus, // Apply the formatted status
+        computed_checklist_status: vessel.computed_checklist_status // Include the new field
       };
     };
 
@@ -713,7 +715,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
 
     try {
       // Use the new API endpoint for vessels with overrides
-      const response = await fetch(VESSELS_WITH_OVERRIDES_API_URL);
+      const response = await fetch(VESSELS_WITH_OVERRIDE_API_URL); // Corrected variable name
 
       if (!response.ok) {
         throw new Error(`API request failed with status ${response.status}`);
@@ -739,7 +741,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     } finally {
       setLoading(false);
     }
-  }, [processVesselsData, sortVesselsData, VESSELS_WITH_OVERRIDES_API_URL]);
+  }, [processVesselsData, sortVesselsData, VESSELS_WITH_OVERRIDE_API_URL]); // Corrected variable name
 
   // Load data on component mount
   useEffect(() => {
@@ -996,18 +998,18 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
 
   // Memoized values for filter counts and dropdown options
   const uniquePorts = useMemo(() =>
-    [...new Set(filteredVessels.map(v => v.arrival_port).filter(Boolean))],  // ❌ WRONG
-    [filteredVessels]
+    [...new Set(vessels.map(v => v.arrival_port).filter(Boolean))],  // ✅ CORRECTED: Use 'vessels' for all unique options
+    [vessels]
   );
 
   const uniqueStatuses = useMemo(() =>
-    [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))], // ❌ INCONSISTENT
-    [allProcessedVessels]
+    [...new Set(vessels.map(v => v.event_type).filter(Boolean))], // ✅ CORRECTED: Use 'vessels' for all unique options
+    [vessels]
   );
 
   const uniqueDocs = useMemo(() =>
-    [...new Set(allProcessedVessels.map(v => v.fleet_type).filter(Boolean))], // ❌ INCONSISTENT
-    [allProcessedVessels]
+    [...new Set(vessels.map(v => v.fleet_type).filter(Boolean))], // ✅ CORRECTED: Use 'vessels' for all unique options
+    [vessels]
   );
 
   const vesselCount = vessels.length;

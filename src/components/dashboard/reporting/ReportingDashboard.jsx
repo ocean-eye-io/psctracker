@@ -1,28 +1,216 @@
-import React, { useState, useEffect, useRef } from 'react';
+// src/components/dashboard/reporting/ReportingDashboard.jsx
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Table, StatusIndicator, TableBadge, ExpandedItem, ActionButton } from '../../common/Table';
-import { Calendar, CheckSquare, AlertTriangle, Eye, Info, Star, Ship, X, Plus, Loader2 } from 'lucide-react';
+import { Calendar, CheckSquare, AlertTriangle, Eye, Info, Star, Ship, X, Plus, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '../../ui/button';
+import VesselReportingTable from './VesselReportingTable';
+import vesselService from '../../../services/vesselService'; // Assuming you have this service
+import { VESSEL_FIELDS } from '../../../config/vesselFieldMappings'; // Assuming you have this
+import PropTypes from 'prop-types'; // Import PropTypes
 
 const ReportingDashboard = ({ 
-  vessels = [],
-  onFormSubmit
+  initialVessels = [],
+  onFormSubmit,
+  currentUser
 }) => {
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [activeVessel, setActiveVessel] = useState(null);
-  const [activeFormType, setActiveFormType] = useState('notification');
+  // State management
+  const [vessels, setVessels] = useState(initialVessels);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [isFormOpen, setIsFormOpen] = useState(false); // Legacy form state
+  const [activeVessel, setActiveVessel] = useState(null); // Legacy form state
+  const [activeFormType, setActiveFormType] = useState('notification'); // Legacy form state
   const [vesselDetailsOpen, setVesselDetailsOpen] = useState(false);
   const [selectedVesselDetails, setSelectedVesselDetails] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [savingStates, setSavingStates] = useState({});
+  
   const formDialogRef = useRef(null);
   const detailsDialogRef = useRef(null);
 
-  // Simulate loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 600);
-    return () => clearTimeout(timer);
+  // Enhanced vessel data fetching with error handling
+  const fetchVessels = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('🔄 Dashboard: Fetching vessel data...');
+      
+      const vesselData = await vesselService.getAllVessels();
+      
+      // Map legacy status fields to a single 'status' field for consistency
+      // This ensures that even if the backend returns old fields, our frontend
+      // uses a consistent 'status' property.
+      const processedVesselData = vesselData.map(vessel => ({
+        ...vessel,
+        // Prioritize existing 'status', then computed, then raw, then legacy
+        status: vessel.status || vessel.computed_checklist_status || vessel.checklist_status || vessel.checklistStatus || 'pending'
+      }));
+
+      console.log('✅ Dashboard: Vessel data fetched and processed:', {
+        count: processedVesselData.length,
+        sample: processedVesselData[0] ? {
+          name: processedVesselData[0].vessel_name,
+          status: processedVesselData[0].status, // Now logging the consolidated 'status'
+          // You can remove these if they are truly deprecated from backend response
+          // checklist_status: processedVesselData[0].checklist_status,
+          // computed_checklist_status: processedVesselData[0].computed_checklist_status
+        } : null
+      });
+      
+      setVessels(processedVesselData);
+      
+    } catch (error) {
+      console.error('❌ Dashboard: Error fetching vessels:', error);
+      setError('Failed to fetch vessel data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // Refresh vessels function for checklist updates
+  const handleRefreshVessels = useCallback(async () => {
+    console.log('🔄 Dashboard: Refresh vessels requested');
+    await fetchVessels();
+  }, [fetchVessels]);
+
+  // Handle vessel updates with proper state management
+  // This function is called by VesselReportingTable when a checklist status changes
+  // or when an override (ETA/ETB/ETD) is updated.
+  const handleUpdateVessel = useCallback(async (vesselId, fieldName, newValue) => {
+    console.log('📝 Dashboard: Vessel update requested:', { vesselId, fieldName, newValue });
+    
+    try {
+      // Handle checklist status updates (from ChecklistModal via VesselReportingTable)
+      if (fieldName === 'status') { 
+        console.log('📋 Dashboard: Checklist status updated, updating vessel state locally...');
+        
+        // Update specific vessel in state immediately for UI feedback
+        setVessels(prevVessels => 
+          prevVessels.map(vessel => 
+            vessel.id === vesselId 
+              ? { 
+                  ...vessel, 
+                  status: newValue, // Update the consolidated 'status' field
+                  // If your backend still relies on these, you might need to update them too
+                  // computed_checklist_status: newValue, 
+                  // checklist_status: newValue,
+                  // checklistStatus: newValue 
+                }
+              : vessel
+          )
+        );
+        
+        console.log('⚡ Dashboard: Vessel state updated locally for status');
+        
+        // The actual refresh from the backend will be triggered by VesselReportingTable
+        // after a delay to ensure backend is updated, which will then re-fetch
+        // and consolidate the status.
+      }
+      
+      // Handle other field updates (like overrides for ETA, ETB, ETD)
+      if (['eta', 'etb', 'etd'].includes(fieldName)) {
+        console.log('📅 Dashboard: Date override update');
+        
+        const saveKey = `${vesselId}-${fieldName}`;
+        setSavingStates(prev => ({ ...prev, [saveKey]: true }));
+        
+        try {
+          // Call your vessel service to update the override
+          await vesselService.updateOverride(vesselId, fieldName, newValue);
+          
+          // Update vessel state with the user_ override value
+          setVessels(prevVessels => 
+            prevVessels.map(vessel => 
+              vessel.id === vesselId 
+                ? { 
+                    ...vessel, 
+                    [`user_${fieldName}`]: newValue
+                  }
+                : vessel
+            )
+          );
+          
+          console.log('✅ Dashboard: Override updated successfully');
+          
+        } catch (overrideError) {
+          console.error('❌ Dashboard: Override update failed:', overrideError);
+          throw overrideError; // Re-throw to be caught by outer try-catch
+        } finally {
+          setSavingStates(prev => {
+            const updated = { ...prev };
+            delete updated[saveKey];
+            return updated;
+          });
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ Dashboard: Error in handleUpdateVessel:', error);
+      alert(`Failed to update ${fieldName}: ${error.message}`);
+    }
+  }, []);
+
+  // Handle override updates (this is essentially the same as the override part of handleUpdateVessel)
+  // Keeping it separate if it's called from other places, otherwise can be merged.
+  const handleUpdateOverride = useCallback(async (vesselId, fieldName, newValue) => {
+    console.log('🔄 Dashboard: Override update requested:', { vesselId, fieldName, newValue });
+    
+    const saveKey = `${vesselId}-${fieldName}`;
+    
+    try {
+      setSavingStates(prev => ({ ...prev, [saveKey]: true }));
+      
+      if (newValue === null) {
+        await vesselService.deleteOverride(vesselId, fieldName);
+      } else {
+        await vesselService.updateOverride(vesselId, fieldName, newValue);
+      }
+      
+      setVessels(prevVessels => 
+        prevVessels.map(vessel => 
+          vessel.id === vesselId 
+            ? { 
+                ...vessel, 
+                [`user_${fieldName}`]: newValue
+              }
+            : vessel
+        )
+      );
+      
+      console.log('✅ Dashboard: Override updated successfully');
+      
+    } catch (error) {
+      console.error('❌ Dashboard: Override update failed:', error);
+      alert(`Failed to update ${fieldName}: ${error.message}`);
+    } finally {
+      setSavingStates(prev => {
+        const updated = { ...prev };
+        delete updated[saveKey];
+        return updated;
+      });
+    }
+  }, []);
+
+  // Handle remarks modal (if you have one)
+  const handleOpenRemarks = useCallback((vessel) => {
+    console.log('💬 Dashboard: Opening remarks for vessel:', vessel.vessel_name);
+    // Implement your remarks modal logic here
+    // For now, just log
+  }, []);
+
+  // Initial data fetch
+  useEffect(() => {
+    if (initialVessels.length === 0) {
+      fetchVessels();
+    } else {
+      // If initialVessels are provided, process them to ensure 'status' field exists
+      const processedInitialVessels = initialVessels.map(vessel => ({
+        ...vessel,
+        status: vessel.status || vessel.computed_checklist_status || vessel.checklist_status || vessel.checklistStatus || 'pending'
+      }));
+      setVessels(processedInitialVessels);
+    }
+  }, [initialVessels, fetchVessels]);
 
   // Add click outside handlers for dialogs
   useEffect(() => {
@@ -41,261 +229,52 @@ const ReportingDashboard = ({
     };
   }, [isFormOpen, vesselDetailsOpen]);
 
-  // Open form dialog
+  // Legacy form handling (if you still need these)
   const handleOpenForm = (vessel, formType) => {
     setActiveVessel(vessel);
     setActiveFormType(formType);
     setIsFormOpen(true);
   };
   
-  // Handle form submission
   const handleSubmitForm = (formData) => {
-    if (activeVessel && activeFormType) {
+    if (activeVessel && activeFormType && onFormSubmit) {
       onFormSubmit(activeVessel.imo_no, activeFormType, formData);
       setIsFormOpen(false);
     }
   };
   
-  // Handle row click to view vessel details
   const handleRowClick = (vessel) => {
     setSelectedVesselDetails(vessel);
     setVesselDetailsOpen(true);
   };
   
-  // Get status color based on vessel status
+  // Get status color based on vessel event_type status
   const getStatusColor = (status) => {
     if (!status) return '#f4f4f4';
     
     const statusLower = status.toLowerCase();
     if (statusLower.includes('at sea') || statusLower.includes('transit')) {
-      return '#3498DB'; // Blue for at sea
+      return '#3498DB';
     } else if (statusLower.includes('port') || statusLower.includes('berth')) {
-      return '#2ECC71'; // Green for at port
+      return '#2ECC71';
     } else if (statusLower.includes('anchor')) {
-      return '#F1C40F'; // Yellow for at anchor
+      return '#F1C40F';
     } else {
-      return '#f4f4f4'; // Default
+      return '#f4f4f4';
     }
   };
   
-  // Table columns configuration - uses existing Table components
-  const columns = [
-    {
-      field: 'vessel_name',
-      label: 'Vessel',
-      width: '180px',
-      sortable: true
-    },
-    {
-      field: 'imo_no',
-      label: 'IMO',
-      width: '100px',
-      sortable: true
-    },
-    {
-      field: 'eta',
-      label: 'ETA',
-      width: '120px',
-      sortable: true,
-      render: (value) => {
-        if (!value) return '-';
-        const date = new Date(value);
-        const today = new Date();
-        const diffTime = date - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        return (
-          <div className="flex flex-col">
-            <span>{date.toLocaleDateString()}</span>
-            {diffDays > 0 && diffDays < 8 && (
-              <span className="month-badge">{diffDays} {diffDays === 1 ? 'day' : 'days'} left</span>
-            )}
-          </div>
-        );
-      }
-    },
-    {
-      field: 'event_type',
-      label: 'Status',
-      width: '130px',
-      sortable: true,
-      render: (value) => (
-        <StatusIndicator 
-          status={value || '-'}
-          color={getStatusColor(value)}
-        />
-      )
-    },
-    {
-      field: 'notificationSubmitted',
-      label: '5-Day Notification',
-      width: '160px',
-      sortable: true,
-      render: (value, rowData) => (
-        <div className="flex items-center justify-between">
-          {value ? (
-            <TableBadge variant="success" className="transition-all hover:shadow-md">Submitted</TableBadge>
-          ) : (
-            <TableBadge variant="warning" className="transition-all hover:shadow-md">Pending</TableBadge>
-          )}
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="h-8 w-8 ml-2 hover:bg-blue-900/30 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenForm(rowData, 'notification');
-            }}
-            title={value ? "Update notification" : "Create notification"}
-          >
-            {value ? <Calendar size={16} /> : <Plus size={16} />}
-          </Button>
-        </div>
-      )
-    },
-    {
-      field: 'checklistCompleted',
-      label: 'Checklist',
-      width: '160px',
-      sortable: true,
-      render: (value, rowData) => (
-        <div className="flex items-center justify-between">
-          {value ? (
-            <div className="flex items-center gap-2">
-              <TableBadge 
-                variant={rowData.checklistConcerns ? "danger" : "success"}
-                className="transition-all hover:shadow-md"
-              >
-                {rowData.checklistConcerns ? "Concerns" : "Completed"}
-              </TableBadge>
-              {rowData.checklistConcerns && (
-                <AlertTriangle size={16} className="text-red-500 animate-pulse" />
-              )}
-            </div>
-          ) : (
-            <TableBadge variant="warning" className="transition-all hover:shadow-md">Pending</TableBadge>
-          )}
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="h-8 w-8 ml-2 hover:bg-blue-900/30 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenForm(rowData, 'checklist');
-            }}
-            title={value ? "Update checklist" : "Create checklist"}
-          >
-            {value ? <CheckSquare size={16} /> : <Plus size={16} />}
-          </Button>
-        </div>
-      )
-    }
-  ];
-  
-  // Actions for the table
-  const actions = {
-    label: 'Actions',
-    width: '80px',
-    content: (vessel) => (
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8 flex items-center justify-center hover:bg-blue-900/30 transition-colors"
-        onClick={(e) => {
-          e.stopPropagation();
-          handleRowClick(vessel);
-        }}
-        title="View vessel details"
-      >
-        <Eye size={16} />
-      </Button>
-    )
-  };
-  
-  // Render expanded content for rows
-  const renderExpandedContent = (vessel) => {
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 animate-fadeIn">
-        {vessel.notificationSubmitted && (
-          <ExpandedItem 
-            label={
-              <div className="flex items-center gap-1">
-                <Calendar size={14} className="text-blue-400" />
-                <span>5-Day Notification</span>
-              </div>
-            }
-            value={`Submitted on ${new Date(vessel.notificationDate).toLocaleString()}`}
-            className="hover:border-blue-600/50 transition-colors"
-          >
-            {vessel.notificationData && (
-              <div className="mt-2 text-sm space-y-1">
-                <p><span className="text-blue-400">ETA Confirmed:</span> {vessel.notificationData.etaConfirmed ? 'Yes' : 'No'}</p>
-                <p><span className="text-blue-400">Cargo Ready:</span> {vessel.notificationData.cargoReady ? 'Yes' : 'No'}</p>
-                <p><span className="text-blue-400">Comments:</span> {vessel.notificationData.comments || 'None'}</p>
-              </div>
-            )}
-          </ExpandedItem>
-        )}
-        
-        {vessel.checklistCompleted && (
-          <ExpandedItem 
-            label={
-              <div className="flex items-center gap-1">
-                <CheckSquare size={14} className="text-blue-400" />
-                <span>Checklist</span>
-              </div>
-            }
-            value={`Completed on ${new Date(vessel.checklistDate).toLocaleString()}`}
-            className={vessel.checklistConcerns ? "hover:border-red-600/50" : "hover:border-blue-600/50"}
-          >
-            {vessel.checklistData && (
-              <div className="mt-2 text-sm space-y-1">
-                <p>
-                  <span className="text-blue-400">Documentation:</span> 
-                  <span className={vessel.checklistData.documentation ? "text-green-400 ml-1" : "text-red-400 ml-1"}>
-                    {vessel.checklistData.documentation ? 'Complete' : 'Incomplete'}
-                  </span>
-                </p>
-                <p>
-                  <span className="text-blue-400">Safety:</span>
-                  <span className={vessel.checklistData.safety ? "text-green-400 ml-1" : "text-red-400 ml-1"}>
-                    {vessel.checklistData.safety ? 'Verified' : 'Not Verified'}
-                  </span>
-                </p>
-                <p>
-                  <span className="text-blue-400">Cargo:</span>
-                  <span className={vessel.checklistData.cargo ? "text-green-400 ml-1" : "text-red-400 ml-1"}>
-                    {vessel.checklistData.cargo ? 'Requirements Met' : 'Requirements Not Met'}
-                  </span>
-                </p>
-                <p>
-                  <span className="text-blue-400">Crew:</span>
-                  <span className={vessel.checklistData.crew ? "text-green-400 ml-1" : "text-red-400 ml-1"}>
-                    {vessel.checklistData.crew ? 'Verified' : 'Not Verified'}
-                  </span>
-                </p>
-                {vessel.checklistConcerns && (
-                  <p className="text-red-500 mt-2 flex items-start gap-1 bg-red-900/20 p-2 rounded-md border border-red-900/50">
-                    <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
-                    <span>{vessel.checklistConcerns}</span>
-                  </p>
-                )}
-              </div>
-            )}
-          </ExpandedItem>
-        )}
-      </div>
-    );
-  };
-  
-  // Import form components
-  const NotificationForm = React.lazy(() => import('../reporting/forms/NotificationForm'));
-  const ChecklistForm = React.lazy(() => import('../reporting/forms/ChecklistForm'));
+  // Import form components (if you have them)
+  const NotificationForm = React.lazy(() => import('./forms/NotificationForm'));
+  const ChecklistForm = React.lazy(() => import('./forms/ChecklistForm'));
   
   // Vessel details component
   const VesselDetailsView = () => {
     if (!selectedVesselDetails) return null;
     
+    // Use the consolidated 'status' field for display here too
+    const currentChecklistStatus = selectedVesselDetails.status || 'pending';
+
     return (
       <div className="space-y-4">
         {/* Vessel header with status */}
@@ -339,23 +318,18 @@ const ReportingDashboard = ({
             label={
               <div className="flex items-center gap-1">
                 <Info size={14} />
-                Report Status
+                Checklist Status
               </div>
             }
             value={
               <div className="space-y-2 mt-2">
                 <div className="flex items-center justify-between">
-                  <span>5-Day Notification:</span>
-                  <TableBadge variant={selectedVesselDetails.notificationSubmitted ? "success" : "warning"}>
-                    {selectedVesselDetails.notificationSubmitted ? "Submitted" : "Pending"}
-                  </TableBadge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Checklist:</span>
-                  <TableBadge variant={!selectedVesselDetails.checklistCompleted ? "warning" : 
-                               selectedVesselDetails.checklistConcerns ? "danger" : "success"}>
-                    {!selectedVesselDetails.checklistCompleted ? "Pending" : 
-                     selectedVesselDetails.checklistConcerns ? "Concerns" : "Completed"}
+                  <span>Current Status:</span>
+                  <TableBadge variant={
+                    currentChecklistStatus === 'submitted' ? "success" :
+                    currentChecklistStatus === 'in_progress' ? "warning" : "danger"
+                  }>
+                    {currentChecklistStatus}
                   </TableBadge>
                 </div>
               </div>
@@ -364,149 +338,20 @@ const ReportingDashboard = ({
           />
         </div>
         
-        {/* Notification details section */}
-        {selectedVesselDetails.notificationSubmitted && (
-          <ExpandedItem
-            label={
-              <div className="flex items-center gap-2">
-                <Calendar size={16} className="text-blue-400" />
-                <span>5-Day Notification Details</span>
-              </div>
-            }
-            value={`Submitted on ${new Date(selectedVesselDetails.notificationDate).toLocaleString()}`}
-            className="hover:border-blue-600/30 transition-colors"
-          >
-            {selectedVesselDetails.notificationData && (
-              <div className="mt-3 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gray-900/50 p-3 rounded-md border border-gray-800 shadow-sm hover:shadow-md transition-all">
-                    <p className="text-blue-400 text-xs mb-1">ETA Confirmed</p>
-                    <p className="font-medium">
-                      {selectedVesselDetails.notificationData.etaConfirmed ? 
-                        <span className="text-green-400">Yes</span> : 
-                        <span className="text-red-400">No</span>
-                      }
-                    </p>
-                  </div>
-                  <div className="bg-gray-900/50 p-3 rounded-md border border-gray-800 shadow-sm hover:shadow-md transition-all">
-                    <p className="text-blue-400 text-xs mb-1">Cargo Ready</p>
-                    <p className="font-medium">
-                      {selectedVesselDetails.notificationData.cargoReady ? 
-                        <span className="text-green-400">Yes</span> : 
-                        <span className="text-red-400">No</span>
-                      }
-                    </p>
-                  </div>
-                </div>
-                <div className="bg-gray-900/50 p-3 rounded-md border border-gray-800 shadow-sm hover:shadow-md transition-all">
-                  <p className="text-blue-400 text-xs mb-1">Comments</p>
-                  <p className="mt-1 text-sm">
-                    {selectedVesselDetails.notificationData.comments || 'No comments provided'}
-                  </p>
-                </div>
-              </div>
-            )}
-          </ExpandedItem>
-        )}
-        
-        {/* Checklist details section */}
-        {selectedVesselDetails.checklistCompleted && (
-          <ExpandedItem
-            label={
-              <div className="flex items-center gap-2">
-                <CheckSquare size={16} className="text-blue-400" />
-                <span>Checklist Details</span>
-              </div>
-            }
-            value={`Completed on ${new Date(selectedVesselDetails.checklistDate).toLocaleString()}`}
-            className={selectedVesselDetails.checklistConcerns ? "hover:border-red-600/30" : "hover:border-blue-600/30"}
-          >
-            {selectedVesselDetails.checklistData && (
-              <div className="mt-3 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-gray-900/50 p-3 rounded-md border border-gray-800 shadow-sm hover:shadow-md transition-all">
-                    <p className="text-blue-400 text-xs mb-1">Documentation</p>
-                    <p className="font-medium">
-                      {selectedVesselDetails.checklistData.documentation ? 
-                        <span className="text-green-400">Complete</span> : 
-                        <span className="text-red-400">Incomplete</span>
-                      }
-                    </p>
-                  </div>
-                  <div className="bg-gray-900/50 p-3 rounded-md border border-gray-800 shadow-sm hover:shadow-md transition-all">
-                    <p className="text-blue-400 text-xs mb-1">Safety</p>
-                    <p className="font-medium">
-                      {selectedVesselDetails.checklistData.safety ? 
-                        <span className="text-green-400">Verified</span> : 
-                        <span className="text-red-400">Not Verified</span>
-                      }
-                    </p>
-                  </div>
-                  <div className="bg-gray-900/50 p-3 rounded-md border border-gray-800 shadow-sm hover:shadow-md transition-all">
-                    <p className="text-blue-400 text-xs mb-1">Cargo</p>
-                    <p className="font-medium">
-                      {selectedVesselDetails.checklistData.cargo ? 
-                        <span className="text-green-400">Requirements Met</span> : 
-                        <span className="text-red-400">Requirements Not Met</span>
-                      }
-                    </p>
-                  </div>
-                  <div className="bg-gray-900/50 p-3 rounded-md border border-gray-800 shadow-sm hover:shadow-md transition-all">
-                    <p className="text-blue-400 text-xs mb-1">Crew</p>
-                    <p className="font-medium">
-                      {selectedVesselDetails.checklistData.crew ? 
-                        <span className="text-green-400">Verified</span> : 
-                        <span className="text-red-400">Not Verified</span>
-                      }
-                    </p>
-                  </div>
-                </div>
-                
-                {selectedVesselDetails.checklistConcerns && (
-                  <div className="bg-red-900/20 p-3 rounded-md border border-red-900/50 shadow-sm animate-pulse">
-                    <p className="text-red-400 text-xs font-medium mb-1 flex items-center gap-1">
-                      <AlertTriangle size={14} />
-                      Concerns
-                    </p>
-                    <p className="mt-1 text-sm text-red-100">
-                      {selectedVesselDetails.checklistConcerns}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </ExpandedItem>
-        )}
-        
         <div className="flex justify-between w-full mt-6">
           <div className="flex flex-wrap gap-2">
-            {!selectedVesselDetails.notificationSubmitted && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setVesselDetailsOpen(false);
-                  handleOpenForm(selectedVesselDetails, 'notification');
-                }}
-                className="flex items-center gap-2 hover:bg-blue-900/30 hover:border-blue-500 transition-all"
-              >
-                <Calendar size={16} />
-                Create Notification
-              </Button>
-            )}
-            
-            {!selectedVesselDetails.checklistCompleted && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setVesselDetailsOpen(false);
-                  handleOpenForm(selectedVesselDetails, 'checklist');
-                }}
-                className="flex items-center gap-2 hover:bg-blue-900/30 hover:border-blue-500 transition-all"
-              >
-                <CheckSquare size={16} />
-                Create Checklist
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              onClick={() => {
+                setVesselDetailsOpen(false);
+                // You can add logic to open checklist modal here
+                // For example: handleOpenChecklistModal(selectedVesselDetails);
+              }}
+              className="flex items-center gap-2 hover:bg-blue-900/30 hover:border-blue-500 transition-all"
+            >
+              <CheckSquare size={16} />
+              View Checklist
+            </Button>
           </div>
           <Button 
             variant="ghost" 
@@ -528,8 +373,16 @@ const ReportingDashboard = ({
       </div>
       <h3 className="text-lg font-medium mb-2">No vessels found</h3>
       <p className="text-gray-400 max-w-md mx-auto">
-        There are no vessels matching the current filter criteria. Try changing your filters or add a new vessel.
+        There are no vessels matching the current filter criteria. Try refreshing the data or check your connection.
       </p>
+      <Button 
+        onClick={fetchVessels}
+        className="mt-4 flex items-center gap-2"
+        variant="outline"
+      >
+        <RefreshCw size={16} />
+        Refresh Data
+      </Button>
     </div>
   );
   
@@ -545,29 +398,74 @@ const ReportingDashboard = ({
       </p>
     </div>
   );
+
+  // Error state component
+  const ErrorState = () => (
+    <div className="text-center py-12">
+      <div className="inline-flex justify-center items-center w-16 h-16 bg-red-900/20 rounded-full mb-4">
+        <AlertTriangle size={28} className="text-red-400" />
+      </div>
+      <h3 className="text-lg font-medium mb-2 text-red-400">Error Loading Data</h3>
+      <p className="text-gray-400 max-w-md mx-auto mb-4">
+        {error}
+      </p>
+      <Button 
+        onClick={fetchVessels}
+        className="flex items-center gap-2"
+        variant="outline"
+      >
+        <RefreshCw size={16} />
+        Try Again
+      </Button>
+    </div>
+  );
   
   return (
     <div className="w-full">
-      {isLoading ? (
+      {/* Header with refresh button */}
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h2 className="text-xl font-semibold">Vessel Reporting Dashboard</h2>
+          <p className="text-gray-400 text-sm">
+            {vessels.length} vessel{vessels.length !== 1 ? 's' : ''} 
+            {loading && ' (refreshing...)'}
+          </p>
+        </div>
+        <Button
+          onClick={handleRefreshVessels}
+          disabled={loading}
+          variant="outline"
+          className="flex items-center gap-2"
+        >
+          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+          Refresh
+        </Button>
+      </div>
+
+      {/* Main content */}
+      {error ? (
+        <ErrorState />
+      ) : loading && vessels.length === 0 ? (
         <LoadingState />
       ) : vessels.length === 0 ? (
         <EmptyState />
       ) : (
         <div className="w-full">
-          <Table
-            data={vessels}
-            columns={columns}
-            expandedContent={renderExpandedContent}
-            actions={actions}
-            uniqueIdField="imo_no"
-            defaultSortKey="eta"
-            onRowClick={handleRowClick}
-            className="vessel-table"
+          <VesselReportingTable
+            vessels={vessels}
+            fieldMappings={VESSEL_FIELDS} // Use your field mappings
+            loading={loading}
+            onUpdateVessel={handleUpdateVessel}
+            onUpdateOverride={handleUpdateOverride}
+            onOpenRemarks={handleOpenRemarks}
+            onRefreshVessels={handleRefreshVessels} // Pass refresh function
+            savingStates={savingStates}
+            currentUser={currentUser}
           />
         </div>
       )}
       
-      {/* Form Dialog */}
+      {/* Legacy Form Dialog (if you still need it) */}
       {isFormOpen && (
         <div 
           className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center backdrop-blur-sm"
@@ -678,27 +576,80 @@ const ReportingDashboard = ({
           </div>
         </div>
       )}
+
+      {/* Debug Panel (only in development) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-8 p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+          <h3 className="text-sm font-medium mb-2 text-gray-300">Debug Info</h3>
+          <div className="text-xs text-gray-400 space-y-1">
+            <p>Total Vessels: {vessels.length}</p>
+            <p>Loading: {loading ? 'Yes' : 'No'}</p>
+            <p>Error: {error || 'None'}</p>
+            <p>Saving States: {Object.keys(savingStates).length} active</p>
+            <details className="mt-2">
+              <summary className="cursor-pointer text-blue-400">Vessel Status Sample</summary>
+              <pre className="mt-2 text-xs bg-gray-800 p-2 rounded overflow-auto max-h-40">
+                {JSON.stringify(
+                  vessels.slice(0, 3).map(v => ({
+                    name: v.vessel_name,
+                    status: v.status, // Now logging the consolidated 'status'
+                    // You can remove these if they are truly deprecated from backend response
+                    // checklist_status: v.checklist_status,
+                    // computed_checklist_status: v.computed_checklist_status,
+                    // checklistStatus: v.checklistStatus
+                  })), 
+                  null, 
+                  2
+                )}
+              </pre>
+            </details>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-// Add these animations to your CSS
-// @keyframes fadeIn {
-//   from { opacity: 0; }
-//   to { opacity: 1; }
-// }
+// Add PropTypes for better component documentation and validation
+ReportingDashboard.propTypes = {
+  initialVessels: PropTypes.arrayOf(PropTypes.object),
+  onFormSubmit: PropTypes.func,
+  currentUser: PropTypes.object
+};
 
-// @keyframes zoomIn {
-//   from { opacity: 0; transform: scale(0.95); }
-//   to { opacity: 1; transform: scale(1); }
-// }
+ReportingDashboard.defaultProps = {
+  initialVessels: [],
+  onFormSubmit: () => {},
+  currentUser: null
+};
 
-// .animate-fadeIn {
-//   animation: fadeIn 0.3s ease-out forwards;
-// }
+// Add these CSS animations if not already present
+const styles = `
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 
-// .animate-zoomIn {
-//   animation: zoomIn 0.2s ease-out forwards;
-// }
+  @keyframes zoomIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+
+  .animate-zoomIn {
+    animation: zoomIn 0.2s ease-out forwards;
+  }
+`;
+
+// Inject styles if not already present
+if (typeof document !== 'undefined' && !document.getElementById('reporting-dashboard-styles')) {
+  const styleSheet = document.createElement('style');
+  styleSheet.id = 'reporting-dashboard-styles';
+  styleSheet.textContent = styles;
+  document.head.appendChild(styleSheet);
+}
 
 export default ReportingDashboard;

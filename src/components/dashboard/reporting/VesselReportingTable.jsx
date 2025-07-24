@@ -33,7 +33,8 @@ const VesselReportingTable = ({
   onUpdateOverride,
   onOpenRemarks,
   savingStates = {},
-  currentUser
+  currentUser,
+  onRefreshVessels // NEW: Add refresh function prop
 }) => {
   const tableRef = useRef(null);
 
@@ -55,7 +56,7 @@ const VesselReportingTable = ({
   // State to track window size for responsive design
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
-  // State to track vessel checklist statuses for immediate updates
+  // UPDATED: State to track vessel checklist statuses for immediate updates (temporary overrides only)
   const [vesselChecklistStatuses, setVesselChecklistStatuses] = useState({});
 
   // Helper function to check if a date is in the past
@@ -116,19 +117,37 @@ const VesselReportingTable = ({
     return rowData[fieldDbField];
   }, []);
 
+  // UPDATED: Helper function to get current checklist status with proper priority
+  // This now mirrors the modal's primary source (vessel.status) and local overrides
+  const getCurrentChecklistStatus = useCallback((vessel) => {
+    // Priority 1: Use local override if available (for immediate UI updates after modal submission)
+    if (vesselChecklistStatuses[vessel.id]) {
+      console.log(`⚡ Using local override for ${vessel.vessel_name}:`, vesselChecklistStatuses[vessel.id]);
+      return vesselChecklistStatuses[vessel.id];
+    }
+    
+    // Priority 2: Use the direct 'status' field from the vessel object (which the modal updates)
+    if (vessel.status) {
+      console.log(`✅ Using vessel.status for ${vessel.vessel_name}:`, vessel.status);
+      return vessel.status;
+    }
+
+    // Default to pending if no direct status or local override is found
+    console.log(`📝 Using default status for ${vessel.vessel_name}: pending`);
+    return 'pending';
+  }, [vesselChecklistStatuses]);
+
   // Handle checklist modal open
   const handleOpenChecklistModal = useCallback((vessel) => {
     console.log('Opening checklist modal for vessel:', vessel.vessel_name);
     
-    // Determine current checklist status
-    const currentStatus = vesselChecklistStatuses[vessel.id] || 
-                         vessel.checklistStatus || 
-                         'pending';
+    // Determine current checklist status using priority logic
+    const currentStatus = getCurrentChecklistStatus(vessel);
 
     setSelectedVessel(vessel);
     setChecklistStatus(currentStatus);
     setChecklistModalOpen(true);
-  }, [vesselChecklistStatuses]);
+  }, [getCurrentChecklistStatus]);
 
   // Handle checklist modal close
   const handleCloseChecklistModal = useCallback(() => {
@@ -137,23 +156,56 @@ const VesselReportingTable = ({
     setChecklistStatus('pending');
   }, []);
 
-  // Handle checklist update from modal
-  const handleChecklistUpdate = useCallback((vesselId, checklistData) => {
-    console.log('Checklist updated for vessel:', vesselId, checklistData);
+  // UPDATED: Handle checklist update from modal with proper data refresh
+  const handleChecklistUpdate = useCallback(async (vesselId, checklistData) => {
+    console.log('🔄 Checklist updated for vessel:', vesselId, checklistData);
     
-    // Update local checklist status tracking
-    setVesselChecklistStatuses(prev => ({
-      ...prev,
-      [vesselId]: checklistData.status
-    }));
+    try {
+      // Step 1: Update local checklist status tracking for immediate UI feedback
+      setVesselChecklistStatuses(prev => ({
+        ...prev,
+        [vesselId]: checklistData.status
+      }));
 
-    // If there's a callback to update the vessel data, call it
-    if (onUpdateVessel) {
-      onUpdateVessel(vesselId, 'checklistStatus', checklistData.status);
+      console.log('⚡ Local status updated immediately');
+
+      // Step 2: Trigger parent component update (if available)
+      // This onUpdateVessel should ideally update the 'status' field on the vessel object
+      if (onUpdateVessel) {
+        await onUpdateVessel(vesselId, 'status', checklistData.status); // Ensure 'status' is the field being updated
+        console.log('📡 Parent component notified to update vessel.status');
+      }
+
+      // Step 3: Trigger vessel data refresh to get updated backend status
+      if (onRefreshVessels) {
+        console.log('🔄 Refreshing vessel data from backend...');
+        
+        // Delay slightly to ensure backend is updated
+        setTimeout(async () => {
+          try {
+            await onRefreshVessels();
+            console.log('✅ Vessel data refreshed successfully');
+            
+            // Clear local override after successful refresh
+            setVesselChecklistStatuses(prev => {
+              const updated = { ...prev };
+              delete updated[vesselId]; // Clear local override as backend status should now be present
+              return updated;
+            });
+            console.log('🧹 Local override cleared after refresh');
+            
+          } catch (refreshError) {
+            console.error('❌ Failed to refresh vessel data:', refreshError);
+          }
+        }, 1000); // 1 second delay
+      }
+
+      console.log('✅ Vessel checklist status update process completed');
+      
+    } catch (error) {
+      console.error('❌ Error in checklist update process:', error);
     }
-
-    console.log('Vessel checklist status updated in table');
-  }, [onUpdateVessel]);
+  }, [onUpdateVessel, onRefreshVessels]);
 
   // Document modal handlers
   const handleOpenDocuments = useCallback((portId, portName, documentCount) => {
@@ -203,6 +255,28 @@ const VesselReportingTable = ({
       setEnrichedVessels([]);
       setVesselEnrichmentLoading(false);
     }
+  }, [vessels]);
+
+  // UPDATED: Clear local overrides when vessels change (after refresh)
+  useEffect(() => {
+    // Clear local overrides for vessels that now have backend status
+    setVesselChecklistStatuses(prev => {
+      const updated = { ...prev };
+      let hasChanges = false;
+      
+      vessels.forEach(vessel => {
+        // Now check for vessel.status directly, as that's what the modal updates
+        if (vessel.status) { 
+          if (updated[vessel.id]) {
+            delete updated[vessel.id];
+            hasChanges = true;
+            console.log(`🧹 Cleared local override for ${vessel.vessel_name} - backend status available`);
+          }
+        }
+      });
+      
+      return hasChanges ? updated : prev;
+    });
   }, [vessels]);
 
   // Use enriched vessels for display
@@ -384,7 +458,8 @@ const VesselReportingTable = ({
       }
     }
 
-    // Add checklist status
+    // Add checklist status - This part needs to be reviewed if it should use the new 'vessel.status'
+    // For now, keeping it as is, but be aware this is a separate status calculation for the overall vessel status.
     if (vessel.checklist_received !== undefined) {
       const checklistStatus = normalizeChecklistValue(vessel.checklist_received);
       let status;
@@ -717,7 +792,7 @@ const VesselReportingTable = ({
       return column;
     });
 
-    // Add Pre-Arrival column with modal integration
+    // UPDATED: Add Pre-Arrival column with proper status logic
     baseColumns.push({
       field: 'preArrival',
       label: 'Pre-Arrival',
@@ -725,10 +800,15 @@ const VesselReportingTable = ({
       minWidth: windowWidth < 768 ? '80px' : '100px',
       sortable: false,
       render: (value, rowData) => {
-        // Use local status override if available
-        const currentStatus = vesselChecklistStatuses[rowData.id] || 
-                             rowData.checklistStatus || 
-                             'pending';
+        // Use the helper function to get current status
+        const currentStatus = getCurrentChecklistStatus(rowData);
+
+        console.log(`🎯 Rendering checklist badge for ${rowData.vessel_name}:`, {
+          // Removed computed_checklist_status and checklist_status from this log
+          // as they are no longer directly used for the badge's status determination
+          local_override: vesselChecklistStatuses[rowData.id],
+          final_status: currentStatus
+        });
 
         return (
           <ChecklistStatusBadge
@@ -756,7 +836,7 @@ const VesselReportingTable = ({
     handleOpenDocuments, 
     handleOpenChecklistModal,
     getEffectiveValue,
-    vesselChecklistStatuses
+    getCurrentChecklistStatus
   ]);
 
   // Create expanded content renderer
@@ -850,7 +930,7 @@ const VesselReportingTable = ({
             } else if (value !== null && value !== undefined && value !== '-') {
               const displayValue = (
                 <TextTooltip text={String(value)}>
-                  {value}
+                  <span>{value}</span> {/* Corrected: Wrapped value in a span */}
                 </TextTooltip>
               );
               expandedItemProps.value = displayValue;
@@ -858,7 +938,7 @@ const VesselReportingTable = ({
           } else if (value !== null && value !== undefined && value !== '-') {
             const displayValue = (
               <TextTooltip text={String(value)}>
-                {value}
+                <span>{value}</span> {/* Corrected: Wrapped value in a span */}
               </TextTooltip>
             );
             expandedItemProps.value = displayValue;
@@ -1157,6 +1237,7 @@ VesselReportingTable.propTypes = {
   onUpdateVessel: PropTypes.func,
   onUpdateOverride: PropTypes.func,
   onOpenRemarks: PropTypes.func,
+  onRefreshVessels: PropTypes.func, // NEW: Add refresh function prop
   savingStates: PropTypes.object,
   currentUser: PropTypes.object
 };
@@ -1167,6 +1248,7 @@ VesselReportingTable.defaultProps = {
   onUpdateVessel: null,
   onUpdateOverride: null,
   onOpenRemarks: null,
+  onRefreshVessels: null, // NEW: Default value
   savingStates: {},
   currentUser: null
 };
