@@ -27,11 +27,199 @@ import DocumentModal from '../../common/DocumentModal/DocumentModal';
 import portMappingService from '../../../services/PortMappingService';
 
 // ADD THIS MISSING IMPORT:
-import IntuitiveDefectIndicator from '../../../components/common/IntuitiveDefectIndicator';
+// import IntuitiveDefectIndicator from '../../../components/common/IntuitiveDefectIndicator'; // REMOVED as per new component
 import EnhancedDefectsModal from '../../../components/common/EnhancedDefectsModal';
 
 // Add these imports at the top of your existing VesselTable.jsx
 import userTablePreferencesService from '../../../services/UserTablePreferencesService';
+
+// Add this import at the top with your other imports
+import { ClipboardCheck, FileCheck, CheckSquare2, ListChecks, Wrench, AlertTriangle, AlertCircle } from 'lucide-react';
+
+// Add this new component for the innovative checklist icon
+const ChecklistStatusIcon = ({ 
+  status, 
+  progress = 0, 
+  onClick, 
+  size = 14, // UPDATED size
+  className = '' 
+}) => {
+  // FIXED: Better status configuration
+  const getStatusConfig = () => {
+    console.log('ChecklistStatusIcon: status received:', status); // Debug log
+    
+    switch (status) {
+      case 'submitted':
+      case 'complete':
+        return {
+          color: '#2ECC71',
+          icon: CheckSquare2,
+          label: 'Checklist Submitted'
+        };
+      case 'acknowledged':
+        return {
+          color: '#3BADE5', // Blue for acknowledged
+          icon: CheckSquare2,
+          label: 'Checklist Acknowledged'
+        };
+      case 'in_progress':
+        return {
+          color: '#F39C12',
+          icon: ListChecks,
+          label: `Checklist ${progress}% Complete`
+        };
+      case 'pending':
+      default:
+        return {
+          color: '#F1C40F',
+          icon: FileCheck,
+          label: 'Checklist Pending'
+        };
+    }
+  };
+
+  const config = getStatusConfig();
+  const IconComponent = config.icon;
+
+  return (
+    <div 
+      className={`checklist-indicator ${className}`}
+      onClick={onClick}
+      title={config.label}
+      style={{
+        position: 'relative',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        padding: '2px',
+        borderRadius: '3px',
+      }}
+    >
+      <IconComponent 
+        size={size} 
+        style={{ 
+          color: config.color,
+          filter: `drop-shadow(0 0 3px ${config.color}40)`
+        }} 
+      />
+      
+      {/* Progress indicator for in-progress status */}
+      {status === 'in_progress' && progress > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '-2px',
+            left: '2px',
+            right: '2px',
+            height: '2px',
+            backgroundColor: 'rgba(0,0,0,0.1)',
+            borderRadius: '1px',
+            overflow: 'hidden'
+          }}
+        >
+          <div
+            style={{
+              width: `${progress}%`,
+              height: '100%',
+              backgroundColor: config.color,
+              borderRadius: '1px',
+              transition: 'width 0.3s ease'
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+// FIXED: Updated SleekDefectIndicator component
+const SleekDefectIndicator = ({ 
+  defectCount = 0, 
+  highCount = 0, 
+  mediumCount = 0, 
+  lowCount = 0, 
+  variant = "wrench",
+  onClick,
+  size = 14,
+  className = ''
+}) => {
+  console.log('SleekDefectIndicator: defectCount:', defectCount, 'highCount:', highCount, 'mediumCount:', mediumCount, 'lowCount:', lowCount); // Debug log
+
+  // Show indicator even if no defects (for click to add new defects)
+  const getVariantIcon = () => {
+    switch (variant) {
+      case "triangle":
+        return AlertTriangle;
+      case "wrench":
+      default:
+        return Wrench;
+    }
+  };
+
+  const getStatusColor = () => {
+    if (defectCount === 0) return '#95A5A6'; // Gray for no defects
+    if (highCount > 0) return '#E74C3C'; // Red for high priority
+    if (mediumCount > 0) return '#F39C12'; // Orange for medium priority
+    if (lowCount > 0) return '#F1C40F'; // Yellow for low priority
+    return '#95A5A6'; // Gray fallback
+  };
+
+  const getTooltipText = () => {
+    if (defectCount === 0) return 'No defects - Click to add';
+    return `${defectCount} defects (H:${highCount}, M:${mediumCount}, L:${lowCount})`;
+  };
+
+  const IconComponent = getVariantIcon();
+  const statusColor = getStatusColor();
+
+  return (
+    <div 
+      className={`defect-indicator ${className}`}
+      onClick={onClick}
+      title={getTooltipText()}
+      style={{
+        position: 'relative',
+        cursor: onClick ? 'pointer' : 'default',
+        transition: 'all 0.2s ease',
+        padding: '2px',
+        borderRadius: '3px',
+      }}
+    >
+      <IconComponent 
+        size={size} 
+        style={{ 
+          color: statusColor,
+          filter: defectCount > 0 ? `drop-shadow(0 0 3px ${statusColor}40)` : 'none'
+        }} 
+      />
+      
+      {/* Defect count badge - only show if there are defects */}
+      {defectCount > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '-4px',
+            right: '-4px',
+            minWidth: '14px',
+            height: '14px',
+            borderRadius: '7px',
+            backgroundColor: statusColor,
+            color: 'white',
+            fontSize: '9px',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '0 2px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            border: '1px solid var(--table-row-bg, #ffffff)'
+          }}
+        >
+          {defectCount > 99 ? '99+' : defectCount}
+        </div>
+      )}
+    </div>
+  );
+};
 
 
 // 2. FIX THE COMPONENT SIGNATURE - Replace defaultProps with default parameters
@@ -41,7 +229,8 @@ const VesselTable = ({
   fieldMappings,
   onUpdateVessel,
   onUpdateOverride,
-  onLoadDefects // ADD DEFAULT PARAMETER HERE
+  onLoadDefects, // ADD DEFAULT PARAMETER HERE
+  onOpenChecklist // NEW: Add this prop
 }) => {
   const tableRef = useRef(null);
   const headerRef = useRef(null);
@@ -1394,15 +1583,43 @@ const VesselTable = ({
           );
         }
 
-        // 5. UPDATE: Vessel name cell rendering - Make sure defect indicator gets proper data
+        // UPDATED VESSEL NAME CELL LAYOUT - BETTER POSITIONING SOLUTION
+
+        // Update your vessel_name field rendering in getTableColumns() with this improved layout:
+
         if (fieldId === 'vessel_name') {
           const statusInfo = getVesselStatus(rowData);
           const flagValue = getVesselFlag(rowData);
 
-          // FIXED: Make sure we're passing the right vessel data
           console.log(`Rendering vessel name for ${rowData.vessel_name} (ID: ${rowData.id})`);
-          let defectCounts = getVesselDefectCounts(rowData); // Pass full rowData
+          let defectCounts = getVesselDefectCounts(rowData);
           console.log(`Defect counts for ${rowData.vessel_name}:`, defectCounts);
+
+          // Get checklist status from computed field or fallback
+          const checklistStatus = rowData.computed_checklist_status || 
+                                  rowData.checklist_status || 
+                                  rowData.checklist_received || 
+                                  'pending';
+          
+          // FIXED: Proper status normalization
+          let normalizedChecklistStatus = 'pending';
+          if (checklistStatus) {
+            const statusLower = checklistStatus.toLowerCase();
+            if (statusLower === 'submitted' || statusLower === 'complete') {
+              normalizedChecklistStatus = 'submitted';
+            } else if (statusLower === 'acknowledged') {
+              normalizedChecklistStatus = 'acknowledged';
+            } else if (statusLower.includes('progress')) {
+              normalizedChecklistStatus = 'in_progress';
+            } else {
+              normalizedChecklistStatus = 'pending';
+            }
+          }
+          
+          // Get progress if available
+          const checklistProgress = rowData.checklist_progress || 
+                                   rowData.progress_percentage || 
+                                   0;
 
           const vesselDetails = {
             ...rowData,
@@ -1415,67 +1632,87 @@ const VesselTable = ({
           };
 
           return (
-            <div className="vessel-name-cell">
-              {/* Traffic light indicator */}
-              <TrafficLightIndicator
-                status={statusInfo.status}
-                tooltipData={statusInfo}
-              />
+            <div className="vessel-name-container-improved">
+              {/* LEFT SIDE: Status Indicators (Traffic Light + Flag) */}
+              <div className="vessel-status-indicators">
+                {/* Traffic light indicator */}
+                <TrafficLightIndicator
+                  status={statusInfo.status}
+                  tooltipData={statusInfo}
+                />
 
-              {/* Vessel flag indicator */}
-              <div className="vessel-flag-container">
-                <button
-                  className={`vessel-flag-button ${flagValue !== 'none' ? flagValue : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
+                {/* Vessel flag indicator */}
+                <div className="vessel-flag-container">
+                  <button
+                    className={`vessel-flag-button ${flagValue !== 'none' ? flagValue : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
 
-                    const flagSequence = ['green', 'yellow', 'red', 'none'];
-                    const currentIndex = flagSequence.indexOf(flagValue);
-                    const nextIndex = (currentIndex + 1) % flagSequence.length;
-                    const nextFlag = flagSequence[nextIndex];
+                      const flagSequence = ['green', 'yellow', 'red', 'none'];
+                      const currentIndex = flagSequence.indexOf(flagValue);
+                      const nextIndex = (currentIndex + 1) % flagSequence.length;
+                      const nextFlag = flagSequence[nextIndex];
 
-                    handleFlagChange(rowData.id, nextFlag);
-                  }}
-                  aria-label="Set vessel flag"
-                >
-                  <Flag size={14} style={{
-                    color: flagValue === 'green' ? '#2EE086' :
-                      flagValue === 'yellow' ? '#FFD426' :
-                        flagValue === 'red' ? '#FF5252' : '#A0A0A0',
-                    filter: flagValue !== 'none' ? `drop-shadow(0 0 3px ${
-                      flagValue === 'green' ? 'rgba(46, 224, 134, 0.6)' :
-                        flagValue === 'yellow' ? 'rgba(255, 212, 38, 0.6)' :
-                          flagValue === 'red' ? 'rgba(255, 82, 82, 0.6)' :
-                            'rgba(160, 160, 160, 0.3)'
-                      })` : 'none'
-                  }} />
-                </button>
+                      handleFlagChange(rowData.id, nextFlag);
+                    }}
+                    aria-label="Set vessel flag"
+                  >
+                    <Flag size={14} style={{
+                      color: flagValue === 'green' ? '#2EE086' :
+                        flagValue === 'yellow' ? '#FFD426' :
+                          flagValue === 'red' ? '#FF5252' : '#A0A0A0',
+                      filter: flagValue !== 'none' ? `drop-shadow(0 0 3px ${
+                        flagValue === 'green' ? 'rgba(46, 224, 134, 0.6)' :
+                          flagValue === 'yellow' ? 'rgba(255, 212, 38, 0.6)' :
+                            flagValue === 'red' ? 'rgba(255, 82, 82, 0.6)' :
+                              'rgba(160, 160, 160, 0.3)'
+                        })` : 'none'
+                    }} />
+                  </button>
+                </div>
               </div>
 
-              {/* Vessel name with enhanced tooltip */}
-              <VesselDetailsTooltip vessel={vesselDetails}>
-                <span className="vessel-name">{(value || '-').toUpperCase()}</span>
-              </VesselDetailsTooltip>
+              {/* CENTER: Vessel name with enhanced tooltip */}
+              <div className="vessel-name-content">
+                <VesselDetailsTooltip vessel={vesselDetails}>
+                  <span className="vessel-name-text">{(value || '-').toUpperCase()}</span>
+                </VesselDetailsTooltip>
+              </div>
 
-              {/* FIXED: Always show defect indicator for debugging */}
-              {onLoadDefects ? (
-                <IntuitiveDefectIndicator
-                  defectCount={defectCounts.total}
-                  highCount={defectCounts.high}
-                  mediumCount={defectCounts.Cmedium}
-                  lowCount={defectCounts.low}
-                  variant="wrench"
+              {/* RIGHT SIDE: Action Indicators (Defects + Checklist) */}
+              <div className="vessel-action-indicators">
+                {/* UPDATED: Sleek Defect indicator */}
+                {onLoadDefects && (
+                  <SleekDefectIndicator
+                    defectCount={defectCounts.total}
+                    highCount={defectCounts.high}
+                    mediumCount={defectCounts.medium}
+                    lowCount={defectCounts.low}
+                    variant="wrench"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      console.log('Defect indicator clicked for vessel:', rowData.vessel_name);
+                      handleDefectBadgeClick(rowData);
+                    }}
+                    size={14}
+                  />
+                )}
+
+                {/* UPDATED: Sleek Checklist status indicator */}
+                <ChecklistStatusIcon
+                  status={normalizedChecklistStatus}
+                  progress={checklistProgress}
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
-                    console.log('Defect indicator clicked for vessel:', rowData.vessel_name);
-                    handleDefectBadgeClick(rowData); // Pass full vessel object
+                    console.log('Checklist icon clicked for vessel:', rowData.vessel_name);
+                    handleChecklistIconClick(rowData);
                   }}
+                  size={14}
                 />
-              ) : (
-                <span style={{ color: 'red', fontSize: '10px' }}>No onLoadDefects</span>
-              )}
+              </div>
             </div>
           );
         }
@@ -1910,6 +2147,17 @@ const VesselTable = ({
   // Make reset function available for testing
   window.resetVesselTableColumnWidths = resetColumnWidths;
 
+  // NEW: Handle checklist icon click
+  const handleChecklistIconClick = useCallback((vessel) => {
+    console.log('Opening checklist modal for vessel:', vessel.vessel_name);
+    
+    if (onOpenChecklist) {
+      onOpenChecklist(vessel);
+    } else {
+      console.warn('onOpenChecklist prop not provided to VesselTable');
+    }
+  }, [onOpenChecklist]);
+
 
   return (
     <div ref={tableRef} className="responsive-table-container">
@@ -2275,7 +2523,7 @@ const VesselTable = ({
           .comment-tooltip-container { /* Assuming CommentTooltip renders into a div with this class */
             z-index: 10000; /* Ensure it's above other elements */
             position: absolute; /* Or fixed, depending on its internal logic */
-            /* Add other positioning properties like top, left, transform based on its logic */
+            /* Add other positioning properties like top, left, transform based on its internal logic */
           }
 
           /* High Risk Port Styling */
@@ -2287,6 +2535,143 @@ const VesselTable = ({
 
           .arrival-port-cell .high-risk-port:hover {
             color: #C0392B !important; /* Slightly darker red on hover */
+          }
+        `}
+        {`
+          /* Enhanced vessel name cell layout */
+          .vessel-name-container-improved { /* UPDATED class name */
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 24px;
+            width: 100%;
+            position: relative;
+          }
+
+          /* LEFT SIDE: Status indicators (Traffic Light + Flag) */
+          .vessel-status-indicators {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+          }
+
+          /* CENTER: Vessel name content */
+          .vessel-name-content {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            padding: 0 4px;
+          }
+
+          .vessel-name-text { /* UPDATED class name */
+            font-weight: 500;
+            color: var(--table-text-color);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-family: 'Nunito', sans-serif;
+            width: 100%;
+          }
+
+          /* RIGHT SIDE: Action indicators (Defects + Checklist) */
+          .vessel-action-indicators {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+          }
+
+          /* Responsive adjustments */
+          @media (max-width: 767px) {
+            .vessel-name-container-improved {
+              gap: 4px;
+            }
+
+            .vessel-status-indicators {
+              gap: 2px;
+            }
+
+            .vessel-name-content {
+              padding: 0 2px;
+            }
+
+            .vessel-name-text {
+              max-width: 70px;
+            }
+
+            .vessel-action-indicators {
+              gap: 4px;
+            }
+
+            .defect-indicator,
+            .checklist-indicator {
+              padding: 1px;
+            }
+
+            .defect-indicator svg,
+            .checklist-indicator svg {
+              width: 12px !important;
+              height: 12px !important;
+            }
+          }
+
+          /* Tablet responsive adjustments */
+          @media (min-width: 768px) and (max-width: 1023px) {
+            .vessel-name-container-improved {
+              gap: 6px;
+            }
+
+            .vessel-status-indicators {
+              gap: 3px;
+            }
+
+            .vessel-name-text {
+              max-width: 100px;
+            }
+
+            .vessel-action-indicators {
+              gap: 5px;
+            }
+          }
+
+          /* Desktop enhancements */
+          @media (min-width: 1024px) {
+            .vessel-name-container-improved {
+              gap: 8px;
+            }
+
+            .vessel-status-indicators {
+              gap: 4px;
+            }
+
+            .vessel-action-indicators {
+              gap: 6px;
+            }
+
+            /* Enhanced hover effects on desktop */
+            .defect-indicator:hover,
+            .checklist-indicator:hover {
+              transform: scale(1.15);
+              filter: brightness(1.1);
+            }
+          }
+
+          /* Hover effects */
+          .checklist-indicator:hover, /* UPDATED class name */
+          .defect-indicator:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+          }
+
+          /* Animation for status changes */
+          .checklist-indicator { /* UPDATED class name */
+            animation: fadeIn 0.3s ease-in-out;
+          }
+
+          @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
           }
         `}
       </style>
@@ -2343,6 +2728,7 @@ VesselTable.propTypes = {
   onUpdateOverride: PropTypes.func.isRequired,
   // savingStates: PropTypes.object.isRequired, // This prop is not being passed, so commenting out
   onLoadDefects: PropTypes.func, // Remove .isRequired
+  onOpenChecklist: PropTypes.func, // NEW: Add this prop
 };
 
 export default VesselTable;

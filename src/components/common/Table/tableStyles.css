@@ -1532,3 +1532,420 @@
 .mobile-view .expanded-grid {
   grid-template-columns: 1fr;
 }
+
+/* ===== REPLACE THE VESSEL NAME CONTAINER STYLES IN YOUR tableStyles.css ===== */
+
+/* ===== IMPROVED VESSEL NAME LAYOUT ===== */
+.vessel-name-container-improved {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  width: 100%;
+  position: relative;
+}
+
+/* LEFT SIDE: Status indicators (Traffic Light + Flag) */
+.vessel-status-indicators {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* CENTER: Vessel name content */
+.vessel-name-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.vessel-name-text {
+  font-weight: 500;
+  color: var(--table-text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'Nunito', sans-serif;
+  width: 100%;
+}
+
+/* RIGHT SIDE: Action indicators (Defects + Checklist) */
+.vessel-action-indicators {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ===== SLEEK DEFECT INDICATOR ===== */
+.defect-indicator {
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 2px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.defect-indicator:hover {
+  background: rgba(220, 53, 69, 0.1);
+  transform: scale(1.1);
+}
+
+.defect-indicator:focus {
+  outline: 2px solid rgba(220, 53, 69, 0.5);
+  outline-offset: 2px;
+}
+
+/* Defect count badge */
+.defect-indicator .defect-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 14px;
+  height: 14px;
+  border-radius: 7px;
+  background-color: var(--negative-color);
+  color: white;
+  font-size: 9px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--table-row-bg);
+  font-family: 'Nunito', sans-serif;
+  z-index: 10;
+}
+
+/* ===== SLEEK CHECKLIST INDICATOR ===== */
+.checklist-indicator {
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 2px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checklist-indicator:hover {
+  background: rgba(0, 123, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.checklist-indicator:focus {
+  outline: 2px solid rgba(0, 123, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* Progress indicator for checklist */
+.checklist-progress-bar {
+  position: absolute;
+  bottom: -2px;
+  left: 2px;
+  right: 2px;
+  height: 2px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.checklist-progress-fill {
+  height: 100%;
+  background-color: var(--positive-color);
+  border-radius: 1px;
+  transition: width 0.3s ease;
+}
+
+/* ===== TOOLTIP ENHANCEMENTS ===== */
+.defect-indicator .tooltip,
+.checklist-indicator .tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333333;
+  color: #ffffff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: var(--z-index-tooltip);
+  margin-bottom: 4px;
+  font-family: 'Nunito', sans-serif;
+}
+
+.defect-indicator:hover .tooltip,
+.checklist-indicator:hover .tooltip {
+  opacity: 1;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #333333;
+}
+
+/* ===== RESPONSIVE ADJUSTMENTS ===== */
+/* Mobile responsive adjustments */
+@media (max-width: 767px) {
+  .vessel-name-container-improved {
+    gap: 4px;
+  }
+
+  .vessel-status-indicators {
+    gap: 2px;
+  }
+
+  .vessel-name-content {
+    padding: 0 2px;
+  }
+
+  .vessel-name-text {
+    max-width: 70px;
+  }
+
+  .vessel-action-indicators {
+    gap: 4px;
+  }
+
+  .defect-indicator,
+  .checklist-indicator {
+    padding: 1px;
+  }
+
+  .defect-indicator svg,
+  .checklist-indicator svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .defect-indicator .defect-count {
+    min-width: 12px;
+    height: 12px;
+    font-size: 8px;
+    top: -3px;
+    right: -3px;
+  }
+}
+
+/* Tablet responsive adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .vessel-name-container-improved {
+    gap: 6px;
+  }
+
+  .vessel-status-indicators {
+    gap: 3px;
+  }
+
+  .vessel-name-text {
+    max-width: 100px;
+  }
+
+  .vessel-action-indicators {
+    gap: 5px;
+  }
+}
+
+/* Desktop enhancements */
+@media (min-width: 1024px) {
+  .vessel-name-container-improved {
+    gap: 8px;
+  }
+
+  .vessel-status-indicators {
+    gap: 4px;
+  }
+
+  .vessel-action-indicators {
+    gap: 6px;
+  }
+
+  /* Enhanced hover effects on desktop */
+  .defect-indicator:hover,
+  .checklist-indicator:hover {
+    transform: scale(1.15);
+    filter: brightness(1.1);
+  }
+}
+
+/* ===== ANIMATIONS ===== */
+/* Animation for status changes */
+.checklist-indicator,
+.defect-indicator {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: scale(0.8); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1); 
+  }
+}
+
+/* Pulse animation for active indicators */
+.defect-indicator.has-defects,
+.checklist-indicator.pending {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { 
+    opacity: 1; 
+  }
+  50% { 
+    opacity: 0.7; 
+  }
+}
+
+/* ===== ACCESSIBILITY IMPROVEMENTS ===== */
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .defect-indicator,
+  .checklist-indicator {
+    border: 1px solid currentColor;
+  }
+
+  .defect-indicator .defect-count {
+    border: 2px solid white;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .defect-indicator,
+  .checklist-indicator {
+    transition: none;
+    animation: none;
+  }
+
+  .defect-indicator:hover,
+  .checklist-indicator:hover {
+    transform: none;
+  }
+
+  .checklist-progress-fill {
+    transition: none;
+  }
+}
+
+/* ===== Z-INDEX STACKING ===== */
+/* Ensure proper z-index stacking */
+.vessel-indicators > * {
+  z-index: var(--z-index-base);
+}
+
+.vessel-indicators > *:hover {
+  z-index: var(--z-index-cell-hover);
+}
+
+/* ===== VESSEL NAME CELL INTEGRATION ===== */
+/* Make vessel name cell more flexible for the new layout */
+.vessel-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: visible;
+  position: relative;
+}
+
+/* Ensure traffic light and flag indicators work well with new layout */
+.vessel-name-cell .traffic-light,
+.vessel-name-cell .vessel-flag-container {
+  flex-shrink: 0;
+  margin-right: 0;
+}
+
+/* ===== DEFECT ICON VARIANTS ===== */
+/* Color variants for defect severity */
+.defect-indicator.high-priority svg {
+  color: var(--negative-color);
+  filter: drop-shadow(0 0 3px rgba(220, 53, 69, 0.4));
+}
+
+.defect-indicator.medium-priority svg {
+  color: var(--warning-color);
+  filter: drop-shadow(0 0 3px rgba(255, 193, 7, 0.4));
+}
+
+.defect-indicator.low-priority svg {
+  color: #ffc107;
+  filter: drop-shadow(0 0 3px rgba(255, 193, 7, 0.3));
+}
+
+.defect-indicator.no-defects svg {
+  color: var(--table-muted-text-color);
+  opacity: 0.5;
+}
+
+/* ===== CHECKLIST ICON VARIANTS ===== */
+/* Color variants for checklist status */
+.checklist-indicator.submitted svg {
+  color: var(--positive-color);
+  filter: drop-shadow(0 0 3px rgba(40, 167, 69, 0.4));
+}
+
+.checklist-indicator.in_progress svg {
+  color: var(--warning-color);
+  filter: drop-shadow(0 0 3px rgba(255, 193, 7, 0.4));
+}
+
+.checklist-indicator.pending svg {
+  color: #ffc107;
+  filter: drop-shadow(0 0 3px rgba(255, 193, 7, 0.3));
+}
+
+.checklist-indicator.not_started svg {
+  color: var(--table-muted-text-color);
+  opacity: 0.6;
+}
+
+/* ===== INTEGRATION WITH EXISTING STYLES ===== */
+/* Make sure the new indicators work well with existing hover states */
+.data-row:hover .vessel-indicators .defect-indicator,
+.data-row:hover .vessel-indicators .checklist-indicator {
+  opacity: 1;
+}
+
+/* Ensure indicators don't interfere with cell text overflow */
+.data-row td .vessel-name-container {
+  width: 100%;
+  min-width: 0;
+}
+
+/* ===== DARK/LIGHT THEME COMPATIBILITY ===== */
+/* Adjust for your existing light theme */
+@media (prefers-color-scheme: light) {
+  .defect-indicator .tooltip,
+  .checklist-indicator .tooltip {
+    background: #333333;
+    color: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+  }
+
+  .tooltip::after {
+    border-top-color: #333333;
+  }
+}

@@ -1,7 +1,8 @@
+// Enhanced DropdownField Component with Submission Constraints
 // src/components/common/Table/DropdownField.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, CheckCircle, Lock, AlertTriangle } from 'lucide-react';
 import './DropdownField.css';
 
 const DropdownField = ({ 
@@ -11,15 +12,49 @@ const DropdownField = ({
   options = ["Pending", "Acknowledged", "Submitted"],
   field = "checklist_received", // New parameter to specify which field to update
   className = "",
-  allowCustomInput = false // New prop to enable custom input for "Others" option
+  allowCustomInput = false, // New prop to enable custom input for "Others" option
+  isDisabled = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, width: 0 });
   const [isCustomInput, setIsCustomInput] = useState(false);
   const [customValue, setCustomValue] = useState('');
+  const [warning, setWarning] = useState('');
   const triggerRef = useRef(null);
   const customInputRef = useRef(null);
+  
+  // Check if vessel has submitted checklist
+  const isChecklistSubmitted = vessel?.computed_checklist_status === 'submitted' || 
+                              vessel?.computed_checklist_status === 'complete' ||
+                              vessel?.checklist_status === 'submitted' ||
+                              vessel?.checklist_status === 'complete';
+  
+  // Get submission constraints for checklist field
+  const getSubmissionConstraints = () => {
+    if (field === 'checklist_received' && isChecklistSubmitted) {
+      return {
+        allowedValues: ['Submitted', 'Acknowledged'],
+        restrictedValues: ['Pending'],
+        message: 'Checklist has been submitted - only Acknowledged is allowed'
+      };
+    }
+    return null;
+  };
+
+  const constraints = getSubmissionConstraints();
+  
+  // Filter options based on submission status
+  const getAvailableOptions = () => {
+    if (constraints) {
+      return options.filter(option => 
+        constraints.allowedValues.includes(option)
+      );
+    }
+    return options;
+  };
+
+  const availableOptions = getAvailableOptions();
   
   // Default value handling based on field type
   const getDefaultValue = () => {
@@ -33,8 +68,22 @@ const DropdownField = ({
                         !options.includes(value) && 
                         value !== "Others";
   
-  // Use the provided value or default based on field type
-  const currentValue = isCustomValue ? "Others" : (value || getDefaultValue());
+  // Get display value - show 'Submitted' if checklist is submitted but dropdown shows something else
+  const getDisplayValue = () => {
+    if (field === 'checklist_received' && isChecklistSubmitted) {
+      // If the current dropdown value is 'Pending' but checklist is submitted, show 'Submitted'
+      if (value === 'Pending' || !value) {
+        return 'Submitted';
+      }
+    }
+    
+    // Handle custom values
+    if (isCustomValue) {
+      return value;
+    }
+    
+    return value || (field === "sanz" ? "Select..." : getDefaultValue());
+  };
   
   // Initialize custom value if needed
   useEffect(() => {
@@ -100,7 +149,15 @@ const DropdownField = ({
   }, [isOpen, isCustomInput, customValue]);
   
   const handleSelect = async (option) => {
-    if (option === currentValue && option !== "Others") {
+    if (option === getDisplayValue() && option !== "Others") {
+      setIsOpen(false);
+      return;
+    }
+    
+    // Check constraints before proceeding
+    if (constraints && constraints.restrictedValues.includes(option)) {
+      setWarning(`Cannot change to "${option}" - ${constraints.message}`);
+      setTimeout(() => setWarning(''), 3000);
       setIsOpen(false);
       return;
     }
@@ -134,6 +191,7 @@ const DropdownField = ({
       setIsUpdating(false);
       setIsOpen(false);
       setIsCustomInput(false);
+      setWarning('');
     }
   };
   
@@ -187,7 +245,17 @@ const DropdownField = ({
   const getStyle = () => {
     // For checklist field
     if (field === "checklist_received") {
-      switch(currentValue) {
+      // Enhanced styling for submitted checklists
+      if (isChecklistSubmitted) {
+        return {
+          color: '#2ECC71',
+          background: 'rgba(46, 204, 113, 0.15)',
+          borderColor: 'rgba(46, 204, 113, 0.3)'
+        };
+      }
+      
+      // Regular styling based on current value
+      switch(getDisplayValue()) {
         case 'Submitted':
           return {
             color: '#F1C40F',
@@ -238,8 +306,8 @@ const DropdownField = ({
   // Check if we should show status indicator
   const showStatusIndicator = field === "checklist_received";
 
-  // Get display value (show custom value if it exists)
-  const displayValue = isCustomValue ? value : currentValue;
+  // Get display value
+  const displayValue = getDisplayValue();
 
   // Render the menu in a portal
   const renderMenu = () => {
@@ -256,12 +324,12 @@ const DropdownField = ({
           zIndex: 10000 // Extremely high z-index
         }}
       >
-        {options.map(option => {
+        {availableOptions.map(option => {
           const itemStyle = getItemStyle(option);
           return (
             <div 
               key={option}
-              className={`sleek-dropdown-item ${option === currentValue ? 'active' : ''}`}
+              className={`sleek-dropdown-item ${option === displayValue ? 'active' : ''}`}
               onClick={() => handleSelect(option)}
             >
               {/* Only show status indicator for checklist field */}
@@ -275,6 +343,20 @@ const DropdownField = ({
             </div>
           );
         })}
+        
+        {/* Custom input option */}
+        {allowCustomInput && !isCustomInput && (
+          <div
+            className="sleek-dropdown-item custom-option"
+            onClick={() => setIsCustomInput(true)}
+            style={{
+              color: '#3498DB',
+              fontStyle: 'italic'
+            }}
+          >
+            + Custom value...
+          </div>
+        )}
         
         {/* Custom input field */}
         {isCustomInput && (
@@ -297,6 +379,14 @@ const DropdownField = ({
             </button>
           </div>
         )}
+        
+        {/* Constraint message */}
+        {constraints && (
+          <div className="constraint-message">
+            <Lock size={10} style={{ marginRight: '4px' }} />
+            {constraints.message}
+          </div>
+        )}
       </div>
     );
     
@@ -309,14 +399,40 @@ const DropdownField = ({
 
   return (
     <>
+      {/* Warning message */}
+      {warning && (
+        <div className="dropdown-warning-toast" style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          background: 'rgba(231, 76, 60, 0.9)',
+          color: 'white',
+          padding: '8px 12px',
+          borderRadius: '4px',
+          fontSize: '12px',
+          zIndex: 10001,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          animation: 'fadeInOut 3s ease-in-out'
+        }}>
+          <AlertTriangle size={14} />
+          {warning}
+        </div>
+      )}
+
       <div 
         ref={triggerRef}
         className={`sleek-dropdown-trigger ${field}-dropdown ${isOpen ? 'open' : ''} ${isUpdating ? 'updating' : ''} ${className}`}
-        onClick={() => !isUpdating && setIsOpen(!isOpen)}
+        onClick={() => !isUpdating && !isDisabled && setIsOpen(!isOpen)}
         style={{
           background: style.background,
-          borderColor: style.color
+          borderColor: style.color,
+          opacity: isDisabled ? 0.6 : 1,
+          cursor: isDisabled ? 'not-allowed' : 'pointer'
         }}
+        title={constraints ? constraints.message : ''}
       >
         <div className="sleek-dropdown-label">
           {/* Only show status indicator for checklist field */}
@@ -327,23 +443,57 @@ const DropdownField = ({
             ></span>
           )}
           <span style={{ color: style.color }}>
-            {isCustomValue ? value : (displayValue || (field === "sanz" ? "Select..." : getDefaultValue()))}
+            {displayValue}
           </span>
         </div>
         
-        <ChevronDown 
-          size={14} 
-          className="sleek-dropdown-arrow"
-          style={{ 
-            color: style.color,
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)'
-          }}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {/* Submission indicator */}
+          {isChecklistSubmitted && field === 'checklist_received' && (
+            <CheckCircle size={12} style={{ color: '#2ECC71' }} />
+          )}
+          
+          {/* Restriction indicator */}
+          {constraints && (
+            <Lock size={10} style={{ color: '#F39C12' }} />
+          )}
+          
+          <ChevronDown 
+            size={14} 
+            className="sleek-dropdown-arrow"
+            style={{ 
+              color: style.color,
+              transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+            }}
+          />
+        </div>
         
         {isUpdating && <div className="sleek-loading-spinner"></div>}
       </div>
       
       {renderMenu()}
+      
+      <style jsx>{`
+        @keyframes fadeInOut {
+          0% { opacity: 0; transform: translateX(20px); }
+          10% { opacity: 1; transform: translateX(0); }
+          90% { opacity: 1; transform: translateX(0); }
+          100% { opacity: 0; transform: translateX(20px); }
+        }
+        
+        .constraint-message {
+          padding: 6px 8px;
+          fontSize: 11px;
+          color: #F39C12;
+          background: rgba(243, 156, 18, 0.1);
+          borderTop: 1px solid rgba(243, 156, 18, 0.2);
+          textAlign: center;
+          fontStyle: italic;
+          display: flex;
+          alignItems: center;
+          justifyContent: center;
+        }
+      `}</style>
     </>
   );
 };

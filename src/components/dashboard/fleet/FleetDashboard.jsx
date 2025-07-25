@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Search, Filter, Download,
-  RefreshCw, Map, Ship, AlertTriangle
+  RefreshCw, Map, Ship, AlertTriangle,
+  ClipboardCheck, FileCheck, CheckSquare2, ListChecks, Wrench, AlertCircle, CheckCircle, ChevronDown
 } from 'lucide-react';
 import VesselTable from './VesselTable';
 import ArrivalsByPortChart from './charts/ArrivalsByPortChart';
@@ -19,9 +20,11 @@ import PropTypes from 'prop-types';
 
 // Import the updated defects service and auth context
 import defectsService from '../../../services/defectsService';
-import { useAuth } from '../../../context/AuthContext'; // Import auth context
+import { useAuth } from '../../../context/AuthContext';
 
-// Add this section to your FleetDashboard component, right after the PropTypes definition
+// Add this import at the top with your existing imports
+import ChecklistModal from '../reporting/ChecklistModal';
+
 const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   // Get auth context
   const { currentUser, loading: authLoading } = useAuth();
@@ -64,8 +67,6 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const [timelineFilter, setTimelineFilter] = useState(null);
   const [pscDeficiencyData, setPscDeficiencyData] = useState([]);
   const [loadingPscData, setLoadingPscData] = useState(true);
-  
-  // FIXED: This was the error - changed from {} to useState({})
   const [savingStates, setSavingStates] = useState({});
 
   // Add defect stats state
@@ -77,35 +78,65 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     overdue: 0
   });
 
+  // Add these new state variables after your existing state declarations
+  const [checklistModalOpen, setChecklistModalOpen] = useState(false);
+  const [selectedVesselForChecklist, setSelectedVesselForChecklist] = useState(null);
+
+  // FIXED: Add defects cache to prevent unnecessary API calls (using object instead of Map)
+  const [defectsCache, setDefectsCache] = useState({});
+
   // API endpoints (keep your existing endpoints)
   const BASE_API_URL = 'https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws';
-  const VESSELS_WITH_OVERRIDE_API_URL = `${BASE_API_URL}/api/vessels-with-overrides`; // Renamed for clarity
+  const VESSELS_WITH_OVERRIDE_API_URL = `${BASE_API_URL}/api/vessels-with-overrides`;
   const VESSEL_OVERRIDE_API_URL = `${BASE_API_URL}/api/vessel-override`;
   const ORIGINAL_VESSELS_API_URL = `${BASE_API_URL}/api/vessels`;
   const PSC_API_URL = `${BASE_API_URL}/api/psc-deficiencies`;
 
-  // Initialize defects service with user ID when auth changes
+  // FIXED: Initialize defects service with user ID when auth changes - improved error handling
   useEffect(() => {
     const currentUserId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
     if (currentUserId) {
       console.log('FleetDashboard: Setting defects service userId:', currentUserId);
-      defectsService.setUserId(currentUserId);
+      try {
+        defectsService.setUserId(currentUserId);
+        // Test the service is working
+        defectsService.getDefectStats().then(stats => {
+          console.log('Defects service initialized successfully:', stats);
+        }).catch(err => {
+          console.warn('Defects service test failed:', err);
+        });
+      } catch (error) {
+        console.error('Failed to initialize defects service:', error);
+      }
     } else {
       console.log('FleetDashboard: No user ID available for defects service');
     }
   }, [currentUser]);
 
-  // Load defect statistics
+  // FIXED: Enhanced defect stats loading with better error handling
   const loadDefectStats = useCallback(async () => {
+    if (!currentUser) {
+      console.log('No authenticated user, skipping defect stats load');
+      return;
+    }
+
     try {
+      console.log('Loading defect stats...');
       const stats = await defectsService.getDefectStats();
-      setDefectStats(stats);
       console.log('Loaded defect stats:', stats);
+      setDefectStats(stats);
     } catch (error) {
       console.error('Error loading defect stats:', error);
-      // Keep default stats on error
+      // Set default stats on error instead of leaving them empty
+      setDefectStats({
+        total: 0,
+        open: 0,
+        inProgress: 0,
+        closed: 0,
+        overdue: 0
+      });
     }
-  }, []);
+  }, [currentUser]);
 
   // Load defect stats on component mount and when user changes
   useEffect(() => {
@@ -114,64 +145,107 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     }
   }, [currentUser, loadDefectStats]);
 
-  // FIXED: Updated handleLoadDefects function to match VesselTable expectations
-  const handleLoadDefects = useCallback(async (vesselName, userId) => {
+  // FIXED: Completely rewritten handleLoadDefects to match your old working version
+  const handleLoadDefects = useCallback(async (vesselName) => {
     try {
-      console.log(`Loading defects for vessel NAME: ${vesselName} with userId: ${userId}`);
-
+      console.log(`🚢 Loading defects for vessel: ${vesselName}`);
+      
       if (!currentUser) {
-        console.warn('No authenticated user, cannot load defects');
+        console.warn('❌ No authenticated user, cannot load defects');
         return [];
       }
-
-      // Use the passed userId parameter first, then fall back to currentUser
-      const currentUserId = userId || currentUser?.userId || currentUser?.user_id || currentUser?.id;
+      
+      // Get user ID with multiple fallbacks
+      const currentUserId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
       if (!currentUserId) {
-        console.warn('No user ID found in parameters or currentUser object:', { userId, currentUser });
+        console.warn('❌ No user ID found in currentUser object:', currentUser);
         return [];
       }
 
-      console.log('FleetDashboard: Using userId for defects:', currentUserId);
-
-      // Make sure defects service has the right user ID
+      // Check cache first (using object instead of Map)
+      const cacheKey = `${vesselName}-${currentUserId}`;
+      if (defectsCache[cacheKey]) {
+        console.log('📋 Using cached defects for vessel:', vesselName);
+        return defectsCache[cacheKey];
+      }
+      
+      console.log('🔍 FleetDashboard: Using userId for defects:', currentUserId);
+      
+      // Ensure defects service has the right user ID
       defectsService.setUserId(currentUserId);
-
-      // Use vessel name for lookup
-      const defects = await defectsService.getVesselDefectsByName(vesselName);
-
-      console.log(`Loaded ${defects.length} defects for vessel ${vesselName}`);
+      
+      // Use vessel name for lookup - normalize the vessel name
+      const normalizedVesselName = vesselName.trim();
+      console.log('🔍 Fetching defects for normalized vessel name:', normalizedVesselName);
+      
+      const defects = await defectsService.getVesselDefectsByName(normalizedVesselName);
+      
+      // Cache the results (using object instead of Map)
+      setDefectsCache(prev => ({
+        ...prev,
+        [cacheKey]: defects
+      }));
+      
+      console.log(`✅ Loaded ${defects.length} defects for vessel ${vesselName}`);
+      
+      // Log first few defects for debugging
+      if (defects.length > 0) {
+        console.log('Sample defects:', defects.slice(0, 2).map(d => ({
+          id: d.id,
+          title: d.title,
+          status: d.status,
+          criticality: d.criticality,
+          vessel_name: d.vessel_name
+        })));
+      }
+      
       return defects;
-
+      
     } catch (error) {
-      console.error('Failed to load defects:', error);
+      console.error('❌ Failed to load defects for vessel:', vesselName, error);
+      // Return empty array on error instead of throwing
       return [];
     }
-  }, [currentUser]);
+  }, [currentUser, defectsCache]);
 
-  // Function to refresh defects cache when needed
+  // FIXED: Function to refresh defects cache when needed
   const refreshDefectsCache = useCallback(() => {
+    console.log('🔄 Clearing defects cache');
+    setDefectsCache({});
     defectsService.clearCache();
     loadDefectStats(); // Reload stats after clearing cache
   }, [loadDefectStats]);
 
-  // Add defect actions for the dashboard
+  // FIXED: Enhanced defect action handlers with better error handling
   const handleCreateDefect = useCallback(async (defectData) => {
     try {
-      console.log('Creating new defect:', defectData);
+      console.log('🆕 Creating new defect:', defectData);
 
       if (!currentUser) {
         throw new Error('User not authenticated');
       }
 
       const newDefect = await defectsService.createDefect(defectData);
-      console.log('Created defect:', newDefect);
+      console.log('✅ Created defect:', newDefect);
+
+      // Clear cache for the affected vessel (using object instead of Map)
+      const vesselName = defectData.vessel_name;
+      if (vesselName) {
+        const currentUserId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
+        const cacheKey = `${vesselName}-${currentUserId}`;
+        setDefectsCache(prev => {
+          const newCache = { ...prev };
+          delete newCache[cacheKey];
+          return newCache;
+        });
+      }
 
       // Refresh stats after creating
       loadDefectStats();
 
       return newDefect;
     } catch (error) {
-      console.error('Error creating defect:', error);
+      console.error('❌ Error creating defect:', error);
       setError(`Failed to create defect: ${error.message}`);
       throw error;
     }
@@ -179,21 +253,33 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
 
   const handleUpdateDefect = useCallback(async (defectId, defectData) => {
     try {
-      console.log('Updating defect:', defectId, defectData);
+      console.log('📝 Updating defect:', defectId, defectData);
 
       if (!currentUser) {
         throw new Error('User not authenticated');
       }
 
       const updatedDefect = await defectsService.updateDefect(defectId, defectData);
-      console.log('Updated defect:', updatedDefect);
+      console.log('✅ Updated defect:', updatedDefect);
+
+      // Clear cache for the affected vessel (using object instead of Map)
+      const vesselName = defectData.vessel_name || updatedDefect.vessel_name;
+      if (vesselName) {
+        const currentUserId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
+        const cacheKey = `${vesselName}-${currentUserId}`;
+        setDefectsCache(prev => {
+          const newCache = { ...prev };
+          delete newCache[cacheKey];
+          return newCache;
+        });
+      }
 
       // Refresh stats after updating
       loadDefectStats();
 
       return updatedDefect;
     } catch (error) {
-      console.error('Error updating defect:', error);
+      console.error('❌ Error updating defect:', error);
       setError(`Failed to update defect: ${error.message}`);
       throw error;
     }
@@ -201,25 +287,327 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
 
   const handleDeleteDefect = useCallback(async (defectId) => {
     try {
-      console.log('Deleting defect:', defectId);
+      console.log('🗑️ Deleting defect:', defectId);
 
       if (!currentUser) {
         throw new Error('User not authenticated');
       }
 
       const result = await defectsService.deleteDefect(defectId);
-      console.log('Deleted defect result:', result);
+      console.log('✅ Deleted defect result:', result);
 
-      // Refresh stats after deleting
-      loadDefectStats();
+      // Clear entire cache since we don't know which vessel the defect belonged to
+      refreshDefectsCache();
 
       return result;
     } catch (error) {
-      console.error('Error deleting defect:', error);
+      console.error('❌ Error deleting defect:', error);
       setError(`Failed to delete defect: ${error.message}`);
       throw error;
     }
-  }, [currentUser, loadDefectStats]);
+  }, [currentUser, refreshDefectsCache]);
+
+  // NEW: Handle checklist icon click from VesselTable
+  const handleOpenChecklist = useCallback((vessel) => {
+    console.log('FleetDashboard: Opening checklist for vessel:', vessel.vessel_name);
+    setSelectedVesselForChecklist(vessel);
+    setChecklistModalOpen(true);
+  }, []);
+
+  // NEW: Handle checklist modal close
+  const handleCloseChecklist = useCallback(() => {
+    console.log('FleetDashboard: Closing checklist modal');
+    setChecklistModalOpen(false);
+    setSelectedVesselForChecklist(null);
+  }, []);
+
+  // Generate a unique key for each vessel
+  const generateUniqueKey = (vessel) => {
+    // Create a unique key by combining IMO and status (or other distinguishing fields)
+    const status = vessel.status || 'unknown';
+    const loadDate = vessel.rds_load_date || 'unknown';
+    return `${vessel.imo_no}-${status}-${loadDate}`;
+  };
+
+  // Function to categorize and format vessel status
+  const categorizeStatus = (status) => {
+    if (!status) {
+      return "Others";
+    }
+
+    const statusLower = status.toLowerCase();
+
+    // At Sea category
+    if (statusLower.includes("at sea") ||
+      statusLower.includes("noon at sea") ||
+      statusLower.includes("noon sea") ||
+      statusLower === "sea" ||
+      statusLower === "noon") {
+      return "At Sea";
+    }
+
+    // At Port category
+    if (statusLower.includes("at port") ||
+      statusLower.includes("noon at port") ||
+      statusLower.includes("at berth") ||
+      statusLower.includes("berth") ||
+      statusLower.includes("arrival") ||
+      statusLower.includes("departure port") ||
+      statusLower.includes("departure") ||
+      statusLower.includes("port")) {
+      return "At Port";
+    }
+
+    // At Anchor category
+    if (statusLower.includes("at anchor") ||
+      statusLower.includes("noon at anchor") ||
+      statusLower.includes("anchor")) {
+      return "At Anchor";
+    }
+
+    // Everything else goes to Others
+    return "Others";
+  };
+
+  const processVesselsData = useCallback((data) => {
+    console.log('Raw data received:', data.length, 'rows');
+
+    // Helper function for date parsing
+    const parseDate = (dateString) => {
+      if (!dateString) return null;
+      try {
+        const date = new Date(dateString);
+        return !isNaN(date.getTime()) ? date : null;
+      } catch (e) {
+        return null;
+      }
+    };
+
+    // Master filter to remove vessels with invalid IMO numbers and empty vessel names
+    const vesselsWithValidData = data.filter(vessel => {
+      const imoNo = vessel.imo_no;
+      const vesselName = vessel.vessel_name;
+
+      const isValid = imoNo &&
+        imoNo !== "-" &&
+        Number.isInteger(Number(imoNo)) &&
+        !String(imoNo).includes('.') &&
+        vesselName &&
+        vesselName !== "-";
+
+      return isValid;
+    });
+
+    console.log('Vessels with valid IMO and vessel names:', vesselsWithValidData.length);
+
+    // Find the latest rds_load_date
+    const allLoadDates = vesselsWithValidData
+      .map(v => parseDate(v.rds_load_date))
+      .filter(date => date !== null);
+
+    const latestLoadDate = allLoadDates.length ?
+      new Date(Math.max(...allLoadDates.map(d => d.getTime()))) : null;
+
+    console.log('Latest load date identified:', latestLoadDate);
+
+    // Calculate the date 2 months ago for report_date filtering
+    const twoMonthsAgo = new Date();
+    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+    console.log('Filtering out vessels with report_date older than:', twoMonthsAgo);
+
+    // Active vessels processing
+    const activeVessels = latestLoadDate ?
+      vesselsWithValidData.filter(vessel => {
+        // Check active status and latest load date
+        const isActive = vessel.status === "Active" &&
+          vessel.rds_load_date &&
+          new Date(vessel.rds_load_date).getTime() === latestLoadDate.getTime();
+
+        // Check report date recency
+        let hasRecentReport = false;
+        if (vessel.report_date) {
+          const reportDate = parseDate(vessel.report_date);
+          if (reportDate) {
+            hasRecentReport = reportDate >= twoMonthsAgo;
+
+            if (!hasRecentReport) {
+              console.debug('Vessel excluded due to old report date:', {
+                vessel: vessel.vessel_name,
+                reportDate: reportDate,
+                twoMonthsAgo: twoMonthsAgo
+              });
+            }
+          }
+        }
+
+        return isActive && hasRecentReport;
+      }) : [];
+
+    // Inactive vessels: all with status="Inactive"
+    const inactiveVessels = vesselsWithValidData.filter(vessel => {
+      return vessel.status === "Inactive";
+    });
+
+    console.log('Active vessels from latest load date (with recent reports):', activeVessels.length);
+    console.log('Inactive vessels (all dates):', inactiveVessels.length);
+
+    // Enhance vessel data with calculated fields
+    const enhanceVessel = (vessel, isActive = true) => {
+      const etaDate = parseDate(vessel.eta);
+
+      let days_to_go = 0;
+      if (etaDate) {
+        const currentDate = new Date();
+        const timeDiff = etaDate.getTime() - currentDate.getTime();
+        days_to_go = Math.max(0, Math.round(timeDiff / (1000 * 3600 * 24) * 10) / 10);
+      } else if (vessel.DISTANCE_TO_GO) {
+        days_to_go = parseFloat((vessel.DISTANCE_TO_GO / 350).toFixed(1));
+      }
+
+      // Generate a unique key using UUID
+      const uniqueKey = `vessel-${uuidv4()}`;
+
+      // Categorize and format the event_type (status)
+      const formattedStatus = categorizeStatus(vessel.event_type);
+
+      return {
+        ...vessel,
+        etaDate,
+        days_to_go,
+        riskScore: Math.floor(Math.random() * 100),
+        uniqueKey,
+        isActiveVessel: isActive,
+        reportDate: parseDate(vessel.report_date), // Add parsed report date
+        event_type: formattedStatus, // Apply the formatted status
+        computed_checklist_status: vessel.computed_checklist_status // Include the new field
+      };
+    };
+
+    // Process both active and inactive vessels
+    const enhancedActiveVessels = activeVessels.map(v => enhanceVessel(v, true));
+    const enhancedInactiveVessels = inactiveVessels.map(v => enhanceVessel(v, false));
+
+    // Store processed vessels
+    setActiveVessels(enhancedActiveVessels);
+    setInactiveVessels(enhancedInactiveVessels);
+    setAllProcessedVessels([...enhancedActiveVessels, ...enhancedInactiveVessels]);
+
+    // Return active vessels for default view
+    return enhancedActiveVessels;
+  }, []);
+  
+  // Sort vessels data
+  const sortVesselsData = useCallback((processedData) => {
+    return [...processedData].sort((a, b) => {
+      // In-port vessels should be at the top
+      const aInPort = a.event_type && (a.event_type.toLowerCase().includes('port') || a.event_type.toLowerCase().includes('berth'));
+      const bInPort = b.event_type && (b.event_type.toLowerCase().includes('port') || b.event_type.toLowerCase().includes('berth'));
+
+      if (aInPort && !bInPort) return -1;
+      if (!aInPort && bInPort) return 1;
+
+      // Then sort by ETA (earliest first for vessels not in port)
+      if (!aInPort && !bInPort) {
+        if (!a.etaDate && !b.etaDate) return 0;
+        if (!a.etaDate) return 1;
+        if (!b.etaDate) return -1;
+        return a.etaDate - b.etaDate;
+      }
+
+      return 0;
+    });
+  }, []);
+
+  // Fetch vessel data from API (now using the new endpoint with overrides)
+  const fetchVesselData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Use the new API endpoint for vessels with overrides
+      const response = await fetch(VESSELS_WITH_OVERRIDE_API_URL);
+
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
+      let data = await response.json();
+      console.log('API Response data with overrides:', data.length, 'rows');
+
+      const processedData = processVesselsData(data);
+      console.log('Processed data for display:', processedData.length);
+
+      const sortedData = sortVesselsData(processedData);
+      console.log('Sorted data for display:', sortedData.length);
+
+      setVessels(sortedData || []);
+      setFilteredVessels(sortedData || []);
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.error('Error fetching vessel data with overrides:', err);
+      setError('Failed to load vessel data. Please try again later.');
+      setVessels([]);
+      setFilteredVessels([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [processVesselsData, sortVesselsData, VESSELS_WITH_OVERRIDE_API_URL]);
+
+  // Handle checklist updates (when checklist is submitted/updated)
+  const handleChecklistUpdate = useCallback((voyageId, checklistData) => {
+    console.log('FleetDashboard: Checklist updated for voyage:', voyageId, checklistData);
+    
+    // Update the vessels data to reflect the new checklist status
+    setVessels(prevVessels => 
+      prevVessels.map(vessel => {
+        if (vessel.id === voyageId) {
+          return {
+            ...vessel,
+            computed_checklist_status: checklistData.status || 'submitted',
+            checklist_status: checklistData.status || 'submitted',
+            checklist_progress: checklistData.progress || 100,
+            checklist_items_completed: checklistData.items_completed,
+            checklist_total_items: checklistData.total_items,
+            checklist_submitted_at: checklistData.submitted_at,
+            checklist_submitted_by: checklistData.submitted_by,
+            // Update the display field that the dropdown uses
+            checklist_received: checklistData.status === 'submitted' ? 'Submitted' : 
+                                checklistData.status === 'complete' ? 'Submitted' :
+                                vessel.checklist_received // Keep existing dropdown value for non-submitted
+          };
+        }
+        return vessel;
+      })
+    );
+
+    // Also update filtered vessels
+    setFilteredVessels(prevFiltered => 
+      prevFiltered.map(vessel => {
+        if (vessel.id === voyageId) {
+          return {
+            ...vessel,
+            computed_checklist_status: checklistData.status || 'submitted',
+            checklist_status: checklistData.status || 'submitted',
+            checklist_progress: checklistData.progress || 100,
+            checklist_items_completed: checklistData.items_completed,
+            checklist_total_items: checklistData.total_items,
+            checklist_submitted_at: checklistData.submitted_at,
+            checklist_submitted_by: checklistData.submitted_by,
+            checklist_received: checklistData.status === 'submitted' ? 'Submitted' : 
+                                checklistData.status === 'complete' ? 'Submitted' :
+                                vessel.checklist_received
+          };
+        }
+        return vessel;
+      })
+    );
+
+    // Refresh the main vessel data to ensure consistency
+    setTimeout(() => {
+      console.log('FleetDashboard: Refreshing vessel data after checklist update');
+      fetchVesselData();
+    }, 1000);
+  }, [fetchVesselData]);
 
   // Keep all your existing functions exactly as they are
   const handleTimelineFilterChange = (timeRange) => {
@@ -321,7 +709,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         throw new Error('Failed to fetch PSC data');
       }
       const data = await response.json();
-      console.log('PSC Data received:', data); // Add this log
+      console.log('PSC Data received:', data);
       setPscDeficiencyData(data);
     } catch (error) {
       console.error('Error fetching PSC data:', error);
@@ -329,7 +717,6 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       setLoadingPscData(false);
     }
   }, [PSC_API_URL]);
-
 
   const handleChartFilterChange = (port) => {
     setChartPortFilter(port);
@@ -363,14 +750,28 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     ));
   };
 
-
-  const handleVesselUpdate = async (updatedVessel) => {
+  // Enhanced handleUpdateVessel to respect submission constraints
+  const handleUpdateVessel = useCallback(async (updatedVessel) => {
     try {
       // Get the field and value to update
       const fieldToUpdate = updatedVessel.field || 'checklist_received';
       const valueToUpdate = updatedVessel[fieldToUpdate] || updatedVessel.value;
 
       console.log(`Updating vessel: ${updatedVessel.imo_no} with ${fieldToUpdate} value:`, valueToUpdate);
+
+      // Check submission constraints for checklist_received field
+      if (fieldToUpdate === 'checklist_received') {
+        const currentVessel = vessels.find(v => v.uniqueKey === updatedVessel.uniqueKey);
+        const isSubmitted = currentVessel?.computed_checklist_status === 'submitted' || 
+                           currentVessel?.computed_checklist_status === 'complete';
+        
+        // If checklist is submitted, only allow changing to 'Acknowledged'
+        if (isSubmitted && valueToUpdate === 'Pending') {
+          console.warn('Cannot change submitted checklist back to Pending');
+          alert('Cannot change a submitted checklist back to Pending. Only Acknowledged is allowed.');
+          return false;
+        }
+      }
 
       // Prepare the payload
       const payload = {
@@ -422,330 +823,11 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       console.error(`Error updating vessel ${updatedVessel.field || 'field'}:`, error);
       return false;
     }
-  };
-
-  // Generate a unique key for each vessel
-  const generateUniqueKey = (vessel) => {
-    // Create a unique key by combining IMO and status (or other distinguishing fields)
-    const status = vessel.status || 'unknown';
-    const loadDate = vessel.rds_load_date || 'unknown';
-    return `${vessel.imo_no}-${status}-${loadDate}`;
-  };
-
-  // Function to categorize and format vessel status
-  const categorizeStatus = (status) => {
-    if (!status) {
-      return "Others";
-    }
-
-    const statusLower = status.toLowerCase();
-
-    // At Sea category
-    if (statusLower.includes("at sea") ||
-      statusLower.includes("noon at sea") ||
-      statusLower.includes("noon sea") ||
-      statusLower === "sea" ||
-      statusLower === "noon") {
-      return "At Sea";
-    }
-
-    // At Port category
-    if (statusLower.includes("at port") ||
-      statusLower.includes("noon at port") ||
-      statusLower.includes("at berth") ||
-      statusLower.includes("berth") ||
-      statusLower.includes("arrival") ||
-      statusLower.includes("departure port") ||
-      statusLower.includes("departure") ||
-      statusLower.includes("port")) {
-      return "At Port";
-    }
-
-    // At Anchor category
-    if (statusLower.includes("at anchor") ||
-      statusLower.includes("noon at anchor") ||
-      statusLower.includes("anchor")) {
-      return "At Anchor";
-    }
-
-    // Everything else goes to Others
-    return "Others";
-  };
-
-  const processVesselsData = useCallback((data) => {
-    console.log('Raw data received:', data.length, 'rows');
-
-    // Helper function for date parsing
-    const parseDate = (dateString) => {
-      if (!dateString) return null;
-      try {
-        const date = new Date(dateString);
-        return !isNaN(date.getTime()) ? date : null;
-      } catch (e) {
-        return null;
-      }
-    };
-
-    // Debug: Find SDTR FAITH in raw data
-    const sdtrFaithRaw = data.find(v => v.vessel_name === "SDTR FAITH");
-    if (sdtrFaithRaw) {
-      console.log('SDTR FAITH found in raw data:', {
-        id: sdtrFaithRaw.id,
-        vessel_name: sdtrFaithRaw.vessel_name,
-        imo_no: sdtrFaithRaw.imo_no,
-        status: sdtrFaithRaw.status,
-        current_status: sdtrFaithRaw.current_status,
-        report_date: sdtrFaithRaw.report_date,
-        rds_load_date: sdtrFaithRaw.rds_load_date,
-        computed_checklist_status: sdtrFaithRaw.computed_checklist_status // Log new field
-      });
-    } else {
-      console.log('SDTR FAITH NOT FOUND in raw data');
-    }
-
-    // Master filter to remove vessels with invalid IMO numbers and empty vessel names
-    const vesselsWithValidData = data.filter(vessel => {
-      const imoNo = vessel.imo_no;
-      const vesselName = vessel.vessel_name;
-
-      const isValid = imoNo &&
-        imoNo !== "-" &&
-        Number.isInteger(Number(imoNo)) &&
-        !String(imoNo).includes('.') &&
-        vesselName &&
-        vesselName !== "-";
-
-      // Debug: Log if SDTR FAITH fails this filter
-      if (vessel.vessel_name === "SDTR FAITH" && !isValid) {
-        console.log('SDTR FAITH FAILED valid data filter:', {
-          imoNo,
-          vesselName,
-          isValidImo: imoNo && imoNo !== "-" && Number.isInteger(Number(imoNo)) && !String(imoNo).includes('.'),
-          isValidName: vesselName && vesselName !== "-"
-        });
-      }
-
-      return isValid;
-    });
-
-    console.log('Vessels with valid IMO and vessel names:', vesselsWithValidData.length);
-
-    // Debug: Check if SDTR FAITH survived the valid data filter
-    const sdtrFaithValid = vesselsWithValidData.find(v => v.vessel_name === "SDTR FAITH");
-    console.log('SDTR FAITH after valid data filter:', sdtrFaithValid ? 'FOUND' : 'NOT FOUND');
-
-    // Find the latest rds_load_date
-    const allLoadDates = vesselsWithValidData
-      .map(v => parseDate(v.rds_load_date))
-      .filter(date => date !== null);
-
-    const latestLoadDate = allLoadDates.length ?
-      new Date(Math.max(...allLoadDates.map(d => d.getTime()))) : null;
-
-    console.log('Latest load date identified:', latestLoadDate);
-
-    // Calculate the date 2 months ago for report_date filtering
-    const twoMonthsAgo = new Date();
-    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
-    console.log('Filtering out vessels with report_date older than:', twoMonthsAgo);
-
-    // Active vessels processing
-    const activeVessels = latestLoadDate ?
-      vesselsWithValidData.filter(vessel => {
-        // Check active status and latest load date
-        const isActive = vessel.status === "Active" &&
-          vessel.rds_load_date &&
-          new Date(vessel.rds_load_date).getTime() === latestLoadDate.getTime();
-
-        // Debug: Log SDTR FAITH's active status check
-        if (vessel.vessel_name === "SDTR FAITH") {
-          console.log('SDTR FAITH active status check:', {
-            status: vessel.status,
-            rds_load_date: vessel.rds_load_date,
-            parsed_rds_load_date: new Date(vessel.rds_load_date),
-            latest_load_date: latestLoadDate,
-            rds_matches_latest: vessel.rds_load_date && new Date(vessel.rds_load_date).getTime() === latestLoadDate.getTime(),
-            isActive
-          });
-        }
-
-        // Check report date recency
-        let hasRecentReport = false;
-        if (vessel.report_date) {
-          const reportDate = parseDate(vessel.report_date);
-          if (reportDate) {
-            hasRecentReport = reportDate >= twoMonthsAgo;
-
-            // Debug: Log SDTR FAITH's report date check
-            if (vessel.vessel_name === "SDTR FAITH") {
-              console.log('SDTR FAITH report date check:', {
-                report_date: vessel.report_date,
-                parsed_report_date: reportDate,
-                two_months_ago: twoMonthsAgo,
-                hasRecentReport,
-                days_diff: Math.floor((new Date() - reportDate) / (1000 * 60 * 60 * 24))
-              });
-            }
-
-            if (!hasRecentReport) {
-              console.debug('Vessel excluded due to old report date:', {
-                vessel: vessel.vessel_name,
-                reportDate: reportDate,
-                twoMonthsAgo: twoMonthsAgo
-              });
-            }
-          }
-        } else {
-          // Debug: Log if SDTR FAITH has no report date
-          if (vessel.vessel_name === "SDTR FAITH") {
-            console.log('SDTR FAITH has no report_date');
-          }
-        }
-
-        const finalResult = isActive && hasRecentReport;
-
-        // Debug: Log final result for SDTR FAITH
-        if (vessel.vessel_name === "SDTR FAITH") {
-          console.log('SDTR FAITH final active filter result:', {
-            isActive,
-            hasRecentReport,
-            finalResult
-          });
-        }
-
-        return finalResult;
-      }) : [];
-
-    // Inactive vessels: all with status="Inactive"
-    const inactiveVessels = vesselsWithValidData.filter(vessel => {
-      const isInactive = vessel.status === "Inactive";
-
-      // Debug: Check if SDTR FAITH is considered inactive
-      if (vessel.vessel_name === "SDTR FAITH") {
-        console.log('SDTR FAITH inactive check:', {
-          status: vessel.status,
-          isInactive
-        });
-      }
-
-      return isInactive;
-    });
-
-    console.log('Active vessels from latest load date (with recent reports):', activeVessels.length);
-    console.log('Inactive vessels (all dates):', inactiveVessels.length);
-
-    // Debug: Final check - is SDTR FAITH in either list?
-    const sdtrFaithActive = activeVessels.find(v => v.vessel_name === "SDTR FAITH");
-    const sdtrFaithInactive = inactiveVessels.find(v => v.vessel_name === "SDTR FAITH");
-
-    console.log('SDTR FAITH in active vessels:', sdtrFaithActive ? 'YES' : 'NO');
-    console.log('SDTR FAITH in inactive vessels:', sdtrFaithInactive ? 'YES' : 'NO');
-
-    // Enhance vessel data with calculated fields
-    const enhanceVessel = (vessel, isActive = true) => {
-      const etaDate = parseDate(vessel.eta);
-
-      let days_to_go = 0;
-      if (etaDate) {
-        const currentDate = new Date();
-        const timeDiff = etaDate.getTime() - currentDate.getTime();
-        days_to_go = Math.max(0, Math.round(timeDiff / (1000 * 3600 * 24) * 10) / 10);
-      } else if (vessel.DISTANCE_TO_GO) {
-        days_to_go = parseFloat((vessel.DISTANCE_TO_GO / 350).toFixed(1));
-      }
-
-      // Generate a unique key using UUID
-      const uniqueKey = `vessel-${uuidv4()}`;
-
-      // Categorize and format the event_type (status)
-      const formattedStatus = categorizeStatus(vessel.event_type);
-
-      return {
-        ...vessel,
-        etaDate,
-        days_to_go,
-        riskScore: Math.floor(Math.random() * 100),
-        uniqueKey,
-        isActiveVessel: isActive,
-        reportDate: parseDate(vessel.report_date), // Add parsed report date
-        event_type: formattedStatus, // Apply the formatted status
-        computed_checklist_status: vessel.computed_checklist_status // Include the new field
-      };
-    };
-
-    // Process both active and inactive vessels
-    const enhancedActiveVessels = activeVessels.map(v => enhanceVessel(v, true));
-    const enhancedInactiveVessels = inactiveVessels.map(v => enhanceVessel(v, false));
-
-    // Store processed vessels
-    setActiveVessels(enhancedActiveVessels);
-    setInactiveVessels(enhancedInactiveVessels);
-    setAllProcessedVessels([...enhancedActiveVessels, ...enhancedInactiveVessels]);
-
-    // Return active vessels for default view
-    return enhancedActiveVessels;
-  }, []);
-  
-  // Sort vessels data
-  const sortVesselsData = useCallback((processedData) => {
-    return [...processedData].sort((a, b) => {
-      // In-port vessels should be at the top
-      const aInPort = a.event_type && (a.event_type.toLowerCase().includes('port') || a.event_type.toLowerCase().includes('berth'));
-      const bInPort = b.event_type && (b.event_type.toLowerCase().includes('port') || b.event_type.toLowerCase().includes('berth'));
-
-      if (aInPort && !bInPort) return -1;
-      if (!aInPort && bInPort) return 1;
-
-      // Then sort by ETA (earliest first for vessels not in port)
-      if (!aInPort && !bInPort) {
-        if (!a.etaDate && !b.etaDate) return 0;
-        if (!a.etaDate) return 1;
-        if (!b.etaDate) return -1;
-        return a.etaDate - b.etaDate;
-      }
-
-      return 0;
-    });
-  }, []);
-
-  // Fetch vessel data from API (now using the new endpoint with overrides)
-  const fetchVesselData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Use the new API endpoint for vessels with overrides
-      const response = await fetch(VESSELS_WITH_OVERRIDE_API_URL); // Corrected variable name
-
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-
-      let data = await response.json();
-      console.log('API Response data with overrides:', data.length, 'rows');
-
-      const processedData = processVesselsData(data);
-      console.log('Processed data for display:', processedData.length);
-
-      const sortedData = sortVesselsData(processedData);
-      console.log('Sorted data for display:', sortedData.length);
-
-      setVessels(sortedData || []);
-      setFilteredVessels(sortedData || []);
-      setLastUpdated(new Date());
-    } catch (err) {
-      console.error('Error fetching vessel data with overrides:', err);
-      setError('Failed to load vessel data. Please try again later.');
-      setVessels([]);
-      setFilteredVessels([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [processVesselsData, sortVesselsData, VESSELS_WITH_OVERRIDE_API_URL]); // Corrected variable name
+  }, [vessels, ORIGINAL_VESSELS_API_URL]);
 
   // Load data on component mount
   useEffect(() => {
-    fetchVesselData(); // Call the new fetch function
+    fetchVesselData();
   }, [fetchVesselData]);
 
   useEffect(() => {
@@ -761,7 +843,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     if (vessels.length > 0) {
       const uniquePorts = [...new Set(vessels.map(v => v.arrival_port).filter(Boolean))];
       const uniqueStatuses = [...new Set(vessels.map(v => v.event_type).filter(Boolean))];
-      const uniqueDocs = [...new Set(vessels.map(v => v.fleet_type).filter(Boolean))];  // ✅ CORRECT FIELD
+      const uniqueDocs = [...new Set(vessels.map(v => v.fleet_type).filter(Boolean))];
   
       setPortFilters(uniquePorts);
       setStatusFilters(uniqueStatuses);
@@ -788,7 +870,6 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     setVessels(sortedData);
   }, [voyageStatusFilter, activeVessels, inactiveVessels, allProcessedVessels, sortVesselsData]);
 
-  // Apply other filters when filters or data change
   // Apply other filters when filters or data change
   useEffect(() => {
     if (!vessels.length) {
@@ -873,11 +954,11 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          vessel_comment_id: vesselCommentId, // Corrected: Use vesselToUpdate.id
+          vessel_comment_id: vesselCommentId,
           field_name: fieldName,
-          override_value: newValue, // Corrected: Use override_value as per Lambda
-          user_id: currentUserId, // IMPORTANT: Pass the actual user ID
-          original_value: vesselToUpdate[fieldName] // Pass the original value for logging
+          override_value: newValue,
+          user_id: currentUserId,
+          original_value: vesselToUpdate[fieldName]
         }),
       });
 
@@ -886,18 +967,12 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
       const result = await response.json();
-      // Your Lambda now returns the updated override record directly, not a { success: true } object
-      // So, you can directly use 'result' to update the state.
-      // The Lambda returns: override_id, vessel_comment_id, user_eta, user_etb, user_etd, created_at, updated_at
-      // We need to update the specific user_eta, user_etb, or user_etd field in the local state.
 
       setVessels(prevVessels =>
         prevVessels.map(vessel =>
           vessel.id === vesselId
             ? {
                 ...vessel,
-                // Update the specific override field based on the fieldName
-                // The Lambda response 'result' will contain the updated user_eta, user_etb, or user_etd
                 user_eta: result.user_eta,
                 user_etb: result.user_etb,
                 user_etd: result.user_etd,
@@ -905,7 +980,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
             : vessel
         )
       );
-      // Also update filteredVessels
+      
       setFilteredVessels(prevFiltered =>
         prevFiltered.map(vessel =>
           vessel.id === vesselId
@@ -935,9 +1010,9 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     setTimelineFilter(null);
   
     // Set port, status, and doc filters to include all options
-    const uniquePorts = [...new Set(vessels.map(v => v.arrival_port).filter(Boolean))]; // ✅ FIXED
-    const uniqueStatuses = [...new Set(vessels.map(v => v.event_type).filter(Boolean))]; // ✅ FIXED
-    const uniqueDocs = [...new Set(vessels.map(v => v.fleet_type).filter(Boolean))]; // ✅ FIXED
+    const uniquePorts = [...new Set(vessels.map(v => v.arrival_port).filter(Boolean))];
+    const uniqueStatuses = [...new Set(vessels.map(v => v.event_type).filter(Boolean))];
+    const uniqueDocs = [...new Set(vessels.map(v => v.fleet_type).filter(Boolean))];
   
     setPortFilters(uniquePorts);
     setStatusFilters(uniqueStatuses);
@@ -998,17 +1073,17 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
 
   // Memoized values for filter counts and dropdown options
   const uniquePorts = useMemo(() =>
-    [...new Set(vessels.map(v => v.arrival_port).filter(Boolean))],  // ✅ CORRECTED: Use 'vessels' for all unique options
+    [...new Set(vessels.map(v => v.arrival_port).filter(Boolean))],
     [vessels]
   );
 
   const uniqueStatuses = useMemo(() =>
-    [...new Set(vessels.map(v => v.event_type).filter(Boolean))], // ✅ CORRECTED: Use 'vessels' for all unique options
+    [...new Set(vessels.map(v => v.event_type).filter(Boolean))],
     [vessels]
   );
 
   const uniqueDocs = useMemo(() =>
-    [...new Set(vessels.map(v => v.fleet_type).filter(Boolean))], // ✅ CORRECTED: Use 'vessels' for all unique options
+    [...new Set(vessels.map(v => v.fleet_type).filter(Boolean))],
     [vessels]
   );
 
@@ -1144,10 +1219,20 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     setShowSearch(false);
   };
 
-  // In your return statement, update the VesselTable props:
+  // Debug logging for checklist status
+  console.log('FleetDashboard: Current vessels with checklist status:', 
+    filteredVessels.slice(0, 3).map(v => ({
+      name: v.vessel_name,
+      computed_status: v.computed_checklist_status,
+      checklist_received: v.checklist_received,
+      progress: v.checklist_progress
+    }))
+  );
+
+  // FIXED: Return statement with proper VesselTable props
   return (
     <div className="dashboard-container" onClick={closeAllDropdowns}>
-      {/* Keep all your existing filter bar JSX */}
+      {/* Filter bar */}
       <div className="filter-bar">
         <div className="filter-section-left">
           <h1 className="dashboard-title">Fleet</h1>
@@ -1156,15 +1241,15 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
             <span>{vesselCount}</span>
           </div>
 
-          {/* Add defect stats display */}
-          {/* {defectStats.total > 0 && (
+          {/* Add defect stats display if needed */}
+          {defectStats.total > 0 && (
             <div className="defect-counter">
               <AlertTriangle size={14} />
               <span>{defectStats.open} open defects</span>
             </div>
-          )} */}
+          )}
 
-          {/* Your existing search container */}
+          {/* Search container */}
           <div className="search-container">
             <button
               className="search-toggle"
@@ -1191,7 +1276,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
           </div>
         </div>
 
-        {/* Keep all your existing filter controls */}
+        {/* Filter controls */}
         <div className="filter-label">
           <Filter size={14} />
         </div>
@@ -1425,9 +1510,6 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
             <RefreshCw size={14} className={loading ? "spinning" : ""} />
           </button>
 
-          {/* <button className="control-btn export-btn" title="Export data">
-            <Download size={14} />
-          </button> */}
           <button
             className="map-toggle"
             onClick={() => setMapModalOpen(true)}
@@ -1445,7 +1527,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         </div>
       )}
 
-      {/* Keep your existing charts section */}
+      {/* Charts section */}
       <div className="dashboard-charts">
         <div className="dashboard-card-body">
           {loading ? (
@@ -1476,7 +1558,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         </div>
       </div>
 
-      {/* Updated vessel table wrapper with defect integration */}
+      {/* Vessel table wrapper */}
       <div className="vessel-table-wrapper">
         {loading ? (
           <div className="loading-container">
@@ -1487,7 +1569,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
           <div className="no-results">
             <p>No vessels match your current filters. Try adjusting your search or filters.</p>
             <button className="reset-filters" onClick={resetFilters}>
-                  Reset Filters
+              Reset Filters
             </button>
           </div>
         ) : (
@@ -1503,26 +1585,34 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
               }}
             />
 
-            {/* FIXED: Use only the props that VesselTable expects */}
+            {/* FIXED: VesselTable with proper defects integration */}
             <VesselTable
               vessels={filteredVessels}
               onOpenRemarks={handleOpenComments}
               fieldMappings={fieldMappings}
-              onUpdateVessel={handleVesselUpdate}
+              onUpdateVessel={handleUpdateVessel}
               onUpdateOverride={handleUpdateOverride}
-              onLoadDefects={handleLoadDefects} // This now correctly passes both vesselName and userId
+              onLoadDefects={handleLoadDefects} // FIXED: Now properly integrated
+              onCreateDefect={handleCreateDefect} // FIXED: Added defect action handlers
+              onUpdateDefect={handleUpdateDefect}
+              onDeleteDefect={handleDeleteDefect}
+              onOpenChecklist={handleOpenChecklist}
+              defectStats={defectStats} // Pass defect stats for color coding
+              currentUser={currentUser} // Pass current user for defects context
+              savingStates={savingStates} // Pass saving states
             />
           </div>
         )}
       </div>
 
-      {/* Keep your existing footer and modals */}
+      {/* Footer */}
       <div className="dashboard-footer">
         <div className="data-source">
           Data sources: AIS, Noon Report, Vessel Emails, Equipment Defects
         </div>
       </div>
 
+      {/* Modals */}
       <MapModal
         isOpen={mapModalOpen}
         onClose={() => setMapModalOpen(false)}
@@ -1536,18 +1626,27 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         onCommentUpdated={handleCommentUpdated}
         isLoading={loading}
       />
+
+      {/* FIXED: ChecklistModal with proper integration */}
+      <ChecklistModal
+        isOpen={checklistModalOpen}
+        onClose={handleCloseChecklist}
+        vessel={selectedVesselForChecklist}
+        onChecklistUpdate={handleChecklistUpdate}
+        initialStatus={selectedVesselForChecklist?.computed_checklist_status || 'pending'}
+      />
     </div>
   );
 };
 
-// FIXED: Add default props to prevent PropTypes warnings
+// PropTypes and default props
 FleetDashboard.propTypes = {
   onOpenInstructions: PropTypes.func,
   fieldMappings: PropTypes.object.isRequired,
 };
 
 FleetDashboard.defaultProps = {
-  onOpenInstructions: () => {}, // Provide default empty function
+  onOpenInstructions: () => {},
 };
 
 export default FleetDashboard;
