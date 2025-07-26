@@ -31,7 +31,7 @@ const ChecklistModal = ({
   const [template, setTemplate] = useState(null);
   const [mode, setMode] = useState('edit'); // 'edit' or 'view'
   const [checklistStatus, setChecklistStatus] = useState(initialStatus);
-  const [debugInfo, setDebugInfo] = useState({});
+  const [debugInfo, setDebugInfo] = useState({}); // CORRECTED THIS LINE
   // NEW: Track if we're in the middle of a submit operation
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -625,6 +625,7 @@ const ChecklistModal = ({
               mode={mode}
               selectedChecklist={checklist}
               disabled={isSubmitting} // NEW: Pass submitting state to form
+              style={{ marginTop: '0' }}
             />
           ) : (
             <div className="checklist-modal-error">
@@ -679,7 +680,7 @@ const ChecklistModal = ({
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 20px 24px;
+          padding: 10px 12px;
           background: var(--card-bg-light);
           border-bottom: 1px solid var(--border-light);
           flex-shrink: 0;
@@ -688,7 +689,7 @@ const ChecklistModal = ({
         .checklist-modal-title {
           display: flex;
           align-items: center;
-          gap: 16px;
+          gap: 12px;
           flex: 1;
         }
 
@@ -800,8 +801,10 @@ const ChecklistModal = ({
           overflow-y: auto;
           display: flex;
           flex-direction: column;
-          padding: 24px;
+          padding: 6px;
           background: var(--background-light);
+          margin-top: 2px !important;
+          
         }
 
         .checklist-modal-loading,

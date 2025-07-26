@@ -45,47 +45,48 @@ const ChecklistStatusIcon = ({
   className = '' 
 }) => {
   // FIXED: Better status configuration
-  const getStatusConfig = () => {
-    console.log('ChecklistStatusIcon: status received:', status); // Debug log
-    
-    switch (status) {
-      case 'submitted':
-      case 'complete':
-        return {
-          color: '#2ECC71',
-          icon: CheckSquare2,
-          label: 'Checklist Submitted'
-        };
-      case 'acknowledged':
-        return {
-          color: '#3BADE5', // Blue for acknowledged
-          icon: CheckSquare2,
-          label: 'Checklist Acknowledged'
-        };
-      case 'in_progress':
-        return {
-          color: '#F39C12',
-          icon: ListChecks,
-          label: `Checklist ${progress}% Complete`
-        };
-      case 'pending':
-      default:
-        return {
-          color: '#F1C40F',
-          icon: FileCheck,
-          label: 'Checklist Pending'
-        };
-    }
-  };
+  const getStatusConfig = useMemo(() => {
+    // Normalize to lowercase for comparison
+    const normalizedStatus = status ? status.toLowerCase() : '';
 
-  const config = getStatusConfig();
-  const IconComponent = config.icon;
+    switch (normalizedStatus) {
+        case 'submitted':
+        case 'complete':
+            return {
+                color: '#2ECC71',
+                icon: CheckSquare2,
+                label: 'Checklist Submitted'
+            };
+        case 'acknowledged':
+            return {
+                color: '#3BADE5',
+                icon: CheckSquare2,
+                label: 'Checklist Acknowledged'
+            };
+        case 'in_progress':
+        case 'in progress': // Handle display format
+            return {
+                color: '#F39C12',
+                icon: ListChecks,
+                label: `Checklist ${progress}% Complete`
+            };
+        case 'pending':
+        default:
+            return {
+                color: '#F1C40F',
+                icon: FileCheck,
+                label: 'Checklist Pending'
+            };
+    }
+  }, [status, progress]);
+
+  const IconComponent = getStatusConfig.icon;
 
   return (
     <div 
       className={`checklist-indicator ${className}`}
       onClick={onClick}
-      title={config.label}
+      title={getStatusConfig.label}
       style={{
         position: 'relative',
         cursor: 'pointer',
@@ -97,8 +98,8 @@ const ChecklistStatusIcon = ({
       <IconComponent 
         size={size} 
         style={{ 
-          color: config.color,
-          filter: `drop-shadow(0 0 3px ${config.color}40)`
+          color: getStatusConfig.color,
+          filter: `drop-shadow(0 0 3px ${getStatusConfig.color}40)`
         }} 
       />
       
@@ -120,7 +121,7 @@ const ChecklistStatusIcon = ({
             style={{
               width: `${progress}%`,
               height: '100%',
-              backgroundColor: config.color,
+              backgroundColor: getStatusConfig.color,
               borderRadius: '1px',
               transition: 'width 0.3s ease'
             }}
@@ -142,40 +143,42 @@ const SleekDefectIndicator = ({
   size = 14,
   className = ''
 }) => {
-  console.log('SleekDefectIndicator: defectCount:', defectCount, 'highCount:', highCount, 'mediumCount:', mediumCount, 'lowCount:', lowCount); // Debug log
+  const config = useMemo(() => {
+    const getVariantIcon = () => {
+      switch (variant) {
+        case "triangle":
+          return AlertTriangle;
+        case "wrench":
+        default:
+          return Wrench;
+      }
+    };
 
-  // Show indicator even if no defects (for click to add new defects)
-  const getVariantIcon = () => {
-    switch (variant) {
-      case "triangle":
-        return AlertTriangle;
-      case "wrench":
-      default:
-        return Wrench;
-    }
-  };
+    const getStatusColor = () => {
+      if (defectCount === 0) return '#95A5A6'; // Gray for no defects
+      if (highCount > 0) return '#E74C3C'; // Red for high priority
+      if (mediumCount > 0) return '#F39C12'; // Orange for medium priority
+      if (lowCount > 0) return '#F1C40F'; // Yellow for low priority
+      return '#95A5A6'; // Gray fallback
+    };
 
-  const getStatusColor = () => {
-    if (defectCount === 0) return '#95A5A6'; // Gray for no defects
-    if (highCount > 0) return '#E74C3C'; // Red for high priority
-    if (mediumCount > 0) return '#F39C12'; // Orange for medium priority
-    if (lowCount > 0) return '#F1C40F'; // Yellow for low priority
-    return '#95A5A6'; // Gray fallback
-  };
+    const getTooltipText = () => {
+      if (defectCount === 0) return 'No defects - Click to add';
+      return `${defectCount} defects (H:${highCount}, M:${mediumCount}, L:${lowCount})`;
+    };
 
-  const getTooltipText = () => {
-    if (defectCount === 0) return 'No defects - Click to add';
-    return `${defectCount} defects (H:${highCount}, M:${mediumCount}, L:${lowCount})`;
-  };
-
-  const IconComponent = getVariantIcon();
-  const statusColor = getStatusColor();
+    return {
+      IconComponent: getVariantIcon(),
+      statusColor: getStatusColor(),
+      tooltipText: getTooltipText()
+    };
+  }, [defectCount, highCount, mediumCount, lowCount, variant]);
 
   return (
     <div 
       className={`defect-indicator ${className}`}
       onClick={onClick}
-      title={getTooltipText()}
+      title={config.tooltipText}
       style={{
         position: 'relative',
         cursor: onClick ? 'pointer' : 'default',
@@ -184,11 +187,11 @@ const SleekDefectIndicator = ({
         borderRadius: '3px',
       }}
     >
-      <IconComponent 
+      <config.IconComponent 
         size={size} 
         style={{ 
-          color: statusColor,
-          filter: defectCount > 0 ? `drop-shadow(0 0 3px ${statusColor}40)` : 'none'
+          color: config.statusColor,
+          filter: defectCount > 0 ? `drop-shadow(0 0 3px ${config.statusColor}40)` : 'none'
         }} 
       />
       
@@ -202,7 +205,7 @@ const SleekDefectIndicator = ({
             minWidth: '14px',
             height: '14px',
             borderRadius: '7px',
-            backgroundColor: statusColor,
+            backgroundColor: config.statusColor,
             color: 'white',
             fontSize: '9px',
             fontWeight: '600',
@@ -279,11 +282,6 @@ const VesselTable = ({
   // Add these state variables after your existing state declarations
   const [userColumnWidths, setUserColumnWidths] = useState({});
   const [preferencesLoading, setPreferencesLoading] = useState(true);
-
-  // Add a useEffect to monitor vesselDefects state changes
-  React.useEffect(() => {
-    console.log("[VesselTable] vesselDefects state updated:", vesselDefects);
-  }, [vesselDefects]);
 
   // Add this helper function at the top of your VesselTable component (after your existing helper functions)
   const isHighRiskPort = useCallback((portName) => {
@@ -392,7 +390,7 @@ const VesselTable = ({
           });
         }
       } catch (error) {
-        console.error('Error calculating vessel age:', error);
+        // console.error('Error calculating vessel age:', error); // Removed for production
       }
     }
 
@@ -422,7 +420,7 @@ const VesselTable = ({
           });
         }
       } catch (error) {
-        console.error('Error checking PSC inspection date:', error);
+        // console.error('Error checking PSC inspection date:', error); // Removed for production
       }
     }
 
@@ -452,7 +450,7 @@ const VesselTable = ({
           });
         }
       } catch (error) {
-        console.error('Error checking AMSA inspection date:', error);
+        // console.error('Error checking AMSA inspection date:', error); // Removed for production
       }
     }
 
@@ -521,33 +519,33 @@ const VesselTable = ({
   // 1. UPDATE: loadVesselDefects function - Change from vessel ID to vessel name
   const loadVesselDefects = useCallback(async (vesselName, userId) => {
     if (!onLoadDefects) {
-      console.warn('[VesselTable] loadVesselDefects: onLoadDefects prop not provided.');
+      // console.warn('[VesselTable] loadVesselDefects: onLoadDefects prop not provided.'); // Removed for production
       return [];
     }
     if (!vesselName || !userId) {
-      console.warn('[VesselTable] loadVesselDefects: Missing vesselName or userId.');
+      // console.warn('[VesselTable] loadVesselDefects: Missing vesselName or userId.'); // Removed for production
       return [];
     }
 
     const normalizedVesselName = normalizeVesselNameForCache(vesselName);
-    console.log(`[VesselTable] loadVesselDefects: Attempting to load defects for normalized vessel name: "${normalizedVesselName}"`);
+    // console.log(`[VesselTable] loadVesselDefects: Attempting to load defects for normalized vessel name: "${normalizedVesselName}"`); // Removed for production
 
     // Check if already loading or loaded
     if (loadingVessels.current.has(normalizedVesselName)) {
-      console.log(`[VesselTable] loadVesselDefects: Already loading for "${normalizedVesselName}". Skipping.`);
+      // console.log(`[VesselTable] loadVesselDefects: Already loading for "${normalizedVesselName}". Skipping.`); // Removed for production
       return vesselDefects[normalizedVesselName] || []; // Return existing if already loading
     }
     if (vesselDefects[normalizedVesselName]) {
-      console.log(`[VesselTable] loadVesselDefects: Defects already in state for "${normalizedVesselName}". Skipping fetch.`);
+      // console.log(`[VesselTable] loadVesselDefects: Defects already in state for "${normalizedVesselName}". Skipping fetch.`); // Removed for production
       return vesselDefects[normalizedVesselName];
     }
 
     loadingVessels.current.add(normalizedVesselName);
     try {
-      console.log(`[VesselTable] loadVesselDefects: Calling onLoadDefects for "${vesselName}" with userId: ${userId}`);
+      // console.log(`[VesselTable] loadVesselDefects: Calling onLoadDefects for "${vesselName}" with userId: ${userId}`); // Removed for production
       const defects = await onLoadDefects(vesselName, userId); // This calls defectsService.getVesselDefectsByName
-      console.log(`[VesselTable] loadVesselDefects: onLoadDefects returned:`, defects); // ADDED LOG
-      console.log(`[VesselTable] loadVesselDefects: Received ${defects.length} defects for "${normalizedVesselName}" from API.`);
+      // console.log(`[VesselTable] loadVesselDefects: onLoadDefects returned:`, defects); // Removed for production
+      // console.log(`[VesselTable] loadVesselDefects: Received ${defects.length} defects for "${normalizedVesselName}" from API.`); // Removed for production
 
       // IMPORTANT: Ensure the defects array contains objects with a 'Status' or 'status' field
       // and 'Criticality' or 'criticality' field for filtering later.
@@ -567,27 +565,27 @@ const VesselTable = ({
           ...prev,
           [normalizedVesselName]: processedDefects
         };
-        console.log(`[VesselTable] loadVesselDefects: Updating vesselDefects state for "${normalizedVesselName}". New state keys:`, Object.keys(newState));
+        // console.log(`[VesselTable] loadVesselDefects: Updating vesselDefects state for "${normalizedVesselName}". New state keys:`, Object.keys(newState)); // Removed for production
         return newState;
       });
       return processedDefects;
     } catch (error) {
-      console.error(`[VesselTable] Error loading defects for ${vesselName}:`, error);
+      // console.error(`[VesselTable] Error loading defects for ${vesselName}:`, error); // Removed for production
       return [];
     } finally {
       loadingVessels.current.delete(normalizedVesselName);
     }
-  }, [onLoadDefects, vesselDefects, normalizeVesselNameForCache]); // Add normalizeVesselNameForCache to dependencies
+  }, [onLoadDefects, vesselDefects, normalizeVesselNameForCache]);
 
 
   // 3. UPDATE: handleDefectBadgeClick function - Pass vessel object
   const handleDefectBadgeClick = useCallback((vessel) => {
     if (!onLoadDefects) {
-      console.warn('Defects feature not available - onLoadDefects prop missing');
+      // console.warn('Defects feature not available - onLoadDefects prop missing'); // Removed for production
       return;
     }
 
-    console.log('Opening defects modal for vessel:', vessel.vessel_name);
+    // console.log('Opening defects modal for vessel:', vessel.vessel_name); // Removed for production
     setSelectedVesselForDefects(vessel); // Pass full vessel object
     setDefectsModalOpen(true);
   }, [onLoadDefects]);
@@ -606,22 +604,22 @@ const VesselTable = ({
 
     const vesselName = vessel.vessel_name;
     if (!vesselName) {
-      console.warn('[VesselTable] getVesselDefectCounts: No vessel name found for defect count lookup');
+      // console.warn('[VesselTable] getVesselDefectCounts: No vessel name found for defect count lookup'); // Removed for production
       return { total: 0, high: 0, medium: 0, low: 0 };
     }
 
     const normalizedVesselName = normalizeVesselNameForCache(vesselName);
-    console.log(`[VesselTable] getVesselDefectCounts: Looking up defects for normalized vessel name: "${normalizedVesselName}"`);
+    // console.log(`[VesselTable] getVesselDefectCounts: Looking up defects for normalized vessel name: "${normalizedVesselName}"`); // Removed for production
 
     const cachedDefects = vesselDefects[normalizedVesselName] || [];
-    console.log(`[VesselTable] getVesselDefectCounts: Cached defects for "${normalizedVesselName}": Array(${cachedDefects.length})`, cachedDefects);
+    // console.log(`[VesselTable] getVesselDefectCounts: Cached defects for "${normalizedVesselName}": Array(${cachedDefects.length})`, cachedDefects); // Removed for production
 
     const openDefects = cachedDefects.filter(defect => {
       // Use the normalized 'Status' field from processedDefects
       return defect.Status === 'open';
     });
 
-    console.log(`[VesselTable] getVesselDefectCounts: Open defects for vessel name "${normalizedVesselName}": Array(${openDefects.length})`);
+    // console.log(`[VesselTable] getVesselDefectCounts: Open defects for vessel name "${normalizedVesselName}": Array(${openDefects.length})`); // Removed for production
 
     const highCount = openDefects.filter(defect => {
       // Use the normalized 'Criticality' field from processedDefects
@@ -638,7 +636,7 @@ const VesselTable = ({
 
     const totalOpenDefects = highCount + mediumCount + lowCount;
 
-    console.log(`[VesselTable] getVesselDefectCounts: Final counts for "${normalizedVesselName}": Total Open: ${totalOpenDefects}, High: ${highCount}, Medium: ${mediumCount}, Low: ${lowCount}`);
+    // console.log(`[VesselTable] getVesselDefectCounts: Final counts for "${normalizedVesselName}": Total Open: ${totalOpenDefects}, High: ${highCount}, Medium: ${mediumCount}, Low: ${lowCount}`); // Removed for production
 
     return {
       total: totalOpenDefects,
@@ -737,7 +735,7 @@ const VesselTable = ({
         return handoverDate >= today;
       } catch (error) {
         // Keep the row if there's any error in date processing
-        console.error('Error processing hand_over_date_mod:', error);
+        // console.error('Error processing hand_over_date_mod:', error); // Removed for production
         return true;
       }
     });
@@ -836,12 +834,12 @@ const VesselTable = ({
   // Function to handle flag changes
   const handleFlagChange = async (rowId, flagValue) => {
     if (!userId) {
-      console.error('No user ID available');
+      // console.error('No user ID available'); // Removed for production
       return;
     }
 
     if (!rowId) {
-      console.error('No row ID provided');
+      // console.error('No row ID provided'); // Removed for production
       return;
     }
 
@@ -860,7 +858,7 @@ const VesselTable = ({
     } catch (error) {
       // Revert the optimistic update on error
       setVesselFlags(prev => ({ ...prev, [rowId]: prev[rowId] }));
-      console.error('Error updating flag:', error);
+      // console.error('Error updating flag:', error); // Removed for production
     }
   };
 
@@ -902,7 +900,7 @@ const VesselTable = ({
           setFlagsLoading(false);
         })
         .catch(error => {
-          console.error('Error fetching vessel flags:', error);
+          // console.error('Error fetching vessel flags:', error); // Removed for production
           setFlagsLoading(false);
           setVesselFlags({});
         });
@@ -922,7 +920,7 @@ const VesselTable = ({
         const enriched = await portMappingService.enrichVesselData(vessels);
         setEnrichedVessels(enriched);
       } catch (error) {
-        console.error('Error enriching vessel data:', error);
+        // console.error('Error enriching vessel data:', error); // Removed for production
         // Fallback to original vessels if enrichment fails
         setEnrichedVessels(vessels);
       } finally {
@@ -986,11 +984,11 @@ const VesselTable = ({
         const preferences = await userTablePreferencesService.getTablePreferences(userId, 'vesselTable');
 
         if (preferences.columnWidths) {
-          console.log('Loaded user column widths:', preferences.columnWidths);
+          // console.log('Loaded user column widths:', preferences.columnWidths); // Removed for production
           setUserColumnWidths(preferences.columnWidths);
         }
       } catch (error) {
-        console.error('Error loading user table preferences:', error);
+        // console.error('Error loading user table preferences:', error); // Removed for production
       } finally {
         setPreferencesLoading(false);
       }
@@ -1001,7 +999,7 @@ const VesselTable = ({
 
   // Add this function to handle column resize
   const handleColumnResize = useCallback(async (columnField, newWidth) => {
-    console.log(`Resizing column ${columnField} to ${newWidth}`);
+    // console.log(`Resizing column ${columnField} to ${newWidth}`); // Removed for production
 
     // Update local state immediately for responsive UI
     setUserColumnWidths(prev => ({
@@ -1013,9 +1011,9 @@ const VesselTable = ({
     if (userId) {
       try {
         await userTablePreferencesService.updateColumnWidth(userId, 'vesselTable', columnField, newWidth);
-        console.log(`Saved column width for ${columnField}: ${newWidth}`);
+        // console.log(`Saved column width for ${columnField}: ${newWidth}`); // Removed for production
       } catch (error) {
-        console.error('Error saving column width:', error);
+        // console.error('Error saving column width:', error); // Removed for production
       }
     }
   }, [userId]);
@@ -1027,13 +1025,13 @@ const VesselTable = ({
     if (!onLoadDefects || !userId) return; // Ensure userId is available
 
     const preloadDefectCounts = async () => {
-      console.log('[VesselTable] Starting defect preloading by vessel name...');
+      // console.log('[VesselTable] Starting defect preloading by vessel name...'); // Removed for production
 
       // Preload for all vessels currently in the filtered view, not just the first 5
       const vesselsToPreload = (filterActive ? filterActiveData : dateFilteredVessels);
-      console.log('[VesselTable] Vessels to preload defects for:', vesselsToPreload.map(v => ({
-        name: v.vessel_name
-      })));
+      // console.log('[VesselTable] Vessels to preload defects for:', vesselsToPreload.map(v => ({ // Removed for production
+      //   name: v.vessel_name
+      // })));
 
       for (const vessel of vesselsToPreload) {
         const vesselName = vessel.vessel_name;
@@ -1041,25 +1039,25 @@ const VesselTable = ({
 
         if (vesselName && !vesselDefects[normalizedVesselName] && !loadingVessels.current.has(normalizedVesselName)) {
           try {
-            console.log(`[VesselTable] Preloading defects for vessel name: ${vesselName}`);
+            // console.log(`[VesselTable] Preloading defects for vessel name: ${vesselName}`); // Removed for production
             await loadVesselDefects(vesselName, userId); // Pass userId here
-            console.log(`[VesselTable] Preloaded defects for vessel name: ${vesselName}`);
+            // console.log(`[VesselTable] Preloaded defects for vessel name: ${vesselName}`); // Removed for production
           } catch (error) {
-            console.warn(`[VesselTable] Failed to preload defects for vessel name ${vesselName}:`, error);
+            // console.warn(`[VesselTable] Failed to preload defects for vessel name ${vesselName}:`, error); // Removed for production
           }
 
           // await new Promise(resolve => setTimeout(resolve, 300)); // Small delay - removed for faster loading
         } else if (vesselDefects[normalizedVesselName]) {
-          console.log(`[VesselTable] Defects already cached for vessel name: ${vesselName}: Array(${vesselDefects[normalizedVesselName].length})`);
+          // console.log(`[VesselTable] Defects already cached for vessel name: ${vesselName}: Array(${vesselDefects[normalizedVesselName].length})`); // Removed for production
         } else if (loadingVessels.current.has(normalizedVesselName)) {
-          console.log(`[VesselTable] Defects already loading for vessel name: ${vesselName}.`);
+          // console.log(`[VesselTable] Defects already loading for vessel name: ${vesselName}.`); // Removed for production
         }
       }
     };
 
     const timeoutId = setTimeout(preloadDefectCounts, 500);
     return () => clearTimeout(timeoutId);
-  }, [filterActive, filterActiveData, dateFilteredVessels, vesselDefects, onLoadDefects, loadVesselDefects, userId, normalizeVesselNameForCache]); // Added normalizeVesselNameForCache to dependencies
+  }, [filterActive, filterActiveData, dateFilteredVessels, vesselDefects, onLoadDefects, loadVesselDefects, userId, normalizeVesselNameForCache]);
 
   // Enhanced format function that can handle both date and date+time
   const formatDateTime = (dateString, includeTime = false) => {
@@ -1418,6 +1416,9 @@ const VesselTable = ({
           case 'sanz':
             columnWidth = '90px';
             break;
+          default:
+            columnWidth = '80px'; // Default for other columns on mobile
+            break;
         }
       } else if (windowWidth >= 768 && windowWidth < 1024) { // Tablet
         switch (fieldId) {
@@ -1443,12 +1444,18 @@ const VesselTable = ({
           case 'etb':
             columnWidth = '110px';
             break;
+          default:
+            columnWidth = '100px'; // Default for other columns on tablet
+            break;
         }
       } else if (windowWidth >= 1024 && windowWidth < 1280) { // Small desktop
         // Keep most original widths but adjust a few
         switch (fieldId) {
           case 'vessel_name':
             columnWidth = '180px';
+            break;
+          default:
+            columnWidth = field.width; // Use original width
             break;
         }
       }
@@ -1488,7 +1495,7 @@ const VesselTable = ({
               const date = new Date(effectiveValue);
               return isNaN(date.getTime()) ? Number.MAX_SAFE_INTEGER : date.getTime();
             } catch (error) {
-              console.warn('Error parsing date for sorting:', effectiveValue, error);
+              // console.warn('Error parsing date for sorting:', effectiveValue, error); // Removed for production
               return Number.MAX_SAFE_INTEGER;
             }
           }
@@ -1591,9 +1598,9 @@ const VesselTable = ({
           const statusInfo = getVesselStatus(rowData);
           const flagValue = getVesselFlag(rowData);
 
-          console.log(`Rendering vessel name for ${rowData.vessel_name} (ID: ${rowData.id})`);
+          // console.log(`Rendering vessel name for ${rowData.vessel_name} (ID: ${rowData.id})`); // Removed for production
           let defectCounts = getVesselDefectCounts(rowData);
-          console.log(`Defect counts for ${rowData.vessel_name}:`, defectCounts);
+          // console.log(`Defect counts for ${rowData.vessel_name}:`, defectCounts); // Removed for production
 
           // Get checklist status from computed field or fallback
           const checklistStatus = rowData.computed_checklist_status || 
@@ -1693,7 +1700,7 @@ const VesselTable = ({
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
-                      console.log('Defect indicator clicked for vessel:', rowData.vessel_name);
+                      // console.log('Defect indicator clicked for vessel:', rowData.vessel_name); // Removed for production
                       handleDefectBadgeClick(rowData);
                     }}
                     size={14}
@@ -1707,7 +1714,7 @@ const VesselTable = ({
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
-                    console.log('Checklist icon clicked for vessel:', rowData.vessel_name);
+                    // console.log('Checklist icon clicked for vessel:', rowData.vessel_name); // Removed for production
                     handleChecklistIconClick(rowData);
                   }}
                   size={14}
@@ -2070,91 +2077,14 @@ const VesselTable = ({
     }
   };
 
-  // QUICK DEBUGGING STEPS:
-  // Step 1: Check if onLoadDefects is being passed correctly
-  console.log('onLoadDefects prop:', onLoadDefects);
-
-  // Step 2: Check if vessels have valid IDs
-  console.log('First vessel ID:', vessels[0]?.id);
-
-  // 7. ADD: Debug logging at the top of your component
-  useEffect(() => {
-    console.log('=== VESSELDEFECTS STATE DEBUG ===');
-    console.log('Current vesselDefects cache keys:', Object.keys(vesselDefects));
-    console.log('Cache contents:', vesselDefects);
-    console.log('onLoadDefects available:', !!onLoadDefects);
-    console.log('Sample vessel names:', vessels.slice(0, 3).map(v => v.vessel_name));
-  }, [vesselDefects, onLoadDefects, vessels]);
-
-  // 8. ADD: Test function to manually trigger defect loading
-  const testDefectLoading = useCallback(async () => {
-    if (!onLoadDefects || vessels.length === 0 || !userId) return;
-
-    // Test with both LA DIGUE and SDTR CELESTE
-    const vesselsToTest = [
-      vessels.find(v => v.vessel_name.toLowerCase() === "la digue"),
-      vessels.find(v => v.vessel_name.toLowerCase() === "sdtr celeste")
-    ].filter(Boolean); // Filter out any undefined if vessel not found
-
-    console.log('=== TESTING DEFECT LOADING FOR SPECIFIC VESSELS ===');
-
-    for (const testVessel of vesselsToTest) {
-      console.log(`Testing vessel: ${testVessel.vessel_name} (ID: ${testVessel.id})`);
-      try {
-        const result = await loadVesselDefects(testVessel.vessel_name, userId); // Pass userId
-        console.log(`Test result (from loadVesselDefects) for ${testVessel.vessel_name}:`, result);
-
-        const counts = getVesselDefectCounts(testVessel);
-        console.log(`Test counts (from getVesselDefectCounts) for ${testVessel.vessel_name}:`, counts);
-      } catch (error) {
-        console.error(`Test failed for ${testVessel.vessel_name}:`, error);
-      }
-    }
-  }, [onLoadDefects, vessels, loadVesselDefects, getVesselDefectCounts, userId]);
-
-  // Call the test when vessels load:
-  useEffect(() => {
-    if (vessels.length > 0 && userId) {
-      setTimeout(testDefectLoading, 2000); // Test after 2 seconds
-    }
-  }, [vessels, testDefectLoading, userId]);
-
-  // 11. ADD: Clear defects cache function for testing
-  const clearDefectsCache = useCallback(() => {
-    console.log('Clearing defects cache...');
-    setVesselDefects({});
-  }, []);
-
-  // You can call this from console: clearDefectsCache()
-  window.clearDefectsCache = clearDefectsCache;
-
-  // NEW: Debugging helper for normalization
-  window.testNormalizeVesselName = normalizeVesselNameForCache;
-
-  // Add this reset function for testing/debugging
-  const resetColumnWidths = useCallback(async () => {
-    if (userId) {
-      try {
-        await userTablePreferencesService.resetToDefault(userId, 'vesselTable');
-        setUserColumnWidths({});
-        console.log('Column widths reset to default');
-      } catch (error) {
-        console.error('Error resetting column widths:', error);
-      }
-    }
-  }, [userId]);
-
-  // Make reset function available for testing
-  window.resetVesselTableColumnWidths = resetColumnWidths;
-
   // NEW: Handle checklist icon click
   const handleChecklistIconClick = useCallback((vessel) => {
-    console.log('Opening checklist modal for vessel:', vessel.vessel_name);
+    // console.log('Opening checklist modal for vessel:', vessel.vessel_name); // Removed for production
     
     if (onOpenChecklist) {
       onOpenChecklist(vessel);
     } else {
-      console.warn('onOpenChecklist prop not provided to VesselTable');
+      // console.warn('onOpenChecklist prop not provided to VesselTable'); // Removed for production
     }
   }, [onOpenChecklist]);
 
@@ -2699,7 +2629,7 @@ const VesselTable = ({
           vesselId={selectedVesselForDefects?.id}
           onLoadDefects={(vesselIdFromModal) => {
             const vesselNameForLoad = selectedVesselForDefects?.vessel_name;
-            console.log(`[VesselTable] Passing to onLoadDefects: vesselName=${vesselNameForLoad}, userId=${userId}`);
+            // console.log(`[VesselTable] Passing to onLoadDefects: vesselName=${vesselNameForLoad}, userId=${userId}`); // Removed for production
             return loadVesselDefects(vesselNameForLoad, userId);
           }}
 

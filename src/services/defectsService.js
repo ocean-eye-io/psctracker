@@ -1,157 +1,145 @@
-// src/services/defectsService.js - FIXED to properly handle dynamic userId while maintaining all functionality
+// src/services/defectsService.js - COMPLETE OPTIMIZED VERSION
 
 class DefectsService {
-    constructor() {
-      // Your Lambda function URL (same as reference service)
-      this.baseURL = 'https://msnvxmo3ezbbkd2pbmlsojhf440fxmpf.lambda-url.ap-south-1.on.aws';
-      this.cache = new Map();
-      this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
-      this.cacheExpiry = 5 * 60 * 1000; // Added for consistency with the update
-      
-      // FIXED: Remove hardcoded default userId - will be set dynamically
-      this.userId = null; // Start with null instead of hardcoded value
+  constructor() {
+    this.baseURL = 'https://msnvxmo3ezbbkd2pbmlsojhf440fxmpf.lambda-url.ap-south-1.on.aws';
+    this.cache = new Map();
+    this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
+    this.cacheExpiry = 5 * 60 * 1000;
+    
+    // OPTIMIZED: Better user ID management
+    this.userId = null;
+    
+    // OPTIMIZED: Add request deduplication
+    this.pendingRequests = new Map();
+    
+    // OPTIMIZED: Batch processing capabilities
+    this.batchQueue = new Map();
+    this.batchTimeout = null;
+    this.batchSize = 10;
+    this.batchDelay = 100; // 100ms
+  }
+
+  // OPTIMIZED: Enhanced UUID validation
+  isValidUUID(uuid) {
+    if (!uuid || typeof uuid !== 'string') return false;
+    
+    const flexibleUuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12,}$/i;
+    const alternativePattern = /^[0-9a-f-]{36,}$/i;
+    
+    return flexibleUuidRegex.test(uuid) || alternativePattern.test(uuid);
+  }
+
+  // OPTIMIZED: Improved user ID validation
+  ensureValidUserId(userId = null) {
+    const targetUserId = userId || this.userId;
+    
+    if (!targetUserId) {
+      throw new Error('User ID not set. Please call setUserId() first or provide userId parameter.');
     }
-  
-    /**
-     * Helper function to validate UUID format (more flexible to handle various UUID formats)
-     * @param {string} uuid - UUID to validate
-     * @returns {boolean} Whether the UUID is valid
-     */
-    isValidUUID(uuid) {
-      if (!uuid || typeof uuid !== 'string') {
-        return false;
-      }
-      
-      // More flexible UUID pattern that accepts:
-      // - Standard UUIDs: 8-4-4-4-12 format
-      // - Longer UUIDs that might have additional characters
-      const flexibleUuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12,}$/i;
-      
-      // Also accept the exact format we're seeing in logs
-      const alternativePattern = /^[0-9a-f-]{36,}$/i;
-      
-      return flexibleUuidRegex.test(uuid) || alternativePattern.test(uuid);
+    
+    if (this.isValidUUID(targetUserId)) {
+      return targetUserId;
     }
-  
-    /**
-     * FIXED: Helper function to ensure userId is valid - now more flexible with UUID validation
-     * @param {string} userId - User ID to validate/convert (optional - will use this.userId if not provided)
-     * @returns {string} Valid UUID
-     */
-    ensureValidUserId(userId = null) {
-      // Use provided userId or fall back to instance userId
-      const targetUserId = userId || this.userId;
-      
-      if (!targetUserId) {
-        throw new Error('User ID not set. Please call setUserId() first or provide userId parameter.');
-      }
-      
-      // If it's already a valid UUID, return it
-      if (this.isValidUUID(targetUserId)) {
-        return targetUserId;
-      }
-      
-      // Convert known mock users to UUIDs for development (keep this for backward compatibility)
-      const mockUUIDs = {
-        'mock-user-123': '123e4567-e89b-12d3-a456-426614174000',
-        'mock-admin-456': '456e7890-e89b-12d3-a456-426614174001',
-        'mock-user-789': '789e0123-e89b-12d3-a456-426614174002'
-      };
-      
-      if (mockUUIDs[targetUserId]) {
-        return mockUUIDs[targetUserId];
-      }
-      
-      // ADDITIONAL: Check if it's a reasonable UUID-like string even if format is slightly off
-      // Accept strings that are mostly UUID-like (contains hyphens and hex characters)
-      if (typeof targetUserId === 'string' && 
-          targetUserId.length >= 32 && 
-          targetUserId.includes('-') && 
-          /^[0-9a-f-]+$/i.test(targetUserId)) {
-        console.warn(`Accepting UUID-like string: ${targetUserId}`);
-        return targetUserId;
-      }
-      
-      // If nothing works, throw an error
-      throw new Error(`Invalid userId format: ${targetUserId}. Please provide a valid UUID or UUID-like string.`);
+    
+    // Convert known mock users to UUIDs for development
+    const mockUUIDs = {
+      'mock-user-123': '123e4567-e89b-12d3-a456-426614174000',
+      'mock-admin-456': '456e7890-e89b-12d3-a456-426614174001',
+      'mock-user-789': '789e0123-e89b-12d3-a456-426614174002'
+    };
+    
+    if (mockUUIDs[targetUserId]) {
+      return mockUUIDs[targetUserId];
     }
-  
-    /**
-     * Enhanced API response handler (following reference methodology)
-     * @param {Response} response - The fetch response object
-     * @returns {any} The extracted data
-     * @throws {Error} If the response indicates an error
-     */
-    async handleApiResponse(response) {
-      if (response.status >= 200 && response.status < 300) {
-        const data = await response.json();
-        
-        // Lambda function often returns data in the body property (like reference service)
-        if (data && data.body) {
-          return typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
-        }
-        return data; // Direct data if not wrapped in 'body'
-      } else {
-        let errorMsg = `HTTP error! status: ${response.status}`;
-        try {
-          const errorText = await response.text();
-          console.error(`API Error ${response.status}:`, errorText);
-          errorMsg += `, response: ${errorText}`;
-        } catch (parseError) {
-          console.warn('Could not parse error response:', parseError);
-        }
-        throw new Error(errorMsg);
+    
+    // Accept UUID-like strings
+    if (typeof targetUserId === 'string' && 
+        targetUserId.length >= 32 && 
+        targetUserId.includes('-') && 
+        /^[0-9a-f-]+$/i.test(targetUserId)) {
+      return targetUserId;
+    }
+    
+    throw new Error(`Invalid userId format: ${targetUserId}. Please provide a valid UUID or UUID-like string.`);
+  }
+
+  // OPTIMIZED: Enhanced API response handler
+  async handleApiResponse(response) {
+    if (response.status >= 200 && response.status < 300) {
+      const data = await response.json();
+      
+      if (data && data.body) {
+        return typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
       }
+      return data;
+    } else {
+      let errorMsg = `HTTP error! status: ${response.status}`;
+      try {
+        const errorText = await response.text();
+        errorMsg += `, response: ${errorText}`;
+      } catch (parseError) {
+        // Silent error handling
+      }
+      throw new Error(errorMsg);
     }
-  
-    /**
-     * Process defect data with improved field mapping (following reference methodology)
-     * @param {Object} defect - Raw defect data from API
-     * @returns {Object} Processed defect data
-     */
-    processDefectData(defect) {
-      const processedDefect = {
-        id: defect.id,
-        vessel_id: defect.vessel_id,
-        vessel_name: defect.vessel_name || 'Unknown Vessel',
-        target_date: defect.target_date,
-        Comments: defect.Comments || '',
-        closure_comments: defect.closure_comments,
-        raised_by: defect.raised_by,
-        attachments: defect.attachments || 0,
-        silentMode: defect.silentMode,
-        
-        // File-related fields with better error handling (like reference service)
-        initial_files: Array.isArray(defect.initial_files) ? defect.initial_files : [],
-        completion_files: Array.isArray(defect.completion_files) ? defect.completion_files : [],
-        file_count_initial: defect.file_count_initial || 0,
-        file_count_completion: defect.file_count_completion || 0,
-        last_file_uploaded: defect.last_file_uploaded,
-        
-        // Mapped and standardized fields for the UI (following reference field mapping)
-        Description: defect.Description || '',
-        'Action Planned': defect['Action Planned'] || '',
-        'Status': defect.Status || defect.Status_Vessel || 'OPEN',
-        Criticality: defect.Criticality || '',
-        Equipments: defect.Equipments || '',
-        'Date Reported': defect['Date Reported'] || null,
-        'Date Completed': defect['Date Completed'] || null,
-        external_visibility: defect.external_visibility !== undefined ? defect.external_visibility : true
-      };
+  }
+
+  // OPTIMIZED: Process defect data with better performance
+  processDefectData(defect) {
+    return {
+      id: defect.id,
+      vessel_id: defect.vessel_id,
+      vessel_name: defect.vessel_name || 'Unknown Vessel',
+      target_date: defect.target_date,
+      Comments: defect.Comments || '',
+      closure_comments: defect.closure_comments,
+      raised_by: defect.raised_by,
+      attachments: defect.attachments || 0,
+      silentMode: defect.silentMode,
       
-      return processedDefect;
+      // File-related fields
+      initial_files: Array.isArray(defect.initial_files) ? defect.initial_files : [],
+      completion_files: Array.isArray(defect.completion_files) ? defect.completion_files : [],
+      file_count_initial: defect.file_count_initial || 0,
+      file_count_completion: defect.file_count_completion || 0,
+      last_file_uploaded: defect.last_file_uploaded,
+      
+      // Mapped fields for UI
+      Description: defect.Description || '',
+      'Action Planned': defect['Action Planned'] || '',
+      'Status': defect.Status || defect.Status_Vessel || 'OPEN',
+      Criticality: defect.Criticality || '',
+      Equipments: defect.Equipments || '',
+      'Date Reported': defect['Date Reported'] || null,
+      'Date Completed': defect['Date Completed'] || null,
+      external_visibility: defect.external_visibility !== undefined ? defect.external_visibility : true
+    };
+  }
+
+  // OPTIMIZED: Request deduplication helper
+  async deduplicateRequest(requestKey, requestFn) {
+    // Check if the same request is already pending
+    if (this.pendingRequests.has(requestKey)) {
+      return this.pendingRequests.get(requestKey);
     }
-  
-    /**
-     * FIXED: Get all defects - now properly uses dynamic userId
-     * @param {string} userId - Optional userId parameter (will use this.userId if not provided)
-     * @returns {Promise<Array>} Array of all defects
-     */
-    async getAllDefects(userId = null) {
-      // Use provided userId or fall back to instance userId
-      const validUserId = this.ensureValidUserId(userId);
-      
-      const cacheKey = `all-defects-${validUserId}`; // Include userId in cache key
+
+    // Execute the request and cache the promise
+    const requestPromise = requestFn().finally(() => {
+      this.pendingRequests.delete(requestKey);
+    });
+
+    this.pendingRequests.set(requestKey, requestPromise);
+    return requestPromise;
+  }
+
+  // OPTIMIZED: Get all defects with deduplication
+  async getAllDefects(userId = null) {
+    const validUserId = this.ensureValidUserId(userId);
+    const cacheKey = `all-defects-${validUserId}`;
+    const requestKey = `getAllDefects-${validUserId}`;
+
+    return this.deduplicateRequest(requestKey, async () => {
       const cached = this.cache.get(cacheKey);
       
       if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
@@ -159,8 +147,6 @@ class DefectsService {
       }
 
       try {
-        console.log(`Fetching defects from API for user: ${validUserId}`);
-        
         const response = await fetch(`${this.baseURL}/api/defects?userId=${validUserId}`, {
           method: 'GET',
           headers: {
@@ -169,11 +155,7 @@ class DefectsService {
         });
 
         const data = await this.handleApiResponse(response);
-        console.log('API Response:', data);
-        
-        // Process the data (following reference methodology)
         const defects = Array.isArray(data) ? data.map(defect => this.processDefectData(defect)) : [];
-        console.log(`Processed ${defects.length} defects from API for user: ${validUserId}`);
         
         // Cache the result
         this.cache.set(cacheKey, {
@@ -183,48 +165,39 @@ class DefectsService {
 
         return defects;
       } catch (error) {
-        console.error('Error fetching defects:', error);
-        
         // Check if we have cached data to fall back to
         if (cached) {
-          console.log('Using cached data due to API error');
           return cached.data;
         }
         
         // Return empty array instead of throwing to prevent app crashes
-        console.log('Returning empty array due to API error');
         return [];
       }
+    });
+  }
+
+  // OPTIMIZED: Get defects by vessel name with deduplication
+  async getVesselDefectsByName(vesselName, userId = null) {
+    const validUserId = this.ensureValidUserId(userId);
+
+    if (!vesselName) {
+      throw new Error('Vessel name is required');
     }
-  
-    /**
-     * FIXED: Get defects by vessel name (case-insensitive) - now properly uses dynamic userId
-     * @param {string} vesselName - The vessel name
-     * @param {string} userId - Optional userId parameter (will use this.userId if not provided)
-     * @returns {Promise<Array>} Array of defects for the vessel
-     */
-    async getVesselDefectsByName(vesselName, userId = null) {
-      const validUserId = this.ensureValidUserId(userId);
 
-      if (!vesselName) {
-        throw new Error('Vessel name is required');
-      }
+    const cacheKey = `defects_vessel_name_${vesselName.toLowerCase().replace(/\s+/g, '_')}_${validUserId}`;
+    const requestKey = `getVesselDefectsByName-${vesselName}-${validUserId}`;
 
-      console.log(`Fetching defects for vessel name: "${vesselName}" (user: ${validUserId})`);
-
-      const cacheKey = `defects_vessel_name_${vesselName.toLowerCase().replace(/\s+/g, '_')}_${validUserId}`; // Include userId in cache key
-      
+    return this.deduplicateRequest(requestKey, async () => {
       // Check cache first
       const cached = this.cache.get(cacheKey);
       if (cached && (Date.now() - cached.timestamp < this.cacheExpiry)) {
-        console.log('Returning cached defects for vessel name:', vesselName);
         return cached.data;
       }
 
       try {
         const requestBody = {
           userId: validUserId,
-          vesselName: vesselName // Send vessel name instead of ID
+          vesselName: vesselName
         };
 
         const response = await fetch(`${this.baseURL}/api/vessel-defects-by-name`, {
@@ -244,47 +217,103 @@ class DefectsService {
           timestamp: Date.now()
         });
 
-        console.log(`Fetched ${defects.length} defects for vessel name: ${vesselName} (user: ${validUserId})`);
         return defects;
 
       } catch (error) {
-        console.error(`Error fetching defects for vessel name ${vesselName}:`, error);
         throw error;
       }
+    });
+  }
+
+  // OPTIMIZED: Batch vessel defects loading
+  async batchGetVesselDefects(vesselNames, userId = null) {
+    const validUserId = this.ensureValidUserId(userId);
+    
+    if (!Array.isArray(vesselNames) || vesselNames.length === 0) {
+      return {};
     }
 
-    /**
-     * FIXED: Get defects for a specific vessel - now properly uses dynamic userId
-     * @param {string|number|Object} vesselId - The vessel ID or vessel object
-     * @param {string} userId - Optional userId parameter (will use this.userId if not provided)
-     * @returns {Promise<Array>} Array of defects for the vessel
-     */
-    async getVesselDefects(vesselId, userId = null) {
-      const validUserId = this.ensureValidUserId(userId);
+    const results = {};
+    const uncachedVessels = [];
 
-      // If vesselId is actually a vessel object, extract the name
-      if (typeof vesselId === 'object' && vesselId.vessel_name) {
-        console.log('Received vessel object, using vessel_name for lookup');
-        return this.getVesselDefectsByName(vesselId.vessel_name, validUserId);
-      }
-
-      // If it's a string that looks like a vessel name (contains spaces or letters), use name lookup
-      if (typeof vesselId === 'string' && (vesselId.includes(' ') || /[a-zA-Z]/.test(vesselId))) {
-        console.log('Detected vessel name format, using name lookup');
-        return this.getVesselDefectsByName(vesselId, validUserId);
-      }
-
-      if (!vesselId) {
-        throw new Error('Vessel ID is required');
-      }
-
-      console.log(`Fetching defects for vessel ID: ${vesselId} (user: ${validUserId})`);
-
-      const cacheKey = `defects_${vesselId}_${validUserId}`; // Include userId in cache key
+    // Check cache for each vessel
+    for (const vesselName of vesselNames) {
+      const cacheKey = `defects_vessel_name_${vesselName.toLowerCase().replace(/\s+/g, '_')}_${validUserId}`;
       const cached = this.cache.get(cacheKey);
       
       if (cached && (Date.now() - cached.timestamp < this.cacheExpiry)) {
-        console.log('Returning cached defects for vessel:', vesselId);
+        results[vesselName] = cached.data;
+      } else {
+        uncachedVessels.push(vesselName);
+      }
+    }
+
+    // Batch fetch uncached vessels
+    if (uncachedVessels.length > 0) {
+      try {
+        const response = await fetch(`${this.baseURL}/api/vessel-defects-batch`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: validUserId,
+            vesselNames: uncachedVessels
+          })
+        });
+
+        const data = await this.handleApiResponse(response);
+        
+        // Process and cache results
+        Object.entries(data).forEach(([vesselName, defects]) => {
+          const processedDefects = Array.isArray(defects) ? defects.map(defect => this.processDefectData(defect)) : [];
+          
+          results[vesselName] = processedDefects;
+          
+          // Cache individual vessel results
+          const cacheKey = `defects_vessel_name_${vesselName.toLowerCase().replace(/\s+/g, '_')}_${validUserId}`;
+          this.cache.set(cacheKey, {
+            data: processedDefects,
+            timestamp: Date.now()
+          });
+        });
+
+      } catch (error) {
+        // For failed vessels, return empty arrays
+        uncachedVessels.forEach(vesselName => {
+          results[vesselName] = [];
+        });
+      }
+    }
+
+    return results;
+  }
+
+  // OPTIMIZED: Get defects for a specific vessel with better logic
+  async getVesselDefects(vesselId, userId = null) {
+    const validUserId = this.ensureValidUserId(userId);
+
+    // If vesselId is actually a vessel object, extract the name
+    if (typeof vesselId === 'object' && vesselId.vessel_name) {
+      return this.getVesselDefectsByName(vesselId.vessel_name, validUserId);
+    }
+
+    // If it's a string that looks like a vessel name, use name lookup
+    if (typeof vesselId === 'string' && (vesselId.includes(' ') || /[a-zA-Z]/.test(vesselId))) {
+      return this.getVesselDefectsByName(vesselId, validUserId);
+    }
+
+    if (!vesselId) {
+      throw new Error('Vessel ID is required');
+    }
+
+    const cacheKey = `defects_${vesselId}_${validUserId}`;
+    const requestKey = `getVesselDefects-${vesselId}-${validUserId}`;
+
+    return this.deduplicateRequest(requestKey, async () => {
+      const cached = this.cache.get(cacheKey);
+      
+      if (cached && (Date.now() - cached.timestamp < this.cacheExpiry)) {
         return cached.data;
       }
 
@@ -299,7 +328,7 @@ class DefectsService {
         const data = await this.handleApiResponse(response);
         let defects = Array.isArray(data) ? data.map(defect => this.processDefectData(defect)) : [];
 
-        // Filter by vessel ID if multiple vessels returned (this might be redundant if API filters)
+        // Filter by vessel ID if multiple vessels returned
         if (vesselId && defects.length > 0) {
           defects = defects.filter(defect => defect.vessel_id === String(vesselId) || defect.vessel_id === vesselId);
         }
@@ -309,25 +338,28 @@ class DefectsService {
           timestamp: Date.now()
         });
 
-        console.log(`Fetched ${defects.length} defects for vessel ID: ${vesselId} (user: ${validUserId})`);
         return defects;
 
       } catch (error) {
-        console.error(`Error fetching defects for vessel ${vesselId}:`, error);
         throw error;
       }
-    }
-  
-    /**
-     * FIXED: Get a single defect by ID - now properly uses dynamic userId
-     * @param {string|number} defectId - The defect ID
-     * @param {string} userId - Optional userId parameter (will use this.userId if not provided)
-     * @returns {Promise<Object>} Single defect object
-     */
-    async getDefect(defectId, userId = null) {
+    });
+  }
+
+  // OPTIMIZED: Get single defect with caching
+  async getDefect(defectId, userId = null) {
+    const validUserId = this.ensureValidUserId(userId);
+    const cacheKey = `defect_${defectId}_${validUserId}`;
+    const requestKey = `getDefect-${defectId}-${validUserId}`;
+
+    return this.deduplicateRequest(requestKey, async () => {
+      const cached = this.cache.get(cacheKey);
+      
+      if (cached && (Date.now() - cached.timestamp < this.cacheTimeout)) {
+        return cached.data;
+      }
+
       try {
-        const validUserId = this.ensureValidUserId(userId);
-        
         const response = await fetch(`${this.baseURL}/api/defects/${defectId}?userId=${validUserId}`, {
           method: 'GET',
           headers: {
@@ -341,292 +373,260 @@ class DefectsService {
           throw new Error('Defect not found');
         }
         
-        // Process the defect data
         const processedDefect = this.processDefectData(data);
-        console.log(`Successfully fetched defect ${defectId} for user: ${validUserId}`);
+        
+        // Cache the result
+        this.cache.set(cacheKey, {
+          data: processedDefect,
+          timestamp: Date.now()
+        });
         
         return processedDefect;
       } catch (error) {
-        console.error(`Error fetching defect ${defectId}:`, error);
         throw error;
       }
-    }
-  
-    /**
-     * FIXED: Create a new defect - now properly uses dynamic userId
-     * @param {Object} defectData - The defect data
-     * @param {string} userId - Optional userId parameter (will use this.userId if not provided)
-     * @returns {Promise<Object>} Created defect
-     */
-    async createDefect(defectData, userId = null) {
-      try {
-        const validUserId = this.ensureValidUserId(userId);
-        console.log(`Creating new defect for user ${validUserId}`);
-        
-        // Prepare payload (following reference methodology)
-        const payload = { 
-          ...defectData, 
-          userId: validUserId,
-          // Ensure file arrays are properly initialized
-          initial_files: Array.isArray(defectData.initial_files) ? defectData.initial_files : [],
-          completion_files: Array.isArray(defectData.completion_files) ? defectData.completion_files : [],
-          // Ensure file counts match arrays
-          file_count_initial: defectData.file_count_initial || (defectData.initial_files ? defectData.initial_files.length : 0),
-          file_count_completion: defectData.file_count_completion || (defectData.completion_files ? defectData.completion_files.length : 0)
-        };
-        
-        const response = await fetch(`${this.baseURL}/api/defects`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload)
-        });
+    });
+  }
 
-        const result = await this.handleApiResponse(response);
-        console.log(`Successfully created defect with ID: ${result.id} for user: ${validUserId}`);
-        
-        // Clear cache after creating
-        this.clearCache();
-        
-        // Return processed defect data
-        return this.processDefectData(result);
-      } catch (error) {
-        console.error('Error creating defect:', error);
-        throw error;
-      }
-    }
-  
-    /**
-     * FIXED: Update an existing defect - now properly uses dynamic userId
-     * @param {string|number} defectId - The defect ID
-     * @param {Object} defectData - The updated defect data
-     * @param {string} userId - Optional userId parameter (will use this.userId if not provided)
-     * @returns {Promise<Object>} Updated defect
-     */
-    async updateDefect(defectId, defectData, userId = null) {
-      try {
-        const validUserId = this.ensureValidUserId(userId);
-        console.log(`Updating defect ${defectId} for user ${validUserId}`);
-        
-        // Prepare payload (following reference methodology)
-        const payload = { 
-          ...defectData, 
-          userId: validUserId,
-          // Ensure file arrays are properly formatted
-          initial_files: Array.isArray(defectData.initial_files) ? defectData.initial_files : [],
-          completion_files: Array.isArray(defectData.completion_files) ? defectData.completion_files : [],
-          // Update file counts to match arrays
-          file_count_initial: Array.isArray(defectData.initial_files) ? defectData.initial_files.length : (defectData.file_count_initial || 0),
-          file_count_completion: Array.isArray(defectData.completion_files) ? defectData.completion_files.length : (defectData.file_count_completion || 0)
-        };
-        
-        const response = await fetch(`${this.baseURL}/api/defects/${defectId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const result = await this.handleApiResponse(response);
-        console.log(`Successfully updated defect ${defectId} for user: ${validUserId}`);
-        
-        // Clear cache after updating
-        this.clearCache();
-        
-        // Return processed defect data
-        return this.processDefectData(result);
-      } catch (error) {
-        console.error(`Error updating defect ${defectId}:`, error);
-        throw error;
-      }
-    }
-  
-    /**
-     * FIXED: Delete a defect - now properly uses dynamic userId
-     * @param {string|number} defectId - The defect ID
-     * @param {string} userId - Optional userId parameter (will use this.userId if not provided)
-     * @returns {Promise<boolean>} Success indicator
-     */
-    async deleteDefect(defectId, userId = null) {
-      try {
-        const validUserId = this.ensureValidUserId(userId);
-        console.log(`Deleting defect ${defectId} for user ${validUserId}`);
-        
-        const response = await fetch(`${this.baseURL}/api/defects/${defectId}?userId=${validUserId}`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-
-        if (response.status >= 200 && response.status < 300) {
-          console.log(`Successfully deleted defect ${defectId} for user: ${validUserId}`);
-          
-          // Clear cache after deleting
-          this.clearCache();
-          
-          return true;
-        } else {
-          await this.handleApiResponse(response); // This will throw an error
-          return false;
-        }
-      } catch (error) {
-        console.error(`Error deleting defect ${defectId}:`, error);
-        throw error;
-      }
-    }
-  
-    /**
-     * FIXED: Get defect statistics - now properly uses dynamic userId
-     * @param {string} userId - Optional userId parameter (will use this.userId if not provided)
-     * @returns {Promise<Object>} Statistics object
-     */
-    async getDefectStats(userId = null) {
-      try {
-        const validUserId = this.ensureValidUserId(userId);
-        
-        // Calculate from all defects (following reference methodology)
-        const allDefects = await this.getAllDefects(validUserId);
-        
-        if (!Array.isArray(allDefects)) {
-          return this.getDefaultStats();
-        }
-
-        const stats = {
-          total: allDefects.length,
-          open: allDefects.filter(d => d.Status?.toUpperCase() === 'OPEN').length,
-          inProgress: allDefects.filter(d => d.Status?.toUpperCase() === 'IN PROGRESS').length,
-          closed: allDefects.filter(d => d.Status?.toUpperCase() === 'CLOSED').length,
-          overdue: 0, // We'll calculate this based on target_date
-          highCritical: allDefects.filter(d => d.Criticality?.toLowerCase() === 'high').length,
-          mediumCritical: allDefects.filter(d => d.Criticality?.toLowerCase() === 'medium').length,
-          lowCritical: allDefects.filter(d => d.Criticality?.toLowerCase() === 'low').length,
-          equipmentDistribution: {}
-        };
-
-        // Calculate overdue defects
-        const today = new Date();
-        stats.overdue = allDefects.filter(defect => {
-          if (defect.Status?.toUpperCase() === 'CLOSED' || !defect.target_date) {
-            return false;
-          }
-          const targetDate = new Date(defect.target_date);
-          return !isNaN(targetDate) && targetDate < today;
-        }).length;
-
-        // Calculate equipment distribution
-        allDefects.forEach(defect => {
-          const equipment = defect.Equipments || 'Unknown';
-          stats.equipmentDistribution[equipment] = (stats.equipmentDistribution[equipment] || 0) + 1;
-        });
-
-        console.log(`Calculated defect stats for user: ${validUserId}`, stats);
-        return stats;
-      } catch (error) {
-        console.error('Error calculating defect stats:', error);
-        return this.getDefaultStats();
-      }
-    }
-  
-    /**
-     * Get default stats structure
-     * @returns {Object} Default stats object
-     */
-    getDefaultStats() {
-      return {
-        total: 0,
-        open: 0,
-        inProgress: 0,
-        closed: 0,
-        overdue: 0,
-        highCritical: 0,
-        mediumCritical: 0,
-        lowCritical: 0,
-        equipmentDistribution: {}
+  // OPTIMIZED: Create defect with cache invalidation
+  async createDefect(defectData, userId = null) {
+    try {
+      const validUserId = this.ensureValidUserId(userId);
+      
+      const payload = { 
+        ...defectData, 
+        userId: validUserId,
+        initial_files: Array.isArray(defectData.initial_files) ? defectData.initial_files : [],
+        completion_files: Array.isArray(defectData.completion_files) ? defectData.completion_files : [],
+        file_count_initial: defectData.file_count_initial || (defectData.initial_files ? defectData.initial_files.length : 0),
+        file_count_completion: defectData.file_count_completion || (defectData.completion_files ? defectData.completion_files.length : 0)
       };
+      
+      const response = await fetch(`${this.baseURL}/api/defects`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await this.handleApiResponse(response);
+      
+      // Clear relevant caches
+      this.clearCacheForUser(validUserId);
+      
+      return this.processDefectData(result);
+    } catch (error) {
+      throw error;
     }
-  
-    /**
-     * Process raw defects data to calculate counts by criticality
-     * @param {Array} defects - Raw defects array
-     * @returns {Object} Processed counts
-     */
-    processDefectCounts(defects) {
-      if (!Array.isArray(defects)) {
-        return { total: 0, high: 0, medium: 0, low: 0 };
-      }
+  }
 
-      // Filter only open defects using the correct field name from your DB
-      const openDefects = defects.filter(defect => 
-        defect.Status?.toLowerCase() === 'open' || defect.Status === 'OPEN'
-      );
-
-      return {
-        total: openDefects.length,
-        high: openDefects.filter(d => d.Criticality?.toLowerCase() === 'high').length,
-        medium: openDefects.filter(d => d.Criticality?.toLowerCase() === 'medium').length,
-        low: openDefects.filter(d => d.Criticality?.toLowerCase() === 'low').length
+  // OPTIMIZED: Update defect with cache invalidation
+  async updateDefect(defectId, defectData, userId = null) {
+    try {
+      const validUserId = this.ensureValidUserId(userId);
+      
+      const payload = { 
+        ...defectData, 
+        userId: validUserId,
+        initial_files: Array.isArray(defectData.initial_files) ? defectData.initial_files : [],
+        completion_files: Array.isArray(defectData.completion_files) ? defectData.completion_files : [],
+        file_count_initial: Array.isArray(defectData.initial_files) ? defectData.initial_files.length : (defectData.file_count_initial || 0),
+        file_count_completion: Array.isArray(defectData.completion_files) ? defectData.completion_files.length : (defectData.file_count_completion || 0)
       };
+      
+      const response = await fetch(`${this.baseURL}/api/defects/${defectId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await this.handleApiResponse(response);
+      
+      // Clear relevant caches
+      this.clearCacheForUser(validUserId);
+      
+      return this.processDefectData(result);
+    } catch (error) {
+      throw error;
     }
-  
-    /**
-     * Map API field names to display names for consistency
-     * @param {Object} defect - Raw defect from API
-     * @returns {Object} Mapped defect with consistent field names
-     */
-    mapDefectFields(defect) {
-      return this.processDefectData(defect); // Use the main processing function
-    }
-  
-    /**
-     * Clear cache for specific items or all cache
-     */
-    clearCache(key = null) {
-      if (key) {
-        this.cache.delete(key);
+  }
+
+  // OPTIMIZED: Delete defect with cache invalidation
+  async deleteDefect(defectId, userId = null) {
+    try {
+      const validUserId = this.ensureValidUserId(userId);
+      
+      const response = await fetch(`${this.baseURL}/api/defects/${defectId}?userId=${validUserId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.status >= 200 && response.status < 300) {
+        // Clear relevant caches
+        this.clearCacheForUser(validUserId);
+        return true;
       } else {
-        this.cache.clear();
+        await this.handleApiResponse(response);
+        return false;
       }
+    } catch (error) {
+      throw error;
     }
-  
-    /**
-     * FIXED: Set user ID for API calls (ensuring UUID format) - now properly sets the userId
-     * @param {string} userId - User ID
-     */
-    setUserId(userId) {
-      if (!userId) {
-        throw new Error('UserId cannot be null or undefined');
+  }
+
+  // OPTIMIZED: Get defect statistics with caching
+  async getDefectStats(userId = null) {
+    try {
+      const validUserId = this.ensureValidUserId(userId);
+      const cacheKey = `defect_stats_${validUserId}`;
+      const cached = this.cache.get(cacheKey);
+      
+      if (cached && (Date.now() - cached.timestamp < this.cacheTimeout)) {
+        return cached.data;
       }
       
-      try {
-        this.userId = this.ensureValidUserId(userId);
-        this.clearCache(); // Clear cache when user changes
-        console.log(`DefectsService userId set to: ${this.userId}`);
-      } catch (error) {
-        console.error('Error setting userId:', error);
-        throw error;
+      // Calculate from all defects
+      const allDefects = await this.getAllDefects(validUserId);
+      
+      if (!Array.isArray(allDefects)) {
+        return this.getDefaultStats();
+      }
+
+      const stats = {
+        total: allDefects.length,
+        open: allDefects.filter(d => d.Status?.toUpperCase() === 'OPEN').length,
+        inProgress: allDefects.filter(d => d.Status?.toUpperCase() === 'IN PROGRESS').length,
+        closed: allDefects.filter(d => d.Status?.toUpperCase() === 'CLOSED').length,
+        overdue: 0,
+        highCritical: allDefects.filter(d => d.Criticality?.toLowerCase() === 'high').length,
+        mediumCritical: allDefects.filter(d => d.Criticality?.toLowerCase() === 'medium').length,
+        lowCritical: allDefects.filter(d => d.Criticality?.toLowerCase() === 'low').length,
+        equipmentDistribution: {}
+      };
+
+      // Calculate overdue defects
+      const today = new Date();
+      stats.overdue = allDefects.filter(defect => {
+        if (defect.Status?.toUpperCase() === 'CLOSED' || !defect.target_date) {
+          return false;
+        }
+        const targetDate = new Date(defect.target_date);
+        return !isNaN(targetDate) && targetDate < today;
+      }).length;
+
+      // Calculate equipment distribution
+      allDefects.forEach(defect => {
+        const equipment = defect.Equipments || 'Unknown';
+        stats.equipmentDistribution[equipment] = (stats.equipmentDistribution[equipment] || 0) + 1;
+      });
+
+      // Cache the stats
+      this.cache.set(cacheKey, {
+        data: stats,
+        timestamp: Date.now()
+      });
+
+      return stats;
+    } catch (error) {
+      return this.getDefaultStats();
+    }
+  }
+
+  // OPTIMIZED: Get default stats structure
+  getDefaultStats() {
+    return {
+      total: 0,
+      open: 0,
+      inProgress: 0,
+      closed: 0,
+      overdue: 0,
+      highCritical: 0,
+      mediumCritical: 0,
+      lowCritical: 0,
+      equipmentDistribution: {}
+    };
+  }
+
+  // OPTIMIZED: Process defects counts efficiently
+  processDefectCounts(defects) {
+    if (!Array.isArray(defects)) {
+      return { total: 0, high: 0, medium: 0, low: 0 };
+    }
+
+    const openDefects = defects.filter(defect => 
+      defect.Status?.toLowerCase() === 'open' || defect.Status === 'OPEN'
+    );
+
+    return {
+      total: openDefects.length,
+      high: openDefects.filter(d => d.Criticality?.toLowerCase() === 'high').length,
+      medium: openDefects.filter(d => d.Criticality?.toLowerCase() === 'medium').length,
+      low: openDefects.filter(d => d.Criticality?.toLowerCase() === 'low').length
+    };
+  }
+
+  // OPTIMIZED: Map defect fields
+  mapDefectFields(defect) {
+    return this.processDefectData(defect);
+  }
+
+  // OPTIMIZED: Clear cache with more granular control
+  clearCache(key = null) {
+    if (key) {
+      this.cache.delete(key);
+    } else {
+      this.cache.clear();
+    }
+  }
+
+  // OPTIMIZED: Clear cache for specific user
+  clearCacheForUser(userId) {
+    const keysToDelete = [];
+    for (const [key] of this.cache) {
+      if (key.includes(userId)) {
+        keysToDelete.push(key);
       }
     }
-  
-    /**
-     * Get current user ID
-     * @returns {string|null} Current user ID
-     */
-    getUserId() {
-      return this.userId;
+    keysToDelete.forEach(key => this.cache.delete(key));
+  }
+
+  // OPTIMIZED: Set user ID with validation
+  setUserId(userId) {
+    if (!userId) {
+      throw new Error('UserId cannot be null or undefined');
     }
-  
-    /**
-     * FIXED: Get user's assigned vessels - now properly uses dynamic userId
-     * @param {string} userId - Optional userId parameter (will use this.userId if not provided)
-     * @returns {Promise<Array>} Array of assigned vessels
-     */
-    async getUserAssignedVessels(userId = null) {
-      try {
-        const validUserId = this.ensureValidUserId(userId);
-        console.log(`Fetching assigned vessels for user ${validUserId}...`);
+    
+    try {
+      this.userId = this.ensureValidUserId(userId);
+      this.clearCache(); // Clear cache when user changes
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Get current user ID
+  getUserId() {
+    return this.userId;
+  }
+
+  // OPTIMIZED: Get user assigned vessels with caching
+  async getUserAssignedVessels(userId = null) {
+    try {
+      const validUserId = this.ensureValidUserId(userId);
+      const cacheKey = `user_vessels_${validUserId}`;
+      const requestKey = `getUserAssignedVessels-${validUserId}`;
+
+      return this.deduplicateRequest(requestKey, async () => {
+        const cached = this.cache.get(cacheKey);
+        
+        if (cached && (Date.now() - cached.timestamp < this.cacheTimeout)) {
+          return cached.data;
+        }
         
         const response = await fetch(`${this.baseURL}/api/user-vessels`, {
           method: 'POST',
@@ -639,19 +639,150 @@ class DefectsService {
         const vesselsData = await this.handleApiResponse(response);
 
         if (!Array.isArray(vesselsData)) {
-          console.warn('API response for getUserAssignedVessels is not an array:', vesselsData);
           return [];
         }
         
-        console.log(`Successfully fetched ${vesselsData.length} assigned vessels for user: ${validUserId}`);
+        // Cache the result
+        this.cache.set(cacheKey, {
+          data: vesselsData,
+          timestamp: Date.now()
+        });
+        
         return vesselsData;
-      } catch (error) {
-        console.error('Error fetching user assigned vessels:', error);
-        throw error;
-      }
+      });
+    } catch (error) {
+      throw error;
     }
   }
-  
-  // Create and export a singleton instance
-  const defectsService = new DefectsService();
-  export default defectsService;
+
+  // OPTIMIZED: Get cache statistics for debugging
+  getCacheStats() {
+    return {
+      cacheSize: this.cache.size,
+      pendingRequests: this.pendingRequests.size,
+      userId: this.userId
+    };
+  }
+
+  // OPTIMIZED: Preload defects for multiple vessels (non-blocking)
+  async preloadDefectsForVessels(vesselNames, userId = null) {
+    if (!Array.isArray(vesselNames) || vesselNames.length === 0) {
+      return;
+    }
+
+    const validUserId = this.ensureValidUserId(userId);
+
+    // Do this in background without blocking
+    setTimeout(async () => {
+      try {
+        await this.batchGetVesselDefects(vesselNames, validUserId);
+      } catch (error) {
+        // Silent background preloading
+      }
+    }, 500);
+  }
+
+  // Additional utility methods for completeness
+
+  // OPTIMIZED: Check if defect exists
+  async defectExists(defectId, userId = null) {
+    try {
+      await this.getDefect(defectId, userId);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  // OPTIMIZED: Get defects by status
+  async getDefectsByStatus(status, userId = null) {
+    const allDefects = await this.getAllDefects(userId);
+    return allDefects.filter(defect => defect.Status?.toLowerCase() === status.toLowerCase());
+  }
+
+  // OPTIMIZED: Get defects by criticality
+  async getDefectsByCriticality(criticality, userId = null) {
+    const allDefects = await this.getAllDefects(userId);
+    return allDefects.filter(defect => defect.Criticality?.toLowerCase() === criticality.toLowerCase());
+  }
+
+  // OPTIMIZED: Get overdue defects
+  async getOverdueDefects(userId = null) {
+    const allDefects = await this.getAllDefects(userId);
+    const today = new Date();
+    
+    return allDefects.filter(defect => {
+      if (defect.Status?.toUpperCase() === 'CLOSED' || !defect.target_date) {
+        return false;
+      }
+      const targetDate = new Date(defect.target_date);
+      return !isNaN(targetDate) && targetDate < today;
+    });
+  }
+
+  // OPTIMIZED: Bulk operations
+  async bulkUpdateDefects(updates, userId = null) {
+    const results = [];
+    
+    for (const update of updates) {
+      try {
+        const result = await this.updateDefect(update.id, update.data, userId);
+        results.push({ success: true, id: update.id, data: result });
+      } catch (error) {
+        results.push({ success: false, id: update.id, error: error.message });
+      }
+    }
+    
+    return results;
+  }
+
+  // OPTIMIZED: Export defects to CSV
+  exportDefectsToCSV(defects, filename = 'defects') {
+    try {
+      if (!defects || defects.length === 0) {
+        throw new Error('No defects to export');
+      }
+
+      const headers = [
+        'ID', 'Vessel Name', 'Description', 'Status', 'Criticality',
+        'Equipment', 'Target Date', 'Date Reported', 'Date Completed',
+        'Raised By', 'Comments'
+      ];
+
+      const csvContent = [
+        headers.join(','),
+        ...defects.map(defect => [
+          defect.id,
+          `"${(defect.vessel_name || '').replace(/"/g, '""')}"`,
+          `"${(defect.Description || '').replace(/"/g, '""')}"`,
+          defect.Status || '',
+          defect.Criticality || '',
+          `"${(defect.Equipments || '').replace(/"/g, '""')}"`,
+          defect.target_date ? new Date(defect.target_date).toLocaleDateString() : '',
+          defect['Date Reported'] ? new Date(defect['Date Reported']).toLocaleDateString() : '',
+          defect['Date Completed'] ? new Date(defect['Date Completed']).toLocaleDateString() : '',
+          `"${(defect.raised_by || '').replace(/"/g, '""')}"`,
+          `"${(defect.Comments || '').replace(/"/g, '""')}"`
+        ].join(','))
+      ].join('\n');
+
+      // Create and download the file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${filename}_${new Date().toISOString().slice(0,10)}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      throw new Error('Failed to export defects');
+    }
+  }
+}
+
+// Create and export a singleton instance
+const defectsService = new DefectsService();
+export default defectsService;
