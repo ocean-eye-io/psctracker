@@ -2129,7 +2129,7 @@ const VesselTable = ({
             }
 
             .vessel-name {
-              max-width: 80px;
+              max-width: 300px;
               white-space: nowrap;
               overflow: hidden;
               text-overflow: ellipsis;
@@ -2382,12 +2382,12 @@ const VesselTable = ({
             align-items: center;
             gap: 6px;
             width: 100%;
-            min-width: 0;
+            min-width: 300;
           }
 
           .vessel-name {
             flex: 1;
-            min-width: 0;
+            min-width: 3000;
             max-width: none;
           }
 
