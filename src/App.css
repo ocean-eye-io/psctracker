@@ -1,8 +1,8 @@
 /* src/App.css */
 :root {
-  --primary-dark: #0a1725;
-  --secondary-dark: #112032;
-  --text-light: #f4f4f4;
+  --primary-light: #f7fafd;
+  --secondary-light: #eef4f8;
+  --text-dark: #333333;
 }
 
 * {
@@ -23,8 +23,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--primary-dark);
-  color: var(--text-light);
+  background-color: var(--primary-light);
+  color: var(--text-dark);
 }
 
 .app {
