@@ -1,4 +1,4 @@
-// src/components/dashboard/reporting/ChecklistModal.jsx
+// src/components/dashboard/reporting/ChecklistModal.jsx - FIXED VERSION
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   X,
@@ -29,80 +29,26 @@ const ChecklistModal = ({
   const [error, setError] = useState(null);
   const [checklist, setChecklist] = useState(null);
   const [template, setTemplate] = useState(null);
-  const [mode, setMode] = useState('edit'); // 'edit' or 'view'
+  const [mode, setMode] = useState('edit');
   const [checklistStatus, setChecklistStatus] = useState(initialStatus);
-  const [debugInfo, setDebugInfo] = useState({}); // CORRECTED THIS LINE
-  // NEW: Track if we're in the middle of a submit operation
+  const [debugInfo, setDebugInfo] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { currentUser } = useAuth();
 
-  // Determine the appropriate mode based on checklist status
-  const determineMode = useCallback((checklistData) => {
-    if (!checklistData) return 'edit';
-
-    switch (checklistData.status) {
-      case 'complete':
-      case 'submitted': // UPDATED: Handle submitted status
-        return 'view'; // Can switch to edit if needed
-      case 'in_progress':
-      case 'draft':
-        return 'edit';
-      default:
-        return 'edit';
-    }
-  }, []);
-
-  // UPDATED: Get status info for display with submitted status
-  const getStatusInfo = useCallback((status) => {
-    switch (status) {
-      case 'complete':
-      case 'submitted': // UPDATED: Handle submitted status same as complete
-        return {
-          icon: <CheckCircle size={16} />,
-          label: 'Submitted',
-          color: '#2ECC71',
-          bgColor: 'rgba(46, 204, 113, 0.1)',
-          borderColor: 'rgba(46, 204, 113, 0.3)'
-        };
-      case 'in_progress':
-        return {
-          icon: <Clock size={16} />,
-          label: 'In Progress',
-          color: '#F39C12',
-          bgColor: 'rgba(243, 156, 18, 0.1)',
-          borderColor: 'rgba(243, 156, 18, 0.3)'
-        };
-      case 'draft':
-        return {
-          icon: <FileText size={16} />,
-          label: 'Draft',
-          color: '#3498DB',
-          bgColor: 'rgba(52, 152, 219, 0.1)',
-          borderColor: 'rgba(52, 152, 219, 0.3)'
-        };
-      default:
-        return {
-          icon: <AlertTriangle size={16} />,
-          label: 'Pending',
-          color: '#E74C3C',
-          bgColor: 'rgba(231, 76, 60, 0.1)',
-          borderColor: 'rgba(231, 76, 60, 0.3)'
-        };
-    }
-  }, []);
-
-  // Enhanced debug logging
+  // Debug logging function
   const logDebug = useCallback((step, data) => {
-    console.log(`ChecklistModal Debug [${step}]:`, data);
+    console.log(`🔍 ChecklistModal Debug [${step}]:`, data);
     setDebugInfo(prev => ({ ...prev, [step]: data }));
   }, []);
 
-  // Extract user ID from various possible formats
+  // Enhanced user ID extraction
   const getUserId = useCallback(() => {
-    if (!currentUser) return null;
+    if (!currentUser) {
+      logDebug('getUserId_error', 'No currentUser available');
+      return null;
+    }
 
-    // Try different possible user ID fields
     const possibleIds = [
       currentUser.id,
       currentUser.user_id,
@@ -113,13 +59,64 @@ const ChecklistModal = ({
       currentUser.cognito_user_id
     ];
 
-    return possibleIds.find(id => id && id.toString().trim() !== '') || null;
-  }, [currentUser]);
+    const userId = possibleIds.find(id => id && id.toString().trim() !== '') || null;
+    logDebug('getUserId_result', { userId, availableFields: Object.keys(currentUser) });
+    return userId;
+  }, [currentUser, logDebug]);
 
-  // Load or create 5-day checklist
+  // Determine mode based on checklist status
+  const determineMode = useCallback((checklistData) => {
+    if (!checklistData) return 'edit';
+    const mode = ['complete', 'submitted'].includes(checklistData.status) ? 'view' : 'edit';
+    logDebug('determineMode', { status: checklistData.status, mode });
+    return mode;
+  }, [logDebug]);
+
+  // Get status display info
+  const getStatusInfo = useCallback((status) => {
+    const statusMap = {
+      'complete': {
+        icon: <CheckCircle size={16} />,
+        label: 'Complete',
+        color: '#2ECC71',
+        bgColor: 'rgba(46, 204, 113, 0.1)',
+        borderColor: 'rgba(46, 204, 113, 0.3)'
+      },
+      'submitted': {
+        icon: <CheckCircle size={16} />,
+        label: 'Submitted',
+        color: '#2ECC71',
+        bgColor: 'rgba(46, 204, 113, 0.1)',
+        borderColor: 'rgba(46, 204, 113, 0.3)'
+      },
+      'in_progress': {
+        icon: <Clock size={16} />,
+        label: 'In Progress',
+        color: '#F39C12',
+        bgColor: 'rgba(243, 156, 18, 0.1)',
+        borderColor: 'rgba(243, 156, 18, 0.3)'
+      },
+      'draft': {
+        icon: <FileText size={16} />,
+        label: 'Draft',
+        color: '#3498DB',
+        bgColor: 'rgba(52, 152, 219, 0.1)',
+        borderColor: 'rgba(52, 152, 219, 0.3)'
+      },
+      'pending': {
+        icon: <AlertTriangle size={16} />,
+        label: 'Pending',
+        color: '#E74C3C',
+        bgColor: 'rgba(231, 76, 60, 0.1)',
+        borderColor: 'rgba(231, 76, 60, 0.3)'
+      }
+    };
+    return statusMap[status] || statusMap['pending'];
+  }, []);
+
+  // Load or create checklist
   const loadChecklist = useCallback(async () => {
     if (!vessel?.id) {
-      logDebug('validation', 'No vessel ID provided');
       setError('No vessel selected');
       setLoading(false);
       return;
@@ -127,11 +124,6 @@ const ChecklistModal = ({
 
     const userId = getUserId();
     if (!userId) {
-      logDebug('validation', {
-        message: 'No user ID available',
-        currentUser: currentUser,
-        availableFields: currentUser ? Object.keys(currentUser) : []
-      });
       setError('User authentication required. Please log in again.');
       setLoading(false);
       return;
@@ -141,26 +133,13 @@ const ChecklistModal = ({
     setError(null);
 
     try {
-      logDebug('start', {
-        vesselId: vessel.id,
-        vesselName: vessel.vessel_name,
-        userId: userId,
-        userObject: currentUser
-      });
+      logDebug('loadChecklist_start', { vesselId: vessel.id, userId });
 
-      // Step 1: Try to get existing checklists
-      logDebug('step1', 'Fetching existing checklists...');
+      // Get existing checklists
       const existingChecklists = await checklistService.getChecklistsForVessel(vessel.id);
-      logDebug('step1_result', {
-        count: existingChecklists.length,
-        checklists: existingChecklists.map(c => ({
-          id: c.checklist_id,
-          template_name: c.template_name,
-          status: c.status
-        }))
-      });
+      logDebug('existing_checklists', existingChecklists);
 
-      // Step 2: Look for 5-day checklist
+      // Find 5-day checklist
       let fiveDayChecklist = existingChecklists.find(checklist => {
         const templateName = (checklist.template_name || '').toLowerCase();
         return templateName.includes('5-day') ||
@@ -169,142 +148,96 @@ const ChecklistModal = ({
                templateName.includes('five day');
       });
 
-      logDebug('step2', {
-        found: !!fiveDayChecklist,
-        checklist: fiveDayChecklist ? {
-          id: fiveDayChecklist.checklist_id,
-          name: fiveDayChecklist.template_name,
-          status: fiveDayChecklist.status
-        } : null
-      });
-
       if (fiveDayChecklist) {
-        // Step 3a: Load existing checklist
-        logDebug('step3a', 'Loading existing 5-day checklist...');
-
+        // Load existing checklist
+        logDebug('loading_existing', fiveDayChecklist);
         const [fullChecklist, templateData] = await Promise.all([
           checklistService.getChecklistById(fiveDayChecklist.checklist_id),
           checklistService.getTemplateById(fiveDayChecklist.template_id)
         ]);
 
-        logDebug('step3a_result', {
-          checklist: {
-            id: fullChecklist.checklist_id,
-            status: fullChecklist.status,
-            progress: fullChecklist.progress_percentage,
-            responses: fullChecklist.responses?.length || 0
-          },
-          template: {
-            id: templateData.template_id || templateData.id,
-            name: templateData.name,
-            items: templateData.processed_items?.length || 0
-          }
-        });
-
         setChecklist(fullChecklist);
         setTemplate(templateData);
         setChecklistStatus(fullChecklist.status || 'draft');
         setMode(determineMode(fullChecklist));
-
       } else {
-        // Step 3b: Create new checklist
-        logDebug('step3b', 'Creating new 5-day checklist...');
+        // Create new checklist
+        logDebug('creating_new', 'No existing 5-day checklist found');
+        const createdChecklists = await checklistService.createChecklistsForVoyage(
+          vessel.id,
+          { vessel_name: vessel.vessel_name, user_id: userId }
+        );
 
-        try {
-          const createdChecklists = await checklistService.createChecklistsForVoyage(
-            vessel.id,
-            {
-              vessel_name: vessel.vessel_name,
-              user_id: userId
-            }
-          );
+        fiveDayChecklist = createdChecklists.find(checklist => {
+          const templateName = (checklist.template_name || '').toLowerCase();
+          return templateName.includes('5-day') ||
+                 templateName.includes('5 day') ||
+                 templateName.includes('pre-arrival') ||
+                 templateName.includes('five day');
+        });
 
-          logDebug('step3b_created', {
-            count: createdChecklists.length,
-            checklists: createdChecklists.map(c => ({
-              id: c.checklist_id,
-              name: c.template_name,
-              status: c.status
-            }))
-          });
+        if (fiveDayChecklist) {
+          const [fullChecklist, templateData] = await Promise.all([
+            checklistService.getChecklistById(fiveDayChecklist.checklist_id),
+            checklistService.getTemplateById(fiveDayChecklist.template_id)
+          ]);
 
-          // Find the 5-day checklist from created ones
-          fiveDayChecklist = createdChecklists.find(checklist => {
-            const templateName = (checklist.template_name || '').toLowerCase();
-            return templateName.includes('5-day') ||
-                   templateName.includes('5 day') ||
-                   templateName.includes('pre-arrival') ||
-                   templateName.includes('five day');
-          });
-
-          if (fiveDayChecklist) {
-            // Load the newly created checklist
-            const [fullChecklist, templateData] = await Promise.all([
-              checklistService.getChecklistById(fiveDayChecklist.checklist_id),
-              checklistService.getTemplateById(fiveDayChecklist.template_id)
-            ]);
-
-            logDebug('step3b_loaded', {
-              checklist: {
-                id: fullChecklist.checklist_id,
-                status: fullChecklist.status,
-                progress: fullChecklist.progress_percentage
-              },
-              template: {
-                id: templateData.template_id || templateData.id,
-                name: templateData.name,
-                items: templateData.processed_items?.length || 0
-              }
-            });
-
-            setChecklist(fullChecklist);
-            setTemplate(templateData);
-            setChecklistStatus('draft');
-            setMode('edit');
-          } else {
-            throw new Error('5-day checklist template not found in created checklists');
-          }
-        } catch (createError) {
-          logDebug('step3b_error', createError);
-          throw new Error(`Failed to create checklist: ${createError.message}`);
+          setChecklist(fullChecklist);
+          setTemplate(templateData);
+          setChecklistStatus('draft');
+          setMode('edit');
+        } else {
+          throw new Error('5-day checklist template not found');
         }
       }
 
-      logDebug('success', 'Checklist loaded successfully');
-
+      logDebug('loadChecklist_success', 'Checklist loaded successfully');
     } catch (err) {
-      logDebug('error', {
-        message: err.message,
-        stack: err.stack
-      });
-      console.error('ChecklistModal: Error loading checklist:', err);
+      logDebug('loadChecklist_error', err);
+      console.error('❌ ChecklistModal: Error loading checklist:', err);
       setError(`Failed to load checklist: ${err.message}`);
     } finally {
       setLoading(false);
     }
   }, [vessel?.id, vessel?.vessel_name, getUserId, determineMode, logDebug]);
 
-  // Load checklist when modal opens
-  useEffect(() => {
-    if (isOpen && vessel) {
-      loadChecklist();
-    }
-  }, [isOpen, vessel, loadChecklist]);
-
-  // Handle checklist save
+  // Handle save with proper error handling and state updates
   const handleSave = useCallback(async (responses, isAutoSave = false) => {
-    try {
-      logDebug('save_start', { isAutoSave, responseCount: Object.keys(responses).length });
+    if (!checklist?.checklist_id) {
+      throw new Error('No checklist available for saving');
+    }
 
-      // The ModernChecklistForm handles the actual saving
-      // We just need to refresh our local state after save
+    try {
+      logDebug('save_start', { 
+        checklistId: checklist.checklist_id,
+        responseCount: Object.keys(responses).length,
+        isAutoSave 
+      });
+
+      // Convert form responses to API format
+      const apiResponses = convertFormResponsesToAPI(responses, template);
+      logDebug('converted_responses', { 
+        originalCount: Object.keys(responses).length,
+        convertedCount: apiResponses.length 
+      });
+
+      // Save via API
+      const result = await checklistService.updateChecklistResponses(
+        checklist.checklist_id,
+        apiResponses,
+        getUserId()
+      );
+
+      logDebug('save_api_result', result);
+
       if (!isAutoSave) {
-        // Refresh the checklist data to get updated progress
+        // Refresh checklist data after manual save
         const updatedChecklist = await checklistService.getChecklistById(checklist.checklist_id);
+        
         setChecklist(updatedChecklist);
         setChecklistStatus(updatedChecklist.status || 'in_progress');
 
-        // Notify parent component about the update
+        // Notify parent
         if (onChecklistUpdate) {
           onChecklistUpdate(vessel.id, {
             status: updatedChecklist.status,
@@ -314,41 +247,47 @@ const ChecklistModal = ({
           });
         }
 
-        logDebug('save_success', 'Checklist saved and updated');
+        logDebug('save_success', 'Manual save completed');
+      } else {
+        logDebug('save_success', 'Auto-save completed');
       }
+
+      return result;
     } catch (err) {
       logDebug('save_error', err);
-      console.error('ChecklistModal: Error in handleSave:', err);
-      throw err; // Re-throw to let ModernChecklistForm handle the error display
+      console.error('❌ ChecklistModal: Save error:', err);
+      throw err;
     }
-  }, [checklist, vessel, onChecklistUpdate, logDebug]);
+  }, [checklist, template, getUserId, vessel, onChecklistUpdate, logDebug]);
 
-  // UPDATED: Handle checklist submit with proper 409 handling and force overwrite
+  // Handle submit with enhanced error handling
   const handleSubmit = useCallback(async (responses) => {
+    if (!checklist?.checklist_id) {
+      throw new Error('No checklist available for submission');
+    }
+
     try {
       setIsSubmitting(true);
-      logDebug('submit_start', { responseCount: Object.keys(responses).length });
+      logDebug('submit_start', { 
+        checklistId: checklist.checklist_id,
+        currentStatus: checklistStatus 
+      });
 
-      console.log('🚀 ChecklistModal: Starting submit process...');
+      // First save the current responses
+      await handleSave(responses, false);
 
-      // Call the submit API with force overwrite enabled
+      // Then submit
       const submitResult = await checklistService.submitChecklist(
         checklist.checklist_id,
-        getUserId() || 'system',
-        true // ✅ FORCE OVERWRITE to handle 409 conflicts
+        getUserId(),
+        true // force overwrite
       );
 
-      console.log('✅ ChecklistModal: Submit API result:', submitResult);
+      logDebug('submit_api_result', submitResult);
 
-      // Handle the result - could be a new submission or a 409 handled case
       const newStatus = submitResult.checklist?.status || 'submitted';
-      const wasAlreadySubmitted = submitResult.already_submitted || false;
-
-      if (wasAlreadySubmitted) {
-        console.log('⚠️ ChecklistModal: Checklist was already submitted, but handling gracefully');
-      }
-
-      // Update local state immediately
+      
+      // Update local state
       setChecklist(prev => ({
         ...prev,
         status: newStatus,
@@ -357,90 +296,121 @@ const ChecklistModal = ({
         progress_percentage: 100
       }));
       setChecklistStatus(newStatus);
-      setMode('view'); // Switch to view mode after submission
+      setMode('view');
 
-      // CRITICAL: Notify parent component with the actual backend status
+      // Notify parent
       if (onChecklistUpdate) {
-        console.log('📡 ChecklistModal: Notifying parent of submission...');
         onChecklistUpdate(vessel.id, {
           status: newStatus,
           progress: 100,
           items_completed: submitResult.checklist?.items_completed,
           total_items: submitResult.checklist?.total_items,
           submitted_at: submitResult.checklist?.submitted_at,
-          submitted_by: submitResult.checklist?.submitted_by,
-          was_already_submitted: wasAlreadySubmitted
+          submitted_by: submitResult.checklist?.submitted_by
         });
       }
 
-      logDebug('submit_success', {
-        newStatus: newStatus,
-        submitted_at: submitResult.checklist?.submitted_at,
-        was_already_submitted: wasAlreadySubmitted
-      });
+      logDebug('submit_success', 'Submission completed');
 
-      console.log('🎉 ChecklistModal: Submit process completed successfully');
-
-      // Show success message briefly, then close
+      // Close modal after short delay
       setTimeout(() => {
         onClose();
-      }, wasAlreadySubmitted ? 1000 : 1500); // Shorter delay if already submitted
+      }, 1500);
 
     } catch (err) {
       logDebug('submit_error', err);
-      console.error('❌ ChecklistModal: Error in handleSubmit:', err);
-
-      // Reset submitting state on error
-      setIsSubmitting(false);
-
-      // Enhanced error handling - don't show generic submit errors for 409s that we couldn't handle
+      console.error('❌ ChecklistModal: Submit error:', err);
+      
+      // Handle already submitted error gracefully
       if (err.message.includes('already submitted')) {
-        console.log('🔄 ChecklistModal: Treating "already submitted" as success');
-
-        // If we get this error, treat it as a successful submission
-        setChecklist(prev => ({
-          ...prev,
-          status: 'submitted',
-          submitted_at: new Date().toISOString(),
-          progress_percentage: 100
-        }));
         setChecklistStatus('submitted');
         setMode('view');
+        setTimeout(() => onClose(), 1000);
+        return;
+      }
+      
+      throw err;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [checklist, checklistStatus, handleSave, getUserId, vessel, onChecklistUpdate, onClose, logDebug]);
 
-        if (onChecklistUpdate) {
-          onChecklistUpdate(vessel.id, {
-            status: 'submitted',
-            progress: 100,
-            was_already_submitted: true
-          });
-        }
+  // Convert form responses to API format
+  const convertFormResponsesToAPI = useCallback((formResponses, templateData) => {
+    if (!templateData?.processed_items) {
+      logDebug('convert_error', 'No processed items in template');
+      return [];
+    }
 
-        setTimeout(() => {
-          onClose();
-        }, 1000);
+    const apiResponses = [];
 
-        return; // Don't throw the error
+    templateData.processed_items.forEach((item, index) => {
+      const value = formResponses[item.item_id];
+      
+      if (value === null || value === undefined) return;
+
+      const response = {
+        item_id: item.item_id,
+        sr_no: index + 1,
+        section: item.section_name || 'GENERAL',
+        subsection: item.sub_section_name || null,
+        check_description: item.description || item.check_description || '',
+        pic: item.pic || '',
+        response_type: item.response_type || 'text',
+        yes_no_na_value: null,
+        text_value: null,
+        date_value: null,
+        table_data: null,
+        remarks: null,
+        guidance: item.guidance || '',
+        is_mandatory: Boolean(item.is_mandatory),
+        requires_evidence: Boolean(item.requires_evidence)
+      };
+
+      // Set appropriate value based on response type
+      switch (item.response_type) {
+        case 'yes_no_na':
+        case 'yes_no':
+          response.yes_no_na_value = value;
+          break;
+        case 'date':
+          response.date_value = value;
+          break;
+        case 'table':
+          response.table_data = Array.isArray(value) ? value : [];
+          break;
+        default:
+          response.text_value = String(value);
+          break;
       }
 
-      throw err; // Re-throw other errors to let ModernChecklistForm handle the error display
-    }
-  }, [checklist, vessel, onChecklistUpdate, onClose, logDebug, getUserId]);
+      apiResponses.push(response);
+    });
 
-  // Handle mode toggle (view <-> edit)
+    logDebug('convert_result', { 
+      inputCount: Object.keys(formResponses).length,
+      outputCount: apiResponses.length 
+    });
+
+    return apiResponses;
+  }, [logDebug]);
+
+  // Handle mode toggle
   const handleModeToggle = useCallback(() => {
-    setMode(prevMode => prevMode === 'view' ? 'edit' : 'view');
-  }, []);
+    const newMode = mode === 'view' ? 'edit' : 'view';
+    setMode(newMode);
+    logDebug('mode_toggle', { from: mode, to: newMode });
+  }, [mode, logDebug]);
 
-  // UPDATED: Handle modal close with proper state cleanup
+  // Handle close with cleanup
   const handleClose = useCallback(() => {
-    // Don't close if we're in the middle of submitting
     if (isSubmitting) {
-      console.log('⏳ ChecklistModal: Preventing close during submission');
+      logDebug('close_prevented', 'Submission in progress');
       return;
     }
 
-    console.log('🔄 ChecklistModal: Closing and cleaning up state');
-
+    logDebug('close_modal', 'Cleaning up and closing');
+    
     setLoading(true);
     setError(null);
     setChecklist(null);
@@ -450,7 +420,14 @@ const ChecklistModal = ({
     setDebugInfo({});
     setIsSubmitting(false);
     onClose();
-  }, [onClose, isSubmitting]);
+  }, [isSubmitting, onClose, logDebug]);
+
+  // Load checklist when modal opens
+  useEffect(() => {
+    if (isOpen && vessel) {
+      loadChecklist();
+    }
+  }, [isOpen, vessel, loadChecklist]);
 
   if (!isOpen) return null;
 
@@ -458,11 +435,8 @@ const ChecklistModal = ({
 
   return (
     <div className="checklist-modal-overlay" onClick={!isSubmitting ? handleClose : undefined}>
-      <div
-        className="checklist-modal-container"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Modal Header */}
+      <div className="checklist-modal-container" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
         <div className="checklist-modal-header">
           <div className="checklist-modal-title">
             <div className="title-icon">
@@ -495,16 +469,8 @@ const ChecklistModal = ({
           </div>
 
           <div className="checklist-modal-status">
-            {/* UPDATED: Show submitting status */}
             {isSubmitting ? (
-              <div
-                className="status-badge submitting"
-                style={{
-                  color: '#F39C12',
-                  backgroundColor: 'rgba(243, 156, 18, 0.1)',
-                  borderColor: 'rgba(243, 156, 18, 0.3)'
-                }}
-              >
+              <div className="status-badge submitting">
                 <Loader2 size={16} className="spinning" />
                 <span>Submitting...</span>
               </div>
@@ -522,29 +488,17 @@ const ChecklistModal = ({
               </div>
             )}
 
-            {/* UPDATED: Handle submitted status in mode toggle */}
-            {(checklistStatus === 'complete' || checklistStatus === 'submitted') && mode === 'view' && !isSubmitting && (
+            {['complete', 'submitted'].includes(checklistStatus) && !isSubmitting && (
               <button
                 className="mode-toggle-btn"
                 onClick={handleModeToggle}
-                title="Edit checklist"
+                title={mode === 'view' ? 'Edit checklist' : 'View mode'}
               >
-                Edit
-              </button>
-            )}
-
-            {mode === 'edit' && (checklistStatus === 'complete' || checklistStatus === 'submitted') && !isSubmitting && (
-              <button
-                className="mode-toggle-btn"
-                onClick={handleModeToggle}
-                title="View mode"
-              >
-                View
+                {mode === 'view' ? 'Edit' : 'View'}
               </button>
             )}
           </div>
 
-          {/* UPDATED: Disable close button during submission */}
           <button
             className="checklist-modal-close"
             onClick={handleClose}
@@ -559,7 +513,7 @@ const ChecklistModal = ({
           </button>
         </div>
 
-        {/* Modal Body */}
+        {/* Body */}
         <div className="checklist-modal-body">
           {loading ? (
             <div className="checklist-modal-loading">
@@ -573,42 +527,26 @@ const ChecklistModal = ({
               <h3>Error Loading Checklist</h3>
               <p>{error}</p>
 
-              {/* Debug Information */}
               <details style={{ marginTop: '20px', textAlign: 'left' }}>
                 <summary style={{ cursor: 'pointer', marginBottom: '10px' }}>Debug Information</summary>
                 <pre style={{
-                  background: 'var(--filter-bg-light, #e9ecef)',
-                  color: 'var(--text-dark, #333333)',
+                  background: '#f8f9fa',
+                  color: '#333',
                   padding: '10px',
                   borderRadius: '4px',
                   fontSize: '12px',
                   overflow: 'auto',
                   maxHeight: '200px',
-                  border: '1px solid var(--border-light, rgba(0, 0, 0, 0.1))'
+                  border: '1px solid #dee2e6'
                 }}>
                   {JSON.stringify(debugInfo, null, 2)}
                 </pre>
               </details>
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                <button
-                  className="retry-button"
-                  onClick={loadChecklist}
-                >
+                <button className="retry-button" onClick={loadChecklist}>
                   <RefreshCw size={16} />
                   Try Again
-                </button>
-                <button
-                  className="debug-button"
-                  onClick={() => {
-                    console.log('=== CHECKLIST MODAL DEBUG INFO ===');
-                    console.log('Vessel:', vessel);
-                    console.log('Current User:', currentUser);
-                    console.log('Debug Info:', debugInfo);
-                    console.log('================================');
-                  }}
-                >
-                  Log Debug Info
                 </button>
               </div>
             </div>
@@ -623,19 +561,14 @@ const ChecklistModal = ({
               loading={false}
               currentUser={currentUser}
               mode={mode}
-              selectedChecklist={checklist}
-              disabled={isSubmitting} // NEW: Pass submitting state to form
-              style={{ marginTop: '0' }}
+              disabled={isSubmitting}
             />
           ) : (
             <div className="checklist-modal-error">
               <AlertTriangle size={32} />
               <h3>Checklist Not Available</h3>
               <p>Could not load the 5-day checklist template</p>
-              <button
-                className="retry-button"
-                onClick={loadChecklist}
-              >
+              <button className="retry-button" onClick={loadChecklist}>
                 <RefreshCw size={16} />
                 Retry
               </button>
@@ -644,8 +577,9 @@ const ChecklistModal = ({
         </div>
       </div>
 
-      {/* Enhanced Styles */}
+      {/* Styles */}
       <style jsx>{`
+        /* Your existing styles remain the same */
         .checklist-modal-overlay {
           position: fixed;
           top: 0;
@@ -663,15 +597,15 @@ const ChecklistModal = ({
         }
 
         .checklist-modal-container {
-          background: var(--checklist-card-bg-enhanced);
-          border: 1px solid var(--checklist-card-border-enhanced);
+          background: white;
+          border: 1px solid #e2e8f0;
           border-radius: 12px;
           width: 100%;
           max-width: 1200px;
           max-height: 95vh;
           display: flex;
           flex-direction: column;
-          box-shadow: var(--checklist-card-shadow-enhanced);
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
           animation: slideUp 0.3s ease-out;
           overflow: hidden;
         }
@@ -680,9 +614,9 @@ const ChecklistModal = ({
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 10px 12px;
-          background: var(--card-bg-light);
-          border-bottom: 1px solid var(--border-light);
+          padding: 16px 20px;
+          background: #f8fafc;
+          border-bottom: 1px solid #e2e8f0;
           flex-shrink: 0;
         }
 
@@ -696,12 +630,12 @@ const ChecklistModal = ({
         .title-icon {
           width: 40px;
           height: 40px;
-          background: rgba(0, 123, 255, 0.1);
+          background: rgba(59, 130, 246, 0.1);
           border-radius: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: var(--checklist-primary);
+          color: #3b82f6;
           flex-shrink: 0;
         }
 
@@ -709,7 +643,7 @@ const ChecklistModal = ({
           margin: 0 0 8px 0;
           font-size: 18px;
           font-weight: 600;
-          color: var(--text-dark);
+          color: #1f2937;
         }
 
         .vessel-info {
@@ -718,7 +652,7 @@ const ChecklistModal = ({
           gap: 16px;
           flex-wrap: wrap;
           font-size: 13px;
-          color: var(--text-muted-light);
+          color: #6b7280;
         }
 
         .vessel-name,
@@ -730,7 +664,7 @@ const ChecklistModal = ({
         }
 
         .vessel-imo {
-          color: var(--text-muted-light);
+          color: #9ca3af;
         }
 
         .checklist-modal-status {
@@ -751,14 +685,17 @@ const ChecklistModal = ({
         }
 
         .status-badge.submitting {
+          color: #f59e0b;
+          background-color: rgba(245, 158, 11, 0.1);
+          border-color: rgba(245, 158, 11, 0.3);
           animation: pulse 2s ease-in-out infinite;
         }
 
         .mode-toggle-btn {
-          background: rgba(0, 123, 255, 0.1);
-          border: 1px solid rgba(0, 123, 255, 0.3);
+          background: rgba(59, 130, 246, 0.1);
+          border: 1px solid rgba(59, 130, 246, 0.3);
           border-radius: 6px;
-          color: var(--checklist-primary);
+          color: #3b82f6;
           padding: 6px 12px;
           font-size: 12px;
           cursor: pointer;
@@ -766,17 +703,17 @@ const ChecklistModal = ({
         }
 
         .mode-toggle-btn:hover {
-          background: rgba(0, 123, 255, 0.2);
+          background: rgba(59, 130, 246, 0.2);
           transform: translateY(-1px);
         }
 
         .checklist-modal-close {
           width: 36px;
           height: 36px;
-          background: var(--filter-bg-light);
-          border: 1px solid var(--border-light);
+          background: #f1f5f9;
+          border: 1px solid #e2e8f0;
           border-radius: 8px;
-          color: var(--text-muted-light);
+          color: #64748b;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -786,8 +723,8 @@ const ChecklistModal = ({
         }
 
         .checklist-modal-close:hover:not(:disabled) {
-          background: var(--filter-hover-light);
-          border-color: var(--checklist-primary);
+          background: #e2e8f0;
+          border-color: #3b82f6;
           transform: scale(1.05);
         }
 
@@ -801,10 +738,8 @@ const ChecklistModal = ({
           overflow-y: auto;
           display: flex;
           flex-direction: column;
-          padding: 6px;
-          background: var(--background-light);
-          margin-top: 2px !important;
-          
+          padding: 0;
+          background: #ffffff;
         }
 
         .checklist-modal-loading,
@@ -815,17 +750,17 @@ const ChecklistModal = ({
           justify-content: center;
           padding: 60px 40px;
           text-align: center;
-          color: var(--text-dark);
+          color: #374151;
           flex-grow: 1;
         }
 
         .checklist-modal-loading .spinning {
-          color: var(--checklist-primary);
+          color: #3b82f6;
           margin-bottom: 20px;
         }
 
         .checklist-modal-error {
-          color: var(--checklist-danger);
+          color: #dc2626;
         }
 
         .checklist-modal-loading h3,
@@ -838,17 +773,16 @@ const ChecklistModal = ({
         .checklist-modal-loading p,
         .checklist-modal-error p {
           margin: 0 0 24px 0;
-          color: var(--text-muted-light);
+          color: #6b7280;
           max-width: 400px;
           line-height: 1.5;
         }
 
-        .retry-button,
-        .debug-button {
-          background: rgba(0, 123, 255, 0.1);
-          border: 1px solid rgba(0, 123, 255, 0.3);
+        .retry-button {
+          background: rgba(59, 130, 246, 0.1);
+          border: 1px solid rgba(59, 130, 246, 0.3);
           border-radius: 8px;
-          color: var(--checklist-primary);
+          color: #3b82f6;
           padding: 12px 24px;
           font-size: 14px;
           font-weight: 500;
@@ -859,19 +793,20 @@ const ChecklistModal = ({
           gap: 8px;
         }
 
-        .retry-button:hover,
-        .debug-button:hover {
-          background: rgba(0, 123, 255, 0.2);
+        .retry-button:hover {
+          background: rgba(59, 130, 246, 0.2);
           transform: translateY(-2px);
         }
 
-        .debug-button {
-          background: var(--filter-bg-light);
-          border-color: var(--border-light);
-          color: var(--text-muted-light);
+        .spinning {
+          animation: spin 1s linear infinite;
         }
 
-        /* Animations */
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
@@ -893,16 +828,7 @@ const ChecklistModal = ({
           50% { opacity: 0.7; }
         }
 
-        .spinning {
-          animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        /* Responsive Design */
+        /* Responsive */
         @media (max-width: 768px) {
           .checklist-modal-container {
             margin: 8px;
@@ -917,40 +843,15 @@ const ChecklistModal = ({
             align-items: flex-start;
           }
 
-          .checklist-modal-title {
-            width: 100%;
-          }
-
           .vessel-info {
             gap: 12px;
             font-size: 12px;
-          }
-
-          .checklist-modal-status {
-            align-self: flex-end;
           }
 
           .checklist-modal-close {
             position: absolute;
             top: 16px;
             right: 16px;
-          }
-
-          .title-content h2 {
-            font-size: 16px;
-          }
-
-          .checklist-modal-loading,
-          .checklist-modal-error {
-            padding: 40px 20px;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .vessel-info {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 6px;
           }
         }
       `}</style>

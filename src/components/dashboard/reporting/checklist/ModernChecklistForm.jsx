@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+// src/components/dashboard/reporting/checklist/ModernChecklistForm.jsx - FIXED VERSION
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   ArrowLeft,
   CheckCircle,
@@ -27,412 +28,9 @@ import {
   Filter
 } from 'lucide-react';
 
-// Enhanced DynamicTable Component with matching light theme
-const DynamicTable = ({ 
-  item, 
-  value = [], 
-  onChange, 
-  disabled = false, 
-  hasError = false 
-}) => {
-  const [tableData, setTableData] = useState([]);
-  const [editingRowIndex, setEditingRowIndex] = useState(-1);
-  const [newRowData, setNewRowData] = useState({});
-  const [editRowData, setEditRowData] = useState({});
+// Import your existing DynamicTable component
+import DynamicTable from './DynamicTable'; // Adjust path as needed
 
-  const tableStructure = useMemo(() => {
-    if (item.table_structure && item.table_structure.columns) {
-      return item.table_structure.columns.map(col => ({
-        id: col.column_id,
-        label: col.label,
-        type: col.type,
-        required: col.required || false
-      }));
-    }
-    
-    // Fallback structure
-    return [
-      { id: 'description', label: 'Description', type: 'text', required: true },
-      { id: 'value', label: 'Value', type: 'text', required: false }
-    ];
-  }, [item]);
-
-  useEffect(() => {
-    if (Array.isArray(value) && value.length > 0) {
-      const cleanedData = value.map((row, index) => {
-        const cleanRow = { _id: `row_${index}_${Date.now()}` };
-        
-        tableStructure.forEach((col) => {
-          const columnId = col.id;
-          if (row[columnId] !== undefined && row[columnId] !== null) {
-            cleanRow[columnId] = row[columnId];
-          }
-        });
-        
-        return cleanRow;
-      }).filter(row => {
-        return tableStructure.some((col) => {
-          const columnId = col.id;
-          return row[columnId] !== undefined && 
-                 row[columnId] !== null && 
-                 row[columnId] !== '';
-        });
-      });
-      
-      setTableData(cleanedData);
-    } else {
-      setTableData([]);
-    }
-  }, [value, tableStructure]);
-
-  useEffect(() => {
-    const initialNewRow = {};
-    tableStructure.forEach((col) => {
-      const columnId = col.id;
-      initialNewRow[columnId] = col.type === 'yes_no' ? 'Yes' : '';
-    });
-    setNewRowData(initialNewRow);
-  }, [tableStructure]);
-
-  const notifyParentOfChange = (updatedData) => {
-    const cleanedData = updatedData.map((row) => {
-      const cleanRow = {};
-      tableStructure.forEach((col) => {
-        const columnId = col.id;
-        if (row[columnId] !== undefined && row[columnId] !== null && row[columnId] !== '') {
-          cleanRow[columnId] = row[columnId];
-        }
-      });
-      return cleanRow;
-    }).filter(row => {
-      return Object.keys(row).length > 0;
-    });
-    
-    if (onChange) {
-      onChange(cleanedData);
-    }
-  };
-
-  const handleAddRow = () => {
-    const missingRequired = tableStructure.filter((col) => {
-      const columnId = col.id;
-      return col.required && (!newRowData[columnId] || String(newRowData[columnId]).trim() === '');
-    });
-    
-    if (missingRequired.length > 0) {
-      alert(`Please fill in required fields: ${missingRequired.map(col => col.label).join(', ')}`);
-      return;
-    }
-    
-    const newRow = {
-      _id: `row_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      ...newRowData
-    };
-    
-    const updatedData = [...tableData, newRow];
-    setTableData(updatedData);
-    notifyParentOfChange(updatedData);
-    
-    const resetData = {};
-    tableStructure.forEach((col) => {
-      const columnId = col.id;
-      resetData[columnId] = col.type === 'yes_no' ? 'Yes' : '';
-    });
-    setNewRowData(resetData);
-  };
-
-  const handleEditRow = (index) => {
-    setEditingRowIndex(index);
-    setEditRowData({ ...tableData[index] });
-  };
-
-  const handleSaveEdit = () => {
-    const missingRequired = tableStructure.filter((col) => {
-      const columnId = col.id;
-      return col.required && (!editRowData[columnId] || String(editRowData[columnId]).trim() === '');
-    });
-    
-    if (missingRequired.length > 0) {
-      alert(`Please fill in required fields: ${missingRequired.map(col => col.label).join(', ')}`);
-      return;
-    }
-    
-    const updatedData = [...tableData];
-    updatedData[editingRowIndex] = { ...editRowData };
-    
-    setTableData(updatedData);
-    notifyParentOfChange(updatedData);
-    setEditingRowIndex(-1);
-    setEditRowData({});
-  };
-
-  const handleCancelEdit = () => {
-    setEditingRowIndex(-1);
-    setEditRowData({});
-  };
-
-  const handleDeleteRow = (index) => {
-    if (confirm('Are you sure you want to delete this row?')) {
-      const updatedData = tableData.filter((_, i) => i !== index);
-      setTableData(updatedData);
-      notifyParentOfChange(updatedData);
-    }
-  };
-
-  const renderCell = (column, rowData, rowIndex, isEditing = false) => {
-    const columnId = column.id;
-    const value = isEditing ? editRowData[columnId] : rowData[columnId];
-    const cellKey = `cell_${rowIndex}_${columnId}_${isEditing ? 'edit' : 'view'}`;
-    
-    if (isEditing) {
-      switch (column.type) {
-        case 'yes_no':
-          return (
-            <select
-              key={cellKey}
-              value={value || 'Yes'}
-              onChange={(e) => setEditRowData(prev => ({ ...prev, [columnId]: e.target.value }))}
-              className="dynamic-table-input dynamic-table-select"
-              disabled={disabled}
-            >
-              <option value="Yes">Yes</option>
-              <option value="No">No</option>
-            </select>
-          );
-        
-        case 'date':
-          return (
-            <input
-              key={cellKey}
-              type="date"
-              value={value || ''}
-              onChange={(e) => setEditRowData(prev => ({ ...prev, [columnId]: e.target.value }))}
-              className="dynamic-table-input"
-              disabled={disabled}
-            />
-          );
-        
-        case 'number':
-          return (
-            <input
-              key={cellKey}
-              type="number"
-              value={value || ''}
-              onChange={(e) => setEditRowData(prev => ({ ...prev, [columnId]: e.target.value }))}
-              className="dynamic-table-input dynamic-table-input-number"
-              disabled={disabled}
-            />
-          );
-        
-        default:
-          return (
-            <input
-              key={cellKey}
-              type="text"
-              value={value || ''}
-              onChange={(e) => setEditRowData(prev => ({ ...prev, [columnId]: e.target.value }))}
-              className="dynamic-table-input"
-              disabled={disabled}
-              placeholder={`Enter ${column.label.toLowerCase()}...`}
-            />
-          );
-      }
-    } else {
-      if (value === null || value === undefined || value === '') {
-        return <span className="dynamic-table-cell-empty">-</span>;
-      }
-      
-      switch (column.type) {
-        case 'yes_no':
-          return (
-            <span className={`dynamic-table-cell-value dynamic-table-cell-yes-no-${String(value).toLowerCase()}`}>
-              {value}
-            </span>
-          );
-        
-        case 'number':
-          return (
-            <span className="dynamic-table-cell-value dynamic-table-cell-number">
-              {value}
-            </span>
-          );
-        
-        default:
-          return (
-            <span className="dynamic-table-cell-value">
-              {value}
-            </span>
-          );
-      }
-    }
-  };
-
-  const renderNewRowCell = (column) => {
-    const columnId = column.id;
-    const cellKey = `new_cell_${columnId}`;
-    
-    switch (column.type) {
-      case 'yes_no':
-        return (
-          <select
-            key={cellKey}
-            value={newRowData[columnId] || 'Yes'}
-            onChange={(e) => setNewRowData(prev => ({ ...prev, [columnId]: e.target.value }))}
-            className="dynamic-table-input dynamic-table-select"
-            disabled={disabled}
-          >
-            <option value="Yes">Yes</option>
-            <option value="No">No</option>
-          </select>
-        );
-      
-      case 'date':
-        return (
-          <input
-            key={cellKey}
-            type="date"
-            value={newRowData[columnId] || ''}
-            onChange={(e) => setNewRowData(prev => ({ ...prev, [columnId]: e.target.value }))}
-            className="dynamic-table-input"
-            disabled={disabled}
-          />
-        );
-      
-      case 'number':
-        return (
-          <input
-            key={cellKey}
-            type="number"
-            value={newRowData[columnId] || ''}
-            onChange={(e) => setNewRowData(prev => ({ ...prev, [columnId]: e.target.value }))}
-            className="dynamic-table-input dynamic-table-input-number"
-            disabled={disabled}
-          />
-        );
-      
-      default:
-        return (
-          <input
-            key={cellKey}
-            type="text"
-            value={newRowData[columnId] || ''}
-            onChange={(e) => setNewRowData(prev => ({ ...prev, [columnId]: e.target.value }))}
-            className="dynamic-table-input"
-            disabled={disabled}
-            placeholder={`Enter ${column.label.toLowerCase()}...`}
-          />
-        );
-    }
-  };
-
-  return (
-    <div className={`dynamic-table-container ${hasError ? 'has-error' : ''} ${disabled ? 'disabled-table' : ''}`}>
-      <div className="dynamic-table-wrapper">
-        <table className="dynamic-table">
-          <thead>
-            <tr>
-              {tableStructure.map((column) => (
-                <th key={`header_${column.id}`} className="dynamic-table-column-header">
-                  <div className="dynamic-table-column-header-content">
-                    <span className="dynamic-table-column-label">
-                      {column.label}
-                      {column.required && <span className="dynamic-table-mandatory-indicator">*</span>}
-                    </span>
-                  </div>
-                </th>
-              ))}
-              {!disabled && <th className="dynamic-table-actions-column">Actions</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {/* Existing Data Rows */}
-            {tableData.map((row, rowIndex) => (
-              <tr key={row._id || `row_${rowIndex}`} className="dynamic-table-data-row">
-                {tableStructure.map((column) => (
-                  <td key={`cell_${rowIndex}_${column.id}`} className="dynamic-table-cell">
-                    {renderCell(column, row, rowIndex, editingRowIndex === rowIndex)}
-                  </td>
-                ))}
-                {!disabled && (
-                  <td className="dynamic-table-actions-cell">
-                    <div className={`dynamic-table-action-buttons ${editingRowIndex === rowIndex ? 'editing' : ''}`}>
-                      {editingRowIndex === rowIndex ? (
-                        <>
-                          <button
-                            onClick={handleSaveEdit}
-                            className="dynamic-table-action-btn dynamic-table-save-btn"
-                            title="Save"
-                          >
-                            <CheckCircle size={12} />
-                          </button>
-                          <button
-                            onClick={handleCancelEdit}
-                            className="dynamic-table-action-btn dynamic-table-cancel-btn"
-                            title="Cancel"
-                          >
-                            <AlertCircle size={12} />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => handleEditRow(rowIndex)}
-                            className="dynamic-table-action-btn dynamic-table-edit-btn"
-                            title="Edit"
-                          >
-                            <Edit size={12} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteRow(rowIndex)}
-                            className="dynamic-table-action-btn dynamic-table-delete-btn"
-                            title="Delete"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                )}
-              </tr>
-            ))}
-
-            {/* New Row */}
-            {!disabled && editingRowIndex === -1 && (
-              <tr className="dynamic-table-new-row">
-                {tableStructure.map((column) => (
-                  <td key={`new_${column.id}`} className="dynamic-table-new-cell">
-                    {renderNewRowCell(column)}
-                  </td>
-                ))}
-                <td className="dynamic-table-actions-cell">
-                  <button
-                    onClick={handleAddRow}
-                    className="dynamic-table-action-btn dynamic-table-add-btn"
-                    title="Add row"
-                  >
-                    <Plus size={12} />
-                    Add
-                  </button>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-
-        {/* Empty State */}
-        {tableData.length === 0 && disabled && (
-          <div className="dynamic-table-empty-state">
-            <FileText size={16} />
-            <span>No data available</span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Main Form Component - Light Theme Version
 const ModernChecklistForm = ({
   vessel = {
     vessel_name: "GENCO BEAR",
@@ -440,7 +38,7 @@ const ModernChecklistForm = ({
   },
   template = {
     name: "5 Day Pre-Arrival Checklist",
-    sections: []
+    processed_items: []
   },
   existingChecklist = null,
   onSave = () => {},
@@ -448,156 +46,123 @@ const ModernChecklistForm = ({
   onCancel = () => {},
   loading = false,
   currentUser = { id: "user123", name: "John Doe" },
-  mode = 'edit'
+  mode = 'edit',
+  disabled = false
 }) => {
   const [responses, setResponses] = useState({});
   const [completedItems, setCompletedItems] = useState(new Set());
-  const [currentSection, setCurrentSection] = useState(0);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState('');
   const [showOnlyMandatory, setShowOnlyMandatory] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [lastSaveTime, setLastSaveTime] = useState(null);
 
-  // Sample form data based on your provided structure
-  const formSections = template.sections || [
-    {
-      section_id: "si_boarding_info",
-      section_name: "SI Boarding Information",
-      fields: [
-        {
-          field_id: "si_boarding_name",
-          label: "SI BOARDING (NAME)",
-          field_type: "text",
-          placeholder: "Enter SI boarding officer name",
-          is_mandatory: true
-        },
-        {
-          field_id: "third_party_company",
-          label: "3RD PARTY ATTENDING (COMPANY)",
-          field_type: "text",
-          placeholder: "Enter third party company name",
-          is_mandatory: false
-        }
-      ]
-    },
-    {
-      section_id: "crew_contracts",
-      section_name: "Crew Contracts",
-      fields: [
-        {
-          field_id: "maximum_tenure",
-          label: "MAXIMUM TENURE THAT ANY CREW HAS STAYED ON BOARD",
-          field_type: "text",
-          placeholder: "Enter maximum tenure period",
-          is_mandatory: true
-        }
-      ]
-    },
-    {
-      section_id: "crew_changes",
-      section_name: "Non-Routine Crew Change / Doctor Visit Planned",
-      fields: [
-        {
-          field_id: "crew_changes_table",
-          label: "Crew Changes and Medical Visits",
-          field_type: "table",
-          is_mandatory: false,
-          table_structure: {
-            columns: [
-              { type: "text", label: "RANK", column_id: "rank" },
-              { type: "number", label: "NUMBER", column_id: "number" },
-              { type: "text", label: "REMARKS", column_id: "remarks" }
-            ]
-          }
-        }
-      ]
-    },
-    {
-      section_id: "psc_checklist_status",
-      section_name: "PSC Checklist Status",
-      fields: [
-        {
-          field_id: "checklist_completed_date",
-          label: "PSC CHECKLIST COMPLETED BY VESSEL",
-          field_type: "date",
-          is_mandatory: true
-        },
-        {
-          field_id: "feedback_sent_date",
-          label: "CHECKLIST FEEDBACK SENT FROM OFFICE TO VESSEL",
-          field_type: "date",
-          is_mandatory: false
-        }
-      ]
-    },
-    {
-      section_id: "mlc_biosecurity",
-      section_name: "MLC / BIO-SECURITY",
-      fields: [
-        {
-          field_id: "infestation_issue",
-          label: "ANY INFESTATION ISSUE?",
-          field_type: "yes_no",
-          is_mandatory: true
-        },
-        {
-          field_id: "provision_fw_sufficient",
-          label: "ARE PROVISION AND FW SUFFICIENT?",
-          field_type: "yes_no",
-          is_mandatory: true
-        },
-        {
-          field_id: "ac_systems_order",
-          label: "ALL SHIPS A/C SYSTEMS IN ORDER?",
-          field_type: "yes_no",
-          is_mandatory: true
-        },
-        {
-          field_id: "excess_garbage",
-          label: "ANY EXCESS GARBAGE ONBOARD?",
-          field_type: "yes_no",
-          is_mandatory: true
-        },
-        {
-          field_id: "medical_issues",
-          label: "ANY MEDICAL ISSUE(S)",
-          field_type: "yes_no",
-          is_mandatory: true
-        },
-        {
-          field_id: "itf_psc_concerns",
-          label: "ANY CONCERNS REPORTED TO ITF / PSC?",
-          field_type: "yes_no",
-          is_mandatory: true
-        }
-      ]
-    },
-    {
-      section_id: "defects_table",
-      section_name: "Defects and Rectification Plans",
-      fields: [
-        {
-          field_id: "defects_list",
-          label: "Defects List",
-          field_type: "table",
-          is_mandatory: false,
-          table_structure: {
-            columns: [
-              { type: "number", label: "Sr. No.", column_id: "sr_no" },
-              { type: "text", label: "Defect Description", column_id: "defect_description" },
-              { type: "text", label: "Notifications", column_id: "notifications" },
-              { type: "text", label: "COCs", column_id: "cocs" },
-              { type: "text", label: "Rectification Plan(s)", column_id: "rectification_plan" },
-              { type: "yes_no", label: "AMSA / MNZ", column_id: "amsa_mnz" },
-              { type: "yes_no", label: "Flag", column_id: "flag" },
-              { type: "yes_no", label: "Class", column_id: "class" }
-            ]
-          }
-        }
-      ]
+  // Debug state
+  const [debugMode, setDebugMode] = useState(false);
+
+  // Map response types to field types (moved before useMemo)
+  const mapResponseTypeToFieldType = useCallback((responseType) => {
+    const mapping = {
+      'yes_no_na': 'yes_no',
+      'yes_no': 'yes_no',
+      'text': 'text',
+      'date': 'date',
+      'table': 'table',
+      'number': 'text'
+    };
+    return mapping[responseType] || 'text';
+  }, []);
+
+  // Generate form sections from template
+  const formSections = useMemo(() => {
+    if (!template?.processed_items || !Array.isArray(template.processed_items)) {
+      console.warn('📋 ModernChecklistForm: No processed items in template');
+      return [];
     }
-  ];
+
+    console.log('📋 ModernChecklistForm: Processing template items:', template.processed_items.length);
+
+    // Group items by section
+    const sectionMap = new Map();
+
+    template.processed_items.forEach((item) => {
+      const sectionName = item.section_name || 'General';
+      
+      if (!sectionMap.has(sectionName)) {
+        sectionMap.set(sectionName, {
+          section_id: sectionName.toLowerCase().replace(/\s+/g, '_'),
+          section_name: sectionName,
+          fields: []
+        });
+      }
+
+      // Convert template item to field format
+      const field = {
+        field_id: item.item_id,
+        label: item.description || item.check_description,
+        field_type: mapResponseTypeToFieldType(item.response_type),
+        placeholder: item.guidance || `Enter ${item.description || 'value'}...`,
+        is_mandatory: Boolean(item.is_mandatory),
+        response_type: item.response_type,
+        table_structure: item.table_structure,
+        guidance: item.guidance
+      };
+
+      sectionMap.get(sectionName).fields.push(field);
+    });
+
+    const sections = Array.from(sectionMap.values());
+    console.log('📋 ModernChecklistForm: Generated sections:', sections.length);
+    return sections;
+  }, [template, mapResponseTypeToFieldType]);
+
+  // Load existing responses
+  useEffect(() => {
+    if (existingChecklist?.responses && Array.isArray(existingChecklist.responses)) {
+      console.log('📋 ModernChecklistForm: Loading existing responses:', existingChecklist.responses.length);
+      
+      const responseMap = {};
+      const completed = new Set();
+
+      existingChecklist.responses.forEach((response) => {
+        const itemId = response.item_id;
+        let value = null;
+
+        // Extract value based on response type
+        if (response.yes_no_na_value !== null && response.yes_no_na_value !== undefined) {
+          value = response.yes_no_na_value;
+        } else if (response.text_value) {
+          value = response.text_value;
+        } else if (response.date_value) {
+          value = response.date_value;
+        } else if (response.table_data && Array.isArray(response.table_data)) {
+          value = response.table_data;
+        }
+
+        if (value !== null && value !== undefined) {
+          responseMap[itemId] = value;
+          completed.add(itemId);
+        }
+      });
+
+      setResponses(responseMap);
+      setCompletedItems(completed);
+      console.log('📋 ModernChecklistForm: Loaded responses:', Object.keys(responseMap).length);
+    }
+  }, [existingChecklist]);
+
+  // Auto-save functionality
+  useEffect(() => {
+    if (mode === 'edit' && !disabled && Object.keys(responses).length > 0) {
+      const autoSaveTimer = setTimeout(() => {
+        handleSave(true); // Auto-save
+      }, 30000); // Auto-save every 30 seconds
+
+      return () => clearTimeout(autoSaveTimer);
+    }
+  }, [responses, mode, disabled]);
 
   // Update timer
   useEffect(() => {
@@ -605,12 +170,15 @@ const ModernChecklistForm = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Handle response changes
+  // Handle response changes with validation
   const handleResponseChange = useCallback((fieldId, value) => {
-    setResponses(prev => ({
-      ...prev,
-      [fieldId]: value
-    }));
+    console.log('📋 ModernChecklistForm: Response change:', { fieldId, value, type: typeof value });
+
+    setResponses(prev => {
+      const updated = { ...prev, [fieldId]: value };
+      console.log('📋 ModernChecklistForm: Updated responses count:', Object.keys(updated).length);
+      return updated;
+    });
 
     // Update completion tracking
     const hasValue = value !== null && value !== undefined && value !== '';
@@ -623,7 +191,144 @@ const ModernChecklistForm = ({
       }
       return newSet;
     });
-  }, []);
+
+    // Clear validation error for this field
+    if (validationErrors[fieldId]) {
+      setValidationErrors(prev => {
+        const updated = { ...prev };
+        delete updated[fieldId];
+        return updated;
+      });
+    }
+  }, [validationErrors]);
+
+  // Validate form
+  const validateForm = useCallback(() => {
+    const errors = {};
+    let isValid = true;
+
+    if (!template?.processed_items) {
+      return { isValid: false, errors: { general: 'No template items available' } };
+    }
+
+    template.processed_items.forEach((item) => {
+      if (item.is_mandatory) {
+        const value = responses[item.item_id];
+        const hasValue = value !== null && value !== undefined && value !== '';
+        
+        if (!hasValue) {
+          errors[item.item_id] = 'This field is required';
+          isValid = false;
+        }
+      }
+    });
+
+    setValidationErrors(errors);
+    return { isValid, errors };
+  }, [template, responses]);
+
+  // Calculate progress
+  const getProgress = useCallback(() => {
+    if (!template?.processed_items) {
+      return {
+        total: 0,
+        completed: 0,
+        mandatory: 0,
+        mandatoryCompleted: 0,
+        percentage: 0,
+        mandatoryPercentage: 0
+      };
+    }
+
+    const totalItems = template.processed_items.length;
+    const completedCount = completedItems.size;
+    const mandatoryFields = template.processed_items.filter(item => item.is_mandatory);
+    const mandatoryCompleted = mandatoryFields.filter(item => completedItems.has(item.item_id)).length;
+
+    return {
+      total: totalItems,
+      completed: completedCount,
+      mandatory: mandatoryFields.length,
+      mandatoryCompleted,
+      percentage: totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0,
+      mandatoryPercentage: mandatoryFields.length > 0 ? Math.round((mandatoryCompleted / mandatoryFields.length) * 100) : 100
+    };
+  }, [template, completedItems]);
+
+  const progress = getProgress();
+
+  // Handle save with proper error handling
+  const handleSave = useCallback(async (isAutoSave = false) => {
+    if (disabled && !isAutoSave) return;
+
+    try {
+      if (!isAutoSave) {
+        setSaving(true);
+      }
+
+      console.log('💾 ModernChecklistForm: Starting save...', {
+        isAutoSave,
+        responseCount: Object.keys(responses).length,
+        checklistId: existingChecklist?.checklist_id
+      });
+
+      // Call parent save function
+      const result = await onSave(responses, isAutoSave);
+      
+      if (!isAutoSave) {
+        setLastSaveTime(new Date());
+        console.log('✅ ModernChecklistForm: Save successful');
+      } else {
+        console.log('🔄 ModernChecklistForm: Auto-save successful');
+      }
+
+      return result;
+    } catch (error) {
+      console.error('❌ ModernChecklistForm: Save failed:', error);
+      if (!isAutoSave) {
+        // Show error to user for manual saves
+        alert(`Save failed: ${error.message}`);
+      }
+      throw error;
+    } finally {
+      if (!isAutoSave) {
+        setSaving(false);
+      }
+    }
+  }, [responses, onSave, disabled, existingChecklist, setSaving]);
+
+  // Handle submit with validation
+  const handleSubmit = useCallback(async () => {
+    if (disabled) return;
+
+    try {
+      setSubmitting(true);
+      console.log('🚀 ModernChecklistForm: Starting submit...');
+
+      // Validate form first
+      const validation = validateForm();
+      if (!validation.isValid) {
+        console.error('❌ ModernChecklistForm: Validation failed:', validation.errors);
+        alert(`Please complete all required fields:\n${Object.values(validation.errors).join('\n')}`);
+        return;
+      }
+
+      // Save current state first
+      await handleSave(false);
+
+      console.log('📤 ModernChecklistForm: Calling onSubmit...');
+      const result = await onSubmit(responses);
+      console.log('✅ ModernChecklistForm: Submit successful:', result);
+
+      return result;
+    } catch (error) {
+      console.error('❌ ModernChecklistForm: Submit failed:', error);
+      alert(`Submit failed: ${error.message}`);
+      throw error;
+    } finally {
+      setSubmitting(false);
+    }
+  }, [responses, onSubmit, disabled, validateForm, handleSave]);
 
   // Filter fields based on search and filters
   const filteredFields = useMemo(() => {
@@ -642,48 +347,6 @@ const ModernChecklistForm = ({
     });
   }, [formSections, searchTerm, showOnlyMandatory]);
 
-  // Calculate progress
-  const getProgress = () => {
-    const allFields = formSections.flatMap(section => section.fields);
-    const totalItems = allFields.length;
-    const completedCount = completedItems.size;
-    const mandatoryFields = allFields.filter(field => field.is_mandatory);
-    const mandatoryCompleted = mandatoryFields.filter(field => completedItems.has(field.field_id)).length;
-
-    return {
-      total: totalItems,
-      completed: completedCount,
-      mandatory: mandatoryFields.length,
-      mandatoryCompleted,
-      percentage: totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0,
-      mandatoryPercentage: mandatoryFields.length > 0 ? Math.round((mandatoryCompleted / mandatoryFields.length) * 100) : 100
-    };
-  };
-
-  const progress = getProgress();
-
-  // Handle save
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      await onSave(responses);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Handle submit
-  const handleSubmit = async () => {
-    setSubmitting(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      await onSubmit(responses);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   // Get section icon
   const getSectionIcon = (sectionName) => {
     const name = sectionName.toLowerCase();
@@ -699,6 +362,7 @@ const ModernChecklistForm = ({
   const renderField = (field) => {
     const value = responses[field.field_id] || '';
     const isCompleted = completedItems.has(field.field_id);
+    const hasError = validationErrors[field.field_id];
 
     switch (field.field_type) {
       case 'text':
@@ -708,8 +372,8 @@ const ModernChecklistForm = ({
             value={value}
             onChange={(e) => handleResponseChange(field.field_id, e.target.value)}
             placeholder={field.placeholder}
-            className={`light-form-input ${isCompleted ? 'completed' : ''}`}
-            disabled={mode === 'view'}
+            className={`light-form-input ${isCompleted ? 'completed' : ''} ${hasError ? 'error' : ''}`}
+            disabled={mode === 'view' || disabled}
           />
         );
 
@@ -719,8 +383,8 @@ const ModernChecklistForm = ({
             type="date"
             value={value}
             onChange={(e) => handleResponseChange(field.field_id, e.target.value)}
-            className={`light-form-input ${isCompleted ? 'completed' : ''}`}
-            disabled={mode === 'view'}
+            className={`light-form-input ${isCompleted ? 'completed' : ''} ${hasError ? 'error' : ''}`}
+            disabled={mode === 'view' || disabled}
           />
         );
 
@@ -735,7 +399,7 @@ const ModernChecklistForm = ({
                   value={option}
                   checked={value === option}
                   onChange={(e) => handleResponseChange(field.field_id, e.target.value)}
-                  disabled={mode === 'view'}
+                  disabled={mode === 'view' || disabled}
                 />
                 <span>{option}</span>
               </label>
@@ -749,7 +413,8 @@ const ModernChecklistForm = ({
             item={field}
             value={value}
             onChange={(tableData) => handleResponseChange(field.field_id, tableData)}
-            disabled={mode === 'view'}
+            disabled={mode === 'view' || disabled}
+            hasError={hasError}
           />
         );
 
@@ -759,8 +424,8 @@ const ModernChecklistForm = ({
             type="text"
             value={value}
             onChange={(e) => handleResponseChange(field.field_id, e.target.value)}
-            className={`light-form-input ${isCompleted ? 'completed' : ''}`}
-            disabled={mode === 'view'}
+            className={`light-form-input ${isCompleted ? 'completed' : ''} ${hasError ? 'error' : ''}`}
+            disabled={mode === 'view' || disabled}
           />
         );
     }
@@ -777,16 +442,108 @@ const ModernChecklistForm = ({
 
   return (
     <div className="light-form-container">
-      {/* Light Theme Header */}
+      {/* Debug Toggle */}
+      {process.env.NODE_ENV === 'development' && (
+        <button
+          onClick={() => setDebugMode(!debugMode)}
+          style={{
+            position: 'fixed',
+            top: '10px',
+            left: '10px',
+            zIndex: 9999,
+            background: debugMode ? '#dc3545' : '#28a745',
+            color: 'white',
+            border: 'none',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            fontSize: '10px'
+          }}
+        >
+          {debugMode ? 'Hide Debug' : 'Show Debug'}
+        </button>
+      )}
+
+      {/* Debug Panel */}
+      {debugMode && (
+        <div style={{
+          position: 'fixed',
+          top: '50px',
+          left: '10px',
+          width: '300px',
+          maxHeight: '400px',
+          overflow: 'auto',
+          background: '#1a1a1a',
+          color: '#fff',
+          padding: '12px',
+          borderRadius: '6px',
+          zIndex: 9998,
+          fontSize: '11px',
+          fontFamily: 'monospace'
+        }}>
+          <h4 style={{ margin: '0 0 8px', color: '#00ff88' }}>🔍 Form Debug</h4>
+          <div><strong>Template Items:</strong> {template?.processed_items?.length || 0}</div>
+          <div><strong>Form Sections:</strong> {formSections.length}</div>
+          <div><strong>Responses:</strong> {Object.keys(responses).length}</div>
+          <div><strong>Completed:</strong> {completedItems.size}</div>
+          <div><strong>Progress:</strong> {progress.percentage}%</div>
+          <div><strong>Mode:</strong> {mode}</div>
+          <div><strong>Disabled:</strong> {disabled ? 'Yes' : 'No'}</div>
+          <div><strong>Validation Errors:</strong> {Object.keys(validationErrors).length}</div>
+          
+          <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #333' }}>
+            <button
+              onClick={() => {
+                console.log('=== FORM DEBUG INFO ===');
+                console.log('Template:', template);
+                console.log('Form Sections:', formSections);
+                console.log('Responses:', responses);
+                console.log('Completed Items:', Array.from(completedItems));
+                console.log('Validation Errors:', validationErrors);
+                console.log('Progress:', progress);
+                console.log('=======================');
+              }}
+              style={{
+                background: '#007acc',
+                color: '#fff',
+                border: 'none',
+                padding: '4px 8px',
+                borderRadius: '3px',
+                cursor: 'pointer',
+                fontSize: '10px',
+                marginRight: '4px'
+              }}
+            >
+              Log Data
+            </button>
+            <button
+              onClick={() => handleSave(false)}
+              disabled={saving}
+              style={{
+                background: '#28a745',
+                color: '#fff',
+                border: 'none',
+                padding: '4px 8px',
+                borderRadius: '3px',
+                cursor: 'pointer',
+                fontSize: '10px'
+              }}
+            >
+              {saving ? 'Saving...' : 'Test Save'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
       <div className="light-header">
         <div className="light-header-left">
-          <button onClick={onCancel} className="light-back-btn">
+          <button onClick={onCancel} className="light-back-btn" disabled={disabled}>
             <ArrowLeft size={16} />
           </button>
           <div className="light-vessel-info">
             <div className="light-title">
               <Ship size={16} />
-              <span>5 Day Pre-Arrival Checklist</span>
+              <span>{template?.name || '5 Day Pre-Arrival Checklist'}</span>
             </div>
             <div className="light-subtitle">
               {vessel.vessel_name} • IMO: {vessel.imo_no}
@@ -826,31 +583,37 @@ const ModernChecklistForm = ({
             </div>
           </div>
           
-          {mode === 'edit' && (
+          {mode === 'edit' && !disabled && (
             <div className="light-actions">
               <button
-                onClick={handleSave}
-                disabled={saving}
+                onClick={() => handleSave(false)}
+                disabled={saving || submitting}
                 className="light-btn save"
               >
                 {saving ? <RefreshCw size={14} className="spinning" /> : <Save size={14} />}
-                Save
+                {saving ? 'Saving...' : 'Save'}
               </button>
               
               <button
                 onClick={handleSubmit}
-                disabled={submitting || progress.mandatoryPercentage < 100}
+                disabled={submitting || saving || progress.mandatoryPercentage < 100}
                 className="light-btn submit"
               >
                 {submitting ? <RefreshCw size={14} className="spinning" /> : <Send size={14} />}
-                Submit
+                {submitting ? 'Submitting...' : 'Submit'}
               </button>
+            </div>
+          )}
+
+          {lastSaveTime && (
+            <div className="light-save-indicator">
+              <small>Saved at {lastSaveTime.toLocaleTimeString()}</small>
             </div>
           )}
         </div>
       </div>
 
-      {/* Light Theme Filters */}
+      {/* Filters */}
       <div className="light-filters">
         <div className="light-search">
           <Search size={14} />
@@ -871,57 +634,106 @@ const ModernChecklistForm = ({
         </button>
       </div>
 
-      {/* Light Theme Form Content */}
+      {/* Form Content */}
       <div className="light-form-content">
-        {formSections.map((section, sectionIndex) => {
-          const sectionFields = section.fields.filter(field => {
-            if (!searchTerm && !showOnlyMandatory) return true;
-            return filteredFields.some(f => f.field_id === field.field_id);
-          });
-          
-          if (sectionFields.length === 0) return null;
-          
-          const sectionCompleted = sectionFields.filter(field => completedItems.has(field.field_id)).length;
-          
-          return (
-            <div key={section.section_id} className="light-section">
-              <div className="light-section-header">
-                <div className="light-section-title">
-                  {getSectionIcon(section.section_name)}
-                  <span>{section.section_name}</span>
-                </div>
-                <div className="light-section-badge">
-                  {sectionCompleted}/{sectionFields.length}
-                </div>
-              </div>
-
-              <div className="light-fields-grid">
-                {sectionFields.map((field) => (
-                  <div
-                    key={field.field_id}
-                    className={`light-field-item ${field.field_type} ${completedItems.has(field.field_id) ? 'completed' : ''} ${field.is_mandatory ? 'mandatory' : ''}`}
-                  >
-                    <div className="light-field-header">
-                      <label className="light-field-label">
-                        {field.label}
-                        {field.is_mandatory && <span className="light-required">*</span>}
-                      </label>
-                      {completedItems.has(field.field_id) && (
-                        <CheckCircle size={14} className="light-completed-icon" />
-                      )}
-                    </div>
-                    <div className="light-field-input">
-                      {renderField(field)}
-                    </div>
+        {formSections.length === 0 ? (
+          <div className="light-no-sections">
+            <AlertTriangle size={32} />
+            <h3>No Checklist Items</h3>
+            <p>No items could be loaded from the template.</p>
+            <button
+              onClick={() => {
+                console.log('Template Debug Info:');
+                console.log('Template:', template);
+                console.log('Processed Items:', template?.processed_items);
+                console.log('Form Sections:', formSections);
+              }}
+              className="light-debug-btn"
+            >
+              Debug Template
+            </button>
+          </div>
+        ) : (
+          formSections.map((section, sectionIndex) => {
+            const sectionFields = section.fields.filter(field => {
+              if (!searchTerm && !showOnlyMandatory) return true;
+              return filteredFields.some(f => f.field_id === field.field_id);
+            });
+            
+            if (sectionFields.length === 0) return null;
+            
+            const sectionCompleted = sectionFields.filter(field => completedItems.has(field.field_id)).length;
+            
+            return (
+              <div key={section.section_id} className="light-section">
+                <div className="light-section-header">
+                  <div className="light-section-title">
+                    {getSectionIcon(section.section_name)}
+                    <span>{section.section_name}</span>
                   </div>
-                ))}
+                  <div className="light-section-badge">
+                    {sectionCompleted}/{sectionFields.length}
+                  </div>
+                </div>
+
+                <div className="light-fields-grid">
+                  {sectionFields.map((field) => {
+                    const hasError = validationErrors[field.field_id];
+                    
+                    return (
+                      <div
+                        key={field.field_id}
+                        className={`light-field-item ${field.field_type} ${completedItems.has(field.field_id) ? 'completed' : ''} ${field.is_mandatory ? 'mandatory' : ''} ${hasError ? 'error' : ''}`}
+                      >
+                        <div className="light-field-header">
+                          <label className="light-field-label">
+                            {field.label}
+                            {field.is_mandatory && <span className="light-required">*</span>}
+                          </label>
+                          {completedItems.has(field.field_id) && (
+                            <CheckCircle size={14} className="light-completed-icon" />
+                          )}
+                        </div>
+                        <div className="light-field-input">
+                          {renderField(field)}
+                          {hasError && (
+                            <div className="light-field-error">
+                              <AlertCircle size={12} />
+                              <span>{hasError}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
-      {/* Light Theme Styles - Matching Your Theme */}
+      {/* Status Bar */}
+      {(saving || submitting) && (
+        <div className="light-status-bar">
+          <div className="light-status-content">
+            {saving && (
+              <div className="light-status-item">
+                <RefreshCw size={14} className="spinning" />
+                <span>Saving checklist...</span>
+              </div>
+            )}
+            {submitting && (
+              <div className="light-status-item">
+                <RefreshCw size={14} className="spinning" />
+                <span>Submitting checklist...</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Styles */}
       <style jsx>{`
         .light-form-container {
           height: 100vh;
@@ -933,7 +745,7 @@ const ModernChecklistForm = ({
           overflow: hidden;
         }
 
-        /* Light Theme Header */
+        /* Header */
         .light-header {
           background: #ffffff;
           border-bottom: 1px solid rgba(0, 0, 0, 0.1);
@@ -961,9 +773,14 @@ const ModernChecklistForm = ({
           transition: all 0.2s ease;
         }
 
-        .light-back-btn:hover {
+        .light-back-btn:hover:not(:disabled) {
           background: #eef4f8;
           transform: translateY(-1px);
+        }
+
+        .light-back-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
 
         .light-vessel-info {
@@ -1076,6 +893,11 @@ const ModernChecklistForm = ({
           cursor: not-allowed;
         }
 
+        .light-save-indicator {
+          font-size: 10px;
+          color: #6c757d;
+        }
+
         .spinning {
           animation: spin 1s linear infinite;
         }
@@ -1085,7 +907,7 @@ const ModernChecklistForm = ({
           to { transform: rotate(360deg); }
         }
 
-        /* Light Theme Filters */
+        /* Filters */
         .light-filters {
           background: #ffffff;
           border-bottom: 1px solid rgba(0, 0, 0, 0.1);
@@ -1150,11 +972,42 @@ const ModernChecklistForm = ({
           border-color: #dc3545;
         }
 
-        /* Light Theme Form Content */
+        /* Form Content */
         .light-form-content {
           flex: 1;
           overflow-y: auto;
           padding: 12px;
+        }
+
+        .light-no-sections {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 60px 40px;
+          text-align: center;
+          color: #dc3545;
+        }
+
+        .light-no-sections h3 {
+          margin: 16px 0 8px;
+          font-size: 20px;
+          font-weight: 600;
+        }
+
+        .light-no-sections p {
+          margin: 0 0 20px;
+          color: #6c757d;
+        }
+
+        .light-debug-btn {
+          background: #6c757d;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 12px;
         }
 
         .light-section {
@@ -1191,7 +1044,7 @@ const ModernChecklistForm = ({
           font-weight: 600;
         }
 
-        /* Light Theme Fields Grid */
+        /* Fields Grid */
         .light-fields-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -1217,6 +1070,11 @@ const ModernChecklistForm = ({
         .light-field-item.completed {
           border-color: #28a745;
           box-shadow: 0 1px 3px rgba(40, 167, 69, 0.2);
+        }
+
+        .light-field-item.error {
+          border-color: #dc3545;
+          box-shadow: 0 1px 3px rgba(220, 53, 69, 0.2);
         }
 
         .light-field-item.mandatory::after {
@@ -1262,7 +1120,16 @@ const ModernChecklistForm = ({
           width: 100%;
         }
 
-        /* Light Theme Form Inputs */
+        .light-field-error {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          margin-top: 4px;
+          color: #dc3545;
+          font-size: 11px;
+        }
+
+        /* Form Inputs */
         .light-form-input {
           width: 100%;
           padding: 6px 8px;
@@ -1285,13 +1152,18 @@ const ModernChecklistForm = ({
           background: rgba(40, 167, 69, 0.05);
         }
 
+        .light-form-input.error {
+          border-color: #dc3545;
+          background: rgba(220, 53, 69, 0.05);
+        }
+
         .light-form-input:disabled {
           background: #e9ecef;
           cursor: not-allowed;
           opacity: 0.7;
         }
 
-        /* Light Theme Radio Groups */
+        /* Radio Groups */
         .light-radio-group {
           display: flex;
           gap: 6px;
@@ -1325,7 +1197,7 @@ const ModernChecklistForm = ({
           display: none;
         }
 
-        /* Light Theme Loading */
+        /* Loading */
         .light-loading {
           display: flex;
           align-items: center;
@@ -1336,166 +1208,29 @@ const ModernChecklistForm = ({
           color: #333333;
         }
 
-        /* Light Theme Dynamic Table Overrides */
-        .dynamic-table-container {
-          background: #ffffff !important;
-          border: 1px solid rgba(0, 0, 0, 0.1) !important;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-          font-family: 'Nunito', sans-serif !important;
+        /* Status Bar */
+        .light-status-bar {
+          background: #f8f9fa;
+          border-top: 1px solid rgba(0, 0, 0, 0.1);
+          padding: 8px 16px;
+          flex-shrink: 0;
         }
 
-        .dynamic-table {
-          background: #ffffff !important;
-          font-family: 'Nunito', sans-serif !important;
-          border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        .light-status-content {
+          display: flex;
+          align-items: center;
+          gap: 16px;
         }
 
-        .dynamic-table th {
-          background: #eef4f8 !important;
-          color: #333333 !important;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
-          border-right: 1px solid rgba(0, 0, 0, 0.05) !important;
-          font-family: 'Nunito', sans-serif !important;
+        .light-status-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          color: #6c757d;
         }
 
-        .dynamic-table-column-label {
-          color: #333333 !important;
-          font-family: 'Nunito', sans-serif !important;
-        }
-
-        .dynamic-table-mandatory-indicator {
-          color: #dc3545 !important;
-        }
-
-        .dynamic-table tbody tr {
-          border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
-        }
-
-        .dynamic-table-data-row:hover {
-          background: #f8fafc !important;
-        }
-
-        .dynamic-table-new-row {
-          background: linear-gradient(135deg, rgba(0, 123, 255, 0.05) 0%, #f8fafc 100%) !important;
-          border: 2px dashed #007bff !important;
-        }
-
-        .dynamic-table-cell {
-          border-right: 1px solid rgba(0, 0, 0, 0.05) !important;
-          font-family: 'Nunito', sans-serif !important;
-        }
-
-        .dynamic-table-input, .dynamic-table-select {
-          background: #f0f4f8 !important;
-          border: 1px solid rgba(0, 0, 0, 0.1) !important;
-          color: #333333 !important;
-          font-family: 'Nunito', sans-serif !important;
-        }
-
-        .dynamic-table-input:focus, .dynamic-table-select:focus {
-          border-color: #007bff !important;
-          box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1) !important;
-        }
-
-        .dynamic-table-cell-yes-no-yes {
-          background: rgba(40, 167, 69, 0.1) !important;
-          color: #28a745 !important;
-          border: 1px solid #28a745 !important;
-        }
-
-        .dynamic-table-cell-yes-no-no {
-          background: rgba(220, 53, 69, 0.1) !important;
-          color: #dc3545 !important;
-          border: 1px solid #dc3545 !important;
-        }
-
-        .dynamic-table-cell-number {
-          background: #f8fafc !important;
-          border: 1px solid rgba(0, 0, 0, 0.1) !important;
-        }
-
-        .dynamic-table-add-btn {
-          background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
-          color: white !important;
-          border: none !important;
-          border-radius: 6px !important;
-          padding: 6px 12px !important;
-          font-weight: 600 !important;
-          box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3) !important;
-          transition: all 0.2s ease !important;
-          text-transform: uppercase !important;
-          letter-spacing: 0.5px !important;
-          font-size: 10px !important;
-          min-width: 60px !important;
-          height: 28px !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          gap: 4px !important;
-        }
-
-        .dynamic-table-add-btn:hover {
-          background: linear-gradient(135deg, #0056b3 0%, #004085 100%) !important;
-          transform: translateY(-1px) !important;
-          box-shadow: 0 4px 8px rgba(0, 123, 255, 0.4) !important;
-        }
-
-        .dynamic-table-add-btn:active {
-          transform: translateY(0) !important;
-          box-shadow: 0 1px 2px rgba(0, 123, 255, 0.3) !important;
-        }
-
-        .dynamic-table-edit-btn {
-          background: #f8fafc !important;
-          color: #6c757d !important;
-          border-color: rgba(0, 0, 0, 0.1) !important;
-        }
-
-        .dynamic-table-edit-btn:hover {
-          background: rgba(0, 123, 255, 0.1) !important;
-          color: #007bff !important;
-          border-color: #007bff !important;
-        }
-
-        .dynamic-table-delete-btn {
-          background: rgba(220, 53, 69, 0.1) !important;
-          color: #dc3545 !important;
-          border-color: #dc3545 !important;
-        }
-
-        .dynamic-table-delete-btn:hover {
-          background: #dc3545 !important;
-          color: white !important;
-        }
-
-        .dynamic-table-save-btn {
-          background: #28a745 !important;
-          color: white !important;
-          border-color: #28a745 !important;
-        }
-
-        .dynamic-table-save-btn:hover {
-          background: #218838 !important;
-        }
-
-        .dynamic-table-cancel-btn {
-          background: #f8fafc !important;
-          color: #6c757d !important;
-          border-color: rgba(0, 0, 0, 0.2) !important;
-        }
-
-        .dynamic-table-cancel-btn:hover {
-          background: #6c757d !important;
-          color: white !important;
-        }
-
-        .dynamic-table-empty-state {
-          background: #f8fafc !important;
-          color: #6c757d !important;
-          border-top: 1px solid rgba(0, 0, 0, 0.1) !important;
-        }
-
-        /* Responsive Design */
+        /* Responsive */
         @media (max-width: 768px) {
           .light-header {
             flex-direction: column;
@@ -1534,37 +1269,6 @@ const ModernChecklistForm = ({
           .light-btn {
             flex: 1;
             justify-content: center;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .light-header {
-            padding: 6px 8px;
-          }
-
-          .light-title {
-            font-size: 13px;
-          }
-
-          .light-subtitle {
-            font-size: 10px;
-          }
-
-          .light-progress-circle {
-            width: 24px;
-            height: 24px;
-          }
-
-          .light-progress-text {
-            font-size: 8px;
-          }
-
-          .light-field-item {
-            padding: 8px;
-          }
-
-          .light-radio-group {
-            flex-direction: column;
           }
         }
       `}</style>
