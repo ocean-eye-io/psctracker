@@ -1,7 +1,7 @@
-/* Minimal Dynamic Table CSS - Nunito Font & Compact Design */
+/* Minimal Dynamic Table CSS - Nunito Font & Compact Design - Light Theme Only */
 
 :root {
-  /* Modern Color Palette */
+  /* Light Theme Color Palette */
   --dt-bg-primary: #ffffff;
   --dt-bg-secondary: #f8fafc;
   --dt-bg-tertiary: #f1f5f9;
@@ -89,7 +89,7 @@
 /* ===== MAIN TABLE ===== */
 .dynamic-table {
   width: 100%;
-  border-collapse: separate; /* Changed to separate for better border control */
+  border-collapse: separate;
   border-spacing: 0;
   background: var(--dt-bg-primary);
   font-size: 12px;
@@ -109,12 +109,12 @@
 }
 
 .dynamic-table th {
-  padding: 6px 8px; /* Reduced padding significantly */
-  text-align: left; /* Force left alignment */
-  border-right: 1px solid rgba(226, 232, 240, 0.3); /* Very subtle vertical borders */
+  padding: 6px 8px;
+  text-align: left;
+  border-right: 1px solid rgba(226, 232, 240, 0.3);
   border-bottom: 1px solid var(--dt-border-light);
   font-weight: 500;
-  font-size: 10px; /* Very small font size */
+  font-size: 10px;
   color: var(--dt-text-secondary);
   white-space: nowrap;
   background: var(--dt-bg-secondary);
@@ -124,7 +124,7 @@
 }
 
 .dynamic-table th:last-child {
-  border-right: none; /* Remove border on last column */
+  border-right: none;
 }
 
 .dynamic-table th:hover {
@@ -134,21 +134,21 @@
 .dynamic-table-column-header-content {
   display: flex;
   align-items: center;
-  justify-content: flex-start; /* Force left alignment */
-  gap: 2px; /* Minimal gap */
-  min-height: 16px; /* Very small minimum height */
+  justify-content: flex-start;
+  gap: 2px;
+  min-height: 16px;
 }
 
 .dynamic-table-column-label {
-  font-size: 10px; /* Very small font size */
+  font-size: 10px;
   font-weight: 500;
   color: var(--dt-text-primary);
   display: flex;
   align-items: center;
-  justify-content: flex-start; /* Force left alignment */
+  justify-content: flex-start;
   gap: 2px;
   font-family: 'Nunito', sans-serif;
-  text-transform: uppercase; /* Make headers uppercase for better readability at small size */
+  text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
@@ -159,15 +159,14 @@
   font-size: 10px;
 }
 
-/* Hide type display completely */
 .dynamic-table-column-type {
   display: none;
 }
 
 .dynamic-table-actions-column {
   width: 80px;
-  text-align: left; /* Changed to left alignment */
-  font-size: 9px; /* Very small font */
+  text-align: left;
+  font-size: 9px;
   font-weight: 500;
   color: var(--dt-text-muted);
   font-family: 'Nunito', sans-serif;
@@ -177,7 +176,7 @@
 
 /* ===== TABLE BODY ===== */
 .dynamic-table tbody tr {
-  border-bottom: 1px solid rgba(226, 232, 240, 0.4); /* Subtle horizontal borders */
+  border-bottom: 1px solid rgba(226, 232, 240, 0.4);
   transition: var(--dt-transition-fast);
 }
 
@@ -201,11 +200,11 @@
 /* ===== TABLE CELLS ===== */
 .dynamic-table-cell,
 .dynamic-table-new-cell {
-  padding: 6px 8px; /* Reduced padding */
+  padding: 6px 8px;
   vertical-align: middle;
-  text-align: left; /* Force left alignment for all cells */
-  border-right: 1px solid rgba(226, 232, 240, 0.3); /* Very subtle vertical borders */
-  border-bottom: 1px solid rgba(226, 232, 240, 0.4); /* Subtle horizontal borders */
+  text-align: left;
+  border-right: 1px solid rgba(226, 232, 240, 0.3);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.4);
   transition: var(--dt-transition-fast);
   font-family: 'Nunito', sans-serif;
   font-size: 12px;
@@ -213,7 +212,7 @@
 
 .dynamic-table-cell:last-child,
 .dynamic-table-new-cell:last-child {
-  border-right: none; /* Remove border on last column */
+  border-right: none;
 }
 
 .dynamic-table-new-cell {
@@ -224,21 +223,21 @@
 .dynamic-table-cell-value {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start; /* Force left alignment */
-  padding: 2px 4px; /* Smaller padding */
+  justify-content: flex-start;
+  padding: 2px 4px;
   border-radius: var(--dt-radius-sm);
   font-size: 12px;
-  min-height: 18px; /* Smaller height */
+  min-height: 18px;
   transition: var(--dt-transition);
   font-family: 'Nunito', sans-serif;
-  text-align: left; /* Force left alignment */
+  text-align: left;
 }
 
 .dynamic-table-cell-empty {
   color: var(--dt-text-muted);
   font-style: italic;
   opacity: 0.7;
-  text-align: left; /* Force left alignment */
+  text-align: left;
 }
 
 .dynamic-table-cell-yes-no-yes {
@@ -250,8 +249,8 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-family: 'Nunito', sans-serif;
-  text-align: left; /* Force left alignment */
-  justify-content: flex-start; /* Force left alignment */
+  text-align: left;
+  justify-content: flex-start;
 }
 
 .dynamic-table-cell-yes-no-no {
@@ -263,33 +262,33 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-family: 'Nunito', sans-serif;
-  text-align: left; /* Force left alignment */
-  justify-content: flex-start; /* Force left alignment */
+  text-align: left;
+  justify-content: flex-start;
 }
 
 .dynamic-table-cell-number {
-  text-align: left; /* Changed from right to left */
+  text-align: left;
   font-variant-numeric: tabular-nums;
   background: var(--dt-bg-secondary);
   border: 1px solid var(--dt-border-light);
   font-family: 'Nunito', monospace;
-  justify-content: flex-start; /* Force left alignment */
+  justify-content: flex-start;
 }
 
 /* ===== FORM INPUTS ===== */
 .dynamic-table-input,
 .dynamic-table-select {
   width: 100%;
-  padding: 4px 6px; /* Smaller padding */
+  padding: 4px 6px;
   border: 1px solid var(--dt-border-light);
   border-radius: var(--dt-radius-sm);
-  font-size: 11px; /* Smaller font */
+  font-size: 11px;
   background: var(--dt-bg-primary);
   color: var(--dt-text-primary);
   transition: var(--dt-transition);
   outline: none;
   font-family: 'Nunito', sans-serif;
-  text-align: left; /* Force left alignment */
+  text-align: left;
 }
 
 .dynamic-table-input:focus,
@@ -308,21 +307,21 @@
 }
 
 .dynamic-table-input-number {
-  text-align: left; /* Changed from right to left */
+  text-align: left;
   font-variant-numeric: tabular-nums;
 }
 
 /* ===== ACTION BUTTONS ===== */
 .dynamic-table-actions-cell {
-  text-align: left; /* Changed to left alignment */
-  padding: 6px 4px; /* Smaller padding */
+  text-align: left;
+  padding: 6px 4px;
   white-space: nowrap;
 }
 
 .dynamic-table-action-buttons {
   display: flex;
-  gap: 3px; /* Smaller gap */
-  justify-content: flex-start; /* Changed to left alignment */
+  gap: 3px;
+  justify-content: flex-start;
   align-items: center;
 }
 
@@ -334,15 +333,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 3px; /* Smaller gap */
-  padding: 4px 6px; /* Smaller padding */
+  gap: 3px;
+  padding: 4px 6px;
   border: 1px solid transparent;
   border-radius: var(--dt-radius-sm);
   cursor: pointer;
-  font-size: 10px; /* Smaller font */
+  font-size: 10px;
   font-weight: 500;
   transition: var(--dt-transition);
-  min-width: 24px; /* Smaller buttons */
+  min-width: 24px;
   height: 24px;
   text-decoration: none;
   outline: none;
@@ -363,7 +362,7 @@
   background: var(--dt-primary);
   color: white;
   border-color: var(--dt-primary);
-  padding: 4px 8px; /* Slightly larger for text */
+  padding: 4px 8px;
   min-width: auto;
   font-weight: 500;
 }
@@ -422,7 +421,7 @@
 
 /* ===== EMPTY STATE ===== */
 .dynamic-table-empty-state {
-  padding: 30px 20px; /* Reduced padding */
+  padding: 30px 20px;
   text-align: center;
   color: var(--dt-text-muted);
   background: var(--dt-bg-secondary);
@@ -438,7 +437,7 @@
 
 /* ===== ERROR STATE ===== */
 .dynamic-table-error-message {
-  padding: 10px 12px; /* Reduced padding */
+  padding: 10px 12px;
   background: var(--dt-danger-light);
   color: var(--dt-danger-dark);
   border-top: 1px solid var(--dt-danger);
@@ -463,19 +462,19 @@
 .dynamic-table-cell-text { 
   min-width: 120px; 
   max-width: 200px; 
-  text-align: left; /* Force left alignment */
+  text-align: left;
 }
 .dynamic-table-cell-number { 
   min-width: 80px; 
-  text-align: left; /* Changed from right to left */
+  text-align: left;
 }
 .dynamic-table-cell-yes_no { 
   min-width: 80px; 
-  text-align: left; /* Changed from center to left */
+  text-align: left;
 }
 .dynamic-table-cell-date { 
   min-width: 110px;
-  text-align: left; /* Force left alignment */
+  text-align: left;
 }
 
 /* ===== RESPONSIVE DESIGN ===== */
@@ -497,7 +496,7 @@
   .dynamic-table th,
   .dynamic-table-cell,
   .dynamic-table-new-cell {
-    padding: 4px 6px; /* Even smaller on mobile */
+    padding: 4px 6px;
   }
   
   .dynamic-table th {
@@ -523,23 +522,6 @@
   
   .dynamic-table-actions-column {
     width: 60px;
-  }
-}
-
-/* ===== DARK MODE SUPPORT ===== */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --dt-bg-primary: #1e293b;
-    --dt-bg-secondary: #334155;
-    --dt-bg-tertiary: #475569;
-    --dt-border-light: #475569;
-    --dt-border-medium: #64748b;
-    --dt-text-primary: #f1f5f9;
-    --dt-text-secondary: #cbd5e1;
-    --dt-text-muted: #94a3b8;
-    --dt-primary-light: rgba(59, 130, 246, 0.2);
-    --dt-success-light: rgba(16, 185, 129, 0.2);
-    --dt-danger-light: rgba(239, 68, 68, 0.2);
   }
 }
 
