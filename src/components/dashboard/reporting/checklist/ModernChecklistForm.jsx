@@ -172,22 +172,43 @@ const ModernChecklistForm = ({
 
   // Handle response changes with validation
   const handleResponseChange = useCallback((fieldId, value) => {
-    console.log('📋 ModernChecklistForm: Response change:', { fieldId, value, type: typeof value });
+    console.log('📋 ModernChecklistForm: Response change:', { 
+      fieldId, 
+      value, 
+      type: typeof value,
+      isDate: value && !isNaN(Date.parse(value)) && value.includes('-')
+    });
 
     setResponses(prev => {
       const updated = { ...prev, [fieldId]: value };
       console.log('📋 ModernChecklistForm: Updated responses count:', Object.keys(updated).length);
+      console.log('📋 ModernChecklistForm: Field updated:', { fieldId, oldValue: prev[fieldId], newValue: value });
       return updated;
     });
 
-    // Update completion tracking
-    const hasValue = value !== null && value !== undefined && value !== '';
+    // Update completion tracking - for dates, check if it's a valid date string
+    let hasValue = false;
+    if (value !== null && value !== undefined && value !== '') {
+      // Special handling for date fields
+      if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        hasValue = true; // Valid date format YYYY-MM-DD
+      } else if (typeof value === 'string' && value.length > 0) {
+        hasValue = true; // Non-empty string
+      } else if (Array.isArray(value) && value.length > 0) {
+        hasValue = true; // Non-empty array (for tables)
+      } else if (typeof value === 'boolean' || typeof value === 'number') {
+        hasValue = true; // Boolean or number values
+      }
+    }
+
     setCompletedItems(prev => {
       const newSet = new Set(prev);
       if (hasValue) {
         newSet.add(fieldId);
+        console.log('📋 ModernChecklistForm: Field marked as completed:', fieldId);
       } else {
         newSet.delete(fieldId);
+        console.log('📋 ModernChecklistForm: Field marked as incomplete:', fieldId);
       }
       return newSet;
     });
@@ -378,11 +399,25 @@ const ModernChecklistForm = ({
         );
 
       case 'date':
+        // Handle date field properly - ensure proper format conversion
+        const dateValue = value ? 
+          (value instanceof Date ? value.toISOString().split('T')[0] : 
+           typeof value === 'string' && value.includes('T') ? value.split('T')[0] : 
+           value) : '';
+        
         return (
           <input
             type="date"
-            value={value}
-            onChange={(e) => handleResponseChange(field.field_id, e.target.value)}
+            value={dateValue}
+            onChange={(e) => {
+              const inputDate = e.target.value; // This is in YYYY-MM-DD format
+              console.log('📅 Date field changed:', { 
+                fieldId: field.field_id, 
+                inputValue: inputDate,
+                previousValue: value 
+              });
+              handleResponseChange(field.field_id, inputDate);
+            }}
             className={`light-form-input ${isCompleted ? 'completed' : ''} ${hasError ? 'error' : ''}`}
             disabled={mode === 'view' || disabled}
           />

@@ -1062,12 +1062,12 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
             <span>{vesselCount}</span>
           </div>
 
-          {defectStats.total > 0 && (
+          {/* {defectStats.total > 0 && (
             <div className="defect-counter">
               <AlertTriangle size={14} />
               <span>{defectStats.open} open defects</span>
             </div>
-          )}
+          )} */}
 
           {/* Search container */}
           <div className="search-container">
