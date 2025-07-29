@@ -1,31 +1,34 @@
 // src/components/dashboard/PSCData/PSCDataDashboard.jsx
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, ExternalLink, Maximize2, Wifi, WifiOff, Clock } from 'lucide-react';
+import { RefreshCw, Wifi, WifiOff, Clock } from 'lucide-react'; // Removed ExternalLink, Maximize2
 import './PSCDataStyles.css';
 
 const PSCDataDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  // const [isFullscreen, setIsFullscreen] = useState(false); // Removed
   const [error, setError] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [loadAttempts, setLoadAttempts] = useState(0);
 
-  // Power BI embed URL - Updated with your actual URL
-  const POWER_BI_URL = "https://app.powerbi.com/reportEmbed?reportId=ccd569f8-13ca-4a50-abb1-112fdcceeb18&autoAuth=true&ctid=5847cf3f-db1f-4d01-abcf-cbff4bdffc2d";
+  // Power BI embed URL - Updated with your actual URL and chromeless parameter
+  const POWER_BI_URL = "https://app.powerbi.com/view?r=eyJrIjoiYjZmYzBlZDgtNjkwYS00ZmIxLTljNWQtYTUzMTFiYzg2MzdhIiwidCI6IjU4NDdjZjNmLWRiMWYtNGQwMS1hYmNmLWNiZmY0YmRmZmMyZCIsImMiOjEwfQ%3D%3D";
   
   // Check if Power BI URL is properly configured
-  const isPowerBIConfigured = !POWER_BI_URL.includes('YOUR_') && POWER_BI_URL.includes('reportId=');
+  const isPowerBIConfigured = !POWER_BI_URL.includes('YOUR_') && POWER_BI_URL.includes('r=');
   
   // Use placeholder if not configured
   const PLACEHOLDER_URL = "about:blank";
   const embedUrl = isPowerBIConfigured ? POWER_BI_URL : PLACEHOLDER_URL;
 
   useEffect(() => {
-    // Set initial connection status
     if (!isPowerBIConfigured) {
       setConnectionStatus('disconnected');
       setIsLoading(false);
       setError('Power BI dashboard not configured');
+    } else {
+      setIsLoading(true);
+      setConnectionStatus('connecting');
+      setError(null);
     }
   }, [isPowerBIConfigured]);
 
@@ -44,6 +47,7 @@ const PSCDataDashboard = () => {
     setLoadAttempts(prev => prev + 1);
   };
 
+  // If you still want a refresh mechanism, keep this, otherwise remove
   const refreshDashboard = () => {
     if (!isPowerBIConfigured) {
       setError('Power BI dashboard not configured. Please update the embed URL.');
@@ -53,55 +57,23 @@ const PSCDataDashboard = () => {
     setIsLoading(true);
     setConnectionStatus('connecting');
     setError(null);
+    setLoadAttempts(prev => prev + 1);
     
-    // Force iframe reload
     const iframe = document.getElementById('psc-powerbi-iframe');
     if (iframe) {
-      iframe.src = iframe.src;
+      iframe.src = embedUrl;
     }
     
-    // Set timeout for loading
     setTimeout(() => {
       if (isLoading) {
         setIsLoading(false);
         setConnectionStatus('disconnected');
         setError('Dashboard loading timeout. Please try again.');
       }
-    }, 30000); // 30 second timeout
+    }, 30000);
   };
 
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-    
-    if (!isFullscreen) {
-      // Enter fullscreen
-      const elem = document.querySelector('.psc-data-container');
-      if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-      } else if (elem.webkitRequestFullscreen) {
-        elem.webkitRequestFullscreen();
-      } else if (elem.msRequestFullscreen) {
-        elem.msRequestFullscreen();
-      }
-    } else {
-      // Exit fullscreen
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
-      }
-    }
-  };
-
-  const openInNewTab = () => {
-    if (isPowerBIConfigured) {
-      window.open(POWER_BI_URL, '_blank', 'noopener,noreferrer');
-    } else {
-      alert('Power BI dashboard URL not configured');
-    }
-  };
+  // Removed toggleFullscreen and openInNewTab functions
 
   // Render connection status indicator
   const renderConnectionStatus = () => {
@@ -122,16 +94,6 @@ const PSCDataDashboard = () => {
     );
   };
 
-  // Render placeholder dashboard
-  const renderPlaceholder = () => (
-    <div className="placeholder-dashboard">
-      <div className="placeholder-content">
-        <h2>🚢 PSC Analytics Dashboard</h2>
-        <p>Power BI integration ready for configuration</p>
-      </div>
-    </div>
-  );
-
   // Render configuration message
   const renderConfigMessage = () => (
     <div className="config-message">
@@ -151,7 +113,7 @@ const PSCDataDashboard = () => {
   );
 
   return (
-    <div className={`psc-data-container ${isFullscreen ? 'fullscreen' : ''}`}>
+    <div className="psc-data-container"> {/* Removed fullscreen class logic */}
       {/* Header */}
       <header className="psc-data-header">
         <div className="header-left">
@@ -161,64 +123,31 @@ const PSCDataDashboard = () => {
           </div>
           <p className="header-subtitle">
             Comprehensive Port State Control data insights and analytics
-            {loadAttempts > 0 && ` (Attempt ${loadAttempts + 1})`}
+            {loadAttempts > 0 && ` (Attempt ${loadAttempts})`}
           </p>
         </div>
         
-        <div className="header-controls">
-          <button 
-            className="control-btn refresh-btn"
-            onClick={refreshDashboard}
-            title="Refresh Dashboard"
-            disabled={isLoading}
-          >
-            <RefreshCw size={16} className={isLoading ? 'spinning' : ''} />
-            Refresh
-          </button>
-          
-          <button 
-            className="control-btn fullscreen-btn"
-            onClick={toggleFullscreen}
-            title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-            disabled={!isPowerBIConfigured}
-          >
-            <Maximize2 size={16} />
-            {isFullscreen ? 'Exit' : 'Fullscreen'}
-          </button>
-          
-          <button 
-            className="control-btn external-btn"
-            onClick={openInNewTab}
-            title="Open in New Tab"
-            disabled={!isPowerBIConfigured}
-          >
-            <ExternalLink size={16} />
-            New Tab
-          </button>
-        </div>
+        {/* Removed header-controls div entirely */}
       </header>
 
       {/* Dashboard Content */}
       <div className="psc-data-content">
-        {/* Show configuration message if Power BI isn't configured */}
         {!isPowerBIConfigured ? (
           renderConfigMessage()
         ) : (
           <>
-            {/* Loading Overlay */}
             {isLoading && (
               <div className="loading-overlay">
                 <div className="loading-spinner">
                   <RefreshCw size={32} className="spinning" />
-                  {/* <p>Loading PSC Analytics Dashboard...</p> */}
+                  <p>Loading PSC Analytics Dashboard...</p>
                   <p style={{ fontSize: '12px', marginTop: '8px', opacity: 0.7 }}>
-                    {/* This may take a few moments */}
+                    This may take a few moments
                   </p>
                 </div>
               </div>
             )}
 
-            {/* Error Overlay */}
             {error && !isLoading && (
               <div className="error-overlay">
                 <div className="error-content">
@@ -245,7 +174,6 @@ const PSCDataDashboard = () => {
               </div>
             )}
 
-            {/* Power BI Iframe */}
             <iframe
               id="psc-powerbi-iframe"
               src={embedUrl}
