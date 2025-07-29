@@ -11,7 +11,8 @@ import {
   Upload, 
   Menu, 
   X, 
-  FolderOpen 
+  FolderOpen,
+  TrendingUp 
 } from 'lucide-react';
 import Logo from '../Logo';
 import './NavigationStyles.css';
@@ -32,13 +33,20 @@ const MODULE_NAVIGATION_MAP = {
     path: '/defects',
     order: 2
   },
-  'PSC REPORTING': {
-    id: 'reporting',
-    label: 'PSC Reports',
-    icon: <FileText size={20} />,
-    path: '/reporting',
+  'PSC DATA': {                          
+    id: 'psc-data',
+    label: 'PSC Analytics',
+    icon: <TrendingUp size={20} />,
+    path: '/psc-data',
     order: 3
   },
+  // 'PSC REPORTING': {
+  //   id: 'reporting',
+  //   label: 'PSC Reports',
+  //   icon: <FileText size={20} />,
+  //   path: '/reporting',
+  //   order: 3
+  // },
   'Files upload': {
     id: 'files',
     label: 'File Manager',

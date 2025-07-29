@@ -12,14 +12,15 @@ import FloatingChatbot from './components/FloatingChatbot';
 
 // Components
 import NavigationHeader from './components/layout/NavigationHeader';
-import NoAccessPage from './components/common/NoAccessPage'; // NEW: No access page
+import NoAccessPage from './components/common/NoAccessPage';
 import FleetDashboard from './components/dashboard/fleet/FleetDashboard';
 import DefectsDashboard from './components/dashboard/defects/DefectsDashboard';
 import VesselReportingPage from './components/dashboard/reporting/VesselReportingPage';
 import { fleetFieldMappings } from './components/dashboard/fleet/FleetFieldMappings';
 import AdminDashboard from './components/dashboard/admin/AdminDashboard'; 
-// Add this import at the top of your App.jsx
+import PSCDataDashboard from './components/dashboard/PSCData/PSCDataDashboard';
 import DocumentsDashboard from './components/dashboard/Portcirculars/DocumentsDashboard';
+
 // Auth Components
 import Login from './components/auth/Login';
 import SignUp from './components/auth/SignUp';
@@ -37,12 +38,14 @@ try {
   console.error("Error configuring Amplify:", error);
 }
 
-// Module mapping for navigation
+// Module mapping for navigation - Updated with PSC DATA
 const MODULE_ROUTE_MAP = {
   'PSC TRACKER': '/fleet',
   'DEFECTS REGISTER': '/defects', 
   'PSC REPORTING': '/reporting',
+  'PSC DATA': '/psc-data',  // Added PSC DATA mapping
   'Files upload': '/files',
+  'Upload Circulars': '/circulars',
   'ADMIN': '/admin'
 };
 
@@ -169,13 +172,15 @@ const ProtectedRoute = ({ children, requiredModule = null }) => {
   return children;
 };
 
-// Helper to get activePage from URL
+// Helper to get activePage from URL - Updated with PSC DATA
 const getActivePageFromPath = (pathname) => {
   if (pathname.startsWith('/fleet')) return 'fleet';
   if (pathname.startsWith('/defects')) return 'defects';
   if (pathname.startsWith('/reporting')) return 'reporting';
+  if (pathname.startsWith('/psc-data')) return 'psc-data';  // Added PSC DATA
   if (pathname.startsWith('/admin')) return 'admin';
   if (pathname.startsWith('/files')) return 'files';
+  if (pathname.startsWith('/circulars')) return 'circulars';
   return 'fleet'; // default
 };
 
@@ -193,7 +198,7 @@ const ProtectedLayout = ({ children }) => {
     setModulesLoading(false);
   };
 
-  // Handle navigation between modules
+  // Handle navigation between modules - Updated with PSC DATA
   const handleNavigate = (pageId) => {
     const module = userModules.find(m => {
       // Map pageId to module names
@@ -201,7 +206,9 @@ const ProtectedLayout = ({ children }) => {
         'fleet': 'PSC TRACKER',
         'defects': 'DEFECTS REGISTER', 
         'reporting': 'PSC REPORTING',
+        'psc-data': 'PSC DATA',  // Added PSC DATA mapping
         'files': 'Files upload',
+        'circulars': 'Upload Circulars',
         'admin': 'ADMIN'
       };
       return m.module_name === moduleMap[pageId];
@@ -229,7 +236,6 @@ const ProtectedLayout = ({ children }) => {
     </div>
   );
 };
-
 
 const AppContent = () => {
   const { currentUser, loading } = useAuth();
@@ -321,6 +327,17 @@ const AppContent = () => {
         }
       />
 
+      {/* NEW: PSC Data Analytics Route */}
+      <Route
+        path="/psc-data"
+        element={
+          <ProtectedRoute requiredModule="/psc-data">
+            <ProtectedLayout>
+              <PSCDataDashboard />
+            </ProtectedLayout>
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         path="/files"
@@ -338,8 +355,26 @@ const AppContent = () => {
           </ProtectedRoute>
         }
       />
+
+      {/* Upload Circulars Route */}
+      <Route
+        path="/circulars"
+        element={
+          <ProtectedRoute requiredModule="/circulars">
+            <ProtectedLayout>
+              <DocumentsDashboard 
+                apiBaseUrl="https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws/"
+                currentUser={{
+                  name: currentUser?.name || currentUser?.username || currentUser?.email || 'User',
+                  id: currentUser?.userId || currentUser?.sub
+                }}
+              />
+            </ProtectedLayout>
+          </ProtectedRoute>
+        }
+      />
       
-      {/* Admin Route - FIXED */}
+      {/* Admin Route */}
       <Route
         path="/admin"
         element={
