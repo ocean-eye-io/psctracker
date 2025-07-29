@@ -12,7 +12,7 @@ html, body {
     display: flex;
     flex-direction: column;
     height: 100vh; /* Changed from calc(100vh-50px) to 100vh */
-    margin-top: 0; /* Remove margin-top that was causing offset */
+    margin-top: 50px; /* Remove margin-top that was causing offset */
     background-color: #ffffff;
     color: #1f2937;
     overflow: hidden;
