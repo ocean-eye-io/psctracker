@@ -1,7 +1,6 @@
-// src/components/common/Table/PortDocumentIcon.jsx
+// src/components/common/Table/PortDocumentIcon.jsx - FIXED to use existing APIs
 import React, { useState, useEffect } from 'react';
 import { FileText, Loader2 } from 'lucide-react';
-import portMappingService from '../../../services/PortMappingService';
 
 const PortDocumentIcon = ({ 
   portName, 
@@ -14,6 +13,93 @@ const PortDocumentIcon = ({
   const [error, setError] = useState(null);
   const [portId, setPortId] = useState(null);
 
+  // Direct API base URL
+  const baseURL = 'https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws';
+
+  // Cache for ports and document counts (simple in-memory cache)
+  const [portsCache, setPortsCache] = useState(null);
+  const [documentsCache, setDocumentsCache] = useState(null);
+
+  // Normalize port name function (same as your service)
+  const normalizePortName = (portName) => {
+    if (!portName) return '';
+    
+    return portName
+      .toString()
+      .toUpperCase()
+      .trim()
+      .replace(/\s+/g, ' ')
+      .replace(/[^\w\s,]/g, '')
+      .replace(/\bPORT\s+OF\s+/g, '')
+      .replace(/\bPORT\s+/g, '');
+  };
+
+  // Find port by name with fuzzy matching
+  const findPortByName = (portName, allPorts) => {
+    if (!portName || !allPorts) return null;
+
+    const normalizedSearch = normalizePortName(portName);
+    
+    // Try exact match first
+    let found = allPorts.find(port => 
+      normalizePortName(port.port_name) === normalizedSearch
+    );
+    
+    if (found) return found;
+
+    // Try fuzzy matching
+    found = allPorts.find(port => {
+      const normalizedPort = normalizePortName(port.port_name);
+      return normalizedPort.includes(normalizedSearch) || 
+             normalizedSearch.includes(normalizedPort);
+    });
+
+    return found;
+  };
+
+  // Load all ports (cached)
+  const loadAllPorts = async () => {
+    if (portsCache) return portsCache;
+
+    try {
+      const response = await fetch(`${baseURL}/api/ports`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ports: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const ports = data.ports || [];
+      
+      setPortsCache(ports);
+      return ports;
+    } catch (error) {
+      console.error('Error loading ports:', error);
+      throw error;
+    }
+  };
+
+  // Load document summary (cached)
+  const loadDocumentSummary = async () => {
+    if (documentsCache) return documentsCache;
+
+    try {
+      const response = await fetch(`${baseURL}/api/documents/summary`);
+      if (!response.ok) {
+        console.warn(`Document summary API returned ${response.status}, using empty data`);
+        return {};
+      }
+
+      const data = await response.json();
+      const summary = data.lookup || {};
+      
+      setDocumentsCache(summary);
+      return summary;
+    } catch (error) {
+      console.warn('Error loading document summary:', error);
+      return {};
+    }
+  };
+
   useEffect(() => {
     if (!portName) {
       setLoading(false);
@@ -25,31 +111,55 @@ const PortDocumentIcon = ({
         setLoading(true);
         setError(null);
         
-        // Get port details and document count
-        const [portDetails, count] = await Promise.all([
-          portMappingService.findPortDetails(portName),
-          portMappingService.getDocumentCount(portName)
-        ]);
+        console.log(`[PortDocumentIcon] Fetching data for port: ${portName}`);
         
-        setPortId(portDetails?.id || null);
-        setDocumentCount(count || 0);
+        // Load all ports and document summary in parallel
+        const [allPorts, documentSummary] = await Promise.all([
+          loadAllPorts(),
+          loadDocumentSummary()
+        ]);
+
+        console.log(`[PortDocumentIcon] Loaded ${allPorts.length} ports and ${Object.keys(documentSummary).length} document entries`);
+
+        // Find the port
+        const port = findPortByName(portName, allPorts);
+        
+        if (!port) {
+          console.log(`[PortDocumentIcon] No port found for: ${portName}`);
+          setPortId(null);
+          setDocumentCount(0);
+          return;
+        }
+
+        console.log(`[PortDocumentIcon] Found port:`, port);
+        setPortId(port.id);
+
+        // Get document count from summary
+        const portDocInfo = documentSummary[port.id];
+        const count = portDocInfo ? portDocInfo.document_count : 0;
+        
+        console.log(`[PortDocumentIcon] Document count for ${portName} (ID ${port.id}): ${count}`);
+        setDocumentCount(count);
+        
       } catch (err) {
-        console.error('Error fetching document info for port:', portName, err);
+        console.error(`[PortDocumentIcon] Error fetching data for port ${portName}:`, err);
         setError(err.message);
         setDocumentCount(0);
+        setPortId(null);
       } finally {
         setLoading(false);
       }
     };
 
     fetchDocumentInfo();
-  }, [portName]);
+  }, [portName, baseURL]);
 
   const handleClick = (e) => {
     e.stopPropagation();
     e.preventDefault();
     
     if (portId && onOpenDocuments) {
+      console.log(`[PortDocumentIcon] Opening documents for port ID: ${portId}, name: ${portName}, count: ${documentCount}`);
       onOpenDocuments(portId, portName, documentCount);
     }
   };
@@ -143,7 +253,7 @@ const PortDocumentIcon = ({
   );
 };
 
-// Styles as JavaScript objects
+// Styles as JavaScript objects (same as before)
 const baseStyle = {
   display: 'inline-flex',
   alignItems: 'center',
