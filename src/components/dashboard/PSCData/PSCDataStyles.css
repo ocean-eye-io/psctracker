@@ -94,7 +94,7 @@ html, body {
     z-index: 10;
   }
   
-  .loading-spinner {
+  /* .loading-spinner {
     text-align: center;
     padding: 24px;
   }
@@ -103,7 +103,7 @@ html, body {
     margin-top: 16px;
     color: #64748b;
     font-size: 14px;
-  }
+  } */
   
   .error-content {
     text-align: center;
