@@ -1,4 +1,4 @@
-// services/PortMappingService.js - PHASE 2 OPTIMIZATION: Lazy Loading Implementation
+// services/PortMappingService.js - PHASE 2 OPTIMIZATION: Lazy Loading Implementation + Smart Page Detection
 
 class PortMappingService {
   constructor() {
@@ -19,6 +19,13 @@ class PortMappingService {
     // PHASE 2: NEW - Session storage integration
     this.sessionStorageKey = 'portMappingCache_v2';
     this.loadFromSessionStorage();
+  }
+
+  // PHASE 2: NEW - Smart page detection to skip port mapping on certain pages
+  isPageRequiringPortMapping() {
+    const currentPath = window.location.pathname;
+    const excludedPaths = ['/psc-data', '/admin'];
+    return !excludedPaths.includes(currentPath);
   }
 
   // PHASE 2: NEW - Load cache from sessionStorage
@@ -68,6 +75,12 @@ class PortMappingService {
 
   // PHASE 2: LAZY LOADING - Only initialize when needed and for specific ports
   async initializeForPorts(portNames = []) {
+    // Skip port mapping for certain pages
+    if (!this.isPageRequiringPortMapping()) {
+      console.log('Port mapping skipped for current page:', window.location.pathname);
+      return;
+    }
+
     // If we have valid cache, use it
     if (!this.shouldRefreshCache() && this.portCache.size > 0) {
       return;
@@ -115,8 +128,14 @@ class PortMappingService {
     }
   }
 
-  // PHASE 2: NEW - Fetch only specific ports via batch API
+  // PHASE 2: NEW - Fetch only specific ports via batch API with smart page detection
   async fetchSpecificPorts(portNames) {
+    // Skip port mapping for certain pages
+    if (!this.isPageRequiringPortMapping()) {
+      console.log('Port mapping API call skipped for current page:', window.location.pathname);
+      return { success: false, data: [] };
+    }
+
     try {
       const response = await fetch(`${this.baseURL}/api/ports/batch`, {
         method: 'POST',
@@ -130,7 +149,8 @@ class PortMappingService {
       });
 
       if (!response.ok) {
-        throw new Error(`Port batch API failed: ${response.status}`);
+        console.warn(`Port mapping API unavailable (${response.status}). Continuing without port data.`);
+        return { success: false, data: [] };
       }
 
       const data = await response.json();
@@ -164,8 +184,11 @@ class PortMappingService {
       this.lastFetched = Date.now();
       this.saveToSessionStorage();
 
+      return { success: true, data: ports };
+
     } catch (error) {
-      // Silent error handling
+      console.warn('Port mapping service unavailable:', error.message);
+      return { success: false, data: [] };
     }
   }
 
@@ -187,6 +210,11 @@ class PortMappingService {
 
   // PHASE 2: NEW - Get document counts for specific port IDs
   async getDocumentCountsForPorts(portIds) {
+    // Skip for excluded pages
+    if (!this.isPageRequiringPortMapping()) {
+      return {};
+    }
+
     const uncachedPortIds = portIds.filter(portId => !this.documentCountsCache.has(portId));
     
     if (uncachedPortIds.length === 0) {
@@ -235,9 +263,14 @@ class PortMappingService {
       .replace(/\bPORT\s+/g, '');
   }
 
-  // OPTIMIZED: Find port ID with lazy loading
+  // OPTIMIZED: Find port ID with lazy loading and page detection
   async findPortId(vesselPortName) {
     if (!vesselPortName) return null;
+
+    // Skip for excluded pages
+    if (!this.isPageRequiringPortMapping()) {
+      return null;
+    }
 
     const normalizedName = this.normalizePortName(vesselPortName);
     
@@ -257,9 +290,14 @@ class PortMappingService {
     return port ? port.id : null;
   }
 
-  // OPTIMIZED: Find port details with lazy loading
+  // OPTIMIZED: Find port details with lazy loading and page detection
   async findPortDetails(vesselPortName) {
     if (!vesselPortName) return null;
+
+    // Skip for excluded pages
+    if (!this.isPageRequiringPortMapping()) {
+      return null;
+    }
 
     const normalizedName = this.normalizePortName(vesselPortName);
     
@@ -320,8 +358,13 @@ class PortMappingService {
     return 1 - (distance / maxLength);
   }
 
-  // PHASE 2: OPTIMIZED - Get document counts with better caching
+  // PHASE 2: OPTIMIZED - Get document counts with better caching and page detection
   async getDocumentCounts(portNames) {
+    // Skip for excluded pages
+    if (!this.isPageRequiringPortMapping()) {
+      return new Map();
+    }
+
     const counts = new Map();
     const portsNeedingCounts = [];
     
@@ -374,15 +417,26 @@ class PortMappingService {
     return counts;
   }
 
-  // OPTIMIZED: Get document count for single port
+  // OPTIMIZED: Get document count for single port with page detection
   async getDocumentCount(portName) {
+    // Skip for excluded pages
+    if (!this.isPageRequiringPortMapping()) {
+      return 0;
+    }
+
     const counts = await this.getDocumentCounts([portName]);
     return counts.get(portName) || 0;
   }
 
-  // PHASE 2: OPTIMIZED - Batch process vessel data with lazy loading
+  // PHASE 2: OPTIMIZED - Batch process vessel data with lazy loading and page detection
   async enrichVesselData(vessels) {
     if (!vessels || vessels.length === 0) {
+      return vessels;
+    }
+
+    // Skip for excluded pages
+    if (!this.isPageRequiringPortMapping()) {
+      console.log('Vessel data enrichment skipped for current page:', window.location.pathname);
       return vessels;
     }
 
@@ -411,9 +465,14 @@ class PortMappingService {
     }));
   }
 
-  // PHASE 2: NEW - Enrich only for specific ports (for performance)
+  // PHASE 2: NEW - Enrich only for specific ports (for performance) with page detection
   async enrichVesselDataForPorts(vessels, specificPortNames) {
     if (!vessels || vessels.length === 0) {
+      return vessels;
+    }
+
+    // Skip for excluded pages
+    if (!this.isPageRequiringPortMapping()) {
       return vessels;
     }
 
@@ -475,12 +534,19 @@ class PortMappingService {
       documentCacheSize: this.documentCountsCache.size,
       lastFetched: this.lastFetched,
       cacheAge: this.lastFetched ? Date.now() - this.lastFetched : null,
-      isExpired: this.shouldRefreshCache()
+      isExpired: this.shouldRefreshCache(),
+      currentPage: window.location.pathname,
+      isPortMappingRequired: this.isPageRequiringPortMapping()
     };
   }
 
-  // PHASE 2: NEW - Preload common ports in background
+  // PHASE 2: NEW - Preload common ports in background (only for pages that need it)
   async preloadCommonPorts() {
+    // Only preload for pages that actually need port mapping
+    if (!this.isPageRequiringPortMapping()) {
+      return;
+    }
+
     const commonPorts = [
       'Newcastle', 'Melbourne', 'Sydney', 'Brisbane', 'Perth',
       'Adelaide', 'Port Hedland', 'Dampier', 'Gladstone', 'Port Kembla'
@@ -500,7 +566,7 @@ class PortMappingService {
 // Create singleton instance
 const portMappingService = new PortMappingService();
 
-// PHASE 2: NEW - Start background preloading of common ports
+// PHASE 2: NEW - Start background preloading of common ports (only for applicable pages)
 portMappingService.preloadCommonPorts();
 
 export default portMappingService;
