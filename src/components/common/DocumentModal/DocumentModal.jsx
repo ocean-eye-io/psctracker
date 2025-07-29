@@ -41,6 +41,8 @@ const DocumentModal = ({
       setLoading(true);
       setError(null);
       
+      console.log(`[DocumentModal] Fetching documents for port ID: ${portId}`);
+      
       const response = await fetch(`${API_BASE_URL}/api/documents?port_id=${portId}`);
       
       if (!response.ok) {
@@ -48,6 +50,7 @@ const DocumentModal = ({
       }
       
       const data = await response.json();
+      console.log(`[DocumentModal] Fetched ${data.length} documents:`, data);
       setDocuments(data || []);
     } catch (err) {
       console.error('Error fetching documents:', err);
@@ -63,13 +66,18 @@ const DocumentModal = ({
     try {
       setActionLoading(prev => new Set([...prev, actionId]));
       
+      console.log(`[DocumentModal] Getting view URL for document ${document.id}`);
+      
       const response = await fetch(`${API_BASE_URL}/api/documents/${document.id}/view-url`);
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[DocumentModal] View URL API error: ${response.status} - ${errorText}`);
         throw new Error(`Failed to get view URL: ${response.status}`);
       }
       
       const data = await response.json();
+      console.log(`[DocumentModal] Got view URL:`, data);
       
       // Open in new tab
       window.open(data.view_url, '_blank', 'noopener,noreferrer');
@@ -91,21 +99,54 @@ const DocumentModal = ({
     try {
       setActionLoading(prev => new Set([...prev, actionId]));
       
+      console.log(`[DocumentModal] Getting download URL for document ${document.id}`);
+      
       const response = await fetch(`${API_BASE_URL}/api/documents/${document.id}/download-url`);
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[DocumentModal] Download URL API error: ${response.status} - ${errorText}`);
         throw new Error(`Failed to get download URL: ${response.status}`);
       }
       
       const data = await response.json();
+      console.log(`[DocumentModal] Got download URL:`, data);
       
-      // Create temporary link and trigger download
-      const link = document.createElement('a');
-      link.href = data.download_url;
-      link.download = data.file_name;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // FIXED: Better download handling
+      try {
+        // Method 1: Try direct download with fetch
+        const downloadResponse = await fetch(data.download_url);
+        if (downloadResponse.ok) {
+          const blob = await downloadResponse.blob();
+          
+          // Create blob URL and download
+          const blobUrl = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = data.file_name || document.original_file_name;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          // Clean up blob URL
+          setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100);
+        } else {
+          // Method 2: Fallback to direct link
+          console.log('[DocumentModal] Direct fetch failed, using link method');
+          const link = document.createElement('a');
+          link.href = data.download_url;
+          link.download = data.file_name || document.original_file_name;
+          link.target = '_blank';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      } catch (downloadError) {
+        console.error('[DocumentModal] Download method failed:', downloadError);
+        // Method 3: Final fallback - open in new window
+        window.open(data.download_url, '_blank');
+      }
+      
     } catch (err) {
       console.error('Error downloading document:', err);
       alert(`Error downloading document: ${err.message}`);
@@ -128,13 +169,19 @@ const DocumentModal = ({
     try {
       setActionLoading(prev => new Set([...prev, actionId]));
       
+      console.log(`[DocumentModal] Deleting document ${document.id}`);
+      
       const response = await fetch(`${API_BASE_URL}/api/documents/${document.id}`, {
         method: 'DELETE'
       });
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[DocumentModal] Delete API error: ${response.status} - ${errorText}`);
         throw new Error(`Failed to delete document: ${response.status}`);
       }
+      
+      console.log(`[DocumentModal] Document ${document.id} deleted successfully`);
       
       // Remove document from local state
       setDocuments(prev => prev.filter(doc => doc.id !== document.id));
@@ -152,11 +199,35 @@ const DocumentModal = ({
 
   const isActionLoading = (actionId) => actionLoading.has(actionId);
 
+  // Format file size
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  // Format upload date
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return dateString;
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="comments-modal-overlay">
-      <div className="comments-modal">
+      <div className="comments-modal" style={{ maxWidth: '700px' }}>
         {/* Header */}
         <div className="comments-modal-header">
           <div>
@@ -168,14 +239,26 @@ const DocumentModal = ({
             </p>
           </div>
           
-          <div className="filter-section-right"> {/* Reusing filter-section-right for button grouping */}
+          <div className="filter-section-right">
             <button
               onClick={fetchDocuments}
               disabled={loading}
-              className={`control-btn ${loading ? 'spinning' : ''}`}
+              className="control-btn"
               title="Refresh documents"
+              style={{
+                background: 'rgba(244, 244, 244, 0.05)',
+                border: 'none',
+                color: '#333333',
+                width: '32px',
+                height: '32px',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer'
+              }}
             >
-              <RefreshCw size={18} />
+              <RefreshCw size={16} className={loading ? 'spinning' : ''} />
             </button>
             
             <button onClick={onClose} className="comments-modal-close">
@@ -187,40 +270,87 @@ const DocumentModal = ({
         {/* Content */}
         <div className="comments-modal-body">
           {loading ? (
-            <div className="loading-container"> {/* Reusing loading-container */}
+            <div className="loading-container">
               <Loader2 size={32} className="loading-spinner" />
               <p className="loading-message">Loading documents...</p>
             </div>
           ) : error ? (
-            <div className="comments-error"> {/* Reusing comments-error */}
+            <div className="comments-error">
               <AlertCircle size={20} />
               <p>Error loading documents: {error}</p>
-              <button onClick={fetchDocuments} className="reset-filters"> {/* Reusing reset-filters */}
+              <button onClick={fetchDocuments} className="reset-button">
                 Try Again
               </button>
             </div>
           ) : documents.length === 0 ? (
-            <div className="no-results"> {/* Reusing no-results */}
-              <FileText size={48} style={{ color: 'var(--text-muted-light)' }} />
-              <h3 style={{ color: 'var(--text-dark)', fontSize: '18px', margin: '16px 0 8px' }}>No documents found</h3>
-              <p style={{ color: 'var(--text-muted-light)', fontSize: '14px', margin: '0' }}>No documents have been uploaded for this port yet.</p>
+            <div className="no-results">
+              <FileText size={48} style={{ color: 'rgba(244, 244, 244, 0.6)', marginBottom: '16px' }} />
+              <h3 style={{ color: '#f4f4f4', fontSize: '18px', margin: '0 0 8px' }}>No documents found</h3>
+              <p style={{ color: 'rgba(244, 244, 244, 0.6)', fontSize: '14px', margin: '0', textAlign: 'center' }}>
+                No documents have been uploaded for this port yet.
+              </p>
             </div>
           ) : (
-            <div className="filter-dropdown-items" style={{ maxHeight: 'unset', padding: '0' }}> {/* Reusing filter-dropdown-items for list styling */}
+            <div className="filter-dropdown-items" style={{ maxHeight: 'unset', padding: '0' }}>
               {documents.map((doc, index) => (
-                <div key={doc.id} className="filter-checkbox-item" style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)' }}>
+                <div 
+                  key={doc.id} 
+                  className="filter-checkbox-item" 
+                  style={{ 
+                    padding: '16px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    borderBottom: index < documents.length - 1 ? '1px solid rgba(244, 244, 244, 0.1)' : 'none'
+                  }}
+                >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', background: 'rgba(0, 123, 255, 0.1)', borderRadius: '6px', flexShrink: 0 }}>
-                      <FileText size={18} style={{ color: 'var(--primary-accent-light)' }} />
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      width: '40px', 
+                      height: '40px', 
+                      background: 'rgba(59, 173, 229, 0.15)', 
+                      borderRadius: '6px', 
+                      flexShrink: 0 
+                    }}>
+                      <FileText size={20} style={{ color: '#3BADE5' }} />
                     </div>
-                    <div className="text-ellipsis" style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ color: 'var(--text-dark)', fontSize: '14px', fontWeight: 500 }}>
+                    
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ 
+                        color: '#333333', 
+                        fontSize: '14px', 
+                        fontWeight: 500,
+                        marginBottom: '4px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
                         {doc.original_file_name}
-                      </span>
+                      </div>
+                      
+                      <div style={{ 
+                        color: 'rgba(244, 244, 244, 0.6)', 
+                        fontSize: '12px',
+                        display: 'flex',
+                        gap: '12px'
+                      }}>
+                        {doc.file_size && (
+                          <span>{formatFileSize(doc.file_size)}</span>
+                        )}
+                        {doc.upload_date && (
+                          <span>{formatDate(doc.upload_date)}</span>
+                        )}
+                        {/* {doc.uploaded_by && (
+                          <span>by {doc.uploaded_by}</span>
+                        )} */}
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="filter-section-right" style={{ gap: '4px', marginLeft: '0' }}> {/* Reusing filter-section-right for button grouping */}
+                  <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                     <button
                       onClick={() => handleView(doc)}
                       disabled={isActionLoading(`view-${doc.id}`)}
@@ -240,7 +370,14 @@ const DocumentModal = ({
                       disabled={isActionLoading(`download-${doc.id}`)}
                       className="action-button"
                       title="Download document"
-                      style={{ padding: '8px', width: '36px', height: '36px' }}
+                      style={{ 
+                        padding: '8px', 
+                        width: '36px', 
+                        height: '36px',
+                        background: 'rgba(46, 204, 113, 0.1)',
+                        borderColor: 'rgba(46, 204, 113, 0.2)',
+                        color: '#2ECC71'
+                      }}
                     >
                       {isActionLoading(`download-${doc.id}`) ? (
                         <Loader2 size={16} className="spinning" />
@@ -253,7 +390,14 @@ const DocumentModal = ({
                       onClick={() => handleDelete(doc)}
                       disabled={isActionLoading(`delete-${doc.id}`)}
                       className="action-button"
-                      style={{ padding: '8px', width: '36px', height: '36px', color: 'var(--danger-color-light)', borderColor: 'rgba(220, 53, 69, 0.2)' }}
+                      style={{ 
+                        padding: '8px', 
+                        width: '36px', 
+                        height: '36px',
+                        background: 'rgba(231, 76, 60, 0.1)',
+                        borderColor: 'rgba(231, 76, 60, 0.2)',
+                        color: '#E74C3C'
+                      }}
                       title="Delete document"
                     >
                       {isActionLoading(`delete-${doc.id}`) ? (
@@ -269,6 +413,18 @@ const DocumentModal = ({
           )}
         </div>
       </div>
+
+      {/* Add spinning animation CSS */}
+      <style jsx>{`
+        .spinning {
+          animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
