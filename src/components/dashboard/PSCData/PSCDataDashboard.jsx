@@ -140,9 +140,9 @@ const PSCDataDashboard = () => {
               <div className="loading-overlay">
                 <div className="loading-spinner">
                   <RefreshCw size={32} className="spinning" />
-                  <p>Loading PSC Analytics Dashboard...</p>
+                  {/* <p>Loading PSC Analytics Dashboard...</p> */}
                   <p style={{ fontSize: '12px', marginTop: '8px', opacity: 0.7 }}>
-                    This may take a few moments
+                    {/* This may take a few moments */}
                   </p>
                 </div>
               </div>
