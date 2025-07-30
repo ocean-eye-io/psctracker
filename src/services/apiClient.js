@@ -3,7 +3,7 @@
 class ApiClient {
     constructor() {
       // Base URL for your AWS Lambda Function URL
-      this.baseURL = 'https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws';
+      this.baseURL = 'https://mvowrtmyd4go63badvhkr6rueq0evdzu.lambda-url.ap-south-1.on.aws';
       this.timeout = 30000; // 30 seconds timeout
     }
   

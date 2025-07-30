@@ -81,7 +81,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const [defectsCache, setDefectsCache] = useState({});
 
   // API endpoints
-  const BASE_API_URL = 'https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws';
+  const BASE_API_URL = 'https://mvowrtmyd4go63badvhkr6rueq0evdzu.lambda-url.ap-south-1.on.aws';
   const VESSELS_WITH_OVERRIDE_API_URL = `${BASE_API_URL}/api/vessels-with-overrides`;
   const VESSEL_OVERRIDE_API_URL = `${BASE_API_URL}/api/vessel-override`;
   const ORIGINAL_VESSELS_API_URL = `${BASE_API_URL}/api/vessels`;

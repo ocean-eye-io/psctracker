@@ -1,7 +1,7 @@
 // src/services/PortMappingService.js - FIXED to use existing Lambda APIs
 class PortMappingService {
   constructor() {
-    this.baseURL = 'https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws';
+    this.baseURL = 'https://mvowrtmyd4go63badvhkr6rueq0evdzu.lambda-url.ap-south-1.on.aws';
     
     // Simple caches
     this.portsCache = null;

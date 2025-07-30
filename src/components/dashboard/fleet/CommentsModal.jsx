@@ -62,7 +62,7 @@ const CommentsModal = ({
       }
 
       // Production code path
-      const response = await fetch('https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws/api/vessels/comments', {
+      const response = await fetch('https://mvowrtmyd4go63badvhkr6rueq0evdzu.lambda-url.ap-south-1.on.aws/api/vessels/comments', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
