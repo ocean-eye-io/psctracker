@@ -77,6 +77,10 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const [checklistModalOpen, setChecklistModalOpen] = useState(false);
   const [selectedVesselForChecklist, setSelectedVesselForChecklist] = useState(null);
 
+  // ADDED: Port enrichment loading and progress state variables
+  const [portEnrichmentLoading, setPortEnrichmentLoading] = useState(false);
+  const [enrichmentProgress, setEnrichmentProgress] = useState({ current: 0, total: 0 });
+
   // OPTIMIZED: Defects cache using object instead of Map
   const [defectsCache, setDefectsCache] = useState({});
 
@@ -305,7 +309,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         return false;
       }) : [];
 
-    const inactiveVessels = vesselsWithValidData.filter(vessel => 
+    const inactiveVessels = vesselsWithValidData.filter(vessel =>
       vessel.status === "Inactive"
     );
 
@@ -413,45 +417,107 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     setError(null);
 
     try {
+      console.log('🚀 [FleetDashboard] Starting optimized vessel data fetch...');
+      const startTime = Date.now();
+
+      // Step 1: Fetch vessels first (fast)
       const response = await fetch(VESSELS_WITH_OVERRIDE_API_URL);
 
       if (!response.ok) {
         throw new Error(`API request failed with status ${response.status}`);
       }
 
-      let data = await response.json();
-      const processedData = processVesselsData(data);
+      const data = await response.json();
+      console.log(`✅ [FleetDashboard] Fetched ${data.vessels?.length || 0} vessels in ${Date.now() - startTime}ms`);
+
+      // Step 2: Process vessel data immediately (no port enrichment yet)
+      const processedData = processVesselsData(data.vessels || []);
       const sortedData = sortVesselsData(processedData);
 
-      setVessels(sortedData || []);
-      setFilteredVessels(sortedData || []);
+      // Step 3: Update UI immediately with basic vessel data
+      setVessels(sortedData);
+      setFilteredVessels(sortedData);
+      setLoading(false); // UI is now interactive!
       setLastUpdated(new Date());
+
+      console.log(`🎯 [FleetDashboard] UI updated, now enriching with port data...`);
+
+      // Step 4: Progressive enrichment with port document data
+      if (data.meta?.port_optimization_available && data.meta?.unique_ports) {
+        console.log(`📊 [FleetDashboard] Using optimized port loading for ${data.meta.unique_port_count} ports`);
+        setPortEnrichmentLoading(true); // Start port enrichment loading indicator
+
+        // Use progressive enrichment for better UX
+        const enrichedVessels = await portMappingService.enrichVesselDataProgressive(
+          sortedData,
+          (progressiveData, isComplete, current, total) => { // Added current, total to callback
+            console.log(`🔄 [FleetDashboard] Port enrichment progress: ${isComplete ? 'Complete' : 'In Progress'}`);
+            setEnrichmentProgress({ current, total }); // Update progress state
+
+            const processedProgressive = processVesselsData(progressiveData);
+            const sortedProgressive = sortVesselsData(processedProgressive);
+
+            setVessels(sortedProgressive);
+            setFilteredVessels(sortedProgressive);
+
+            if (isComplete) {
+              console.log('✅ [FleetDashboard] Port enrichment completed');
+              setPortEnrichmentLoading(false); // End port enrichment loading indicator
+            }
+          }
+        );
+
+        // Final update (in case progressive callback wasn't triggered)
+        const finalProcessed = processVesselsData(enrichedVessels);
+        const finalSorted = sortVesselsData(finalProcessed);
+        setVessels(finalSorted);
+        setFilteredVessels(finalSorted);
+
+      } else {
+        // Fallback to old method if optimization not available
+        console.log('⚠️ [FleetDashboard] Port optimization not available, using fallback method');
+        setPortEnrichmentLoading(true); // Start port enrichment loading indicator for fallback
+
+        try {
+          const enrichedVessels = await portMappingService.enrichVesselData(sortedData);
+          const finalProcessed = processVesselsData(enrichedVessels);
+          const finalSorted = sortVesselsData(finalProcessed);
+          setVessels(finalSorted);
+          setFilteredVessels(finalSorted);
+        } catch (enrichError) {
+          console.warn('⚠️ [FleetDashboard] Port enrichment failed, continuing with basic data:', enrichError);
+        }
+
+        setPortEnrichmentLoading(false); // End port enrichment loading indicator
+      }
+
     } catch (err) {
+      console.error('❌ [FleetDashboard] Error loading vessel data:', err);
       setError('Failed to load vessel data. Please try again later.');
       setVessels([]);
       setFilteredVessels([]);
-    } finally {
       setLoading(false);
+      setPortEnrichmentLoading(false); // Ensure loading indicator is turned off on error
     }
   }, [processVesselsData, sortVesselsData, VESSELS_WITH_OVERRIDE_API_URL]);
 
   // OPTIMIZED: Checklist update handler
   const handleChecklistUpdate = useCallback((voyageId, checklistData) => {
-    setVessels(prevVessels => 
+    setVessels(prevVessels =>
       prevVessels.map(vessel => {
         if (vessel.id === voyageId) {
           const currentChecklistReceived = vessel.checklist_received;
           const isCurrentlyAcknowledged = currentChecklistReceived === 'Acknowledged';
-        
+
           let newChecklistReceived;
           if (isCurrentlyAcknowledged) {
             newChecklistReceived = 'Acknowledged';
           } else {
-            newChecklistReceived = checklistData.status === 'submitted' ? 'Submitted' : 
+            newChecklistReceived = checklistData.status === 'submitted' ? 'Submitted' :
                                   checklistData.status === 'complete' ? 'Submitted' :
                                   vessel.checklist_received;
           }
-        
+
           return {
             ...vessel,
             computed_checklist_status: checklistData.status || 'submitted',
@@ -468,21 +534,21 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       })
     );
 
-    setFilteredVessels(prevFiltered => 
+    setFilteredVessels(prevFiltered =>
       prevFiltered.map(vessel => {
         if (vessel.id === voyageId) {
           const currentChecklistReceived = vessel.checklist_received;
           const isCurrentlyAcknowledged = currentChecklistReceived === 'Acknowledged';
-        
+
           let newChecklistReceived;
           if (isCurrentlyAcknowledged) {
             newChecklistReceived = 'Acknowledged';
           } else {
-            newChecklistReceived = checklistData.status === 'submitted' ? 'Submitted' : 
+            newChecklistReceived = checklistData.status === 'submitted' ? 'Submitted' :
                                   checklistData.status === 'complete' ? 'Submitted' :
                                   vessel.checklist_received;
           }
-        
+
           return {
             ...vessel,
             computed_checklist_status: checklistData.status || 'submitted',
@@ -643,7 +709,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       if (fieldToUpdate === 'checklist_received') {
         const currentVessel = vessels.find(v => v.uniqueKey === updatedVessel.uniqueKey);
         const currentStatus = currentVessel?.checklist_received;
-      
+
         if (currentStatus === 'Acknowledged') {
           alert('Cannot modify acknowledged checklist status. Pre-arrival checklist has been acknowledged and cannot be changed.');
           return false;
@@ -667,12 +733,12 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
 
       if (!response.ok) {
         const errorData = await response.json();
-      
+
         if (response.status === 409) {
           alert(errorData.message || 'Cannot modify acknowledged checklist status');
           return false;
         }
-      
+
         throw new Error(errorData.message || `API request failed with status ${response.status}`);
       }
 
@@ -680,19 +746,23 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
 
       setVessels(prevVessels =>
         prevVessels.map(vessel =>
-          vessel.uniqueKey === updatedVessel.uniqueKey ? {
-            ...vessel,
-            [fieldToUpdate]: responseData[fieldToUpdate]
-          } : vessel
+          vessel.id === updatedVessel.id
+            ? {
+                ...vessel,
+                [fieldToUpdate]: responseData[fieldToUpdate]
+              }
+            : vessel
         )
       );
 
       setFilteredVessels(prevFiltered =>
         prevFiltered.map(vessel =>
-          vessel.uniqueKey === updatedVessel.uniqueKey ? {
-            ...vessel,
-            [fieldToUpdate]: responseData[fieldToUpdate]
-          } : vessel
+          vessel.id === updatedVessel.id
+            ? {
+                ...vessel,
+                [fieldToUpdate]: responseData[fieldToUpdate]
+              }
+            : vessel
         )
       );
 
@@ -761,7 +831,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         vessel.arrival_port && portFilters.includes(vessel.arrival_port)
       );
     }
-  
+
     if (results.length > 0) {
       if (statusFilters.length === 0) {
         results = [];
@@ -771,7 +841,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         );
       }
     }
-  
+
     if (results.length > 0) {
       if (docFilters.length === 0) {
         results = [];
@@ -834,7 +904,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         const errorData = await response.json();
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
-      
+
       const result = await response.json();
 
       setVessels(prevVessels =>
@@ -849,7 +919,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
             : vessel
         )
       );
-    
+
       setFilteredVessels(prevFiltered =>
         prevFiltered.map(vessel =>
           vessel.id === vesselId
@@ -884,7 +954,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     setStatusFilters(uniqueStatuses);
     setDocFilters(uniqueDocs);
     setVoyageStatusFilter('Current Voyages');
-  }, [vessels]); 
+  }, [vessels]);
 
   // OPTIMIZED: Toggle filter items
   const toggleAllItems = useCallback((type) => {
@@ -1344,6 +1414,16 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         <div className="error-message">
           <AlertTriangle size={16} />
           <span>{error}</span>
+        </div>
+      )}
+
+      {/* ADDED: Port enrichment loading indicator */}
+      {portEnrichmentLoading && (
+        <div className="port-enrichment-loading">
+          <div className="loading-indicator">
+            <RefreshCw size={14} className="spinning" />
+            <span>Loading port documents... ({enrichmentProgress.current}/{enrichmentProgress.total})</span>
+          </div>
         </div>
       )}
 
