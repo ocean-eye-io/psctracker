@@ -20,6 +20,7 @@ import PropTypes from 'prop-types';
 import defectsService from '../../../services/defectsService';
 import { useAuth } from '../../../context/AuthContext';
 import ChecklistModal from '../reporting/ChecklistModal';
+import portMappingService from '../../../services/PortMappingService';
 
 const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   // Get auth context
@@ -412,6 +413,8 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   }, []);
 
   // OPTIMIZED: Fetch vessel data with better error handling
+  // 🔧 FIXED: Update your fetchVesselData function in FleetDashboard.jsx
+
   const fetchVesselData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -428,10 +431,29 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       }
 
       const data = await response.json();
-      console.log(`✅ [FleetDashboard] Fetched ${data.vessels?.length || 0} vessels in ${Date.now() - startTime}ms`);
+      
+      // 🔧 FIXED: Handle both old and new response structures
+      let vesselArray = [];
+      let metaData = null;
+      
+      if (data.vessels && Array.isArray(data.vessels)) {
+        // NEW STRUCTURE: { vessels: [...], meta: {...} }
+        vesselArray = data.vessels;
+        metaData = data.meta;
+        console.log('✅ [FleetDashboard] Using NEW response structure');
+      } else if (Array.isArray(data)) {
+        // OLD STRUCTURE: [vessel1, vessel2, ...]
+        vesselArray = data;
+        console.log('✅ [FleetDashboard] Using OLD response structure');
+      } else {
+        console.error('❌ [FleetDashboard] Unknown response structure:', Object.keys(data));
+        throw new Error('Invalid response structure from API');
+      }
+
+      console.log(`✅ [FleetDashboard] Fetched ${vesselArray.length} vessels in ${Date.now() - startTime}ms`);
 
       // Step 2: Process vessel data immediately (no port enrichment yet)
-      const processedData = processVesselsData(data.vessels || []);
+      const processedData = processVesselsData(vesselArray);
       const sortedData = sortVesselsData(processedData);
 
       // Step 3: Update UI immediately with basic vessel data
@@ -440,55 +462,97 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       setLoading(false); // UI is now interactive!
       setLastUpdated(new Date());
 
-      console.log(`🎯 [FleetDashboard] UI updated, now enriching with port data...`);
+      console.log(`🎯 [FleetDashboard] UI updated with ${sortedData.length} vessels, now enriching with port data...`);
 
-      // Step 4: Progressive enrichment with port document data
-      if (data.meta?.port_optimization_available && data.meta?.unique_ports) {
-        console.log(`📊 [FleetDashboard] Using optimized port loading for ${data.meta.unique_port_count} ports`);
-        setPortEnrichmentLoading(true); // Start port enrichment loading indicator
+      // Only proceed with port enrichment if we have vessels
+      if (sortedData.length === 0) {
+        console.warn('⚠️ [FleetDashboard] No vessels to enrich, skipping port enrichment');
+        setPortEnrichmentLoading(false);
+        return;
+      }
 
-        // Use progressive enrichment for better UX
-        const enrichedVessels = await portMappingService.enrichVesselDataProgressive(
-          sortedData,
-          (progressiveData, isComplete, current, total) => { // Added current, total to callback
-            console.log(`🔄 [FleetDashboard] Port enrichment progress: ${isComplete ? 'Complete' : 'In Progress'}`);
-            setEnrichmentProgress({ current, total }); // Update progress state
-
-            const processedProgressive = processVesselsData(progressiveData);
-            const sortedProgressive = sortVesselsData(processedProgressive);
-
-            setVessels(sortedProgressive);
-            setFilteredVessels(sortedProgressive);
-
-            if (isComplete) {
-              console.log('✅ [FleetDashboard] Port enrichment completed');
-              setPortEnrichmentLoading(false); // End port enrichment loading indicator
-            }
-          }
-        );
-
-        // Final update (in case progressive callback wasn't triggered)
-        const finalProcessed = processVesselsData(enrichedVessels);
-        const finalSorted = sortVesselsData(finalProcessed);
-        setVessels(finalSorted);
-        setFilteredVessels(finalSorted);
-
-      } else {
-        // Fallback to old method if optimization not available
-        console.log('⚠️ [FleetDashboard] Port optimization not available, using fallback method');
-        setPortEnrichmentLoading(true); // Start port enrichment loading indicator for fallback
+      // Step 4: Enhanced port enrichment based on optimization availability
+      if (metaData?.port_optimization_available && metaData?.unique_ports) {
+        console.log(`📊 [FleetDashboard] Using OPTIMIZED port loading for ${metaData.unique_port_count} ports`);
+        setPortEnrichmentLoading(true);
 
         try {
+          // 🚀 OPTIMIZED PATH: Use batch loading
+          const uniquePorts = metaData.unique_ports;
+          
+          // Import the service if not already imported
+          const { default: portMappingService } = await import('../../../services/PortMappingService');
+          
+          // Get port documents in batches with caching
+          const portDocuments = await portMappingService.getPortDocumentsBatch(uniquePorts);
+          
+          console.log(`✅ [FleetDashboard] Loaded documents for ${portDocuments.port_summaries.length} ports`);
+          console.log(`📊 Cache hit ratio: ${portDocuments.meta?.cache_hit_ratio || 0}%`);
+          
+          // Apply port data to vessels
+          const enrichedVessels = portMappingService.applyPortDataToVessels(sortedData, portDocuments.lookup);
+          
+          const finalProcessed = processVesselsData(enrichedVessels);
+          const finalSorted = sortVesselsData(finalProcessed);
+          
+          setVessels(finalSorted);
+          setFilteredVessels(finalSorted);
+          
+          console.log('✅ [FleetDashboard] Port enrichment completed with OPTIMIZED batch loading');
+          
+        } catch (enrichError) {
+          console.warn('⚠️ [FleetDashboard] Optimized port enrichment failed, trying fallback:', enrichError);
+          
+          // Fallback to progressive enrichment
+          try {
+            const { default: portMappingService } = await import('../../../services/PortMappingService');
+            
+            await portMappingService.enrichVesselDataProgressive(
+              sortedData,
+              (progressiveData, isComplete, current, total) => {
+                console.log(`🔄 [FleetDashboard] Fallback enrichment: ${current}/${total}`);
+                setEnrichmentProgress({ current, total });
+
+                const processedProgressive = processVesselsData(progressiveData);
+                const sortedProgressive = sortVesselsData(processedProgressive);
+
+                setVessels(sortedProgressive);
+                setFilteredVessels(sortedProgressive);
+
+                if (isComplete) {
+                  console.log('✅ [FleetDashboard] Fallback enrichment completed');
+                }
+              }
+            );
+          } catch (fallbackError) {
+            console.warn('⚠️ [FleetDashboard] Fallback enrichment also failed:', fallbackError);
+          }
+        }
+        
+        setPortEnrichmentLoading(false);
+
+      } else {
+        // Fallback to old enrichment method
+        console.log('⚠️ [FleetDashboard] Port optimization not available, using fallback method');
+        setPortEnrichmentLoading(true);
+
+        try {
+          // Dynamic import to handle missing service
+          const { default: portMappingService } = await import('../../../services/PortMappingService');
+          
           const enrichedVessels = await portMappingService.enrichVesselData(sortedData);
           const finalProcessed = processVesselsData(enrichedVessels);
           const finalSorted = sortVesselsData(finalProcessed);
           setVessels(finalSorted);
           setFilteredVessels(finalSorted);
+          
+          console.log('✅ [FleetDashboard] Fallback enrichment completed');
+          
         } catch (enrichError) {
           console.warn('⚠️ [FleetDashboard] Port enrichment failed, continuing with basic data:', enrichError);
         }
 
-        setPortEnrichmentLoading(false); // End port enrichment loading indicator
+        setPortEnrichmentLoading(false);
       }
 
     } catch (err) {
@@ -497,9 +561,12 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       setVessels([]);
       setFilteredVessels([]);
       setLoading(false);
-      setPortEnrichmentLoading(false); // Ensure loading indicator is turned off on error
+      setPortEnrichmentLoading(false);
     }
   }, [processVesselsData, sortVesselsData, VESSELS_WITH_OVERRIDE_API_URL]);
+
+// 🔧 ALTERNATIVE: If you prefer to stick with static imports, add this to your imports section
+// import portMappingService from '../../../services/PortMappingService';
 
   // OPTIMIZED: Checklist update handler
   const handleChecklistUpdate = useCallback((voyageId, checklistData) => {
