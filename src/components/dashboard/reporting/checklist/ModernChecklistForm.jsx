@@ -43,7 +43,7 @@ const ModernChecklistForm = ({
   existingChecklist = null,
   onSave = () => {},
   onSubmit = () => {},
-  onCancel = () => {},
+  onCancel = () => {}, // Still passed, but not used for header back button
   loading = false,
   currentUser = { id: "user123", name: "John Doe" },
   mode = 'edit',
@@ -51,16 +51,13 @@ const ModernChecklistForm = ({
 }) => {
   const [responses, setResponses] = useState({});
   const [completedItems, setCompletedItems] = useState(new Set());
-  const [saving, setSaving] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false); // This state will now be managed by parent
+  const [submitting, setSubmitting] = useState(false); // This state will now be managed by parent
   const [currentTime, setCurrentTime] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState('');
   const [showOnlyMandatory, setShowOnlyMandatory] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
-  const [lastSaveTime, setLastSaveTime] = useState(null);
-
-  // Debug state
-  const [debugMode, setDebugMode] = useState(false);
+  // const [lastSaveTime, setLastSaveTime] = useState(null); // Moved to parent
 
   // Map response types to field types (moved before useMemo)
   const mapResponseTypeToFieldType = useCallback((responseType) => {
@@ -157,12 +154,12 @@ const ModernChecklistForm = ({
   useEffect(() => {
     if (mode === 'edit' && !disabled && Object.keys(responses).length > 0) {
       const autoSaveTimer = setTimeout(() => {
-        handleSave(true); // Auto-save
+        onSave(responses, true); // Auto-save, pass responses to parent
       }, 30000); // Auto-save every 30 seconds
 
       return () => clearTimeout(autoSaveTimer);
     }
-  }, [responses, mode, disabled]);
+  }, [responses, mode, disabled, onSave]); // Added onSave to dependency array
 
   // Update timer
   useEffect(() => {
@@ -278,52 +275,28 @@ const ModernChecklistForm = ({
 
   const progress = getProgress();
 
-  // Handle save with proper error handling
-  const handleSave = useCallback(async (isAutoSave = false) => {
-    if (disabled && !isAutoSave) return;
-
+  // Handle save (now just calls parent's onSave)
+  const handleSaveClick = useCallback(async () => {
+    if (disabled) return;
     try {
-      if (!isAutoSave) {
-        setSaving(true);
-      }
-
-      console.log('💾 ModernChecklistForm: Starting save...', {
-        isAutoSave,
-        responseCount: Object.keys(responses).length,
-        checklistId: existingChecklist?.checklist_id
-      });
-
-      // Call parent save function
-      const result = await onSave(responses, isAutoSave);
-      
-      if (!isAutoSave) {
-        setLastSaveTime(new Date());
-        console.log('✅ ModernChecklistForm: Save successful');
-      } else {
-        console.log('🔄 ModernChecklistForm: Auto-save successful');
-      }
-
-      return result;
+      // setSaving(true); // Parent handles this
+      console.log('💾 ModernChecklistForm: Triggering parent save...');
+      await onSave(responses, false); // Pass current responses to parent
+      console.log('✅ ModernChecklistForm: Parent save triggered successfully');
     } catch (error) {
-      console.error('❌ ModernChecklistForm: Save failed:', error);
-      if (!isAutoSave) {
-        // Show error to user for manual saves
-        alert(`Save failed: ${error.message}`);
-      }
-      throw error;
+      console.error('❌ ModernChecklistForm: Save failed via parent:', error);
+      alert(`Save failed: ${error.message}`);
     } finally {
-      if (!isAutoSave) {
-        setSaving(false);
-      }
+      // setSaving(false); // Parent handles this
     }
-  }, [responses, onSave, disabled, existingChecklist, setSaving]);
+  }, [responses, onSave, disabled]);
 
-  // Handle submit with validation
-  const handleSubmit = useCallback(async () => {
+  // Handle submit (now just calls parent's onSubmit)
+  const handleSubmitClick = useCallback(async () => {
     if (disabled) return;
 
     try {
-      setSubmitting(true);
+      // setSubmitting(true); // Parent handles this
       console.log('🚀 ModernChecklistForm: Starting submit...');
 
       // Validate form first
@@ -334,11 +307,11 @@ const ModernChecklistForm = ({
         return;
       }
 
-      // Save current state first
-      await handleSave(false);
+      // Save current state first (parent will handle this as part of submit)
+      // await handleSaveClick(); // No need to call directly, parent's onSubmit will handle saving
 
       console.log('📤 ModernChecklistForm: Calling onSubmit...');
-      const result = await onSubmit(responses);
+      const result = await onSubmit(responses); // Pass current responses to parent
       console.log('✅ ModernChecklistForm: Submit successful:', result);
 
       return result;
@@ -347,9 +320,9 @@ const ModernChecklistForm = ({
       alert(`Submit failed: ${error.message}`);
       throw error;
     } finally {
-      setSubmitting(false);
+      // setSubmitting(false); // Parent handles this
     }
-  }, [responses, onSubmit, disabled, validateForm, handleSave]);
+  }, [responses, onSubmit, disabled, validateForm]);
 
   // Filter fields based on search and filters
   const filteredFields = useMemo(() => {
@@ -477,179 +450,9 @@ const ModernChecklistForm = ({
 
   return (
     <div className="light-form-container">
-      {/* Debug Toggle */}
-      {process.env.NODE_ENV === 'development' && (
-        <button
-          onClick={() => setDebugMode(!debugMode)}
-          style={{
-            position: 'fixed',
-            top: '10px',
-            left: '10px',
-            zIndex: 9999,
-            background: debugMode ? '#dc3545' : '#28a745',
-            color: 'white',
-            border: 'none',
-            padding: '4px 8px',
-            borderRadius: '4px',
-            fontSize: '10px'
-          }}
-        >
-          {debugMode ? 'Hide Debug' : 'Show Debug'}
-        </button>
-      )}
-
-      {/* Debug Panel */}
-      {debugMode && (
-        <div style={{
-          position: 'fixed',
-          top: '50px',
-          left: '10px',
-          width: '300px',
-          maxHeight: '400px',
-          overflow: 'auto',
-          background: '#1a1a1a',
-          color: '#fff',
-          padding: '12px',
-          borderRadius: '6px',
-          zIndex: 9998,
-          fontSize: '11px',
-          fontFamily: 'monospace'
-        }}>
-          <h4 style={{ margin: '0 0 8px', color: '#00ff88' }}>🔍 Form Debug</h4>
-          <div><strong>Template Items:</strong> {template?.processed_items?.length || 0}</div>
-          <div><strong>Form Sections:</strong> {formSections.length}</div>
-          <div><strong>Responses:</strong> {Object.keys(responses).length}</div>
-          <div><strong>Completed:</strong> {completedItems.size}</div>
-          <div><strong>Progress:</strong> {progress.percentage}%</div>
-          <div><strong>Mode:</strong> {mode}</div>
-          <div><strong>Disabled:</strong> {disabled ? 'Yes' : 'No'}</div>
-          <div><strong>Validation Errors:</strong> {Object.keys(validationErrors).length}</div>
-          
-          <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #333' }}>
-            <button
-              onClick={() => {
-                console.log('=== FORM DEBUG INFO ===');
-                console.log('Template:', template);
-                console.log('Form Sections:', formSections);
-                console.log('Responses:', responses);
-                console.log('Completed Items:', Array.from(completedItems));
-                console.log('Validation Errors:', validationErrors);
-                console.log('Progress:', progress);
-                console.log('=======================');
-              }}
-              style={{
-                background: '#007acc',
-                color: '#fff',
-                border: 'none',
-                padding: '4px 8px',
-                borderRadius: '3px',
-                cursor: 'pointer',
-                fontSize: '10px',
-                marginRight: '4px'
-              }}
-            >
-              Log Data
-            </button>
-            <button
-              onClick={() => handleSave(false)}
-              disabled={saving}
-              style={{
-                background: '#28a745',
-                color: '#fff',
-                border: 'none',
-                padding: '4px 8px',
-                borderRadius: '3px',
-                cursor: 'pointer',
-                fontSize: '10px'
-              }}
-            >
-              {saving ? 'Saving...' : 'Test Save'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="light-header">
-        <div className="light-header-left">
-          <button onClick={onCancel} className="light-back-btn" disabled={disabled}>
-            <ArrowLeft size={16} />
-          </button>
-          <div className="light-vessel-info">
-            <div className="light-title">
-              <Ship size={16} />
-              <span>{template?.name || '5 Day Pre-Arrival Checklist'}</span>
-            </div>
-            <div className="light-subtitle">
-              {vessel.vessel_name} • IMO: {vessel.imo_no}
-            </div>
-          </div>
-        </div>
-        
-        <div className="light-header-right">
-          <div className="light-progress">
-            <div className="light-progress-circle">
-              <svg viewBox="0 0 20 20">
-                <circle
-                  cx="10"
-                  cy="10"
-                  r="8"
-                  fill="none"
-                  stroke="#e2e8f0"
-                  strokeWidth="2"
-                />
-                <circle
-                  cx="10"
-                  cy="10"
-                  r="8"
-                  fill="none"
-                  stroke="#007bff"
-                  strokeWidth="2"
-                  strokeDasharray={`${progress.percentage * 0.503}, 50.3`}
-                  strokeLinecap="round"
-                  transform="rotate(-90 10 10)"
-                />
-              </svg>
-              <span className="light-progress-text">{progress.percentage}%</span>
-            </div>
-            <div className="light-progress-info">
-              <span>{progress.completed}/{progress.total}</span>
-              <small>{progress.mandatoryCompleted}/{progress.mandatory} req</small>
-            </div>
-          </div>
-          
-          {mode === 'edit' && !disabled && (
-            <div className="light-actions">
-              <button
-                onClick={() => handleSave(false)}
-                disabled={saving || submitting}
-                className="light-btn save"
-              >
-                {saving ? <RefreshCw size={14} className="spinning" /> : <Save size={14} />}
-                {saving ? 'Saving...' : 'Save'}
-              </button>
-              
-              <button
-                onClick={handleSubmit}
-                disabled={submitting || saving || progress.mandatoryPercentage < 100}
-                className="light-btn submit"
-              >
-                {submitting ? <RefreshCw size={14} className="spinning" /> : <Send size={14} />}
-                {submitting ? 'Submitting...' : 'Submit'}
-              </button>
-            </div>
-          )}
-
-          {lastSaveTime && (
-            <div className="light-save-indicator">
-              <small>Saved at {lastSaveTime.toLocaleTimeString()}</small>
-            </div>
-          )}
-        </div>
-      </div>
-
+      {/* Removed Header - now handled by ChecklistModal */}
       {/* Filters */}
-      <div className="light-filters">
+      {/* <div className="light-filters">
         <div className="light-search">
           <Search size={14} />
           <input
@@ -667,7 +470,7 @@ const ModernChecklistForm = ({
           <Filter size={14} />
           {showOnlyMandatory ? 'Required Only' : 'All Items'}
         </button>
-      </div>
+      </div> */}
 
       {/* Form Content */}
       <div className="light-form-content">
@@ -748,30 +551,12 @@ const ModernChecklistForm = ({
         )}
       </div>
 
-      {/* Status Bar */}
-      {(saving || submitting) && (
-        <div className="light-status-bar">
-          <div className="light-status-content">
-            {saving && (
-              <div className="light-status-item">
-                <RefreshCw size={14} className="spinning" />
-                <span>Saving checklist...</span>
-              </div>
-            )}
-            {submitting && (
-              <div className="light-status-item">
-                <RefreshCw size={14} className="spinning" />
-                <span>Submitting checklist...</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Status Bar - Removed, now handled by ChecklistModal */}
 
       {/* Styles */}
       <style jsx>{`
         .light-form-container {
-          height: 100vh;
+          height: 100%; /* Changed to 100% to fill parent modal body */
           display: flex;
           flex-direction: column;
           background: #f7fafd;
@@ -780,232 +565,8 @@ const ModernChecklistForm = ({
           overflow: hidden;
         }
 
-        /* Header */
-        .light-header {
-          background: #ffffff;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-          padding: 10px 16px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          min-height: 50px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        .light-header-left {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .light-back-btn {
-          background: #f0f4f8;
-          border: 1px solid rgba(0, 0, 0, 0.1);
-          border-radius: 4px;
-          padding: 6px;
-          cursor: pointer;
-          color: #333333;
-          transition: all 0.2s ease;
-        }
-
-        .light-back-btn:hover:not(:disabled) {
-          background: #eef4f8;
-          transform: translateY(-1px);
-        }
-
-        .light-back-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .light-vessel-info {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-
-        .light-title {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 15px;
-          font-weight: 600;
-          color: #333333;
-        }
-
-        .light-subtitle {
-          font-size: 12px;
-          color: #6c757d;
-        }
-
-        .light-header-right {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-
-        .light-progress {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .light-progress-circle {
-          position: relative;
-          width: 28px;
-          height: 28px;
-        }
-
-        .light-progress-circle svg {
-          width: 100%;
-          height: 100%;
-          transform: rotate(-90deg);
-        }
-
-        .light-progress-text {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          font-size: 9px;
-          font-weight: 600;
-          color: #007bff;
-        }
-
-        .light-progress-info {
-          display: flex;
-          flex-direction: column;
-          font-size: 11px;
-          line-height: 1.2;
-        }
-
-        .light-progress-info small {
-          color: #6c757d;
-          font-size: 9px;
-        }
-
-        .light-actions {
-          display: flex;
-          gap: 6px;
-        }
-
-        .light-btn {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          padding: 6px 10px;
-          border: none;
-          border-radius: 4px;
-          font-size: 12px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .light-btn.save {
-          background: #f0f4f8;
-          color: #333333;
-          border: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
-        .light-btn.save:hover:not(:disabled) {
-          background: #eef4f8;
-          transform: translateY(-1px);
-        }
-
-        .light-btn.submit {
-          background: #28a745;
-          color: white;
-        }
-
-        .light-btn.submit:hover:not(:disabled) {
-          background: #218838;
-          transform: translateY(-1px);
-        }
-
-        .light-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .light-save-indicator {
-          font-size: 10px;
-          color: #6c757d;
-        }
-
-        .spinning {
-          animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        /* Filters */
-        .light-filters {
-          background: #ffffff;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-          padding: 6px 16px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .light-search {
-          position: relative;
-          flex: 1;
-          max-width: 280px;
-        }
-
-        .light-search svg {
-          position: absolute;
-          left: 8px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #6c757d;
-        }
-
-        .light-search input {
-          width: 100%;
-          padding: 5px 8px 5px 26px;
-          background: #f0f4f8;
-          border: 1px solid rgba(0, 0, 0, 0.1);
-          border-radius: 4px;
-          color: #333333;
-          font-size: 12px;
-        }
-
-        .light-search input:focus {
-          outline: none;
-          border-color: #007bff;
-          box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
-        }
-
-        .light-filter-btn {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          padding: 5px 8px;
-          background: #f0f4f8;
-          border: 1px solid rgba(0, 0, 0, 0.1);
-          border-radius: 4px;
-          color: #6c757d;
-          font-size: 11px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .light-filter-btn:hover {
-          background: #eef4f8;
-          color: #333333;
-        }
-
-        .light-filter-btn.active {
-          background: #dc3545;
-          color: white;
-          border-color: #dc3545;
-        }
+        /* Header - REMOVED */
+        /* Filters - REMOVED */
 
         /* Form Content */
         .light-form-content {
@@ -1238,72 +799,21 @@ const ModernChecklistForm = ({
           align-items: center;
           justify-content: center;
           gap: 10px;
-          height: 100vh;
+          height: 100%; /* Changed to 100% to fill parent modal body */
           background: #f7fafd;
           color: #333333;
         }
 
-        /* Status Bar */
-        .light-status-bar {
-          background: #f8f9fa;
-          border-top: 1px solid rgba(0, 0, 0, 0.1);
-          padding: 8px 16px;
-          flex-shrink: 0;
-        }
-
-        .light-status-content {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-
-        .light-status-item {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 12px;
-          color: #6c757d;
-        }
+        /* Status Bar - REMOVED */
 
         /* Responsive */
         @media (max-width: 768px) {
-          .light-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 8px;
-            padding: 8px 12px;
-          }
-
-          .light-header-right {
-            width: 100%;
-            justify-content: space-between;
-          }
-
-          .light-filters {
-            flex-direction: column;
-            gap: 8px;
-            align-items: stretch;
-          }
-
-          .light-search {
-            max-width: none;
-          }
-
           .light-fields-grid {
             grid-template-columns: 1fr;
           }
 
           .light-form-content {
             padding: 8px;
-          }
-
-          .light-actions {
-            width: 100%;
-          }
-
-          .light-btn {
-            flex: 1;
-            justify-content: center;
           }
         }
       `}</style>

@@ -20,7 +20,7 @@
   --dt-danger-light: #fee2e2;
   --dt-danger-dark: #dc2626;
 
-  /* Yes Response Highlighting Colors - These are now effectively unused if highlighting is removed */
+  /* Yes Response Highlighting Colors - Light Red Theme */
   --dt-yes-highlight-bg: #fef2f2;
   --dt-yes-highlight-border: #f87171;
   --dt-yes-highlight-text: #7f1d1d;
@@ -202,14 +202,12 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* YES RESPONSE HIGHLIGHTING - REMOVED */
-/* .dynamic-table-data-row.has-yes-response {
+/* YES RESPONSE HIGHLIGHTING - Re-enabled with simple styling */
+.dynamic-table-data-row.has-yes-response {
   background: var(--dt-yes-highlight-bg) !important;
   border-left: 3px solid var(--dt-yes-highlight-border);
   position: relative;
-  box-sizing: border-box;
-  width: 100%;
-  display: table-row;
+  box-sizing: border-box; /* Ensure border is included in element's total width */
 }
 
 .dynamic-table-data-row.has-yes-response:nth-child(even) {
@@ -222,7 +220,8 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.dynamic-table-data-row.has-yes-response::before {
+/* Removed ::before pseudo-element for simplicity */
+/* .dynamic-table-data-row.has-yes-response::before {
   content: '';
   position: absolute;
   left: -1px;
@@ -233,8 +232,8 @@
   border-radius: 0 2px 2px 0;
 } */
 
-/* Enhanced Yes response cell styling - REMOVED */
-/* .dynamic-table-data-row.has-yes-response .dynamic-table-cell-yes-no-yes {
+/* Enhanced Yes response cell styling - Fixed width to prevent shifting */
+.dynamic-table-data-row.has-yes-response .dynamic-table-cell-yes-no-yes {
   background: linear-gradient(135deg, #dc2626, #b91c1c);
   color: white;
   border: 1px solid #991b1b;
@@ -245,17 +244,19 @@
   box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
   position: relative;
   overflow: hidden;
-  min-width: 80px;
-  width: 80px;
-  max-width: 80px;
+  /* Fix: Maintain consistent width */
+  min-width: 80px; /* Adjusted for consistency */
+  width: 80px; /* Adjusted for consistency */
+  max-width: 80px; /* Adjusted for consistency */
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 2px 6px;
-  box-sizing: border-box;
+  box-sizing: border-box; /* Ensure padding/border are included in width */
 }
 
-.dynamic-table-data-row.has-yes-response .dynamic-table-cell-yes-no-yes::before {
+/* Removed ::before pseudo-element for simplicity */
+/* .dynamic-table-data-row.has-yes-response .dynamic-table-cell-yes-no-yes::before {
   content: '';
   position: absolute;
   top: 0;
@@ -266,7 +267,7 @@
   pointer-events: none;
 } */
 
-/* Subtle animation for yes responses - REMOVED */
+/* Subtle animation for yes responses - REMOVED as requested */
 /* @keyframes subtle-pulse {
   0%, 100% {
     border-left-color: var(--dt-yes-highlight-border);
@@ -426,13 +427,13 @@
   word-break: break-word; /* Break long words */
 }
 
-/* Enhanced query styling for yes responses - REMOVED */
-/* .dynamic-table-data-row.has-yes-response .dynamic-table-predefined-query {
+/* Enhanced query styling for yes responses */
+.dynamic-table-data-row.has-yes-response .dynamic-table-predefined-query {
   background: rgba(248, 113, 113, 0.1);
   color: var(--dt-yes-highlight-text);
   border: 1px solid rgba(248, 113, 113, 0.2);
   font-weight: 600;
-} */
+}
 
 /* Form Inputs */
 .dynamic-table-input {
@@ -485,16 +486,16 @@
   text-align: left;
 }
 
-/* Enhanced select styling for yes responses - REMOVED */
-/* .dynamic-table-data-row.has-yes-response .dynamic-table-select {
+/* Enhanced select styling for yes responses */
+.dynamic-table-data-row.has-yes-response .dynamic-table-select {
   border-color: var(--dt-yes-highlight-border);
   background: var(--dt-yes-highlight-bg);
   color: var(--dt-yes-highlight-text);
-  width: 80px;
+  width: 80px; /* Maintain fixed width even when highlighted */
   max-width: 80px;
   min-width: 80px;
-  box-sizing: border-box;
-} */
+  box-sizing: border-box; /* Ensure padding/border are included in width */
+}
 .dynamic-table-column-number {
   width: 80px;
   text-align: right;
@@ -698,8 +699,8 @@
   text-align: center;
 }
 
-/* Enhanced instructions for tables with yes responses - REMOVED */
-/* .dynamic-table-container.has-yes-responses .dynamic-table-instructions {
+/* Enhanced instructions for tables with yes responses */
+.dynamic-table-container.has-yes-responses .dynamic-table-instructions {
   background: linear-gradient(135deg, #fef2f2, #fee2e2);
   color: #7f1d1d;
   border-top: 2px solid #f87171;
@@ -709,7 +710,7 @@
 .dynamic-table-container.has-yes-responses .dynamic-table-instructions::before {
   content: "⚠️ ";
   margin-right: 4px;
-} */
+}
 
 /* Error State */
 .dynamic-table-error-message {
@@ -837,10 +838,10 @@
     padding: 3px 6px;
   }
 
-  /* Mobile responsive yes highlighting - REMOVED */
-  /* .dynamic-table-data-row.has-yes-response {
+  /* Mobile responsive yes highlighting */
+  .dynamic-table-data-row.has-yes-response {
     border-left-width: 2px;
-  } */
+  }
 }
 
 /* Accessibility */
