@@ -22,11 +22,11 @@
   --dt-danger-light: #fee2e2;
   --dt-danger-dark: #dc2626;
 
-  /* Yes Response Highlighting Colors */
-  --dt-yes-highlight-bg: #f0f9ff;
-  --dt-yes-highlight-border: #0ea5e9;
-  --dt-yes-highlight-text: #0c4a6e;
-  --dt-yes-glow: 0 0 0 1px rgba(14, 165, 233, 0.3);
+  /* Yes Response Highlighting Colors - Light Red Theme */
+  --dt-yes-highlight-bg: #fef2f2;
+  --dt-yes-highlight-border: #f87171;
+  --dt-yes-highlight-text: #7f1d1d;
+  --dt-yes-glow: 0 0 0 1px rgba(248, 113, 113, 0.3);
 
   /* Shadows & Effects */
   --dt-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -203,12 +203,12 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* YES RESPONSE HIGHLIGHTING */
+/* YES RESPONSE HIGHLIGHTING - Fixed column alignment */
 .dynamic-table-data-row.has-yes-response {
   background: var(--dt-yes-highlight-bg) !important;
   border-left: 3px solid var(--dt-yes-highlight-border);
-  box-shadow: var(--dt-yes-glow);
   position: relative;
+  /* Fix: Don't change box-shadow or transform that affects layout */
 }
 
 .dynamic-table-data-row.has-yes-response:nth-child(even) {
@@ -216,9 +216,9 @@
 }
 
 .dynamic-table-data-row.has-yes-response:hover {
-  background: #e0f2fe !important;
+  background: #fecaca !important;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), var(--dt-yes-glow);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .dynamic-table-data-row.has-yes-response::before {
@@ -228,22 +228,29 @@
   top: 0;
   bottom: 0;
   width: 3px;
-  background: linear-gradient(180deg, var(--dt-yes-highlight-border), rgba(14, 165, 233, 0.7));
+  background: linear-gradient(180deg, var(--dt-yes-highlight-border), rgba(248, 113, 113, 0.7));
   border-radius: 0 2px 2px 0;
 }
 
-/* Enhanced Yes response cell styling */
+/* Enhanced Yes response cell styling - Fixed width to prevent shifting */
 .dynamic-table-data-row.has-yes-response .dynamic-table-cell-yes-no-yes {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
   color: white;
-  border: 1px solid #047857;
+  border: 1px solid #991b1b;
   font-weight: 700;
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
   position: relative;
   overflow: hidden;
+  /* Fix: Maintain consistent width */
+  min-width: 40px;
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
 }
 
 .dynamic-table-data-row.has-yes-response .dynamic-table-cell-yes-no-yes::before {
@@ -260,10 +267,10 @@
 /* Subtle animation for yes responses */
 @keyframes subtle-pulse {
   0%, 100% { 
-    box-shadow: var(--dt-yes-glow);
+    border-left-color: var(--dt-yes-highlight-border);
   }
   50% { 
-    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.4);
+    border-left-color: #ef4444;
   }
 }
 
@@ -370,6 +377,13 @@
   text-align: left;
   justify-content: flex-start;
   transition: all 0.3s ease;
+  /* Fix: Consistent sizing to prevent column shift */
+  min-width: 40px;
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
 }
 
 .dynamic-table-cell-yes-no-no {
@@ -407,9 +421,9 @@
 
 /* Enhanced query styling for yes responses */
 .dynamic-table-data-row.has-yes-response .dynamic-table-predefined-query {
-  background: rgba(14, 165, 233, 0.1);
+  background: rgba(248, 113, 113, 0.1);
   color: var(--dt-yes-highlight-text);
-  border: 1px solid rgba(14, 165, 233, 0.2);
+  border: 1px solid rgba(248, 113, 113, 0.2);
   font-weight: 600;
 }
 
@@ -616,9 +630,9 @@
 
 /* Enhanced instructions for tables with yes responses */
 .dynamic-table-container.has-yes-responses .dynamic-table-instructions {
-  background: linear-gradient(135deg, #e3f2fd, #f0f9ff);
-  color: #0c4a6e;
-  border-top: 2px solid #0ea5e9;
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  color: #7f1d1d;
+  border-top: 2px solid #f87171;
   font-weight: 500;
 }
 
