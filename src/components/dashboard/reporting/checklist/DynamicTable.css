@@ -1,4 +1,4 @@
-/* Minimal Dynamic Table CSS - Nunito Font & Compact Design - Light Theme Only */
+/* src/components/dashboard/reporting/DynamicTable.css - Enhanced with Yes highlighting */
 
 :root {
   /* Light Theme Color Palette */
@@ -10,7 +10,7 @@
   --dt-text-primary: #1e293b;
   --dt-text-secondary: #64748b;
   --dt-text-muted: #94a3b8;
-  
+
   /* Accent Colors */
   --dt-primary: #3b82f6;
   --dt-primary-light: #dbeafe;
@@ -21,45 +21,53 @@
   --dt-danger: #ef4444;
   --dt-danger-light: #fee2e2;
   --dt-danger-dark: #dc2626;
-  
+
+  /* Yes Response Highlighting Colors */
+  --dt-yes-highlight-bg: #f0f9ff;
+  --dt-yes-highlight-border: #0ea5e9;
+  --dt-yes-highlight-text: #0c4a6e;
+  --dt-yes-glow: 0 0 0 1px rgba(14, 165, 233, 0.3);
+
   /* Shadows & Effects */
   --dt-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --dt-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --dt-radius-sm: 4px;
   --dt-radius-md: 6px;
   --dt-radius-lg: 8px;
-  
+
   /* Transitions */
   --dt-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --dt-transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ===== MAIN CONTAINER ===== */
 .dynamic-table-container {
-  background: var(--dt-bg-primary);
-  border: 1px solid var(--dt-border-light);
-  border-radius: var(--dt-radius-lg);
-  box-shadow: var(--dt-shadow-sm);
-  margin: 16px 0;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
   overflow: hidden;
+  margin: 8px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 13px;
   line-height: 1.4;
   transition: var(--dt-transition);
 }
 
+.dynamic-table-container.has-error {
+  border-color: #dc3545;
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+}
+
 .dynamic-table-container.disabled-table {
-  opacity: 0.6;
+  opacity: 0.7;
   pointer-events: none;
   filter: grayscale(0.3);
 }
 
-.dynamic-table-container.has-error {
-  border-color: var(--dt-danger);
-  box-shadow: 0 0 0 3px var(--dt-danger-light);
+.dynamic-table-container.predefined-table {
+  border-color: #007bff;
 }
 
-/* ===== TABLE WRAPPER ===== */
 .dynamic-table-wrapper {
   overflow-x: auto;
   max-height: 500px;
@@ -74,60 +82,58 @@
 }
 
 .dynamic-table-wrapper::-webkit-scrollbar-track {
-  background: var(--dt-bg-secondary);
+  background: #f1f1f1;
+  border-radius: 3px;
 }
 
 .dynamic-table-wrapper::-webkit-scrollbar-thumb {
-  background: var(--dt-border-medium);
+  background: #c1c1c1;
   border-radius: 3px;
 }
 
 .dynamic-table-wrapper::-webkit-scrollbar-thumb:hover {
-  background: var(--dt-text-muted);
+  background: #a8a8a8;
 }
 
 /* ===== MAIN TABLE ===== */
 .dynamic-table {
   width: 100%;
-  border-collapse: separate;
+  border-collapse: collapse;
   border-spacing: 0;
   background: var(--dt-bg-primary);
   font-size: 12px;
   min-width: 600px;
   font-family: 'Nunito', sans-serif;
-  border: 1px solid var(--dt-border-light);
-  border-radius: var(--dt-radius-md);
-  overflow: hidden;
 }
 
-/* ===== TABLE HEAD ===== */
+/* Table Header */
 .dynamic-table thead {
-  background: var(--dt-bg-secondary);
+  background: linear-gradient(180deg, #f8f9fa, #e9ecef);
   position: sticky;
   top: 0;
   z-index: 10;
 }
 
-.dynamic-table th {
-  padding: 6px 8px;
+.dynamic-table-column-header {
+  padding: 8px 10px;
   text-align: left;
+  border-bottom: 2px solid #dee2e6;
+  font-weight: 600;
+  color: #495057;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
   border-right: 1px solid rgba(226, 232, 240, 0.3);
-  border-bottom: 1px solid var(--dt-border-light);
-  font-weight: 500;
-  font-size: 10px;
-  color: var(--dt-text-secondary);
   white-space: nowrap;
-  background: var(--dt-bg-secondary);
-  position: relative;
   transition: var(--dt-transition);
   font-family: 'Nunito', sans-serif;
 }
 
-.dynamic-table th:last-child {
+.dynamic-table-column-header:last-child {
   border-right: none;
 }
 
-.dynamic-table th:hover {
+.dynamic-table-column-header:hover {
   background: var(--dt-bg-tertiary);
 }
 
@@ -135,11 +141,12 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 2px;
+  gap: 4px;
   min-height: 16px;
 }
 
 .dynamic-table-column-label {
+  flex: 1;
   font-size: 10px;
   font-weight: 500;
   color: var(--dt-text-primary);
@@ -153,8 +160,8 @@
 }
 
 .dynamic-table-mandatory-indicator {
-  color: var(--dt-danger);
-  font-weight: 600;
+  color: #dc3545;
+  font-weight: bold;
   margin-left: 1px;
   font-size: 10px;
 }
@@ -165,7 +172,7 @@
 
 .dynamic-table-actions-column {
   width: 80px;
-  text-align: left;
+  text-align: center;
   font-size: 9px;
   font-weight: 500;
   color: var(--dt-text-muted);
@@ -174,52 +181,161 @@
   letter-spacing: 0.5px;
 }
 
-/* ===== TABLE BODY ===== */
-.dynamic-table tbody tr {
+/* Table Body */
+.dynamic-table-data-row {
+  transition: all 0.2s ease;
+  background: #ffffff;
   border-bottom: 1px solid rgba(226, 232, 240, 0.4);
-  transition: var(--dt-transition-fast);
+  position: relative;
 }
 
-.dynamic-table tbody tr:last-child {
+.dynamic-table-data-row:nth-child(even) {
+  background: #f8f9fa;
+}
+
+.dynamic-table-data-row:last-child {
   border-bottom: none;
 }
 
 .dynamic-table-data-row:hover {
-  background: var(--dt-bg-secondary);
+  background: #e3f2fd;
   transform: translateY(-1px);
-  box-shadow: var(--dt-shadow-sm);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* YES RESPONSE HIGHLIGHTING */
+.dynamic-table-data-row.has-yes-response {
+  background: var(--dt-yes-highlight-bg) !important;
+  border-left: 3px solid var(--dt-yes-highlight-border);
+  box-shadow: var(--dt-yes-glow);
+  position: relative;
+}
+
+.dynamic-table-data-row.has-yes-response:nth-child(even) {
+  background: var(--dt-yes-highlight-bg) !important;
+}
+
+.dynamic-table-data-row.has-yes-response:hover {
+  background: #e0f2fe !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), var(--dt-yes-glow);
+}
+
+.dynamic-table-data-row.has-yes-response::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--dt-yes-highlight-border), rgba(14, 165, 233, 0.7));
+  border-radius: 0 2px 2px 0;
+}
+
+/* Enhanced Yes response cell styling */
+.dynamic-table-data-row.has-yes-response .dynamic-table-cell-yes-no-yes {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: 1px solid #047857;
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.dynamic-table-data-row.has-yes-response .dynamic-table-cell-yes-no-yes::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent);
+  pointer-events: none;
+}
+
+/* Subtle animation for yes responses */
+@keyframes subtle-pulse {
+  0%, 100% { 
+    box-shadow: var(--dt-yes-glow);
+  }
+  50% { 
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.4);
+  }
+}
+
+.dynamic-table-data-row.has-yes-response.newly-marked {
+  animation: subtle-pulse 2s ease-in-out;
+}
+
+.dynamic-table-data-row.predefined-row {
+  background: var(--dt-bg-primary);
+}
+
+.dynamic-table-data-row.predefined-row:nth-child(even) {
+  background: var(--dt-bg-secondary);
+}
+
+.dynamic-table-data-row.predefined-row:hover {
+  background: var(--dt-bg-secondary);
 }
 
 .dynamic-table-new-row {
-  background: linear-gradient(135deg, var(--dt-primary-light) 0%, var(--dt-bg-secondary) 100%);
-  border: 2px dashed var(--dt-primary);
+  background: #e8f5e8;
+  border-top: 2px solid #28a745;
   border-left: none;
   border-right: none;
 }
 
-/* ===== TABLE CELLS ===== */
-.dynamic-table-cell,
-.dynamic-table-new-cell {
-  padding: 6px 8px;
+.dynamic-table-new-row:hover {
+  background: #d4edda;
+}
+
+/* Table Cells */
+.dynamic-table-cell {
+  padding: 6px 10px;
+  border-bottom: 1px solid #dee2e6;
   vertical-align: middle;
+  position: relative;
   text-align: left;
   border-right: 1px solid rgba(226, 232, 240, 0.3);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.4);
   transition: var(--dt-transition-fast);
   font-family: 'Nunito', sans-serif;
   font-size: 12px;
 }
 
-.dynamic-table-cell:last-child,
-.dynamic-table-new-cell:last-child {
+.dynamic-table-cell:last-child {
   border-right: none;
 }
 
 .dynamic-table-new-cell {
+  padding: 6px 10px;
+  border-bottom: 1px solid #28a745;
+  vertical-align: middle;
   background: rgba(59, 130, 246, 0.02);
+  text-align: left;
+  border-right: 1px solid rgba(226, 232, 240, 0.3);
+  transition: var(--dt-transition-fast);
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
 }
 
-/* ===== CELL VALUES ===== */
+.dynamic-table-new-cell:last-child {
+  border-right: none;
+}
+
+.dynamic-table-actions-cell {
+  padding: 4px 6px;
+  text-align: center;
+  border-bottom: 1px solid #dee2e6;
+  white-space: nowrap;
+  text-align: left;
+}
+
+/* Cell Values */
 .dynamic-table-cell-value {
   display: inline-flex;
   align-items: center;
@@ -231,10 +347,12 @@
   transition: var(--dt-transition);
   font-family: 'Nunito', sans-serif;
   text-align: left;
+  word-break: break-word;
+  line-height: 1.3;
 }
 
 .dynamic-table-cell-empty {
-  color: var(--dt-text-muted);
+  color: #6c757d;
   font-style: italic;
   opacity: 0.7;
   text-align: left;
@@ -242,7 +360,7 @@
 
 .dynamic-table-cell-yes-no-yes {
   background: var(--dt-success-light);
-  color: var(--dt-success-dark);
+  color: #28a745;
   border: 1px solid var(--dt-success);
   font-weight: 600;
   font-size: 10px;
@@ -251,11 +369,12 @@
   font-family: 'Nunito', sans-serif;
   text-align: left;
   justify-content: flex-start;
+  transition: all 0.3s ease;
 }
 
 .dynamic-table-cell-yes-no-no {
   background: var(--dt-danger-light);
-  color: var(--dt-danger-dark);
+  color: #dc3545;
   border: 1px solid var(--dt-danger);
   font-weight: 600;
   font-size: 10px;
@@ -267,17 +386,70 @@
 }
 
 .dynamic-table-cell-number {
-  text-align: left;
+  text-align: right;
   font-variant-numeric: tabular-nums;
   background: var(--dt-bg-secondary);
   border: 1px solid var(--dt-border-light);
-  font-family: 'Nunito', monospace;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
   justify-content: flex-start;
 }
 
-/* ===== FORM INPUTS ===== */
-.dynamic-table-input,
+.dynamic-table-predefined-query {
+  font-weight: 500;
+  color: #495057;
+  background: rgba(0, 123, 255, 0.05);
+  padding: 4px 8px;
+  border-radius: 3px;
+  display: block;
+  line-height: 1.4;
+  transition: var(--dt-transition);
+}
+
+/* Enhanced query styling for yes responses */
+.dynamic-table-data-row.has-yes-response .dynamic-table-predefined-query {
+  background: rgba(14, 165, 233, 0.1);
+  color: var(--dt-yes-highlight-text);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  font-weight: 600;
+}
+
+/* Form Inputs */
+.dynamic-table-input {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid #ced4da;
+  border-radius: 3px;
+  font-size: 11px;
+  color: #495057;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  outline: none;
+  font-family: 'Nunito', sans-serif;
+  text-align: left;
+}
+
+.dynamic-table-input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+  background: var(--dt-bg-primary);
+}
+
+.dynamic-table-input:disabled {
+  background: #e9ecef;
+  color: var(--dt-text-muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .dynamic-table-select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 4px center;
+  background-repeat: no-repeat;
+  background-size: 12px;
+  padding-right: 20px;
+  appearance: none;
   width: 100%;
   padding: 4px 6px;
   border: 1px solid var(--dt-border-light);
@@ -291,37 +463,24 @@
   text-align: left;
 }
 
-.dynamic-table-input:focus,
-.dynamic-table-select:focus {
-  border-color: var(--dt-primary);
-  box-shadow: 0 0 0 2px var(--dt-primary-light);
-  background: var(--dt-bg-primary);
-}
-
-.dynamic-table-input:disabled,
-.dynamic-table-select:disabled {
-  background: var(--dt-bg-tertiary);
-  color: var(--dt-text-muted);
-  cursor: not-allowed;
-  opacity: 0.7;
+/* Enhanced select styling for yes responses */
+.dynamic-table-data-row.has-yes-response .dynamic-table-select {
+  border-color: var(--dt-yes-highlight-border);
+  background: var(--dt-yes-highlight-bg);
+  color: var(--dt-yes-highlight-text);
 }
 
 .dynamic-table-input-number {
-  text-align: left;
+  text-align: right;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
   font-variant-numeric: tabular-nums;
 }
 
-/* ===== ACTION BUTTONS ===== */
-.dynamic-table-actions-cell {
-  text-align: left;
-  padding: 6px 4px;
-  white-space: nowrap;
-}
-
+/* Action Buttons */
 .dynamic-table-action-buttons {
   display: flex;
-  gap: 3px;
-  justify-content: flex-start;
+  gap: 2px;
+  justify-content: center;
   align-items: center;
 }
 
@@ -330,19 +489,20 @@
 }
 
 .dynamic-table-action-btn {
-  display: inline-flex;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 3px;
+  cursor: pointer;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 4px 6px;
-  border: 1px solid transparent;
-  border-radius: var(--dt-radius-sm);
-  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #6c757d;
+  min-width: 22px;
+  height: 22px;
   font-size: 10px;
   font-weight: 500;
-  transition: var(--dt-transition);
-  min-width: 24px;
-  height: 24px;
   text-decoration: none;
   outline: none;
   font-family: 'Nunito', sans-serif;
@@ -359,17 +519,21 @@
 
 /* Button Variants */
 .dynamic-table-add-btn {
-  background: var(--dt-primary);
+  background: #28a745;
   color: white;
-  border-color: var(--dt-primary);
+  border-color: #28a745;
+  font-size: 10px;
+  font-weight: 500;
+  gap: 2px;
   padding: 4px 8px;
   min-width: auto;
-  font-weight: 500;
+  height: auto;
 }
 
 .dynamic-table-add-btn:hover {
-  background: var(--dt-primary-dark);
-  border-color: var(--dt-primary-dark);
+  background: #218838;
+  border-color: #1e7e34;
+  transform: translateY(-1px);
 }
 
 .dynamic-table-edit-btn {
@@ -379,9 +543,9 @@
 }
 
 .dynamic-table-edit-btn:hover {
-  background: var(--dt-primary-light);
-  color: var(--dt-primary);
-  border-color: var(--dt-primary);
+  background: #e3f2fd;
+  border-color: #2196f3;
+  color: #1976d2;
 }
 
 .dynamic-table-delete-btn {
@@ -390,10 +554,11 @@
   border-color: var(--dt-danger);
 }
 
-.dynamic-table-delete-btn:hover {
-  background: var(--dt-danger);
-  color: white;
-  border-color: var(--dt-danger-dark);
+.dynamic-table-delete-btn:hover,
+.dynamic-table-clear-btn:hover {
+  background: #ffebee;
+  border-color: #f44336;
+  color: #d32f2f;
 }
 
 .dynamic-table-save-btn {
@@ -403,8 +568,9 @@
 }
 
 .dynamic-table-save-btn:hover {
-  background: var(--dt-success-dark);
-  border-color: var(--dt-success-dark);
+  background: #e8f5e8;
+  border-color: #4caf50;
+  color: #2e7d32;
 }
 
 .dynamic-table-cancel-btn {
@@ -414,28 +580,54 @@
 }
 
 .dynamic-table-cancel-btn:hover {
-  background: var(--dt-text-muted);
-  color: white;
-  border-color: var(--dt-text-secondary);
+  background: #fff3e0;
+  border-color: #ff9800;
+  color: #f57c00;
 }
 
-/* ===== EMPTY STATE ===== */
+/* Empty State */
 .dynamic-table-empty-state {
-  padding: 30px 20px;
-  text-align: center;
-  color: var(--dt-text-muted);
-  background: var(--dt-bg-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  color: #6c757d;
+  background: #f8f9fa;
   border-top: 1px solid var(--dt-border-light);
   font-family: 'Nunito', sans-serif;
 }
 
 .dynamic-table-empty-state p {
-  margin: 0;
-  font-size: 13px;
+  margin: 8px 0 0;
+  font-size: 12px;
   font-style: italic;
 }
 
-/* ===== ERROR STATE ===== */
+/* Instructions for predefined tables */
+.dynamic-table-instructions {
+  background: #e3f2fd;
+  border-top: 1px solid #bbdefb;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #1565c0;
+  text-align: center;
+}
+
+/* Enhanced instructions for tables with yes responses */
+.dynamic-table-container.has-yes-responses .dynamic-table-instructions {
+  background: linear-gradient(135deg, #e3f2fd, #f0f9ff);
+  color: #0c4a6e;
+  border-top: 2px solid #0ea5e9;
+  font-weight: 500;
+}
+
+.dynamic-table-container.has-yes-responses .dynamic-table-instructions::before {
+  content: "⚠️ ";
+  margin-right: 4px;
+}
+
+/* Error State */
 .dynamic-table-error-message {
   padding: 10px 12px;
   background: var(--dt-danger-light);
@@ -453,80 +645,120 @@
   font-size: 14px;
 }
 
-/* ===== COLUMN TYPE SPECIFIC STYLES ===== */
-.dynamic-table-column-text { min-width: 120px; }
-.dynamic-table-column-number { min-width: 80px; }
-.dynamic-table-column-yes_no { min-width: 80px; }
-.dynamic-table-column-date { min-width: 110px; }
+/* Column-specific styles */
+.dynamic-table-column-text {
+  min-width: 150px;
+}
 
-.dynamic-table-cell-text { 
-  min-width: 120px; 
-  max-width: 200px; 
+.dynamic-table-column-number {
+  width: 80px;
+  text-align: right;
+}
+
+.dynamic-table-column-yes_no {
+  width: 100px;
+  text-align: center;
+}
+
+.dynamic-table-column-date {
+  width: 120px;
+}
+
+.dynamic-table-cell-text {
+  min-width: 120px;
+  max-width: 200px;
   text-align: left;
 }
-.dynamic-table-cell-number { 
-  min-width: 80px; 
-  text-align: left;
+.dynamic-table-cell-number {
+  min-width: 80px;
+  text-align: right;
 }
-.dynamic-table-cell-yes_no { 
-  min-width: 80px; 
-  text-align: left;
+.dynamic-table-cell-yes_no {
+  min-width: 80px;
+  text-align: center;
 }
-.dynamic-table-cell-date { 
+.dynamic-table-cell-date {
   min-width: 110px;
-  text-align: left;
+  text-align: center;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
 }
 
-/* ===== RESPONSIVE DESIGN ===== */
+/* Predefined table specific styles */
+.predefined-table .dynamic-table-column-header {
+  background: linear-gradient(180deg, #e3f2fd, #bbdefb);
+  color: #1565c0;
+}
+
+.predefined-table .dynamic-table-cell:first-child {
+  background: rgba(0, 123, 255, 0.03);
+  font-weight: 500;
+}
+
+/* Responsive styles */
 @media (max-width: 768px) {
   .dynamic-table-container {
-    margin: 12px 0;
+    margin: 4px 0;
     border-radius: var(--dt-radius-md);
   }
-  
+
   .dynamic-table-wrapper {
     max-height: 400px;
   }
-  
+
   .dynamic-table {
     font-size: 11px;
     min-width: 500px;
   }
-  
+
   .dynamic-table th,
   .dynamic-table-cell,
   .dynamic-table-new-cell {
     padding: 4px 6px;
   }
-  
-  .dynamic-table th {
-    font-size: 9px;
+
+  .dynamic-table-column-header {
+    padding: 6px 8px;
+    font-size: 10px;
   }
-  
+
   .dynamic-table-column-label {
     font-size: 9px;
   }
-  
+
   .dynamic-table-input,
   .dynamic-table-select {
-    font-size: 10px;
+    font-size: 11px;
     padding: 3px 4px;
   }
-  
+
   .dynamic-table-action-btn {
     min-width: 20px;
     height: 20px;
     padding: 2px 4px;
     font-size: 9px;
   }
-  
+
   .dynamic-table-actions-column {
     width: 60px;
   }
+
+  .dynamic-table-predefined-query {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  /* Mobile responsive yes highlighting */
+  .dynamic-table-data-row.has-yes-response {
+    border-left-width: 2px;
+  }
 }
 
-/* ===== ACCESSIBILITY ===== */
+/* Accessibility */
 @media (prefers-reduced-motion: reduce) {
+  .dynamic-table-data-row.has-yes-response.newly-marked {
+    animation: none;
+  }
+  
   * {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
