@@ -54,7 +54,7 @@ const ModernChecklistForm = ({
   const [saving, setSaving] = useState(false); // This state will now be managed by parent
   const [submitting, setSubmitting] = useState(false); // This state will now be managed by parent
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = '';
   const [showOnlyMandatory, setShowOnlyMandatory] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   // const [lastSaveTime, setLastSaveTime] = useState(null); // Moved to parent
@@ -86,7 +86,7 @@ const ModernChecklistForm = ({
 
     template.processed_items.forEach((item) => {
       const sectionName = item.section_name || 'General';
-      
+
       if (!sectionMap.has(sectionName)) {
         sectionMap.set(sectionName, {
           section_id: sectionName.toLowerCase().replace(/\s+/g, '_'),
@@ -119,7 +119,7 @@ const ModernChecklistForm = ({
   useEffect(() => {
     if (existingChecklist?.responses && Array.isArray(existingChecklist.responses)) {
       console.log('📋 ModernChecklistForm: Loading existing responses:', existingChecklist.responses.length);
-      
+
       const responseMap = {};
       const completed = new Set();
 
@@ -169,9 +169,9 @@ const ModernChecklistForm = ({
 
   // Handle response changes with validation
   const handleResponseChange = useCallback((fieldId, value) => {
-    console.log('📋 ModernChecklistForm: Response change:', { 
-      fieldId, 
-      value, 
+    console.log('📋 ModernChecklistForm: Response change:', {
+      fieldId,
+      value,
       type: typeof value,
       isDate: value && !isNaN(Date.parse(value)) && value.includes('-')
     });
@@ -233,7 +233,7 @@ const ModernChecklistForm = ({
       if (item.is_mandatory) {
         const value = responses[item.item_id];
         const hasValue = value !== null && value !== undefined && value !== '';
-        
+
         if (!hasValue) {
           errors[item.item_id] = 'This field is required';
           isValid = false;
@@ -326,17 +326,17 @@ const ModernChecklistForm = ({
 
   // Filter fields based on search and filters
   const filteredFields = useMemo(() => {
-    const allFields = formSections.flatMap(section => 
+    const allFields = formSections.flatMap(section =>
       section.fields.map(field => ({ ...field, section: section.section_name }))
     );
-    
+
     return allFields.filter(field => {
-      const matchesSearch = !searchTerm || 
+      const matchesSearch = !searchTerm ||
         field.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
         field.section.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       const matchesMandatory = !showOnlyMandatory || field.is_mandatory;
-      
+
       return matchesSearch && matchesMandatory;
     });
   }, [formSections, searchTerm, showOnlyMandatory]);
@@ -373,21 +373,21 @@ const ModernChecklistForm = ({
 
       case 'date':
         // Handle date field properly - ensure proper format conversion
-        const dateValue = value ? 
-          (value instanceof Date ? value.toISOString().split('T')[0] : 
-           typeof value === 'string' && value.includes('T') ? value.split('T')[0] : 
+        const dateValue = value ?
+          (value instanceof Date ? value.toISOString().split('T')[0] :
+           typeof value === 'string' && value.includes('T') ? value.split('T')[0] :
            value) : '';
-        
+
         return (
           <input
             type="date"
             value={dateValue}
             onChange={(e) => {
               const inputDate = e.target.value; // This is in YYYY-MM-DD format
-              console.log('📅 Date field changed:', { 
-                fieldId: field.field_id, 
+              console.log('📅 Date field changed:', {
+                fieldId: field.field_id,
                 inputValue: inputDate,
-                previousValue: value 
+                previousValue: value
               });
               handleResponseChange(field.field_id, inputDate);
             }}
@@ -462,7 +462,7 @@ const ModernChecklistForm = ({
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        
+
         <button
           onClick={() => setShowOnlyMandatory(!showOnlyMandatory)}
           className={`light-filter-btn ${showOnlyMandatory ? 'active' : ''}`}
@@ -497,11 +497,11 @@ const ModernChecklistForm = ({
               if (!searchTerm && !showOnlyMandatory) return true;
               return filteredFields.some(f => f.field_id === field.field_id);
             });
-            
+
             if (sectionFields.length === 0) return null;
-            
+
             const sectionCompleted = sectionFields.filter(field => completedItems.has(field.field_id)).length;
-            
+
             return (
               <div key={section.section_id} className="light-section">
                 <div className="light-section-header">
@@ -517,7 +517,7 @@ const ModernChecklistForm = ({
                 <div className="light-fields-grid">
                   {sectionFields.map((field) => {
                     const hasError = validationErrors[field.field_id];
-                    
+
                     return (
                       <div
                         key={field.field_id}
@@ -626,9 +626,9 @@ const ModernChecklistForm = ({
           display: flex;
           align-items: center;
           gap: 6px;
-          font-size: 13px;
-          font-weight: 600;
-          color: #333333;
+          font-size: 16px; /* Increased font size for section titles */
+          font-weight: 700; /* Made bold */
+          color: #1f2937; /* Darker color for prominence */
         }
 
         .light-section-badge {
@@ -697,8 +697,8 @@ const ModernChecklistForm = ({
         }
 
         .light-field-label {
-          font-size: 12px;
-          font-weight: 500;
+          font-size: 13px; /* Slightly increased font size for field labels */
+          font-weight: 600; /* Made bolder */
           color: #333333;
           line-height: 1.3;
         }

@@ -1,4 +1,4 @@
-// src/components/dashboard/reporting/ChecklistModal.jsx - FIXED VERSION
+// src/components/dashboard/reporting/ChecklistModal.jsx - FIXED totalItems and CLEANED DEBUG
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   X,
@@ -13,12 +13,15 @@ import {
   User,
   RefreshCw,
   Save, // Added Save icon
-  Send // Added Send icon
+  Send, // Added Send icon
+  Download // Added Download icon
 } from 'lucide-react';
 import ModernChecklistForm from './checklist/ModernChecklistForm';
 import checklistService from '../../../services/checklistService';
 import { useAuth } from '../../../context/AuthContext';
 import PropTypes from 'prop-types';
+import jsPDF from 'jspdf'; // Import jsPDF
+import 'jspdf-autotable'; // Import jspdf-autotable for table generation
 
 const ChecklistModal = ({
   isOpen,
@@ -33,16 +36,23 @@ const ChecklistModal = ({
   const [template, setTemplate] = useState(null);
   const [mode, setMode] = useState('edit');
   const [checklistStatus, setChecklistStatus] = useState(initialStatus);
+  // const [debugInfo, setDebugInfo] = useState({}); // Removed debugInfo
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaving, setIsSaving] = useState(false); // New state for saving
   const [lastSaveTime, setLastSaveTime] = useState(null); // New state for last save time
 
   const { currentUser } = useAuth();
 
+  // Debug logging function (Removed)
+  // const logDebug = useCallback((step, data) => {
+  //   console.log(`🔍 ChecklistModal Debug [${step}]:`, data);
+  //   setDebugInfo(prev => ({ ...prev, [step]: data }));
+  // }, []);
+
   // Enhanced user ID extraction
   const getUserId = useCallback(() => {
     if (!currentUser) {
-      console.error('No currentUser available');
+      // logDebug('getUserId_error', 'No currentUser available'); // Removed debug log
       return null;
     }
 
@@ -57,15 +67,17 @@ const ChecklistModal = ({
     ];
 
     const userId = possibleIds.find(id => id && id.toString().trim() !== '') || null;
+    // logDebug('getUserId_result', { userId, availableFields: Object.keys(currentUser) }); // Removed debug log
     return userId;
-  }, [currentUser]);
+  }, [currentUser]); // Removed logDebug from dependency array
 
   // Determine mode based on checklist status
   const determineMode = useCallback((checklistData) => {
     if (!checklistData) return 'edit';
     const mode = ['complete', 'submitted'].includes(checklistData.status) ? 'view' : 'edit';
+    // logDebug('determineMode', { status: checklistData.status, mode }); // Removed debug log
     return mode;
-  }, []);
+  }, []); // Removed logDebug from dependency array
 
   // Get status display info
   const getStatusInfo = useCallback((status) => {
@@ -128,8 +140,11 @@ const ChecklistModal = ({
     setError(null);
 
     try {
+      // logDebug('loadChecklist_start', { vesselId: vessel.id, userId }); // Removed debug log
+
       // Get existing checklists
       const existingChecklists = await checklistService.getChecklistsForVessel(vessel.id);
+      // logDebug('existing_checklists', existingChecklists); // Removed debug log
 
       // Find 5-day checklist
       let fiveDayChecklist = existingChecklists.find(checklist => {
@@ -142,6 +157,7 @@ const ChecklistModal = ({
 
       if (fiveDayChecklist) {
         // Load existing checklist
+        // logDebug('loading_existing', fiveDayChecklist); // Removed debug log
         const [fullChecklist, templateData] = await Promise.all([
           checklistService.getChecklistById(fiveDayChecklist.checklist_id),
           checklistService.getTemplateById(fiveDayChecklist.template_id)
@@ -153,6 +169,7 @@ const ChecklistModal = ({
         setMode(determineMode(fullChecklist));
       } else {
         // Create new checklist
+        // logDebug('creating_new', 'No existing 5-day checklist found'); // Removed debug log
         const createdChecklists = await checklistService.createChecklistsForVoyage(
           vessel.id,
           { vessel_name: vessel.vessel_name, user_id: userId }
@@ -180,13 +197,16 @@ const ChecklistModal = ({
           throw new Error('5-day checklist template not found');
         }
       }
+
+      // logDebug('loadChecklist_success', 'Checklist loaded successfully'); // Removed debug log
     } catch (err) {
+      // logDebug('loadChecklist_error', err); // Removed debug log
       console.error('❌ ChecklistModal: Error loading checklist:', err);
       setError(`Failed to load checklist: ${err.message}`);
     } finally {
       setLoading(false);
     }
-  }, [vessel?.id, vessel?.vessel_name, getUserId, determineMode]);
+  }, [vessel?.id, vessel?.vessel_name, getUserId, determineMode]); // Removed logDebug from dependency array
 
   // Handle save with proper error handling and state updates
   const handleSave = useCallback(async (responses, isAutoSave = false) => {
@@ -198,9 +218,18 @@ const ChecklistModal = ({
       if (!isAutoSave) {
         setIsSaving(true); // Set saving state for manual saves
       }
+      // logDebug('save_start', { // Removed debug log
+      //   checklistId: checklist.checklist_id,
+      //   responseCount: Object.keys(responses).length,
+      //   isAutoSave
+      // });
 
       // Convert form responses to API format
       const apiResponses = convertFormResponsesToAPI(responses, template);
+      // logDebug('converted_responses', { // Removed debug log
+      //   originalCount: Object.keys(responses).length,
+      //   convertedCount: apiResponses.length
+      // });
 
       // Save via API
       const result = await checklistService.updateChecklistResponses(
@@ -208,6 +237,8 @@ const ChecklistModal = ({
         apiResponses,
         getUserId()
       );
+
+      // logDebug('save_api_result', result); // Removed debug log
 
       if (!isAutoSave) {
         // Refresh checklist data after manual save
@@ -226,10 +257,15 @@ const ChecklistModal = ({
             total_items: updatedChecklist.total_items
           });
         }
+
+        // logDebug('save_success', 'Manual save completed'); // Removed debug log
+      } else {
+        // logDebug('save_success', 'Auto-save completed'); // Removed debug log
       }
 
       return result;
     } catch (err) {
+      // logDebug('save_error', err); // Removed debug log
       console.error('❌ ChecklistModal: Save error:', err);
       throw err;
     } finally {
@@ -237,7 +273,7 @@ const ChecklistModal = ({
         setIsSaving(false); // Reset saving state
       }
     }
-  }, [checklist, template, getUserId, vessel, onChecklistUpdate]);
+  }, [checklist, template, getUserId, vessel, onChecklistUpdate]); // Removed logDebug from dependency array
 
   // Handle submit with enhanced error handling
   const handleSubmit = useCallback(async (responses) => {
@@ -247,6 +283,10 @@ const ChecklistModal = ({
 
     try {
       setIsSubmitting(true);
+      // logDebug('submit_start', { // Removed debug log
+      //   checklistId: checklist.checklist_id,
+      //   currentStatus: checklistStatus
+      // });
 
       // First save the current responses
       await handleSave(responses, false);
@@ -257,6 +297,8 @@ const ChecklistModal = ({
         getUserId(),
         true // force overwrite
       );
+
+      // logDebug('submit_api_result', submitResult); // Removed debug log
 
       const newStatus = submitResult.checklist?.status || 'submitted';
 
@@ -283,12 +325,15 @@ const ChecklistModal = ({
         });
       }
 
+      // logDebug('submit_success', 'Submission completed'); // Removed debug log
+
       // Close modal after short delay
       setTimeout(() => {
         onClose();
       }, 1500);
 
     } catch (err) {
+      // logDebug('submit_error', err); // Removed debug log
       console.error('❌ ChecklistModal: Submit error:', err);
 
       // Handle already submitted error gracefully
@@ -303,11 +348,12 @@ const ChecklistModal = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [checklist, checklistStatus, handleSave, getUserId, vessel, onChecklistUpdate, onClose]);
+  }, [checklist, checklistStatus, handleSave, getUserId, vessel, onChecklistUpdate, onClose]); // Removed logDebug from dependency array
 
   // Convert form responses to API format
   const convertFormResponsesToAPI = useCallback((formResponses, templateData) => {
     if (!templateData?.processed_items) {
+      // logDebug('convert_error', 'No processed items in template'); // Removed debug log
       return [];
     }
 
@@ -356,20 +402,29 @@ const ChecklistModal = ({
       apiResponses.push(response);
     });
 
+    // logDebug('convert_result', { // Removed debug log
+    //   inputCount: Object.keys(formResponses).length,
+    //   outputCount: apiResponses.length
+    // });
+
     return apiResponses;
-  }, []);
+  }, []); // Removed logDebug from dependency array
 
   // Handle mode toggle
   const handleModeToggle = useCallback(() => {
     const newMode = mode === 'view' ? 'edit' : 'view';
     setMode(newMode);
-  }, [mode]);
+    // logDebug('mode_toggle', { from: mode, to: newMode }); // Removed debug log
+  }, [mode]); // Removed logDebug from dependency array
 
   // Handle close with cleanup
   const handleClose = useCallback(() => {
     if (isSubmitting) {
+      // logDebug('close_prevented', 'Submission in progress'); // Removed debug log
       return;
     }
+
+    // logDebug('close_modal', 'Cleaning up and closing'); // Removed debug log
 
     setLoading(true);
     setError(null);
@@ -377,11 +432,190 @@ const ChecklistModal = ({
     setTemplate(null);
     setMode('edit');
     setChecklistStatus('pending');
+    // setDebugInfo({}); // Removed debugInfo
     setIsSubmitting(false);
     setIsSaving(false); // Reset saving state on close
     setLastSaveTime(null); // Reset last save time on close
     onClose();
-  }, [isSubmitting, onClose]);
+  }, [isSubmitting, onClose]); // Removed logDebug from dependency array
+
+  // PDF Download Functionality
+  const handleDownloadPdf = useCallback(() => {
+    if (!checklist || !template) {
+      alert('Checklist data not available for download.');
+      return;
+    }
+
+    const doc = new jsPDF();
+    let yPos = 20;
+    const margin = 14;
+    const pageWidth = doc.internal.pageSize.width;
+
+    // Helper to add text with line breaks
+    const addText = (text, x, y, options = {}) => {
+      const splitText = doc.splitTextToSize(text, pageWidth - 2 * margin);
+      doc.text(splitText, x, y, options);
+      return splitText.length * doc.getLineHeight() / doc.internal.scaleFactor;
+    };
+
+    // Header
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`5-Day Pre-Arrival Checklist`, margin, yPos);
+    yPos += 8;
+    doc.setFontSize(14);
+    doc.text(`${vessel?.vessel_name || 'Unknown Vessel'}`, margin, yPos);
+    yPos += 12;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`IMO: ${vessel?.imo_no || 'N/A'}`, margin, yPos);
+    doc.text(`ETA: ${vessel?.eta ? new Date(vessel.eta).toLocaleDateString() : 'N/A'}`, margin + 50, yPos);
+    doc.text(`Port: ${vessel?.arrival_port || 'N/A'}`, margin + 100, yPos);
+    yPos += 10;
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Status: ${getStatusInfo(checklistStatus).label}`, margin, yPos);
+    doc.text(`Progress: ${checklist.progress_percentage || 0}% (${checklist.items_completed || 0}/${checklist.total_items || 0} items completed)`, margin + 50, yPos);
+    yPos += 15;
+
+    // Group items by section and subsection
+    const groupedItems = template.processed_items.reduce((acc, item) => {
+      const section = item.section_name || 'GENERAL';
+      const subsection = item.sub_section_name || 'N/A';
+      if (!acc[section]) acc[section] = {};
+      if (!acc[section][subsection]) acc[section][subsection] = [];
+      acc[section][subsection].push(item);
+      return acc;
+    }, {});
+
+    let srNoCounter = 1;
+
+    for (const sectionName in groupedItems) {
+      // Add Section Heading
+      doc.addPage(); // Start new section on a new page for clarity
+      yPos = 20; // Reset yPos for new page
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text(sectionName, margin, yPos);
+      yPos += 10;
+
+      for (const subSectionName in groupedItems[sectionName]) {
+        // Add Subsection Heading
+        if (subSectionName !== 'N/A') {
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.text(subSectionName, margin + 5, yPos);
+          yPos += 8;
+        }
+
+        const sectionItems = groupedItems[sectionName][subSectionName];
+        const tableRows = [];
+
+        sectionItems.forEach((item) => {
+          const response = checklist.responses.find(r => r.item_id === item.item_id);
+          let value = '';
+          let remarks = response?.remarks || '';
+
+          switch (item.response_type) {
+            case 'yes_no_na':
+            case 'yes_no':
+              value = response?.yes_no_na_value !== null && response?.yes_no_na_value !== undefined ? String(response.yes_no_na_value) : 'N/A';
+              break;
+            case 'date':
+              value = response?.date_value ? new Date(response.date_value).toLocaleDateString() : 'N/A';
+              break;
+            case 'table':
+              // For table type, we'll handle it separately after the main table
+              value = 'See detailed table below';
+              break;
+            default:
+              value = response?.text_value || 'N/A';
+              break;
+          }
+
+          tableRows.push([
+            srNoCounter++,
+            item.description || item.check_description,
+            item.pic || 'N/A',
+            value,
+            remarks
+          ]);
+        });
+
+        // Add main checklist items table
+        doc.autoTable({
+          startY: yPos,
+          head: [['SR No.', 'Description', 'PIC', 'Response', 'Remarks']],
+          body: tableRows,
+          theme: 'striped', // Subtle striped theme
+          styles: {
+            fontSize: 9,
+            cellPadding: 2,
+            valign: 'middle',
+            overflow: 'linebreak'
+          },
+          headStyles: {
+            fillColor: [240, 240, 240], // Light grey header
+            textColor: [50, 50, 50],
+            fontStyle: 'bold',
+            halign: 'center'
+          },
+          columnStyles: {
+            0: { cellWidth: 15, halign: 'center' }, // SR No.
+            1: { cellWidth: 80 }, // Description
+            2: { cellWidth: 25, halign: 'center' }, // PIC
+            3: { cellWidth: 30, halign: 'center' }, // Response
+            4: { cellWidth: 'auto' } // Remarks
+          },
+          margin: { left: margin, right: margin },
+          didDrawPage: function (data) {
+            yPos = data.cursor.y + 5; // Update yPos after table
+          }
+        });
+        yPos = doc.autoTable.previous.finalY + 10; // Ensure yPos is updated after table, add more space
+
+        // Handle detailed tables for 'table' response types
+        sectionItems.forEach((item) => {
+          if (item.response_type === 'table') {
+            const response = checklist.responses.find(r => r.item_id === item.item_id);
+            if (response?.table_data && Array.isArray(response.table_data) && response.table_data.length > 0) {
+              if (yPos + 30 > doc.internal.pageSize.height - margin) { // Check for page break before adding sub-table
+                doc.addPage();
+                yPos = 20;
+              }
+
+              doc.setFontSize(11);
+              doc.setFont('helvetica', 'bold');
+              doc.text(`Details for: ${item.description || item.check_description}`, margin, yPos);
+              yPos += 7;
+
+              const subTableHeaders = Array.isArray(item.table_structure) ? item.table_structure.map(col => col.header) : [];
+              const subTableRows = response.table_data.map(row => subTableHeaders.map(header => row[header] || ''));
+
+              doc.autoTable({
+                startY: yPos,
+                head: [subTableHeaders],
+                body: subTableRows,
+                theme: 'grid', // Use grid for sub-tables
+                styles: { fontSize: 8, cellPadding: 1.5, valign: 'middle', overflow: 'linebreak' },
+                headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' },
+                margin: { left: margin + 10, right: margin + 10 }, // Indent sub-table
+                didDrawPage: function (data) {
+                  yPos = data.cursor.y + 5;
+                }
+              });
+              yPos = doc.autoTable.previous.finalY + 10; // Add space after sub-table
+            }
+          }
+        });
+      }
+    }
+
+    doc.save(`${vessel?.vessel_name || 'Vessel'}_5DayPreArrivalChecklist.pdf`);
+  }, [checklist, template, vessel, checklistStatus, getStatusInfo]);
+
 
   // Load checklist when modal opens
   useEffect(() => {
@@ -397,7 +631,7 @@ const ChecklistModal = ({
   // Calculate progress for header display
   const progressPercentage = checklist?.progress_percentage || 0;
   const itemsCompleted = checklist?.items_completed || 0;
-  const totalItems = checklist?.total_items || 0;
+  const totalItems = checklist?.total_items || 0; // Corrected: Added 'const' keyword
 
   return (
     <div className="checklist-modal-overlay" onClick={!isSubmitting ? handleClose : undefined}>
@@ -487,6 +721,17 @@ const ChecklistModal = ({
               </div>
             )}
 
+            {/* Download Button */}
+            <button
+              onClick={handleDownloadPdf}
+              disabled={!checklist || !template || isSubmitting || isSaving}
+              className="action-btn download-btn"
+              title="Download Checklist as PDF"
+            >
+              <Download size={14} />
+              Download PDF
+            </button>
+
             {/* Action Buttons (Save, Submit) */}
             {mode === 'edit' && !isSubmitting && (
               <div className="checklist-action-buttons">
@@ -498,7 +743,7 @@ const ChecklistModal = ({
                   {isSaving ? <RefreshCw size={14} className="spinning" /> : <Save size={14} />}
                   {isSaving ? 'Saving...' : 'Save'}
                 </button>
-                
+
                 <button
                   onClick={() => handleSubmit({})} // Pass empty responses, ModernChecklistForm will provide actual responses
                   disabled={isSubmitting || isSaving || progressPercentage < 100} // Disable if not 100% complete
@@ -556,6 +801,22 @@ const ChecklistModal = ({
               <AlertTriangle size={32} />
               <h3>Error Loading Checklist</h3>
               <p>{error}</p>
+
+              <details style={{ marginTop: '20px', textAlign: 'left' }}>
+                <summary style={{ cursor: 'pointer', marginBottom: '10px' }}>Debug Information</summary>
+                <pre style={{
+                  background: '#f8f9fa',
+                  color: '#333',
+                  padding: '10px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  overflow: 'auto',
+                  maxHeight: '200px',
+                  border: '1px solid #dee2e6'
+                }}>
+                  {/* {JSON.stringify(debugInfo, null, 2)} */} {/* Removed debugInfo display */}
+                </pre>
+              </details>
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
                 <button className="retry-button" onClick={loadChecklist}>
@@ -789,6 +1050,16 @@ const ChecklistModal = ({
 
         .action-btn.submit-btn:hover:not(:disabled) {
           background: #16a34a;
+          transform: translateY(-1px);
+        }
+
+        .action-btn.download-btn { /* Style for download button */
+          background: #007bff;
+          color: white;
+        }
+
+        .action-btn.download-btn:hover:not(:disabled) {
+          background: #0056b3;
           transform: translateY(-1px);
         }
 
