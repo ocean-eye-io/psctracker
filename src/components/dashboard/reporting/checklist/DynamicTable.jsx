@@ -1,4 +1,4 @@
-// src/components/dashboard/reporting/DynamicTable.jsx - Enhanced with predefined rows
+// src/components/dashboard/reporting/DynamicTable.jsx - Enhanced with Yes/No tabs and reversed highlighting
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Edit, Trash2, Save, X, Table } from 'lucide-react';
 import './DynamicTable.css';
@@ -8,7 +8,8 @@ const DynamicTable = ({
   value = [], 
   onChange, 
   disabled = false, 
-  hasError = false 
+  hasError = false,
+  isMlcBiosecurity = false // New prop to identify MLC/Biosecurity tables
 }) => {
   const [tableData, setTableData] = useState([]);
   const [editingRowIndex, setEditingRowIndex] = useState(-1);
@@ -44,6 +45,16 @@ const DynamicTable = ({
     return item.table_structure.predefined_rows;
   }, [item, hasPredefinedRows]);
 
+  // UPDATED: Check if this is an MLC/Biosecurity table
+  const isMLCBiosecurityTable = useMemo(() => {
+    return isMlcBiosecurity || 
+           hasPredefinedRows || 
+           item.item_id?.toLowerCase().includes('mlc') ||
+           item.item_id?.toLowerCase().includes('biosecurity') ||
+           item.label?.toLowerCase().includes('mlc') ||
+           item.label?.toLowerCase().includes('biosecurity');
+  }, [isMlcBiosecurity, hasPredefinedRows, item]);
+
   // Initialize table data
   useEffect(() => {
     if (hasPredefinedRows) {
@@ -54,6 +65,8 @@ const DynamicTable = ({
           _id: `predefined_row_${index}`,
           _isPredefined: true,
           ...predefinedRow,
+          // Default to "Yes" for MLC/Biosecurity tables
+          response: existingRow.response || (isMLCBiosecurityTable ? 'Yes' : ''),
           ...existingRow // Overlay any existing responses
         };
       });
@@ -86,27 +99,32 @@ const DynamicTable = ({
         setTableData([]);
       }
     }
-  }, [value, tableStructure, hasPredefinedRows, predefinedRows]);
+  }, [value, tableStructure, hasPredefinedRows, predefinedRows, isMLCBiosecurityTable]);
 
   useEffect(() => {
     if (!hasPredefinedRows) {
       const initialNewRow = {};
       tableStructure.forEach((col) => {
         const columnId = col.id || col.column_id || col.label;
-        initialNewRow[columnId] = col.type === 'yes_no' ? '' : '';
+        // Default to "Yes" for response columns in MLC/Biosecurity tables
+        if (columnId === 'response' && isMLCBiosecurityTable) {
+          initialNewRow[columnId] = 'Yes';
+        } else {
+          initialNewRow[columnId] = col.type === 'yes_no' ? '' : '';
+        }
       });
       setNewRowData(initialNewRow);
     }
-  }, [tableStructure, hasPredefinedRows]);
+  }, [tableStructure, hasPredefinedRows, isMLCBiosecurityTable]);
 
-  // Check if table has any "Yes" responses for container styling
-  const hasYesResponses = useMemo(() => {
-    return tableData.some(row => row.response === 'Yes');
+  // UPDATED: Check if table has any "No" responses for container styling (reversed logic)
+  const hasNoResponses = useMemo(() => {
+    return tableData.some(row => row.response === 'No');
   }, [tableData]);
 
-  // Helper function to check if a row has "Yes" response
-  const rowHasYesResponse = (row) => {
-    return row.response === 'Yes';
+  // UPDATED: Helper function to check if a row has "No" response (reversed logic)
+  const rowHasNoResponse = (row) => {
+    return row.response === 'No';
   };
 
   const notifyParentOfChange = (updatedData) => {
@@ -157,8 +175,8 @@ const DynamicTable = ({
       [columnId]: newValue
     };
     
-    // Add animation class if response changed to "Yes"
-    if (columnId === 'response' && newValue === 'Yes' && oldValue !== 'Yes') {
+    // UPDATED: Add animation class if response changed to "No" (reversed logic)
+    if (columnId === 'response' && newValue === 'No' && oldValue !== 'No') {
       setTimeout(() => {
         const rowElement = document.querySelector(`[data-row-index="${rowIndex}"]`);
         if (rowElement) {
@@ -203,7 +221,12 @@ const DynamicTable = ({
     const resetData = {};
     tableStructure.forEach((col) => {
       const columnId = col.id || col.column_id || col.label;
-      resetData[columnId] = col.type === 'yes_no' ? '' : '';
+      // Default to "Yes" for response columns in MLC/Biosecurity tables
+      if (columnId === 'response' && isMLCBiosecurityTable) {
+        resetData[columnId] = 'Yes';
+      } else {
+        resetData[columnId] = col.type === 'yes_no' ? '' : '';
+      }
     });
     setNewRowData(resetData);
   };
@@ -244,7 +267,7 @@ const DynamicTable = ({
       const updatedData = [...tableData];
       const clearedRow = {
         ...updatedData[index],
-        response: '',
+        response: isMLCBiosecurityTable ? 'Yes' : '', // Default back to Yes for MLC/Biosecurity
         remarks: ''
       };
       updatedData[index] = clearedRow;
@@ -260,10 +283,35 @@ const DynamicTable = ({
     }
   };
 
+  // UPDATED: Render Yes/No tabs for MLC/Biosecurity response columns
+  const renderYesNoTabs = (value, onChange, disabled) => {
+    return (
+      <div className="yes-no-tabs">
+        <button
+          type="button"
+          className={`yes-no-tab yes-tab ${value === 'Yes' ? 'active' : ''}`}
+          onClick={() => !disabled && onChange('Yes')}
+          disabled={disabled}
+        >
+          Yes
+        </button>
+        <button
+          type="button"
+          className={`yes-no-tab no-tab ${value === 'No' ? 'active' : ''}`}
+          onClick={() => !disabled && onChange('No')}
+          disabled={disabled}
+        >
+          No
+        </button>
+      </div>
+    );
+  };
+
   const renderCell = (column, rowData, rowIndex, isEditing = false) => {
     const columnId = column.id || column.column_id || column.label;
     const value = isEditing ? editRowData[columnId] : rowData[columnId];
     const isQueryColumn = columnId === 'query' && hasPredefinedRows;
+    const isResponseColumn = columnId === 'response';
     
     // For predefined query column, make it readonly
     if (isQueryColumn) {
@@ -277,18 +325,27 @@ const DynamicTable = ({
     if (isEditing) {
       switch (column.type) {
         case 'yes_no':
-          return (
-            <select
-              value={value || ''}
-              onChange={(e) => setEditRowData(prev => ({ ...prev, [columnId]: e.target.value }))}
-              className="dynamic-table-input dynamic-table-select"
-              disabled={disabled}
-            >
-              <option value="">Select...</option>
-              <option value="Yes">Yes</option>
-              <option value="No">No</option>
-            </select>
-          );
+          // Use tabs for MLC/Biosecurity response columns in edit mode
+          if (isMLCBiosecurityTable && isResponseColumn) {
+            return renderYesNoTabs(
+              value || '',
+              (newValue) => setEditRowData(prev => ({ ...prev, [columnId]: newValue })),
+              disabled
+            );
+          } else {
+            return (
+              <select
+                value={value || ''}
+                onChange={(e) => setEditRowData(prev => ({ ...prev, [columnId]: e.target.value }))}
+                className="dynamic-table-input dynamic-table-select"
+                disabled={disabled}
+              >
+                <option value="">Select...</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            );
+          }
         
         case 'date':
           return (
@@ -329,18 +386,27 @@ const DynamicTable = ({
       if (hasPredefinedRows && !disabled) {
         switch (column.type) {
           case 'yes_no':
-            return (
-              <select
-                value={value || ''}
-                onChange={(e) => handleCellChange(rowIndex, columnId, e.target.value)}
-                className="dynamic-table-input dynamic-table-select"
-                disabled={disabled}
-              >
-                <option value="">Select...</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            );
+            // Use tabs for MLC/Biosecurity response columns
+            if (isMLCBiosecurityTable && isResponseColumn) {
+              return renderYesNoTabs(
+                value || '',
+                (newValue) => handleCellChange(rowIndex, columnId, newValue),
+                disabled
+              );
+            } else {
+              return (
+                <select
+                  value={value || ''}
+                  onChange={(e) => handleCellChange(rowIndex, columnId, e.target.value)}
+                  className="dynamic-table-input dynamic-table-select"
+                  disabled={disabled}
+                >
+                  <option value="">Select...</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              );
+            }
           
           case 'text':
             if (isQueryColumn) {
@@ -402,21 +468,31 @@ const DynamicTable = ({
 
   const renderNewRowCell = (column, index) => {
     const columnId = column.id || column.column_id || column.label;
+    const isResponseColumn = columnId === 'response';
     
     switch (column.type) {
       case 'yes_no':
-        return (
-          <select
-            value={newRowData[columnId] || ''}
-            onChange={(e) => setNewRowData(prev => ({ ...prev, [columnId]: e.target.value }))}
-            className="dynamic-table-input dynamic-table-select"
-            disabled={disabled}
-          >
-            <option value="">Select...</option>
-            <option value="Yes">Yes</option>
-            <option value="No">No</option>
-          </select>
-        );
+        // Use tabs for MLC/Biosecurity response columns in new row
+        if (isMLCBiosecurityTable && isResponseColumn) {
+          return renderYesNoTabs(
+            newRowData[columnId] || '',
+            (newValue) => setNewRowData(prev => ({ ...prev, [columnId]: newValue })),
+            disabled
+          );
+        } else {
+          return (
+            <select
+              value={newRowData[columnId] || ''}
+              onChange={(e) => setNewRowData(prev => ({ ...prev, [columnId]: e.target.value }))}
+              className="dynamic-table-input dynamic-table-select"
+              disabled={disabled}
+            >
+              <option value="">Select...</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          );
+        }
       
       case 'date':
         return (
@@ -455,7 +531,7 @@ const DynamicTable = ({
   };
 
   return (
-    <div className={`dynamic-table-container ${hasError ? 'has-error' : ''} ${disabled ? 'disabled-table' : ''} ${hasPredefinedRows ? 'predefined-table' : ''} ${hasYesResponses ? 'has-yes-responses' : ''}`}>
+    <div className={`dynamic-table-container ${hasError ? 'has-error' : ''} ${disabled ? 'disabled-table' : ''} ${hasPredefinedRows ? 'predefined-table' : ''} ${isMLCBiosecurityTable ? 'mlc-biosecurity-table' : ''} ${hasNoResponses ? 'has-no-responses' : ''}`}>
       <div className="dynamic-table-wrapper">
         <table className="dynamic-table">
           <thead>
@@ -479,7 +555,7 @@ const DynamicTable = ({
             {tableData.map((row, rowIndex) => (
               <tr key={row._id || `row_${rowIndex}`} 
                   data-row-index={rowIndex}
-                  className={`dynamic-table-data-row ${row._isPredefined ? 'predefined-row' : ''} ${rowHasYesResponse(row) ? 'has-yes-response' : ''}`}>
+                  className={`dynamic-table-data-row ${row._isPredefined ? 'predefined-row' : ''} ${rowHasNoResponse(row) ? 'has-no-response' : ''}`}>
                 {tableStructure.map((column, index) => {
                   const columnId = column.id || column.column_id || column.label;
                   return (
@@ -565,16 +641,128 @@ const DynamicTable = ({
           </div>
         )}
 
-        {/* Instructions for predefined tables */}
+        {/* UPDATED: Instructions for predefined tables (reversed logic) */}
         {hasPredefinedRows && !disabled && (
           <div className="dynamic-table-instructions">
-            {hasYesResponses 
-              ? "Some items require attention - review highlighted questions with 'Yes' responses."
-              : "Complete the checklist by selecting Yes/No for each question and adding remarks as needed."
+            {hasNoResponses 
+              ? "⚠️ Attention required - review highlighted questions with 'No' responses."
+              : "✅ Complete the checklist by selecting Yes/No for each question and adding remarks as needed."
             }
           </div>
         )}
       </div>
+
+      {/* UPDATED: Add CSS for Yes/No tabs */}
+      <style jsx>{`
+        /* Yes/No Tabs Styling */
+        .yes-no-tabs {
+          display: flex;
+          border-radius: 6px;
+          overflow: hidden;
+          border: 1px solid #d1d5db;
+          background: #f9fafb;
+          width: 100%;
+          max-width: 120px;
+        }
+
+        .yes-no-tab {
+          flex: 1;
+          padding: 6px 8px;
+          border: none;
+          background: transparent;
+          color: #374151;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-size: 12px;
+          font-weight: 500;
+          text-align: center;
+        }
+
+        .yes-no-tab:hover:not(:disabled) {
+          background: rgba(59, 130, 246, 0.1);
+          color: #1d4ed8;
+        }
+
+        .yes-no-tab:disabled {
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+
+        .yes-no-tab.active.yes-tab {
+          background: #22c55e;
+          color: white;
+          box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .yes-no-tab.active.no-tab {
+          background: #ef4444;
+          color: white;
+          box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .yes-no-tab:first-child {
+          border-right: 1px solid #d1d5db;
+        }
+
+        /* MLC/Biosecurity table styling */
+        .mlc-biosecurity-table {
+          border-color: #06b6d4;
+          background: rgba(6, 182, 212, 0.02);
+        }
+
+        .mlc-biosecurity-table .dynamic-table thead {
+          background: linear-gradient(180deg, #0891b2, #06b6d4);
+          color: white;
+        }
+
+        /* UPDATED: Highlight rows with "No" responses (reversed logic) */
+        .has-no-responses {
+          border-color: #ef4444;
+          box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2);
+        }
+
+        .has-no-response {
+          background-color: rgba(239, 68, 68, 0.05) !important;
+          border-left: 3px solid #ef4444;
+        }
+
+        .has-no-response:hover {
+          background-color: rgba(239, 68, 68, 0.1) !important;
+        }
+
+        /* Animation for newly marked "No" responses */
+        .newly-marked {
+          animation: highlightNo 2s ease-in-out;
+        }
+
+        @keyframes highlightNo {
+          0% { background-color: rgba(239, 68, 68, 0.05); }
+          50% { background-color: rgba(239, 68, 68, 0.3); }
+          100% { background-color: rgba(239, 68, 68, 0.05); }
+        }
+
+        /* Enhanced instructions styling */
+        .dynamic-table-instructions {
+          padding: 12px 16px;
+          margin: 8px 16px;
+          border-radius: 6px;
+          font-size: 13px;
+          font-weight: 500;
+          text-align: center;
+        }
+
+        .has-no-responses .dynamic-table-instructions {
+          background: rgba(239, 68, 68, 0.1);
+          color: #dc2626;
+          border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .dynamic-table-instructions:not(.has-no-responses *) {
+          background: rgba(34, 197, 94, 0.1);
+          color: #059669;
+          border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+      `}</style>
     </div>
   );
 };

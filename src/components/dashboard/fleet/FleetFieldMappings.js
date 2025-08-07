@@ -5,7 +5,7 @@ export const fleetFieldMappings = {
       dbField: 'vessel_name',
       label: 'Vessel',
       priority: 1,
-      width: '300px'
+      width: '280px'
     },
     vessel_type: {
       dbField: 'vessel_type',

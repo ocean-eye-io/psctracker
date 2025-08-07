@@ -1,4 +1,4 @@
-// src/components/dashboard/reporting/checklist/ModernChecklistForm.jsx - FIXED VERSION
+// src/components/dashboard/reporting/checklist/ModernChecklistForm.jsx - UPDATED VERSION
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   ArrowLeft,
@@ -72,6 +72,21 @@ const ModernChecklistForm = ({
     return mapping[responseType] || 'text';
   }, []);
 
+  // Check if field is an MLC/Biosecurity table field
+  const isMlcBiosecurityTableField = useCallback((field) => {
+    // Check if this is a table field and if it's related to MLC or Biosecurity
+    const isTable = field.field_type === 'table' || field.response_type === 'table';
+    const sectionName = field.section_name?.toLowerCase() || '';
+    const fieldLabel = field.label?.toLowerCase() || '';
+    
+    return isTable && (
+      sectionName.includes('mlc') || 
+      sectionName.includes('biosecurity') ||
+      fieldLabel.includes('mlc') || 
+      fieldLabel.includes('biosecurity')
+    );
+  }, []);
+
   // Generate form sections from template
   const formSections = useMemo(() => {
     if (!template?.processed_items || !Array.isArray(template.processed_items)) {
@@ -104,7 +119,8 @@ const ModernChecklistForm = ({
         is_mandatory: Boolean(item.is_mandatory),
         response_type: item.response_type,
         table_structure: item.table_structure,
-        guidance: item.guidance
+        guidance: item.guidance,
+        section_name: sectionName // Add section name to field for easier checking
       };
 
       sectionMap.get(sectionName).fields.push(field);
@@ -423,6 +439,8 @@ const ModernChecklistForm = ({
             onChange={(tableData) => handleResponseChange(field.field_id, tableData)}
             disabled={mode === 'view' || disabled}
             hasError={hasError}
+            // Pass flag to indicate if this is MLC/Biosecurity table for special handling
+            isMlcBiosecurity={isMlcBiosecurityTableField(field)}
           />
         );
 
@@ -517,11 +535,18 @@ const ModernChecklistForm = ({
                 <div className="light-fields-grid">
                   {sectionFields.map((field) => {
                     const hasError = validationErrors[field.field_id];
+                    
+                    // UPDATED: Check if field response indicates a problem (reverse logic)
+                    const fieldValue = responses[field.field_id];
+                    const hasProblematicResponse = fieldValue === 'No' || 
+                      (Array.isArray(fieldValue) && fieldValue.some(row => 
+                        Object.values(row).some(val => val === 'No')
+                      ));
 
                     return (
                       <div
                         key={field.field_id}
-                        className={`light-field-item ${field.field_type} ${completedItems.has(field.field_id) ? 'completed' : ''} ${field.is_mandatory ? 'mandatory' : ''} ${hasError ? 'error' : ''}`}
+                        className={`light-field-item ${field.field_type} ${completedItems.has(field.field_id) ? 'completed' : ''} ${field.is_mandatory ? 'mandatory' : ''} ${hasError ? 'error' : ''} ${hasProblematicResponse ? 'problematic-response' : ''}`}
                       >
                         <div className="light-field-header">
                           <label className="light-field-label">
@@ -671,6 +696,13 @@ const ModernChecklistForm = ({
         .light-field-item.error {
           border-color: #dc3545;
           box-shadow: 0 1px 3px rgba(220, 53, 69, 0.2);
+        }
+
+        /* UPDATED: New class for problematic responses (e.g., "No" answers) */
+        .light-field-item.problematic-response {
+          border-color: #dc3545;
+          background-color: rgba(220, 53, 69, 0.05);
+          box-shadow: 0 1px 3px rgba(220, 53, 69, 0.3);
         }
 
         .light-field-item.mandatory::after {
