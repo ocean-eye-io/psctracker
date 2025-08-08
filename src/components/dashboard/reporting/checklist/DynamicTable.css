@@ -123,11 +123,16 @@
   letter-spacing: 0.3px;
   text-transform: uppercase;
   border-right: 1px solid rgba(226, 232, 240, 0.3);
-  white-space: nowrap;
+  /* CHANGED: Remove white-space: nowrap and add wrapping */
+  white-space: normal; /* Changed from nowrap */
+  word-break: break-word; /* Added for better word breaking */
+  line-height: 1.2; /* Added for better line spacing */
+  /* CHANGED: Increase min-height to accommodate two lines */
+  min-height: 32px; /* Added minimum height for two-line headers */
+  vertical-align: top; /* Added to align content to top */
   transition: var(--dt-transition);
   font-family: 'Nunito', sans-serif;
 }
-
 .dynamic-table-column-header:last-child {
   border-right: none;
 }
@@ -138,10 +143,22 @@
 
 .dynamic-table-column-header-content {
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* Changed from center to flex-start */
   justify-content: flex-start;
   gap: 4px;
   min-height: 16px;
+  width: 100%; /* Added to ensure full width usage */
+}
+
+.dynamic-table-column-header.multi-line {
+  height: auto;
+  min-height: 40px; /* Taller for two-line headers */
+  padding: 6px 8px; /* Slightly reduced padding */
+}
+
+.dynamic-table-column-header.multi-line .dynamic-table-column-label {
+  font-size: 9px; /* Slightly smaller font for long headers */
+  line-height: 1.3;
 }
 
 .dynamic-table-column-label {
@@ -150,12 +167,17 @@
   font-weight: 500;
   color: var(--dt-text-primary);
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* Changed from center to flex-start */
   justify-content: flex-start;
   gap: 2px;
   font-family: 'Nunito', sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  /* ADDED: Support for multi-line text */
+  white-space: normal; /* Allow text wrapping */
+  word-break: break-word; /* Break long words */
+  line-height: 1.2; /* Better line spacing */
+  text-align: left; /* Ensure left alignment */
 }
 
 .dynamic-table-mandatory-indicator {

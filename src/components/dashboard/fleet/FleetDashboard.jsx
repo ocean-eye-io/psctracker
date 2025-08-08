@@ -23,9 +23,10 @@ import ChecklistModal from '../reporting/ChecklistModal';
 import portMappingService from '../../../services/PortMappingService';
 
 const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
-  // Get auth context
+  // Get auth context - stabilize with useMemo
   const { currentUser, loading: authLoading } = useAuth();
-  const userId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
+  const stableCurrentUser = useMemo(() => currentUser, [currentUser?.userId || currentUser?.user_id || currentUser?.id]);
+  const userId = stableCurrentUser?.userId || stableCurrentUser?.user_id || stableCurrentUser?.id;
 
   // Core state management
   const [vessels, setVessels] = useState([]);
@@ -39,6 +40,11 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const [statusFilters, setStatusFilters] = useState([]);
   const [docFilters, setDocFilters] = useState([]);
   const [voyageStatusFilter, setVoyageStatusFilter] = useState('Current Voyages');
+
+  // Performance: Separate background loading states
+  const [activeVesselsLoaded, setActiveVesselsLoaded] = useState(false);
+  const [backgroundDataLoading, setBackgroundDataLoading] = useState(false);
+  const [backgroundProgress, setBackgroundProgress] = useState({ step: '', progress: 0 });
 
   // Processed data by status
   const [activeVessels, setActiveVessels] = useState([]);
@@ -65,7 +71,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
   const [loadingPscData, setLoadingPscData] = useState(true);
   const [savingStates, setSavingStates] = useState({});
 
-  // Defect stats
+  // Performance: Lazy loading states for defects and checklists
   const [defectStats, setDefectStats] = useState({
     total: 0,
     open: 0,
@@ -73,49 +79,59 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     closed: 0,
     overdue: 0
   });
+  const [vesselDefectCounts, setVesselDefectCounts] = useState({});
+  const [vesselChecklistStats, setVesselChecklistStats] = useState({});
+  const [vesselPortDocCounts, setVesselPortDocCounts] = useState({});
 
   // Checklist modal state
   const [checklistModalOpen, setChecklistModalOpen] = useState(false);
   const [selectedVesselForChecklist, setSelectedVesselForChecklist] = useState(null);
 
-  // ADDED: Port enrichment loading and progress state variables
-  const [portEnrichmentLoading, setPortEnrichmentLoading] = useState(false);
-  const [enrichmentProgress, setEnrichmentProgress] = useState({ current: 0, total: 0 });
+  // Performance: Prevent auto-refresh on checklist save
+  const [preventAutoRefresh, setPreventAutoRefresh] = useState(false);
+  const autoRefreshTimeoutRef = useRef(null);
 
-  // OPTIMIZED: Defects cache using object instead of Map
-  const [defectsCache, setDefectsCache] = useState({});
+  // Performance: Refs for caching and control
+  const defectsCacheRef = useRef({});
+  const checklistCacheRef = useRef({});
+  const portDocsCacheRef = useRef({});
+  const backgroundQueueRef = useRef([]);
+  const isBackgroundProcessingRef = useRef(false);
+  const lastFetchTimeRef = useRef(0);
+  const fetchDebounceRef = useRef(null);
 
-  // API endpoints
-  const BASE_API_URL = 'https://mvowrtmyd4go63badvhkr6rueq0evdzu.lambda-url.ap-south-1.on.aws';
-  const VESSELS_WITH_OVERRIDE_API_URL = `${BASE_API_URL}/api/vessels-with-overrides`;
-  const VESSEL_OVERRIDE_API_URL = `${BASE_API_URL}/api/vessel-override`;
-  const ORIGINAL_VESSELS_API_URL = `${BASE_API_URL}/api/vessels`;
-  const PSC_API_URL = `${BASE_API_URL}/api/psc-deficiencies`;
+  // Stable API endpoints
+  const apiEndpoints = useMemo(() => ({
+    BASE_API_URL: 'https://mvowrtmyd4go63badvhkr6rueq0evdzu.lambda-url.ap-south-1.on.aws',
+    get VESSELS_WITH_OVERRIDE_API_URL() { return `${this.BASE_API_URL}/api/vessels-with-overrides`; },
+    get VESSEL_OVERRIDE_API_URL() { return `${this.BASE_API_URL}/api/vessel-override`; },
+    get ORIGINAL_VESSELS_API_URL() { return `${this.BASE_API_URL}/api/vessels`; },
+    get PSC_API_URL() { return `${this.BASE_API_URL}/api/psc-deficiencies`; }
+  }), []);
 
-  // OPTIMIZED: Initialize defects service with better error handling
-  useEffect(() => {
-    const currentUserId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
-    if (currentUserId) {
+  // Performance: Stabilize defects service
+  const stableDefectsService = useMemo(() => {
+    if (userId) {
       try {
-        defectsService.setUserId(currentUserId);
-        // Test the service silently
-        defectsService.getDefectStats().catch(() => {
-          // Silent error handling
-        });
+        defectsService.setUserId(userId);
+        return defectsService;
       } catch (error) {
-        // Silent error handling
+        console.warn('Defects service initialization failed:', error);
+        return null;
       }
     }
-  }, [currentUser]);
+    return null;
+  }, [userId]);
 
-  // OPTIMIZED: Defect stats loading with better error handling
+  // Performance: Background defect stats loading with debouncing
   const loadDefectStats = useCallback(async () => {
-    if (!currentUser) return;
+    if (!stableDefectsService) return;
 
     try {
-      const stats = await defectsService.getDefectStats();
+      const stats = await stableDefectsService.getDefectStats();
       setDefectStats(stats);
     } catch (error) {
+      console.warn('Failed to load defect stats:', error);
       setDefectStats({
         total: 0,
         open: 0,
@@ -124,178 +140,253 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         overdue: 0
       });
     }
-  }, [currentUser]);
+  }, [stableDefectsService]);
 
-  // Load defect stats on mount
+  // Performance: Initialize defects service once
   useEffect(() => {
-    if (currentUser) {
-      loadDefectStats();
+    if (stableDefectsService) {
+      // Debounce defect stats loading
+      const timeoutId = setTimeout(() => {
+        loadDefectStats();
+      }, 500);
+      return () => clearTimeout(timeoutId);
     }
-  }, [currentUser, loadDefectStats]);
+  }, [stableDefectsService, loadDefectStats]);
 
-  // OPTIMIZED: Defects loading handler
+  // Performance: Lazy defect count loading per vessel with caching
+  const getVesselDefectCount = useCallback(async (vesselName) => {
+    if (!stableDefectsService || !vesselName) return { total: 0, high: 0, medium: 0, low: 0 };
+
+    // Check cache first
+    if (vesselDefectCounts[vesselName]) {
+      return vesselDefectCounts[vesselName];
+    }
+
+    try {
+      const defects = await stableDefectsService.getVesselDefectsByName(vesselName.trim());
+      const openDefects = defects.filter(d => d.Status?.toLowerCase() === 'open');
+
+      const counts = {
+        total: openDefects.length,
+        high: openDefects.filter(d => d.Criticality?.toLowerCase() === 'high').length,
+        medium: openDefects.filter(d => d.Criticality?.toLowerCase() === 'medium').length,
+        low: openDefects.filter(d => d.Criticality?.toLowerCase() === 'low').length,
+      };
+
+      // Cache the result
+      setVesselDefectCounts(prev => ({
+        ...prev,
+        [vesselName]: counts
+      }));
+
+      return counts;
+    } catch (error) {
+      console.warn(`Failed to load defect count for ${vesselName}:`, error);
+      return { total: 0, high: 0, medium: 0, low: 0 };
+    }
+  }, [stableDefectsService, vesselDefectCounts]);
+
+  // Performance: Lazy defects loading handler
   const handleLoadDefects = useCallback(async (vesselName) => {
     try {
-      if (!currentUser) {
-        return [];
+      if (!stableDefectsService || !vesselName) return [];
+
+      // Check full cache first
+      const cacheKey = `${vesselName}-${userId}`;
+      if (defectsCacheRef.current[cacheKey]) {
+        return defectsCacheRef.current[cacheKey];
       }
 
-      const currentUserId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
-      if (!currentUserId) {
-        return [];
-      }
-
-      // Check cache first
-      const cacheKey = `${vesselName}-${currentUserId}`;
-      if (defectsCache[cacheKey]) {
-        return defectsCache[cacheKey];
-      }
-
-      defectsService.setUserId(currentUserId);
       const normalizedVesselName = vesselName.trim();
-      const defects = await defectsService.getVesselDefectsByName(normalizedVesselName);
+      const defects = await stableDefectsService.getVesselDefectsByName(normalizedVesselName);
 
       // Cache the results
-      setDefectsCache(prev => ({
-        ...prev,
-        [cacheKey]: defects
-      }));
+      defectsCacheRef.current[cacheKey] = defects;
 
       return defects;
     } catch (error) {
+      console.warn(`Failed to load defects for ${vesselName}:`, error);
       return [];
     }
-  }, [currentUser, defectsCache]);
+  }, [stableDefectsService, userId]);
 
-  // OPTIMIZED: Defects cache refresh
-  const refreshDefectsCache = useCallback(() => {
-    setDefectsCache({});
-    defectsService.clearCache();
-    loadDefectStats();
-  }, [loadDefectStats]);
+  // Performance: Lazy checklist stats loading
+  const getVesselChecklistStats = useCallback(async (vesselId) => {
+    if (!vesselId) return { status: 'pending', progress: 0 };
 
-  // OPTIMIZED: Defect action handlers with better error handling
-  const handleCreateDefect = useCallback(async (defectData) => {
+    // Check cache first
+    if (vesselChecklistStats[vesselId]) {
+      return vesselChecklistStats[vesselId];
+    }
+
     try {
-      if (!currentUser) {
-        throw new Error('User not authenticated');
+      const vessel = vessels.find(v => v.id === vesselId);
+      const stats = {
+        status: vessel?.computed_checklist_status || 'pending',
+        progress: vessel?.checklist_progress || 0
+      };
+
+      // Cache the result
+      setVesselChecklistStats(prev => ({
+        ...prev,
+        [vesselId]: stats
+      }));
+
+      return stats;
+    } catch (error) {
+      console.warn(`Failed to load checklist stats for ${vesselId}:`, error);
+      return { status: 'pending', progress: 0 };
+    }
+  }, [vessels, vesselChecklistStats]);
+
+  // Performance: Fixed port document count loading with proper error handling
+  const getPortDocumentCount = useCallback(async (portName) => {
+    if (!portName) return 0;
+
+    // Check cache first
+    if (vesselPortDocCounts[portName]) {
+      return vesselPortDocCounts[portName];
+    }
+
+    try {
+      // Check if the method exists before calling
+      if (portMappingService && typeof portMappingService.getPortDocumentCount === 'function') {
+        const portData = await portMappingService.getPortDocumentCount(portName);
+        const count = portData?.document_count || 0;
+
+        // Cache the result
+        setVesselPortDocCounts(prev => ({
+          ...prev,
+          [portName]: count
+        }));
+
+        return count;
+      } else {
+        console.warn('portMappingService.getPortDocumentCount is not available');
+        return 0;
       }
+    } catch (error) {
+      console.warn(`Failed to load port document count for ${portName}:`, error);
+      return 0;
+    }
+  }, [vesselPortDocCounts]);
 
-      const newDefect = await defectsService.createDefect(defectData);
+  // Performance: Background queue processor with better error handling
+  const processBackgroundQueue = useCallback(async () => {
+    if (isBackgroundProcessingRef.current || backgroundQueueRef.current.length === 0) {
+      return;
+    }
 
-      // Clear cache for the affected vessel
-      const vesselName = defectData.vessel_name;
-      if (vesselName) {
-        const currentUserId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
-        const cacheKey = `${vesselName}-${currentUserId}`;
-        setDefectsCache(prev => {
-          const newCache = { ...prev };
-          delete newCache[cacheKey];
-          return newCache;
+    isBackgroundProcessingRef.current = true;
+    setBackgroundDataLoading(true);
+
+    try {
+      const totalTasks = backgroundQueueRef.current.length;
+      let completedTasks = 0;
+
+      while (backgroundQueueRef.current.length > 0) {
+        const task = backgroundQueueRef.current.shift();
+        const { type, data, callback } = task;
+
+        completedTasks++;
+        setBackgroundProgress({
+          step: `Loading ${type}...`,
+          progress: Math.round((completedTasks / totalTasks) * 100)
         });
-      }
 
-      loadDefectStats();
-      return newDefect;
-    } catch (error) {
-      setError(`Failed to create defect: ${error.message}`);
-      throw error;
+        try {
+          let result;
+          switch (type) {
+            case 'defectCount':
+              result = await getVesselDefectCount(data.vesselName);
+              break;
+            case 'checklistStats':
+              result = await getVesselChecklistStats(data.vesselId);
+              break;
+            case 'portDocCount':
+              result = await getPortDocumentCount(data.portName);
+              break;
+            default:
+              break;
+          }
+
+          if (callback) {
+            callback(result);
+          }
+        } catch (error) {
+          console.warn(`Background task failed for ${type}:`, error);
+        }
+
+        // Small delay to prevent overwhelming the server
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+    } finally {
+      isBackgroundProcessingRef.current = false;
+      setBackgroundDataLoading(false);
+      setTimeout(() => {
+        setBackgroundProgress({ step: '', progress: 0 });
+      }, 1000);
     }
-  }, [currentUser, loadDefectStats]);
+  }, [getVesselDefectCount, getVesselChecklistStats, getPortDocumentCount]);
 
-  const handleUpdateDefect = useCallback(async (defectId, defectData) => {
-    try {
-      if (!currentUser) {
-        throw new Error('User not authenticated');
-      }
+  // Performance: Add task to background queue with deduplication
+  const addToBackgroundQueue = useCallback((type, data, callback) => {
+    // Avoid duplicate tasks
+    const taskExists = backgroundQueueRef.current.some(task => 
+      task.type === type && 
+      JSON.stringify(task.data) === JSON.stringify(data)
+    );
 
-      const updatedDefect = await defectsService.updateDefect(defectId, defectData);
-
-      // Clear cache for the affected vessel
-      const vesselName = defectData.vessel_name || updatedDefect.vessel_name;
-      if (vesselName) {
-        const currentUserId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
-        const cacheKey = `${vesselName}-${currentUserId}`;
-        setDefectsCache(prev => {
-          const newCache = { ...prev };
-          delete newCache[cacheKey];
-          return newCache;
-        });
-      }
-
-      loadDefectStats();
-      return updatedDefect;
-    } catch (error) {
-      setError(`Failed to update defect: ${error.message}`);
-      throw error;
+    if (!taskExists) {
+      backgroundQueueRef.current.push({ type, data, callback });
     }
-  }, [currentUser, loadDefectStats]);
 
-  const handleDeleteDefect = useCallback(async (defectId) => {
-    try {
-      if (!currentUser) {
-        throw new Error('User not authenticated');
-      }
-
-      const result = await defectsService.deleteDefect(defectId);
-      refreshDefectsCache();
-      return result;
-    } catch (error) {
-      setError(`Failed to delete defect: ${error.message}`);
-      throw error;
+    // Process queue with debouncing
+    if (fetchDebounceRef.current) {
+      clearTimeout(fetchDebounceRef.current);
     }
-  }, [currentUser, refreshDefectsCache]);
 
-  // Checklist handlers
-  const handleOpenChecklist = useCallback((vessel) => {
-    setSelectedVesselForChecklist(vessel);
-    setChecklistModalOpen(true);
-  }, []);
+    fetchDebounceRef.current = setTimeout(() => {
+      processBackgroundQueue();
+    }, 200);
+  }, [processBackgroundQueue]);
 
-  const handleCloseChecklist = useCallback(() => {
-    setChecklistModalOpen(false);
-    setSelectedVesselForChecklist(null);
-  }, []);
-
-  // OPTIMIZED: Vessel processing with better performance
-  
-
-  // OPTIMIZED: Status categorization
+  // Performance: Optimized status categorization (stable)
   const categorizeStatus = useCallback((status) => {
     if (!status) return "Others";
 
     const statusLower = status.toLowerCase();
 
     if (statusLower.includes("at sea") ||
-        statusLower.includes("noon at sea") ||
-        statusLower.includes("noon sea") ||
-        statusLower === "sea" ||
-        statusLower === "noon") {
+      statusLower.includes("noon at sea") ||
+      statusLower.includes("noon sea") ||
+      statusLower === "sea" ||
+      statusLower === "noon") {
       return "At Sea";
     }
 
     if (statusLower.includes("at port") ||
-        statusLower.includes("noon at port") ||
-        statusLower.includes("at berth") ||
-        statusLower.includes("berth") ||
-        statusLower.includes("arrival") ||
-        statusLower.includes("departure port") ||
-        statusLower.includes("departure") ||
-        statusLower.includes("port")) {
+      statusLower.includes("noon at port") ||
+      statusLower.includes("at berth") ||
+      statusLower.includes("berth") ||
+      statusLower.includes("arrival") ||
+      statusLower.includes("departure port") ||
+      statusLower.includes("departure") ||
+      statusLower.includes("port")) {
       return "At Port";
     }
 
     if (statusLower.includes("at anchor") ||
-        statusLower.includes("noon at anchor") ||
-        statusLower.includes("anchor")) {
+      statusLower.includes("noon at anchor") ||
+      statusLower.includes("anchor")) {
       return "At Anchor";
     }
 
     return "Others";
   }, []);
 
+  // Performance: Optimized vessel processing with memoization (stable)
   const processVesselsData = useCallback((data) => {
-    // Helper function for date parsing
     const parseDate = (dateString) => {
       if (!dateString) return null;
       try {
@@ -305,12 +396,11 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         return null;
       }
     };
-  
-    // Master filter - improved performance
+
     const vesselsWithValidData = data.filter(vessel => {
       const imoNo = vessel.imo_no;
       const vesselName = vessel.vessel_name;
-  
+
       return imoNo &&
         imoNo !== "-" &&
         Number.isInteger(Number(imoNo)) &&
@@ -318,23 +408,18 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         vesselName &&
         vesselName !== "-";
     });
-  
+
     console.log(`🔍 [processVesselsData] Processing ${vesselsWithValidData.length} vessels with valid data`);
-  
-    // 🔧 FIXED: Better voyage classification logic
-    // Don't rely solely on rds_load_date for classification
-    // Use multiple criteria to determine if a voyage is active/current
-  
+
     const currentDate = new Date();
     const twoMonthsAgo = new Date();
     twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
-  
-    // Process vessels and classify them
+
     const processedVessels = vesselsWithValidData.map(vessel => {
       const etaDate = parseDate(vessel.eta);
       const reportDate = parseDate(vessel.report_date);
       const rdsLoadDate = parseDate(vessel.rds_load_date);
-  
+
       let days_to_go = 0;
       if (etaDate) {
         const timeDiff = etaDate.getTime() - currentDate.getTime();
@@ -342,65 +427,49 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       } else if (vessel.DISTANCE_TO_GO) {
         days_to_go = parseFloat((vessel.DISTANCE_TO_GO / 350).toFixed(1));
       }
-  
-      // Generate unique key
-      const uniqueKey = `vessel-${uuidv4()}`;
-  
-      // Categorize status
+
+      const uniqueKey = `vessel-${vessel.id || uuidv4()}`;
       const formattedStatus = categorizeStatus(vessel.event_type);
-  
-      // 🔧 IMPROVED: Better logic to determine if voyage is active/current
+
       let isActiveVessel = false;
-  
-      // Criteria for active voyage:
-      // 1. Vessel status is "Active" AND
-      // 2. Has recent report date (within 2 months) OR recent ETA (future or recent past)
+
       if (vessel.status === "Active") {
-        // Check report date recency
         const hasRecentReport = reportDate && reportDate >= twoMonthsAgo;
-        
-        // Check if ETA is in reasonable range (not too far in the past)
         const hasReasonableETA = etaDate && etaDate >= twoMonthsAgo;
-        
-        // Check if it's currently at sea or has recent position updates
         const hasRecentActivity = vessel.lat && vessel.lon && reportDate && reportDate >= twoMonthsAgo;
-  
+
         if (hasRecentReport || hasReasonableETA || hasRecentActivity) {
           isActiveVessel = true;
         }
       }
-  
-      console.log(`🚢 [processVesselsData] ${vessel.vessel_name}: status=${vessel.status}, isActive=${isActiveVessel}, reportDate=${reportDate?.toISOString()}, eta=${etaDate?.toISOString()}`);
-  
+
       return {
         ...vessel,
         etaDate,
         days_to_go,
         riskScore: Math.floor(Math.random() * 100),
         uniqueKey,
-        isActiveVessel, // This determines the classification
+        isActiveVessel,
         reportDate,
         rdsLoadDate,
         event_type: formattedStatus,
         computed_checklist_status: vessel.computed_checklist_status
       };
     });
-  
-    // Separate vessels based on the improved classification
+
     const activeVessels = processedVessels.filter(v => v.isActiveVessel);
     const inactiveVessels = processedVessels.filter(v => !v.isActiveVessel);
-  
+
     console.log(`📊 [processVesselsData] Results: ${activeVessels.length} active, ${inactiveVessels.length} inactive`);
-  
-    // Store processed vessels in state
+
     setActiveVessels(activeVessels);
     setInactiveVessels(inactiveVessels);
-    setAllProcessedVessels(processedVessels); // Store all vessels for filtering
-  
-    return processedVessels; // Return all vessels initially
+    setAllProcessedVessels(processedVessels);
+
+    return processedVessels;
   }, [categorizeStatus]);
 
-  // OPTIMIZED: Sort vessels data
+  // Performance: Optimized sorting with memoization (stable)
   const sortVesselsData = useCallback((processedData) => {
     return [...processedData].sort((a, b) => {
       const aInPort = a.event_type && (a.event_type.toLowerCase().includes('port') || a.event_type.toLowerCase().includes('berth'));
@@ -420,160 +489,171 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     });
   }, []);
 
-  
-
+  // Performance: Debounced vessel data fetching with duplicate prevention
   const fetchVesselData = useCallback(async () => {
+    if (preventAutoRefresh) {
+      console.log('🚫 Auto-refresh prevented during checklist operation');
+      return;
+    }
+
+    // Prevent duplicate calls within 1 second
+    const now = Date.now();
+    if (now - lastFetchTimeRef.current < 1000) {
+      console.log('🚫 Fetch prevented - too soon after last fetch');
+      return;
+    }
+    lastFetchTimeRef.current = now;
+
     setLoading(true);
     setError(null);
-  
+
     try {
       console.log('🚀 [FleetDashboard] Starting optimized vessel data fetch...');
       const startTime = Date.now();
-  
-      // Step 1: Fetch vessels first (fast)
-      const response = await fetch(VESSELS_WITH_OVERRIDE_API_URL);
-  
+
+      const response = await fetch(apiEndpoints.VESSELS_WITH_OVERRIDE_API_URL);
+
       if (!response.ok) {
         throw new Error(`API request failed with status ${response.status}`);
       }
-  
+
       const data = await response.json();
-      
-      // 🔧 FIXED: Handle both old and new response structures
+
+      // Handle both old and new response structures
       let vesselArray = [];
       let metaData = null;
-      
+
       if (data.vessels && Array.isArray(data.vessels)) {
-        // NEW STRUCTURE: { vessels: [...], meta: {...} }
         vesselArray = data.vessels;
         metaData = data.meta;
         console.log('✅ [FleetDashboard] Using NEW response structure');
       } else if (Array.isArray(data)) {
-        // OLD STRUCTURE: [vessel1, vessel2, ...]
         vesselArray = data;
         console.log('✅ [FleetDashboard] Using OLD response structure');
       } else {
         console.error('❌ [FleetDashboard] Unknown response structure:', Object.keys(data));
         throw new Error('Invalid response structure from API');
       }
-  
+
       console.log(`✅ [FleetDashboard] Fetched ${vesselArray.length} vessels in ${Date.now() - startTime}ms`);
-  
-      // Step 2: Process vessel data immediately (no port enrichment yet)
-      const processedData = processVesselsData(vesselArray);
-      const sortedData = sortVesselsData(processedData);
-  
-      // Step 3: Update UI immediately with basic vessel data
-      setVessels(sortedData);
-      setFilteredVessels(sortedData);
-      setLoading(false); // UI is now interactive!
+
+      // Process and show active vessels immediately
+      const allProcessedData = processVesselsData(vesselArray);
+      const activeVesselsOnly = allProcessedData.filter(v => v.isActiveVessel);
+      const sortedActiveVessels = sortVesselsData(activeVesselsOnly);
+
+      // Update UI immediately with active vessels only
+      setVessels(sortedActiveVessels);
+      setFilteredVessels(sortedActiveVessels);
+      setActiveVesselsLoaded(true);
+      setLoading(false);
       setLastUpdated(new Date());
-  
-      console.log(`🎯 [FleetDashboard] UI updated with ${sortedData.length} vessels, now enriching with port data...`);
-  
-      // Only proceed with port enrichment if we have vessels
-      if (sortedData.length === 0) {
-        console.warn('⚠️ [FleetDashboard] No vessels to enrich, skipping port enrichment');
-        setPortEnrichmentLoading(false);
-        return;
-      }
-  
-      // Step 4: Enhanced port enrichment based on optimization availability
-      if (metaData?.port_optimization_available && metaData?.unique_ports) {
-        console.log(`📊 [FleetDashboard] Using OPTIMIZED port loading for ${metaData.unique_port_count} ports`);
-        setPortEnrichmentLoading(true);
-  
+
+      console.log(`🎯 [FleetDashboard] UI updated with ${sortedActiveVessels.length} active vessels`);
+
+      // Background processing for inactive vessels and enrichment
+      setTimeout(async () => {
         try {
-          // 🚀 OPTIMIZED PATH: Use batch loading
-          const uniquePorts = metaData.unique_ports;
-          
-          // Import the service if not already imported
-          const { default: portMappingService } = await import('../../../services/PortMappingService');
-          
-          // Get port documents in batches with caching
-          const portDocuments = await portMappingService.getPortDocumentsBatch(uniquePorts);
-          
-          console.log(`✅ [FleetDashboard] Loaded documents for ${portDocuments.port_summaries.length} ports`);
-          console.log(`📊 Cache hit ratio: ${portDocuments.meta?.cache_hit_ratio || 0}%`);
-          
-          // Apply port data to vessels
-          const enrichedVessels = portMappingService.applyPortDataToVessels(sortedData, portDocuments.lookup);
-          
-          const finalProcessed = processVesselsData(enrichedVessels);
-          const finalSorted = sortVesselsData(finalProcessed);
-          
-          setVessels(finalSorted);
-          setFilteredVessels(finalSorted);
-          
-          console.log('✅ [FleetDashboard] Port enrichment completed with OPTIMIZED batch loading');
-          
-        } catch (enrichError) {
-          console.warn('⚠️ [FleetDashboard] Optimized port enrichment failed, trying fallback:', enrichError);
-          
-          // Fallback to progressive enrichment
-          try {
-            const { default: portMappingService } = await import('../../../services/PortMappingService');
-            
-            await portMappingService.enrichVesselDataProgressive(
-              sortedData,
-              (progressiveData, isComplete, current, total) => {
-                console.log(`🔄 [FleetDashboard] Fallback enrichment: ${current}/${total}`);
-                setEnrichmentProgress({ current, total });
-  
-                const processedProgressive = processVesselsData(progressiveData);
-                const sortedProgressive = sortVesselsData(processedProgressive);
-  
-                setVessels(sortedProgressive);
-                setFilteredVessels(sortedProgressive);
-  
-                if (isComplete) {
-                  console.log('✅ [FleetDashboard] Fallback enrichment completed');
-                }
-              }
-            );
-          } catch (fallbackError) {
-            console.warn('⚠️ [FleetDashboard] Fallback enrichment also failed:', fallbackError);
+          setBackgroundDataLoading(true);
+          setBackgroundProgress({ step: 'Loading inactive voyages...', progress: 10 });
+
+          const allSortedVessels = sortVesselsData(allProcessedData);
+
+          // Only update if user is still on relevant filter
+          if (voyageStatusFilter === 'All Voyages') {
+            setVessels(allSortedVessels);
+            setFilteredVessels(allSortedVessels);
           }
+
+          setBackgroundProgress({ step: 'Loading port documents...', progress: 50 });
+
+          // Enhanced port enrichment with better error handling
+          if (metaData?.port_optimization_available && metaData?.unique_ports) {
+            console.log(`📊 [FleetDashboard] Using OPTIMIZED port loading for ${metaData.unique_port_count} ports`);
+
+            try {
+              const uniquePorts = metaData.unique_ports;
+              
+              // Check if batch loading is available
+              if (portMappingService && typeof portMappingService.getPortDocumentsBatch === 'function') {
+                const portDocuments = await portMappingService.getPortDocumentsBatch(uniquePorts);
+                console.log(`✅ [FleetDashboard] Loaded documents for ${portDocuments.port_summaries.length} ports`);
+
+                const enrichedVessels = portMappingService.applyPortDataToVessels(allSortedVessels, portDocuments.lookup);
+                const finalProcessed = processVesselsData(enrichedVessels);
+                const finalSorted = sortVesselsData(finalProcessed);
+
+                // Update vessels with port data if still on relevant filter
+                if (voyageStatusFilter === 'All Voyages' || voyageStatusFilter === 'Current Voyages') {
+                  const relevantVessels = voyageStatusFilter === 'Current Voyages'
+                    ? finalSorted.filter(v => v.isActiveVessel)
+                    : finalSorted;
+
+                  setVessels(relevantVessels);
+                  setFilteredVessels(relevantVessels);
+                }
+
+                console.log('✅ [FleetDashboard] Port enrichment completed with OPTIMIZED batch loading');
+              } else {
+                console.warn('⚠️ [FleetDashboard] Batch port loading not available');
+              }
+            } catch (enrichError) {
+              console.warn('⚠️ [FleetDashboard] Port enrichment failed:', enrichError);
+            }
+          }
+
+          setBackgroundProgress({ step: 'Loading auxiliary data...', progress: 80 });
+
+          // Queue background loading of additional data
+          allSortedVessels.forEach(vessel => {
+            if (vessel.vessel_name) {
+              addToBackgroundQueue('defectCount', { vesselName: vessel.vessel_name });
+            }
+            if (vessel.id) {
+              addToBackgroundQueue('checklistStats', { vesselId: vessel.id });
+            }
+            if (vessel.arrival_port) {
+              addToBackgroundQueue('portDocCount', { portName: vessel.arrival_port });
+            }
+          });
+
+          setBackgroundProgress({ step: 'Completed', progress: 100 });
+
+        } catch (backgroundError) {
+          console.warn('⚠️ [FleetDashboard] Background loading failed:', backgroundError);
+        } finally {
+          setBackgroundDataLoading(false);
+          setTimeout(() => {
+            setBackgroundProgress({ step: '', progress: 0 });
+          }, 1000);
         }
-        
-        setPortEnrichmentLoading(false);
-  
-      } else {
-        // Fallback to old enrichment method
-        console.log('⚠️ [FleetDashboard] Port optimization not available, using fallback method');
-        setPortEnrichmentLoading(true);
-  
-        try {
-          // Dynamic import to handle missing service
-          const { default: portMappingService } = await import('../../../services/PortMappingService');
-          
-          const enrichedVessels = await portMappingService.enrichVesselData(sortedData);
-          const finalProcessed = processVesselsData(enrichedVessels);
-          const finalSorted = sortVesselsData(finalProcessed);
-          setVessels(finalSorted);
-          setFilteredVessels(finalSorted);
-          
-          console.log('✅ [FleetDashboard] Fallback enrichment completed');
-          
-        } catch (enrichError) {
-          console.warn('⚠️ [FleetDashboard] Port enrichment failed, continuing with basic data:', enrichError);
-        }
-  
-        setPortEnrichmentLoading(false);
-      }
-  
+      }, 100);
+
     } catch (err) {
       console.error('❌ [FleetDashboard] Error loading vessel data:', err);
       setError('Failed to load vessel data. Please try again later.');
       setVessels([]);
       setFilteredVessels([]);
       setLoading(false);
-      setPortEnrichmentLoading(false);
     }
-  }, [processVesselsData, sortVesselsData, VESSELS_WITH_OVERRIDE_API_URL]);
+  }, [
+    preventAutoRefresh, 
+    apiEndpoints.VESSELS_WITH_OVERRIDE_API_URL, 
+    processVesselsData, 
+    sortVesselsData, 
+    voyageStatusFilter, 
+    addToBackgroundQueue
+  ]);
 
+  // Performance: Optimized checklist update handler
   const handleChecklistUpdate = useCallback((voyageId, checklistData) => {
-    setVessels(prevVessels =>
+    setPreventAutoRefresh(true);
+
+    if (autoRefreshTimeoutRef.current) {
+      clearTimeout(autoRefreshTimeoutRef.current);
+    }
+
+    const updateVesselState = (prevVessels) =>
       prevVessels.map(vessel => {
         if (vessel.id === voyageId) {
           const currentChecklistReceived = vessel.checklist_received;
@@ -584,8 +664,8 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
             newChecklistReceived = 'Acknowledged';
           } else {
             newChecklistReceived = checklistData.status === 'submitted' ? 'Submitted' :
-                                  checklistData.status === 'complete' ? 'Submitted' :
-                                  vessel.checklist_received;
+              checklistData.status === 'complete' ? 'Submitted' :
+                vessel.checklist_received;
           }
 
           return {
@@ -601,176 +681,340 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
           };
         }
         return vessel;
-      })
-    );
-
-    setFilteredVessels(prevFiltered =>
-      prevFiltered.map(vessel => {
-        if (vessel.id === voyageId) {
-          const currentChecklistReceived = vessel.checklist_received;
-          const isCurrentlyAcknowledged = currentChecklistReceived === 'Acknowledged';
-
-          let newChecklistReceived;
-          if (isCurrentlyAcknowledged) {
-            newChecklistReceived = 'Acknowledged';
-          } else {
-            newChecklistReceived = checklistData.status === 'submitted' ? 'Submitted' :
-                                  checklistData.status === 'complete' ? 'Submitted' :
-                                  vessel.checklist_received;
-          }
-
-          return {
-            ...vessel,
-            computed_checklist_status: checklistData.status || 'submitted',
-            checklist_status: checklistData.status || 'submitted',
-            checklist_progress: checklistData.progress || 100,
-            checklist_items_completed: checklistData.items_completed,
-            checklist_total_items: checklistData.total_items,
-            checklist_submitted_at: checklistData.submitted_at,
-            checklist_submitted_by: checklistData.submitted_by,
-            checklist_received: newChecklistReceived
-          };
-        }
-        return vessel;
-      })
-    );
-
-    // Refresh vessel data after update
-    setTimeout(() => {
-      fetchVesselData();
-    }, 1000);
-  }, [fetchVesselData]);
-
-  // OPTIMIZED: Timeline filter handler
-  const handleTimelineFilterChange = useCallback((timeRange) => {
-    setTimelineFilter(timeRange);
-
-    if (!timeRange) {
-      setFilteredVessels(vessels.filter(v =>
-        (searchTerm.trim() === '' ||
-          (v.vessel_name && v.vessel_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (v.imo_no && v.imo_no.toString().includes(searchTerm)) ||
-          (v.arrival_port && v.arrival_port.toLowerCase().includes(searchTerm.toLowerCase()))
-        ) &&
-        (!portFilters.length || !v.arrival_port || portFilters.includes(v.arrival_port)) &&
-        (!statusFilters.length || !v.event_type || statusFilters.includes(v.event_type)) &&
-        (!docFilters.length || !v.fleet_type || docFilters.includes(v.fleet_type))
-      ));
-    } else {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      const nextWeek = new Date(today);
-      nextWeek.setDate(nextWeek.getDate() + 7);
-
-      let timeFilteredVessels = [...vessels];
-
-      if (timeRange === 'In Port') {
-        timeFilteredVessels = vessels.filter(v =>
-          v.event_type && (
-            v.event_type.toLowerCase().includes('port') ||
-            v.event_type.toLowerCase().includes('berth')
-          )
-        );
-      } else if (timeRange === 'Today') {
-        timeFilteredVessels = vessels.filter(v =>
-          v.etaDate && v.etaDate >= today && v.etaDate < tomorrow
-        );
-      } else if (timeRange === 'This Week') {
-        timeFilteredVessels = vessels.filter(v =>
-          v.etaDate && v.etaDate >= tomorrow && v.etaDate < nextWeek
-        );
-      } else if (timeRange === 'Later') {
-        timeFilteredVessels = vessels.filter(v =>
-          v.etaDate && v.etaDate >= nextWeek
-        );
-      }
-
-      setFilteredVessels(timeFilteredVessels.filter(v =>
-        (searchTerm.trim() === '' ||
-          (v.vessel_name && v.vessel_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (v.imo_no && v.imo_no.toString().includes(searchTerm)) ||
-          (v.arrival_port && v.arrival_port.toLowerCase().includes(searchTerm.toLowerCase()))
-        ) &&
-        (!portFilters.length || !v.arrival_port || portFilters.includes(v.arrival_port)) &&
-        (!statusFilters.length || !v.event_type || statusFilters.includes(v.event_type)) &&
-        (!docFilters.length || !v.fleet_type || docFilters.includes(v.fleet_type))
-      ));
-    }
-  }, [vessels, searchTerm, portFilters, statusFilters, docFilters]);
-
-  // OPTIMIZED: Port vessel risk data fetching
-  const fetchPortVesselRiskData = useCallback(async () => {
-    setLoadingPortVesselRisk(true);
-    try {
-      const response = await fetch(`${BASE_API_URL}/api/port-vessel-risk`, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
       });
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch port vessel risk data (Status: ${response.status})`);
-      }
+    setVessels(updateVesselState);
+    setFilteredVessels(updateVesselState);
 
-      const data = await response.json();
-      setPortVesselRiskData(data);
+    // Update checklist cache
+    setVesselChecklistStats(prev => ({
+      ...prev,
+      [voyageId]: {
+        status: checklistData.status || 'submitted',
+        progress: checklistData.progress || 100
+      }
+    }));
+
+    // Re-enable auto-refresh after delay
+    autoRefreshTimeoutRef.current = setTimeout(() => {
+      setPreventAutoRefresh(false);
+      console.log('🔄 Auto-refresh re-enabled after checklist update');
+    }, 5000);
+
+  }, []);
+
+  // Load data on component mount (stable dependencies)
+  useEffect(() => {
+    fetchVesselData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
+  // Performance: Stable PSC and port risk data fetching
+  const fetchChartData = useCallback(async () => {
+    // PSC data
+    try {
+      setLoadingPscData(true);
+      const response = await fetch(apiEndpoints.PSC_API_URL);
+      if (response.ok) {
+        const data = await response.json();
+        setPscDeficiencyData(data);
+      }
     } catch (error) {
+      console.warn('Failed to load PSC data:', error);
+      setPscDeficiencyData([]);
+    } finally {
+      setLoadingPscData(false);
+    }
+
+    // Port vessel risk data
+    try {
+      setLoadingPortVesselRisk(true);
+      const response = await fetch(`${apiEndpoints.BASE_API_URL}/api/port-vessel-risk`);
+      if (response.ok) {
+        const data = await response.json();
+        setPortVesselRiskData(data);
+      }
+    } catch (error) {
+      console.warn('Failed to load port vessel risk data:', error);
       setPortVesselRiskData([]);
     } finally {
       setLoadingPortVesselRisk(false);
     }
-  }, [BASE_API_URL]);
+  }, [apiEndpoints.PSC_API_URL, apiEndpoints.BASE_API_URL]);
 
-  // OPTIMIZED: PSC deficiency data fetching
-  const fetchPscDeficiencyData = useCallback(async () => {
-    try {
-      setLoadingPscData(true);
-      const response = await fetch(PSC_API_URL);
-      if (!response.ok) {
-        throw new Error('Failed to fetch PSC data');
-      }
-      const data = await response.json();
-      setPscDeficiencyData(data);
-    } catch (error) {
-      // Silent error handling
-    } finally {
-      setLoadingPscData(false);
+  // Load chart data in background with delay
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchChartData();
+    }, 2000);
+    return () => clearTimeout(timeoutId);
+  }, [fetchChartData]);
+
+  // Performance: Stable filter options with memoization
+  const filterOptions = useMemo(() => {
+    if (allProcessedVessels.length === 0) {
+      return {
+        uniquePorts: [],
+        uniqueStatuses: [],
+        uniqueDocs: []
+      };
     }
-  }, [PSC_API_URL]);
 
-  // Chart filter handlers
-  const handleChartFilterChange = useCallback((port) => {
-    setChartPortFilter(port);
-
-    if (port) {
-      setPortFilters([port]);
-    } else {
-      const uniquePorts = [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))];
-      setPortFilters(uniquePorts);
-    }
+    return {
+      uniquePorts: [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))],
+      uniqueStatuses: [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))],
+      uniqueDocs: [...new Set(allProcessedVessels.map(v => v.fleet_type).filter(Boolean))]
+    };
   }, [allProcessedVessels]);
 
-  // Comment handlers
+  // Performance: Initialize filter options once when data is ready
+  useEffect(() => {
+    if (filterOptions.uniquePorts.length > 0 && portFilters.length === 0) {
+      setPortFilters(filterOptions.uniquePorts);
+    }
+    if (filterOptions.uniqueStatuses.length > 0 && statusFilters.length === 0) {
+      setStatusFilters(filterOptions.uniqueStatuses);
+    }
+    if (filterOptions.uniqueDocs.length > 0 && docFilters.length === 0) {
+      setDocFilters(filterOptions.uniqueDocs);
+    }
+  }, [filterOptions.uniquePorts, filterOptions.uniqueStatuses, filterOptions.uniqueDocs, portFilters.length, statusFilters.length, docFilters.length]);
+
+  // Performance: Optimized voyage status filter application (stable dependencies)
+  useEffect(() => {
+    let baseVessels = [];
+
+    switch (voyageStatusFilter) {
+      case 'Current Voyages':
+        baseVessels = activeVessels;
+        break;
+      case 'Past Voyages':
+        baseVessels = inactiveVessels;
+        break;
+      default:
+        baseVessels = allProcessedVessels;
+        break;
+    }
+
+    const sortedData = sortVesselsData(baseVessels);
+    setVessels(sortedData);
+  }, [voyageStatusFilter, activeVessels, inactiveVessels, allProcessedVessels, sortVesselsData]);
+
+  // Performance: Debounced filter application
+  useEffect(() => {
+    if (!vessels.length) {
+      setFilteredVessels([]);
+      return;
+    }
+
+    const applyFilters = () => {
+      let results = [...vessels];
+
+      // Apply port filters
+      if (portFilters.length > 0 && portFilters.length < filterOptions.uniquePorts.length) {
+        results = results.filter(vessel =>
+          vessel.arrival_port && portFilters.includes(vessel.arrival_port)
+        );
+      }
+
+      // Apply status filters
+      if (statusFilters.length > 0 && statusFilters.length < filterOptions.uniqueStatuses.length) {
+        results = results.filter(vessel =>
+          vessel.event_type && statusFilters.includes(vessel.event_type)
+        );
+      }
+
+      // Apply DOC filters
+      if (docFilters.length > 0 && docFilters.length < filterOptions.uniqueDocs.length) {
+        results = results.filter(vessel =>
+          vessel.fleet_type && docFilters.includes(vessel.fleet_type)
+        );
+      }
+
+      // Apply search term
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase();
+        results = results.filter(vessel =>
+          (vessel.vessel_name && vessel.vessel_name.toLowerCase().includes(term)) ||
+          (vessel.imo_no && vessel.imo_no.toString().includes(term)) ||
+          (vessel.arrival_port && vessel.arrival_port.toLowerCase().includes(term))
+        );
+      }
+
+      setFilteredVessels(results);
+    };
+
+    const timeoutId = setTimeout(applyFilters, 150);
+    return () => clearTimeout(timeoutId);
+  }, [vessels, searchTerm, portFilters, statusFilters, docFilters, filterOptions]);
+
+  // Performance: Optimized defect action handlers with cache invalidation
+  const handleCreateDefect = useCallback(async (defectData) => {
+    try {
+      if (!stableDefectsService) {
+        throw new Error('User not authenticated');
+      }
+
+      const newDefect = await stableDefectsService.createDefect(defectData);
+
+      // Clear cache for the affected vessel
+      const vesselName = defectData.vessel_name;
+      if (vesselName) {
+        const cacheKey = `${vesselName}-${userId}`;
+        delete defectsCacheRef.current[cacheKey];
+
+        setVesselDefectCounts(prev => {
+          const newCounts = { ...prev };
+          delete newCounts[vesselName];
+          return newCounts;
+        });
+      }
+
+      loadDefectStats();
+      return newDefect;
+    } catch (error) {
+      setError(`Failed to create defect: ${error.message}`);
+      throw error;
+    }
+  }, [stableDefectsService, userId, loadDefectStats]);
+
+  const handleUpdateDefect = useCallback(async (defectId, defectData) => {
+    try {
+      if (!stableDefectsService) {
+        throw new Error('User not authenticated');
+      }
+
+      const updatedDefect = await stableDefectsService.updateDefect(defectId, defectData);
+
+      // Clear cache for the affected vessel
+      const vesselName = defectData.vessel_name || updatedDefect.vessel_name;
+      if (vesselName) {
+        const cacheKey = `${vesselName}-${userId}`;
+        delete defectsCacheRef.current[cacheKey];
+
+        setVesselDefectCounts(prev => {
+          const newCounts = { ...prev };
+          delete newCounts[vesselName];
+          return newCounts;
+        });
+      }
+
+      loadDefectStats();
+      return updatedDefect;
+    } catch (error) {
+      setError(`Failed to update defect: ${error.message}`);
+      throw error;
+    }
+  }, [stableDefectsService, userId, loadDefectStats]);
+
+  const handleDeleteDefect = useCallback(async (defectId) => {
+    try {
+      if (!stableDefectsService) {
+        throw new Error('User not authenticated');
+      }
+
+      const result = await stableDefectsService.deleteDefect(defectId);
+
+      // Clear all defect caches
+      defectsCacheRef.current = {};
+      setVesselDefectCounts({});
+      loadDefectStats();
+
+      return result;
+    } catch (error) {
+      setError(`Failed to delete defect: ${error.message}`);
+      throw error;
+    }
+  }, [stableDefectsService, loadDefectStats]);
+
+  // Performance: Optimized modal handlers
+  const handleOpenChecklist = useCallback((vessel) => {
+    setSelectedVesselForChecklist(vessel);
+    setChecklistModalOpen(true);
+  }, []);
+
+  const handleCloseChecklist = useCallback(() => {
+    setChecklistModalOpen(false);
+    setSelectedVesselForChecklist(null);
+  }, []);
+
   const handleOpenComments = useCallback((vessel) => {
     setSelectedVessel(vessel);
     setCommentModalOpen(true);
   }, []);
 
   const handleCommentUpdated = useCallback((updatedVessel) => {
-    setVessels(vessels.map(vessel =>
-      vessel.uniqueKey === updatedVessel.uniqueKey ? updatedVessel : vessel
-    ));
+    const updateVessels = (prev) =>
+      prev.map(vessel =>
+        vessel.uniqueKey === updatedVessel.uniqueKey ? updatedVessel : vessel
+      );
 
-    setFilteredVessels(filteredVessels.map(vessel =>
-      vessel.uniqueKey === updatedVessel.uniqueKey ? updatedVessel : vessel
-    ));
-  }, [vessels, filteredVessels]);
+    setVessels(updateVessels);
+    setFilteredVessels(updateVessels);
+  }, []);
 
-  // OPTIMIZED: Vessel update handler
+  // Performance: Optimized timeline filter handler (stable)
+  const handleTimelineFilterChange = useCallback((timeRange) => {
+    setTimelineFilter(timeRange);
+
+    if (!timeRange) {
+      // Reset timeline filter - let normal filtering take over
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+
+    let timeFilteredVessels = [...vessels];
+
+    switch (timeRange) {
+      case 'In Port':
+        timeFilteredVessels = vessels.filter(v =>
+          v.event_type && (
+            v.event_type.toLowerCase().includes('port') ||
+            v.event_type.toLowerCase().includes('berth')
+          )
+        );
+        break;
+      case 'Today':
+        timeFilteredVessels = vessels.filter(v =>
+          v.etaDate && v.etaDate >= today && v.etaDate < tomorrow
+        );
+        break;
+      case 'This Week':
+        timeFilteredVessels = vessels.filter(v =>
+          v.etaDate && v.etaDate >= tomorrow && v.etaDate < nextWeek
+        );
+        break;
+      case 'Later':
+        timeFilteredVessels = vessels.filter(v =>
+          v.etaDate && v.etaDate >= nextWeek
+        );
+        break;
+      default:
+        break;
+    }
+
+    setFilteredVessels(timeFilteredVessels);
+  }, [vessels]);
+
+  // Chart filter handlers (stable)
+  const handleChartFilterChange = useCallback((port) => {
+    setChartPortFilter(port);
+    if (port) {
+      setPortFilters([port]);
+    } else {
+      setPortFilters(filterOptions.uniquePorts);
+    }
+  }, [filterOptions.uniquePorts]);
+
+  // Performance: Optimized vessel update handler (stable)
   const handleUpdateVessel = useCallback(async (updatedVessel) => {
     try {
       const fieldToUpdate = updatedVessel.field || 'checklist_received';
@@ -793,7 +1037,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         value: valueToUpdate
       };
 
-      const response = await fetch(`${ORIGINAL_VESSELS_API_URL.replace(/\/$/, '')}/update-fields`, {
+      const response = await fetch(`${apiEndpoints.ORIGINAL_VESSELS_API_URL.replace(/\/$/, '')}/update-fields`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -814,120 +1058,27 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
 
       const responseData = await response.json();
 
-      setVessels(prevVessels =>
+      const updateVesselInState = (prevVessels) =>
         prevVessels.map(vessel =>
           vessel.id === updatedVessel.id
             ? {
-                ...vessel,
-                [fieldToUpdate]: responseData[fieldToUpdate]
-              }
+              ...vessel,
+              [fieldToUpdate]: responseData[fieldToUpdate]
+            }
             : vessel
-        )
-      );
+        );
 
-      setFilteredVessels(prevFiltered =>
-        prevFiltered.map(vessel =>
-          vessel.id === updatedVessel.id
-            ? {
-                ...vessel,
-                [fieldToUpdate]: responseData[fieldToUpdate]
-              }
-            : vessel
-        )
-      );
+      setVessels(updateVesselInState);
+      setFilteredVessels(updateVesselInState);
 
       return true;
     } catch (error) {
+      console.warn('Failed to update vessel:', error);
       return false;
     }
-  }, [vessels, ORIGINAL_VESSELS_API_URL]);
+  }, [vessels, apiEndpoints.ORIGINAL_VESSELS_API_URL]);
 
-  // Load data on component mount
-  useEffect(() => {
-    fetchVesselData();
-  }, [fetchVesselData]);
-
-  useEffect(() => {
-    fetchPscDeficiencyData();
-  }, [fetchPscDeficiencyData]);
-
-  useEffect(() => {
-    fetchPortVesselRiskData();
-  }, [fetchPortVesselRiskData]);
-
-  // OPTIMIZED: Filter options initialization
-  useEffect(() => {
-    if (allProcessedVessels.length > 0) { // <--- CHANGED
-      const uniquePorts = [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))]; // <--- CHANGED
-      const uniqueStatuses = [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))]; // <--- CHANGED
-      const uniqueDocs = [...new Set(allProcessedVessels.map(v => v.fleet_type).filter(Boolean))]; // <--- CHANGED
-
-      setPortFilters(uniquePorts);
-      setStatusFilters(uniqueStatuses);
-      setDocFilters(uniqueDocs);
-    }
-  }, [allProcessedVessels]);
-
-  // OPTIMIZED: Voyage status filter application
-  useEffect(() => {
-    let baseVessels = [];
-
-    if (voyageStatusFilter === 'Current Voyages') {
-      baseVessels = activeVessels;
-    } else if (voyageStatusFilter === 'Past Voyages') {
-      baseVessels = inactiveVessels;
-    } else {
-      baseVessels = allProcessedVessels;
-    }
-
-    const sortedData = sortVesselsData(baseVessels);
-    setVessels(sortedData);
-  }, [voyageStatusFilter, activeVessels, inactiveVessels, allProcessedVessels, sortVesselsData]);
-
-  // OPTIMIZED: Apply other filters
-  useEffect(() => {
-    if (!vessels.length) {
-      setFilteredVessels([]);
-      return;
-    }
-
-    let results = [...vessels]; // Start with vessels filtered by voyageStatusFilter
-
-    // Apply port filters only if portFilters is not empty
-    if (portFilters.length > 0) {
-      results = results.filter(vessel =>
-        vessel.arrival_port && portFilters.includes(vessel.arrival_port)
-      );
-    }
-
-    // Apply status filters only if statusFilters is not empty
-    if (statusFilters.length > 0) {
-      results = results.filter(vessel =>
-        vessel.event_type && statusFilters.includes(vessel.event_type)
-      );
-    }
-
-    // Apply DOC filters only if docFilters is not empty
-    if (docFilters.length > 0) {
-      results = results.filter(vessel =>
-        vessel.fleet_type && docFilters.includes(vessel.fleet_type)
-      );
-    }
-
-    // Apply search term if not empty
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      results = results.filter(vessel =>
-        (vessel.vessel_name && vessel.vessel_name.toLowerCase().includes(term)) ||
-        (vessel.imo_no && vessel.imo_no.toString().includes(term)) ||
-        (vessel.arrival_port && vessel.arrival_port.toLowerCase().includes(term))
-      );
-    }
-
-    setFilteredVessels(results);
-  }, [vessels, searchTerm, portFilters, statusFilters, docFilters]);
-
-  // OPTIMIZED: Override update handler
+  // Performance: Optimized override update handler (stable)
   const handleUpdateOverride = useCallback(async (vesselId, fieldName, newValue) => {
     const vesselToUpdate = vessels.find(v => v.id === vesselId);
     const vesselCommentId = vesselToUpdate?.id;
@@ -937,9 +1088,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       return;
     }
 
-    const currentUserId = currentUser?.userId || currentUser?.user_id || currentUser?.id;
-
-    if (!currentUserId) {
+    if (!userId) {
       setError('User not authenticated. Please log in to update fields.');
       return;
     }
@@ -948,7 +1097,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     setSavingStates(prev => ({ ...prev, [fieldKey]: true }));
 
     try {
-      const response = await fetch(VESSEL_OVERRIDE_API_URL, {
+      const response = await fetch(apiEndpoints.VESSEL_OVERRIDE_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -957,7 +1106,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
           vessel_comment_id: vesselCommentId,
           field_name: fieldName,
           override_value: newValue,
-          user_id: currentUserId,
+          user_id: userId,
           original_value: vesselToUpdate[fieldName]
         }),
       });
@@ -969,75 +1118,55 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
 
       const result = await response.json();
 
-      setVessels(prevVessels =>
+      const updateVesselOverrides = (prevVessels) =>
         prevVessels.map(vessel =>
           vessel.id === vesselId
             ? {
-                ...vessel,
-                user_eta: result.user_eta,
-                user_etb: result.user_etb,
-                user_etd: result.user_etd,
-              }
+              ...vessel,
+              user_eta: result.user_eta,
+              user_etb: result.user_etb,
+              user_etd: result.user_etd,
+            }
             : vessel
-        )
-      );
+        );
 
-      setFilteredVessels(prevFiltered =>
-        prevFiltered.map(vessel =>
-          vessel.id === vesselId
-            ? {
-                ...vessel,
-                user_eta: result.user_eta,
-                user_etb: result.user_etb,
-                user_etd: result.user_etd,
-              }
-            : vessel
-        )
-      );
+      setVessels(updateVesselOverrides);
+      setFilteredVessels(updateVesselOverrides);
 
     } catch (err) {
       setError(`Failed to update ${fieldName}: ${err.message || 'Network error'}`);
     } finally {
       setSavingStates(prev => ({ ...prev, [fieldKey]: false }));
     }
-  }, [vessels, VESSEL_OVERRIDE_API_URL, currentUser]);
+  }, [vessels, apiEndpoints.VESSEL_OVERRIDE_API_URL, userId]);
 
-  // OPTIMIZED: Filter reset handler
+  // Performance: Optimized filter reset handler (stable)
   const resetFilters = useCallback(() => {
     setSearchTerm('');
     setChartPortFilter(null);
     setTimelineFilter(null);
-
-    const uniquePorts = [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))]; // <--- CHANGED
-    const uniqueStatuses = [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))]; // <--- CHANGED
-    const uniqueDocs = [...new Set(allProcessedVessels.map(v => v.fleet_type).filter(Boolean))]; // <--- CHANGED
-
-    setPortFilters(uniquePorts);
-    setStatusFilters(uniqueStatuses);
-    setDocFilters(uniqueDocs);
+    setPortFilters(filterOptions.uniquePorts);
+    setStatusFilters(filterOptions.uniqueStatuses);
+    setDocFilters(filterOptions.uniqueDocs);
     setVoyageStatusFilter('Current Voyages');
-  }, [allProcessedVessels]);
+  }, [filterOptions.uniquePorts, filterOptions.uniqueStatuses, filterOptions.uniqueDocs]);
 
-  // OPTIMIZED: Toggle filter items
+  // Performance: Optimized toggle filter items (stable)
   const toggleAllItems = useCallback((type) => {
-    const uniquePorts = [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))]; // <--- CHANGED
-    const uniqueStatuses = [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))]; // <--- CHANGED
-    const uniqueDocs = [...new Set(allProcessedVessels.map(v => v.fleet_type).filter(Boolean))]; // <--- CHANGED
-
     switch (type) {
       case 'ports':
-        setPortFilters(portFilters.length === uniquePorts.length ? [] : uniquePorts);
+        setPortFilters(portFilters.length === filterOptions.uniquePorts.length ? [] : filterOptions.uniquePorts);
         break;
       case 'statuses':
-        setStatusFilters(statusFilters.length === uniqueStatuses.length ? [] : uniqueStatuses);
+        setStatusFilters(statusFilters.length === filterOptions.uniqueStatuses.length ? [] : filterOptions.uniqueStatuses);
         break;
       case 'docs':
-        setDocFilters(docFilters.length === uniqueStatuses.length ? [] : uniqueDocs); // Fix: Should be uniqueDocs here
+        setDocFilters(docFilters.length === filterOptions.uniqueDocs.length ? [] : filterOptions.uniqueDocs);
         break;
       default:
         break;
     }
-  }, [allProcessedVessels, portFilters, statusFilters, docFilters]);
+  }, [filterOptions, portFilters.length, statusFilters.length, docFilters.length]);
 
   const toggleFilterItem = useCallback((type, item) => {
     switch (type) {
@@ -1067,29 +1196,19 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
     }
   }, []);
 
-  // OPTIMIZED: Memoized values for performance
-  const uniquePorts = useMemo(() =>
-    [...new Set(allProcessedVessels.map(v => v.arrival_port).filter(Boolean))], 
-    [allProcessedVessels] 
-  );
-
-  const uniqueStatuses = useMemo(() =>
-    [...new Set(allProcessedVessels.map(v => v.event_type).filter(Boolean))], 
-    [allProcessedVessels] 
-  );
-
-  const uniqueDocs = useMemo(() =>
-    [...new Set(allProcessedVessels.map(v => v.fleet_type).filter(Boolean))], 
-    [allProcessedVessels] 
-  );
-
+  // Performance: Memoized computed values
   const vesselCount = vessels.length;
   const filteredCount = filteredVessels.length;
 
-  // OPTIMIZED: Memoized chart data
-  const vesselPscData = useMemo(() => {
-    if (!vessels.length) return [];
+  // Performance: Memoized chart data (stable)
+  const chartData = useMemo(() => {
+    if (!vessels.length) return {
+      vesselPscData: [],
+      vesselsByPortData: [],
+      arrivalTimelineData: []
+    };
 
+    // PSC data
     const deficiencyCounts = {};
     vessels.forEach(vessel => {
       const category = vessel.PSC_CATEGORY || 'Unknown';
@@ -1111,14 +1230,11 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       }
     });
 
-    return Object.values(deficiencyCounts)
+    const vesselPscData = Object.values(deficiencyCounts)
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
-  }, [vessels]);
 
-  const vesselsByPortData = useMemo(() => {
-    if (!vessels.length) return [];
-
+    // Port data
     const portCounts = {};
     vessels.forEach(vessel => {
       if (vessel.arrival_port) {
@@ -1126,18 +1242,15 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       }
     });
 
-    return Object.entries(portCounts)
+    const vesselsByPortData = Object.entries(portCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([port, count]) => ({
         port,
         vessels: count
       }));
-  }, [vessels]);
 
-  const arrivalTimelineData = useMemo(() => {
-    if (!vessels.length) return [];
-
+    // Timeline data
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -1166,21 +1279,42 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       )
     ).length;
 
-    return [
+    const arrivalTimelineData = [
       { range: 'In Port', vessels: inPort, color: '#2EE086' },
       { range: 'Today', vessels: arrivingToday, color: '#FF5252' },
       { range: 'This Week', vessels: arrivingThisWeek, color: '#FFD426' },
       { range: 'Later', vessels: arrivingLater, color: '#4DC3FF' }
     ];
+
+    return {
+      vesselPscData,
+      vesselsByPortData,
+      arrivalTimelineData
+    };
   }, [vessels]);
 
-  // Close all dropdowns when clicking elsewhere
+  // Close all dropdowns when clicking elsewhere (stable)
   const closeAllDropdowns = useCallback(() => {
     setShowVoyageStatusDropdown(false);
     setShowPortDropdown(false);
     setShowStatusDropdown(false);
     setShowDocDropdown(false);
     setShowSearch(false);
+  }, []);
+
+  // Performance: Cleanup refs on unmount
+  useEffect(() => {
+    return () => {
+      if (autoRefreshTimeoutRef.current) {
+        clearTimeout(autoRefreshTimeoutRef.current);
+      }
+      if (fetchDebounceRef.current) {
+        clearTimeout(fetchDebounceRef.current);
+      }
+      defectsCacheRef.current = {};
+      checklistCacheRef.current = {};
+      portDocsCacheRef.current = {};
+    };
   }, []);
 
   return (
@@ -1194,12 +1328,21 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
             <span>{vesselCount}</span>
           </div>
 
-          {/* {defectStats.total > 0 && (
-            <div className="defect-counter">
-              <AlertTriangle size={14} />
-              <span>{defectStats.open} open defects</span>
+          {/* Performance: Show loading indicator for background processes */}
+          {backgroundDataLoading && (
+            <div className="background-loading-indicator">
+              <RefreshCw size={12} className="spinning" />
+              <span className="loading-text">{backgroundProgress.step}</span>
+              {backgroundProgress.progress > 0 && (
+                <div className="progress-bar">
+                  <div
+                    className="progress-fill"
+                    style={{ width: `${backgroundProgress.progress}%` }}
+                  />
+                </div>
+              )}
             </div>
-          )} */}
+          )}
 
           {/* Search container */}
           <div className="search-container">
@@ -1313,7 +1456,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
               }}
             >
               Ports
-              <span className="filter-count">{portFilters.length}/{uniquePorts.length}</span>
+              <span className="filter-count">{portFilters.length}/{filterOptions.uniquePorts.length}</span>
             </button>
 
             {showPortDropdown && (
@@ -1321,11 +1464,11 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
                 <div className="filter-dropdown-header">
                   <h4>Filter by Port</h4>
                   <button className="select-all-btn" onClick={() => toggleAllItems('ports')}>
-                    {portFilters.length === uniquePorts.length ? 'Deselect All' : 'Select All'}
+                    {portFilters.length === filterOptions.uniquePorts.length ? 'Deselect All' : 'Select All'}
                   </button>
                 </div>
                 <div className="filter-dropdown-items">
-                  {uniquePorts.map(port => (
+                  {filterOptions.uniquePorts.map(port => (
                     <div key={port} className="filter-checkbox-item">
                       <label>
                         <input
@@ -1362,7 +1505,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
               }}
             >
               Status
-              <span className="filter-count">{statusFilters.length}/{uniqueStatuses.length}</span>
+              <span className="filter-count">{statusFilters.length}/{filterOptions.uniqueStatuses.length}</span>
             </button>
 
             {showStatusDropdown && (
@@ -1370,11 +1513,11 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
                 <div className="filter-dropdown-header">
                   <h4>Filter by Status</h4>
                   <button className="select-all-btn" onClick={() => toggleAllItems('statuses')}>
-                    {statusFilters.length === uniqueStatuses.length ? 'Deselect All' : 'Select All'}
+                    {statusFilters.length === filterOptions.uniqueStatuses.length ? 'Deselect All' : 'Select All'}
                   </button>
                 </div>
                 <div className="filter-dropdown-items">
-                  {uniqueStatuses.map(status => (
+                  {filterOptions.uniqueStatuses.map(status => (
                     <div key={status} className="filter-checkbox-item">
                       <label>
                         <input
@@ -1411,7 +1554,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
               }}
             >
               DOC
-              <span className="filter-count">{docFilters.length}/{uniqueDocs.length}</span>
+              <span className="filter-count">{docFilters.length}/{filterOptions.uniqueDocs.length}</span>
             </button>
 
             {showDocDropdown && (
@@ -1419,11 +1562,11 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
                 <div className="filter-dropdown-header">
                   <h4>Filter by DOC</h4>
                   <button className="select-all-btn" onClick={() => toggleAllItems('docs')}>
-                    {docFilters.length === uniqueDocs.length ? 'Deselect All' : 'Select All'}
+                    {docFilters.length === filterOptions.uniqueDocs.length ? 'Deselect All' : 'Select All'}
                   </button>
                 </div>
                 <div className="filter-dropdown-items">
-                  {uniqueDocs.map(doc => (
+                  {filterOptions.uniqueDocs.map(doc => (
                     <div key={doc} className="filter-checkbox-item">
                       <label>
                         <input
@@ -1455,11 +1598,30 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         </div>
 
         <div className="filter-section-right">
-          <button className="control-btn refresh-btn" onClick={() => {
-            fetchVesselData();
-            refreshDefectsCache();
-          }} title="Refresh data">
-            <RefreshCw size={14} className={loading ? "spinning" : ""} />
+          <button
+            className="control-btn refresh-btn"
+            onClick={() => {
+              // Reset auto-refresh prevention
+              setPreventAutoRefresh(false);
+              if (autoRefreshTimeoutRef.current) {
+                clearTimeout(autoRefreshTimeoutRef.current);
+              }
+
+              // Clear all caches
+              defectsCacheRef.current = {};
+              checklistCacheRef.current = {};
+              portDocsCacheRef.current = {};
+              setVesselDefectCounts({});
+              setVesselChecklistStats({});
+              setVesselPortDocCounts({});
+
+              // Refresh data
+              fetchVesselData();
+              loadDefectStats();
+            }}
+            title="Refresh data"
+          >
+            <RefreshCw size={14} className={loading || backgroundDataLoading ? "spinning" : ""} />
           </button>
 
           <button
@@ -1479,22 +1641,37 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         </div>
       )}
 
-      {/* ADDED: Port enrichment loading indicator */}
-      {portEnrichmentLoading && (
-        <div className="port-enrichment-loading">
-          <div className="loading-indicator">
-            <RefreshCw size={14} className="spinning" />
-            <span>Loading port documents... ({enrichmentProgress.current}/{enrichmentProgress.total})</span>
+      {/* Performance: Status indicators */}
+      <div className="status-indicators">
+        {loading && (
+          <div className="status-indicator loading">
+            <RefreshCw size={12} className="spinning" />
+            <span>Loading active voyages...</span>
           </div>
-        </div>
-      )}
+        )}
+
+        {activeVesselsLoaded && !loading && (
+          <div className="status-indicator success">
+            <CheckCircle size={12} />
+            <span>Active voyages loaded ({activeVessels.length})</span>
+          </div>
+        )}
+
+        {backgroundDataLoading && (
+          <div className="status-indicator background">
+            <RefreshCw size={12} className="spinning" />
+            <span>{backgroundProgress.step} ({backgroundProgress.progress}%)</span>
+          </div>
+        )}
+      </div>
 
       {/* Charts section */}
       <div className="dashboard-charts">
         <div className="dashboard-card-body">
-          {loading ? (
+          {loadingPscData ? (
             <div className="chart-loading">
               <div className="loading-spinner"></div>
+              <span>Loading PSC data...</span>
             </div>
           ) : (
             <PSCDeficienciesChart
@@ -1506,9 +1683,10 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         </div>
 
         <div className="dashboard-card-body">
-          {loading ? (
+          {loadingPscData ? (
             <div className="chart-loading">
               <div className="loading-spinner"></div>
+              <span>Loading deficiency codes...</span>
             </div>
           ) : (
             <DeficiencyCodeChart
@@ -1547,7 +1725,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
               }}
             />
 
-            {/* OPTIMIZED: VesselTable with proper defects integration */}
+            {/* Performance: Enhanced VesselTable with lazy loading */}
             <VesselTable
               vessels={filteredVessels}
               onOpenRemarks={handleOpenComments}
@@ -1560,8 +1738,15 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
               onDeleteDefect={handleDeleteDefect}
               onOpenChecklist={handleOpenChecklist}
               defectStats={defectStats}
-              currentUser={currentUser}
+              currentUser={stableCurrentUser}
               savingStates={savingStates}
+              // Performance: Pass lazy loading functions
+              getVesselDefectCount={getVesselDefectCount}
+              getVesselChecklistStats={getVesselChecklistStats}
+              getPortDocumentCount={getPortDocumentCount}
+              vesselDefectCounts={vesselDefectCounts}
+              vesselChecklistStats={vesselChecklistStats}
+              vesselPortDocCounts={vesselPortDocCounts}
             />
           </div>
         )}
@@ -1571,6 +1756,17 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       <div className="dashboard-footer">
         <div className="data-source">
           Data sources: AIS, Noon Report, Vessel Emails, Equipment Defects
+        </div>
+        <div className="performance-info">
+          {activeVesselsLoaded && (
+            <span>✅ Active vessels: {activeVessels.length}</span>
+          )}
+          {allProcessedVessels.length > activeVessels.length && (
+            <span>📊 Total vessels: {allProcessedVessels.length}</span>
+          )}
+          {backgroundDataLoading && (
+            <span>🔄 Loading background data...</span>
+          )}
         </div>
       </div>
 
@@ -1589,14 +1785,150 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
         isLoading={loading}
       />
 
-      {/* OPTIMIZED: ChecklistModal with proper integration */}
+      {/* Performance: Enhanced ChecklistModal with auto-refresh prevention */}
       <ChecklistModal
         isOpen={checklistModalOpen}
         onClose={handleCloseChecklist}
         vessel={selectedVesselForChecklist}
         onChecklistUpdate={handleChecklistUpdate}
         initialStatus={selectedVesselForChecklist?.computed_checklist_status || 'pending'}
+        preventAutoRefresh={preventAutoRefresh}
       />
+
+      {/* Performance: Add custom styles for performance indicators */}
+      <style jsx>{`
+        .status-indicators {
+          display: flex;
+          gap: 12px;
+          padding: 8px 24px;
+          background: rgba(0, 0, 0, 0.02);
+          border-bottom: 1px solid var(--border-subtle);
+          font-size: 12px;
+        }
+
+        .status-indicator {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-weight: 500;
+        }
+
+        .status-indicator.loading {
+          background: rgba(59, 173, 229, 0.1);
+          color: #3BADE5;
+        }
+
+        .status-indicator.success {
+          background: rgba(46, 204, 113, 0.1);
+          color: #2ECC71;
+        }
+
+        .status-indicator.background {
+          background: rgba(241, 196, 15, 0.1);
+          color: #F1C40F;
+        }
+
+        .background-loading-indicator {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 4px 8px;
+          background: rgba(59, 173, 229, 0.1);
+          border-radius: 4px;
+          font-size: 11px;
+          color: #3BADE5;
+        }
+
+        .loading-text {
+          font-weight: 500;
+        }
+
+        .progress-bar {
+          width: 60px;
+          height: 3px;
+          background: rgba(59, 173, 229, 0.2);
+          border-radius: 2px;
+          overflow: hidden;
+        }
+
+        .progress-fill {
+          height: 100%;
+          background: #3BADE5;
+          transition: width 0.3s ease;
+        }
+
+        .performance-info {
+          display: flex;
+          gap: 16px;
+          font-size: 11px;
+          color: var(--text-muted);
+        }
+
+        .performance-info span {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .chart-loading {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 260px;
+          gap: 12px;
+          color: var(--text-muted);
+        }
+
+        .loading-spinner {
+          width: 20px;
+          height: 20px;
+          border: 2px solid var(--border-subtle);
+          border-top: 2px solid var(--primary-accent);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .spinning {
+          animation: spin 1s linear infinite;
+        }
+
+        /* Responsive adjustments for performance indicators */
+        @media (max-width: 768px) {
+          .status-indicators {
+            padding: 6px 16px;
+            flex-wrap: wrap;
+          }
+
+          .status-indicator {
+            font-size: 11px;
+            padding: 3px 6px;
+          }
+
+          .background-loading-indicator {
+            font-size: 10px;
+            padding: 3px 6px;
+          }
+
+          .progress-bar {
+            width: 40px;
+            height: 2px;
+          }
+
+          .performance-info {
+            flex-direction: column;
+            gap: 4px;
+            font-size: 10px;
+          }
+        }
+      `}</style>
     </div>
   );
 };
@@ -1608,7 +1940,7 @@ FleetDashboard.propTypes = {
 };
 
 FleetDashboard.defaultProps = {
-  onOpenInstructions: () => {},
+  onOpenInstructions: () => { },
 };
 
 export default FleetDashboard;
