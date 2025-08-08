@@ -1582,7 +1582,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
             Clear Filters
           </button>
           {/* Performance: Show loading indicator for background processes */}
-          {backgroundDataLoading && (
+          {/* {backgroundDataLoading && (
             <div className="background-loading-indicator">
               <RefreshCw size={12} className="spinning" />
               <span className="loading-text">{backgroundProgress.step}</span>
@@ -1595,7 +1595,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
                 </div>
               )}
             </div>
-          )}
+          )} */}
         </div>
 
         <div className="filter-section-right">
