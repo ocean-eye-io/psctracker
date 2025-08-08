@@ -1,5 +1,5 @@
-// src/components/dashboard/reporting/checklist/ModernChecklistForm.jsx - UPDATED VERSION
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+// src/components/dashboard/reporting/checklist/ModernChecklistForm.jsx - FIXED VERSION WITH REF
+import React, { useState, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
 import {
   ArrowLeft,
   CheckCircle,
@@ -31,7 +31,7 @@ import {
 // Import your existing DynamicTable component
 import DynamicTable from './DynamicTable'; // Adjust path as needed
 
-const ModernChecklistForm = ({
+const ModernChecklistForm = forwardRef(({
   vessel = {
     vessel_name: "GENCO BEAR",
     imo_no: "9469259"
@@ -48,16 +48,15 @@ const ModernChecklistForm = ({
   currentUser = { id: "user123", name: "John Doe" },
   mode = 'edit',
   disabled = false
-}) => {
+}, ref) => {
   const [responses, setResponses] = useState({});
   const [completedItems, setCompletedItems] = useState(new Set());
   const [saving, setSaving] = useState(false); // This state will now be managed by parent
   const [submitting, setSubmitting] = useState(false); // This state will now be managed by parent
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [searchTerm, setSearchTerm] = '';
+  const [searchTerm, setSearchTerm] = useState('');
   const [showOnlyMandatory, setShowOnlyMandatory] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
-  // const [lastSaveTime, setLastSaveTime] = useState(null); // Moved to parent
 
   // Map response types to field types (moved before useMemo)
   const mapResponseTypeToFieldType = useCallback((responseType) => {
@@ -86,6 +85,47 @@ const ModernChecklistForm = ({
       fieldLabel.includes('biosecurity')
     );
   }, []);
+
+  // Validate form
+  const validateForm = useCallback(() => {
+    const errors = {};
+    let isValid = true;
+
+    if (!template?.processed_items) {
+      return { isValid: false, errors: { general: 'No template items available' } };
+    }
+
+    template.processed_items.forEach((item) => {
+      if (item.is_mandatory) {
+        const value = responses[item.item_id];
+        const hasValue = value !== null && value !== undefined && value !== '';
+
+        if (!hasValue) {
+          errors[item.item_id] = 'This field is required';
+          isValid = false;
+        }
+      }
+    });
+
+    setValidationErrors(errors);
+    return { isValid, errors };
+  }, [template, responses]);
+
+  // Expose methods to parent via ref
+  useImperativeHandle(ref, () => ({
+    getCurrentResponses: () => {
+      console.log('📋 ModernChecklistForm: getCurrentResponses called, returning:', Object.keys(responses).length, 'responses');
+      return responses;
+    },
+    getFormValidation: () => {
+      console.log('📋 ModernChecklistForm: getFormValidation called');
+      return validateForm();
+    },
+    getCompletedItems: () => {
+      console.log('📋 ModernChecklistForm: getCompletedItems called, returning:', completedItems.size, 'completed items');
+      return completedItems;
+    }
+  }), [responses, validateForm, completedItems]);
 
   // Generate form sections from template
   const formSections = useMemo(() => {
@@ -149,14 +189,32 @@ const ModernChecklistForm = ({
         } else if (response.text_value) {
           value = response.text_value;
         } else if (response.date_value) {
-          value = response.date_value;
+          // Ensure date is in correct format (YYYY-MM-DD)
+          const dateValue = response.date_value;
+          if (dateValue) {
+            // Handle different date formats
+            if (dateValue.includes('T')) {
+              value = dateValue.split('T')[0]; // Extract YYYY-MM-DD from ISO string
+            } else if (dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              value = dateValue; // Already in correct format
+            } else {
+              // Try to parse and format
+              const parsedDate = new Date(dateValue);
+              if (!isNaN(parsedDate.getTime())) {
+                value = parsedDate.toISOString().split('T')[0];
+              } else {
+                value = dateValue; // Keep original if parsing fails
+              }
+            }
+          }
         } else if (response.table_data && Array.isArray(response.table_data)) {
           value = response.table_data;
         }
 
-        if (value !== null && value !== undefined) {
+        if (value !== null && value !== undefined && value !== '') {
           responseMap[itemId] = value;
           completed.add(itemId);
+          console.log('📋 ModernChecklistForm: Loaded response for', itemId, ':', value);
         }
       });
 
@@ -170,6 +228,7 @@ const ModernChecklistForm = ({
   useEffect(() => {
     if (mode === 'edit' && !disabled && Object.keys(responses).length > 0) {
       const autoSaveTimer = setTimeout(() => {
+        console.log('📋 ModernChecklistForm: Auto-save triggered');
         onSave(responses, true); // Auto-save, pass responses to parent
       }, 30000); // Auto-save every 30 seconds
 
@@ -236,31 +295,6 @@ const ModernChecklistForm = ({
     }
   }, [validationErrors]);
 
-  // Validate form
-  const validateForm = useCallback(() => {
-    const errors = {};
-    let isValid = true;
-
-    if (!template?.processed_items) {
-      return { isValid: false, errors: { general: 'No template items available' } };
-    }
-
-    template.processed_items.forEach((item) => {
-      if (item.is_mandatory) {
-        const value = responses[item.item_id];
-        const hasValue = value !== null && value !== undefined && value !== '';
-
-        if (!hasValue) {
-          errors[item.item_id] = 'This field is required';
-          isValid = false;
-        }
-      }
-    });
-
-    setValidationErrors(errors);
-    return { isValid, errors };
-  }, [template, responses]);
-
   // Calculate progress
   const getProgress = useCallback(() => {
     if (!template?.processed_items) {
@@ -295,15 +329,12 @@ const ModernChecklistForm = ({
   const handleSaveClick = useCallback(async () => {
     if (disabled) return;
     try {
-      // setSaving(true); // Parent handles this
-      console.log('💾 ModernChecklistForm: Triggering parent save...');
+      console.log('💾 ModernChecklistForm: Manual save triggered, responses count:', Object.keys(responses).length);
       await onSave(responses, false); // Pass current responses to parent
       console.log('✅ ModernChecklistForm: Parent save triggered successfully');
     } catch (error) {
       console.error('❌ ModernChecklistForm: Save failed via parent:', error);
       alert(`Save failed: ${error.message}`);
-    } finally {
-      // setSaving(false); // Parent handles this
     }
   }, [responses, onSave, disabled]);
 
@@ -312,8 +343,7 @@ const ModernChecklistForm = ({
     if (disabled) return;
 
     try {
-      // setSubmitting(true); // Parent handles this
-      console.log('🚀 ModernChecklistForm: Starting submit...');
+      console.log('🚀 ModernChecklistForm: Starting submit with responses count:', Object.keys(responses).length);
 
       // Validate form first
       const validation = validateForm();
@@ -322,9 +352,6 @@ const ModernChecklistForm = ({
         alert(`Please complete all required fields:\n${Object.values(validation.errors).join('\n')}`);
         return;
       }
-
-      // Save current state first (parent will handle this as part of submit)
-      // await handleSaveClick(); // No need to call directly, parent's onSubmit will handle saving
 
       console.log('📤 ModernChecklistForm: Calling onSubmit...');
       const result = await onSubmit(responses); // Pass current responses to parent
@@ -335,8 +362,6 @@ const ModernChecklistForm = ({
       console.error('❌ ModernChecklistForm: Submit failed:', error);
       alert(`Submit failed: ${error.message}`);
       throw error;
-    } finally {
-      // setSubmitting(false); // Parent handles this
     }
   }, [responses, onSubmit, disabled, validateForm]);
 
@@ -436,7 +461,10 @@ const ModernChecklistForm = ({
           <DynamicTable
             item={field}
             value={value}
-            onChange={(tableData) => handleResponseChange(field.field_id, tableData)}
+            onChange={(tableData) => {
+              console.log('📊 Table data changed for field:', field.field_id, tableData);
+              handleResponseChange(field.field_id, tableData);
+            }}
             disabled={mode === 'view' || disabled}
             hasError={hasError}
             // Pass flag to indicate if this is MLC/Biosecurity table for special handling
@@ -468,28 +496,6 @@ const ModernChecklistForm = ({
 
   return (
     <div className="light-form-container">
-      {/* Removed Header - now handled by ChecklistModal */}
-      {/* Filters */}
-      {/* <div className="light-filters">
-        <div className="light-search">
-          <Search size={14} />
-          <input
-            type="text"
-            placeholder="Search items..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        <button
-          onClick={() => setShowOnlyMandatory(!showOnlyMandatory)}
-          className={`light-filter-btn ${showOnlyMandatory ? 'active' : ''}`}
-        >
-          <Filter size={14} />
-          {showOnlyMandatory ? 'Required Only' : 'All Items'}
-        </button>
-      </div> */}
-
       {/* Form Content */}
       <div className="light-form-content">
         {formSections.length === 0 ? (
@@ -503,6 +509,7 @@ const ModernChecklistForm = ({
                 console.log('Template:', template);
                 console.log('Processed Items:', template?.processed_items);
                 console.log('Form Sections:', formSections);
+                console.log('Current Responses:', responses);
               }}
               className="light-debug-btn"
             >
@@ -536,7 +543,7 @@ const ModernChecklistForm = ({
                   {sectionFields.map((field) => {
                     const hasError = validationErrors[field.field_id];
                     
-                    // UPDATED: Check if field response indicates a problem (reverse logic)
+                    // Check if field response indicates a problem (reverse logic)
                     const fieldValue = responses[field.field_id];
                     const hasProblematicResponse = fieldValue === 'No' || 
                       (Array.isArray(fieldValue) && fieldValue.some(row => 
@@ -576,8 +583,6 @@ const ModernChecklistForm = ({
         )}
       </div>
 
-      {/* Status Bar - Removed, now handled by ChecklistModal */}
-
       {/* Styles */}
       <style jsx>{`
         .light-form-container {
@@ -589,9 +594,6 @@ const ModernChecklistForm = ({
           font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
           overflow: hidden;
         }
-
-        /* Header - REMOVED */
-        /* Filters - REMOVED */
 
         /* Form Content */
         .light-form-content {
@@ -698,7 +700,7 @@ const ModernChecklistForm = ({
           box-shadow: 0 1px 3px rgba(220, 53, 69, 0.2);
         }
 
-        /* UPDATED: New class for problematic responses (e.g., "No" answers) */
+        /* New class for problematic responses (e.g., "No" answers) */
         .light-field-item.problematic-response {
           border-color: #dc3545;
           background-color: rgba(220, 53, 69, 0.05);
@@ -836,7 +838,14 @@ const ModernChecklistForm = ({
           color: #333333;
         }
 
-        /* Status Bar - REMOVED */
+        .spinning {
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
 
         /* Responsive */
         @media (max-width: 768px) {
@@ -851,6 +860,8 @@ const ModernChecklistForm = ({
       `}</style>
     </div>
   );
-};
+});
+
+ModernChecklistForm.displayName = 'ModernChecklistForm';
 
 export default ModernChecklistForm;
