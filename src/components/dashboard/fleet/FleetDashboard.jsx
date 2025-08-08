@@ -1328,21 +1328,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
             <span>{vesselCount}</span>
           </div>
 
-          {/* Performance: Show loading indicator for background processes */}
-          {backgroundDataLoading && (
-            <div className="background-loading-indicator">
-              <RefreshCw size={12} className="spinning" />
-              <span className="loading-text">{backgroundProgress.step}</span>
-              {backgroundProgress.progress > 0 && (
-                <div className="progress-bar">
-                  <div
-                    className="progress-fill"
-                    style={{ width: `${backgroundProgress.progress}%` }}
-                  />
-                </div>
-              )}
-            </div>
-          )}
+          
 
           {/* Search container */}
           <div className="search-container">
@@ -1595,6 +1581,21 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
           <button className="reset-button" onClick={resetFilters}>
             Clear Filters
           </button>
+          {/* Performance: Show loading indicator for background processes */}
+          {backgroundDataLoading && (
+            <div className="background-loading-indicator">
+              <RefreshCw size={12} className="spinning" />
+              <span className="loading-text">{backgroundProgress.step}</span>
+              {backgroundProgress.progress > 0 && (
+                <div className="progress-bar">
+                  <div
+                    className="progress-fill"
+                    style={{ width: `${backgroundProgress.progress}%` }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="filter-section-right">
