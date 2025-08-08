@@ -1642,7 +1642,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
       )}
 
       {/* Performance: Status indicators */}
-      <div className="status-indicators">
+      {/* <div className="status-indicators">
         {loading && (
           <div className="status-indicator loading">
             <RefreshCw size={12} className="spinning" />
@@ -1663,7 +1663,7 @@ const FleetDashboard = ({ onOpenInstructions, fieldMappings }) => {
             <span>{backgroundProgress.step} ({backgroundProgress.progress}%)</span>
           </div>
         )}
-      </div>
+      </div> */}
 
       {/* Charts section */}
       <div className="dashboard-charts">
