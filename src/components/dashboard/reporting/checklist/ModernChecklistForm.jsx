@@ -1,5 +1,5 @@
-// src/components/dashboard/reporting/checklist/ModernChecklistForm.jsx - FIXED VERSION
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+// src/components/dashboard/reporting/checklist/ModernChecklistForm.jsx - FIXED VERSION WITH REF
+import React, { useState, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
 import {
   ArrowLeft,
   CheckCircle,
@@ -31,7 +31,7 @@ import {
 // Import your existing DynamicTable component
 import DynamicTable from './DynamicTable'; // Adjust path as needed
 
-const ModernChecklistForm = ({
+const ModernChecklistForm = forwardRef(({
   vessel = {
     vessel_name: "GENCO BEAR",
     imo_no: "9469259"
@@ -43,24 +43,20 @@ const ModernChecklistForm = ({
   existingChecklist = null,
   onSave = () => {},
   onSubmit = () => {},
-  onCancel = () => {},
+  onCancel = () => {}, // Still passed, but not used for header back button
   loading = false,
   currentUser = { id: "user123", name: "John Doe" },
   mode = 'edit',
   disabled = false
-}) => {
+}, ref) => {
   const [responses, setResponses] = useState({});
   const [completedItems, setCompletedItems] = useState(new Set());
-  const [saving, setSaving] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false); // This state will now be managed by parent
+  const [submitting, setSubmitting] = useState(false); // This state will now be managed by parent
   const [currentTime, setCurrentTime] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState('');
   const [showOnlyMandatory, setShowOnlyMandatory] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
-  const [lastSaveTime, setLastSaveTime] = useState(null);
-
-  // Debug state
-  const [debugMode, setDebugMode] = useState(false);
 
   // Map response types to field types (moved before useMemo)
   const mapResponseTypeToFieldType = useCallback((responseType) => {
@@ -74,6 +70,62 @@ const ModernChecklistForm = ({
     };
     return mapping[responseType] || 'text';
   }, []);
+
+  // Check if field is an MLC/Biosecurity table field
+  const isMlcBiosecurityTableField = useCallback((field) => {
+    // Check if this is a table field and if it's related to MLC or Biosecurity
+    const isTable = field.field_type === 'table' || field.response_type === 'table';
+    const sectionName = field.section_name?.toLowerCase() || '';
+    const fieldLabel = field.label?.toLowerCase() || '';
+    
+    return isTable && (
+      sectionName.includes('mlc') || 
+      sectionName.includes('biosecurity') ||
+      fieldLabel.includes('mlc') || 
+      fieldLabel.includes('biosecurity')
+    );
+  }, []);
+
+  // Validate form
+  const validateForm = useCallback(() => {
+    const errors = {};
+    let isValid = true;
+
+    if (!template?.processed_items) {
+      return { isValid: false, errors: { general: 'No template items available' } };
+    }
+
+    template.processed_items.forEach((item) => {
+      if (item.is_mandatory) {
+        const value = responses[item.item_id];
+        const hasValue = value !== null && value !== undefined && value !== '';
+
+        if (!hasValue) {
+          errors[item.item_id] = 'This field is required';
+          isValid = false;
+        }
+      }
+    });
+
+    setValidationErrors(errors);
+    return { isValid, errors };
+  }, [template, responses]);
+
+  // Expose methods to parent via ref
+  useImperativeHandle(ref, () => ({
+    getCurrentResponses: () => {
+      console.log('📋 ModernChecklistForm: getCurrentResponses called, returning:', Object.keys(responses).length, 'responses');
+      return responses;
+    },
+    getFormValidation: () => {
+      console.log('📋 ModernChecklistForm: getFormValidation called');
+      return validateForm();
+    },
+    getCompletedItems: () => {
+      console.log('📋 ModernChecklistForm: getCompletedItems called, returning:', completedItems.size, 'completed items');
+      return completedItems;
+    }
+  }), [responses, validateForm, completedItems]);
 
   // Generate form sections from template
   const formSections = useMemo(() => {
@@ -89,7 +141,7 @@ const ModernChecklistForm = ({
 
     template.processed_items.forEach((item) => {
       const sectionName = item.section_name || 'General';
-      
+
       if (!sectionMap.has(sectionName)) {
         sectionMap.set(sectionName, {
           section_id: sectionName.toLowerCase().replace(/\s+/g, '_'),
@@ -107,7 +159,8 @@ const ModernChecklistForm = ({
         is_mandatory: Boolean(item.is_mandatory),
         response_type: item.response_type,
         table_structure: item.table_structure,
-        guidance: item.guidance
+        guidance: item.guidance,
+        section_name: sectionName // Add section name to field for easier checking
       };
 
       sectionMap.get(sectionName).fields.push(field);
@@ -122,7 +175,7 @@ const ModernChecklistForm = ({
   useEffect(() => {
     if (existingChecklist?.responses && Array.isArray(existingChecklist.responses)) {
       console.log('📋 ModernChecklistForm: Loading existing responses:', existingChecklist.responses.length);
-      
+
       const responseMap = {};
       const completed = new Set();
 
@@ -136,14 +189,32 @@ const ModernChecklistForm = ({
         } else if (response.text_value) {
           value = response.text_value;
         } else if (response.date_value) {
-          value = response.date_value;
+          // Ensure date is in correct format (YYYY-MM-DD)
+          const dateValue = response.date_value;
+          if (dateValue) {
+            // Handle different date formats
+            if (dateValue.includes('T')) {
+              value = dateValue.split('T')[0]; // Extract YYYY-MM-DD from ISO string
+            } else if (dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              value = dateValue; // Already in correct format
+            } else {
+              // Try to parse and format
+              const parsedDate = new Date(dateValue);
+              if (!isNaN(parsedDate.getTime())) {
+                value = parsedDate.toISOString().split('T')[0];
+              } else {
+                value = dateValue; // Keep original if parsing fails
+              }
+            }
+          }
         } else if (response.table_data && Array.isArray(response.table_data)) {
           value = response.table_data;
         }
 
-        if (value !== null && value !== undefined) {
+        if (value !== null && value !== undefined && value !== '') {
           responseMap[itemId] = value;
           completed.add(itemId);
+          console.log('📋 ModernChecklistForm: Loaded response for', itemId, ':', value);
         }
       });
 
@@ -157,12 +228,13 @@ const ModernChecklistForm = ({
   useEffect(() => {
     if (mode === 'edit' && !disabled && Object.keys(responses).length > 0) {
       const autoSaveTimer = setTimeout(() => {
-        handleSave(true); // Auto-save
+        console.log('📋 ModernChecklistForm: Auto-save triggered');
+        onSave(responses, true); // Auto-save, pass responses to parent
       }, 30000); // Auto-save every 30 seconds
 
       return () => clearTimeout(autoSaveTimer);
     }
-  }, [responses, mode, disabled]);
+  }, [responses, mode, disabled, onSave]); // Added onSave to dependency array
 
   // Update timer
   useEffect(() => {
@@ -172,9 +244,9 @@ const ModernChecklistForm = ({
 
   // Handle response changes with validation
   const handleResponseChange = useCallback((fieldId, value) => {
-    console.log('📋 ModernChecklistForm: Response change:', { 
-      fieldId, 
-      value, 
+    console.log('📋 ModernChecklistForm: Response change:', {
+      fieldId,
+      value,
       type: typeof value,
       isDate: value && !isNaN(Date.parse(value)) && value.includes('-')
     });
@@ -223,31 +295,6 @@ const ModernChecklistForm = ({
     }
   }, [validationErrors]);
 
-  // Validate form
-  const validateForm = useCallback(() => {
-    const errors = {};
-    let isValid = true;
-
-    if (!template?.processed_items) {
-      return { isValid: false, errors: { general: 'No template items available' } };
-    }
-
-    template.processed_items.forEach((item) => {
-      if (item.is_mandatory) {
-        const value = responses[item.item_id];
-        const hasValue = value !== null && value !== undefined && value !== '';
-        
-        if (!hasValue) {
-          errors[item.item_id] = 'This field is required';
-          isValid = false;
-        }
-      }
-    });
-
-    setValidationErrors(errors);
-    return { isValid, errors };
-  }, [template, responses]);
-
   // Calculate progress
   const getProgress = useCallback(() => {
     if (!template?.processed_items) {
@@ -278,53 +325,25 @@ const ModernChecklistForm = ({
 
   const progress = getProgress();
 
-  // Handle save with proper error handling
-  const handleSave = useCallback(async (isAutoSave = false) => {
-    if (disabled && !isAutoSave) return;
-
+  // Handle save (now just calls parent's onSave)
+  const handleSaveClick = useCallback(async () => {
+    if (disabled) return;
     try {
-      if (!isAutoSave) {
-        setSaving(true);
-      }
-
-      console.log('💾 ModernChecklistForm: Starting save...', {
-        isAutoSave,
-        responseCount: Object.keys(responses).length,
-        checklistId: existingChecklist?.checklist_id
-      });
-
-      // Call parent save function
-      const result = await onSave(responses, isAutoSave);
-      
-      if (!isAutoSave) {
-        setLastSaveTime(new Date());
-        console.log('✅ ModernChecklistForm: Save successful');
-      } else {
-        console.log('🔄 ModernChecklistForm: Auto-save successful');
-      }
-
-      return result;
+      console.log('💾 ModernChecklistForm: Manual save triggered, responses count:', Object.keys(responses).length);
+      await onSave(responses, false); // Pass current responses to parent
+      console.log('✅ ModernChecklistForm: Parent save triggered successfully');
     } catch (error) {
-      console.error('❌ ModernChecklistForm: Save failed:', error);
-      if (!isAutoSave) {
-        // Show error to user for manual saves
-        alert(`Save failed: ${error.message}`);
-      }
-      throw error;
-    } finally {
-      if (!isAutoSave) {
-        setSaving(false);
-      }
+      console.error('❌ ModernChecklistForm: Save failed via parent:', error);
+      alert(`Save failed: ${error.message}`);
     }
-  }, [responses, onSave, disabled, existingChecklist, setSaving]);
+  }, [responses, onSave, disabled]);
 
-  // Handle submit with validation
-  const handleSubmit = useCallback(async () => {
+  // Handle submit (now just calls parent's onSubmit)
+  const handleSubmitClick = useCallback(async () => {
     if (disabled) return;
 
     try {
-      setSubmitting(true);
-      console.log('🚀 ModernChecklistForm: Starting submit...');
+      console.log('🚀 ModernChecklistForm: Starting submit with responses count:', Object.keys(responses).length);
 
       // Validate form first
       const validation = validateForm();
@@ -334,11 +353,8 @@ const ModernChecklistForm = ({
         return;
       }
 
-      // Save current state first
-      await handleSave(false);
-
       console.log('📤 ModernChecklistForm: Calling onSubmit...');
-      const result = await onSubmit(responses);
+      const result = await onSubmit(responses); // Pass current responses to parent
       console.log('✅ ModernChecklistForm: Submit successful:', result);
 
       return result;
@@ -346,24 +362,22 @@ const ModernChecklistForm = ({
       console.error('❌ ModernChecklistForm: Submit failed:', error);
       alert(`Submit failed: ${error.message}`);
       throw error;
-    } finally {
-      setSubmitting(false);
     }
-  }, [responses, onSubmit, disabled, validateForm, handleSave]);
+  }, [responses, onSubmit, disabled, validateForm]);
 
   // Filter fields based on search and filters
   const filteredFields = useMemo(() => {
-    const allFields = formSections.flatMap(section => 
+    const allFields = formSections.flatMap(section =>
       section.fields.map(field => ({ ...field, section: section.section_name }))
     );
-    
+
     return allFields.filter(field => {
-      const matchesSearch = !searchTerm || 
+      const matchesSearch = !searchTerm ||
         field.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
         field.section.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       const matchesMandatory = !showOnlyMandatory || field.is_mandatory;
-      
+
       return matchesSearch && matchesMandatory;
     });
   }, [formSections, searchTerm, showOnlyMandatory]);
@@ -400,21 +414,21 @@ const ModernChecklistForm = ({
 
       case 'date':
         // Handle date field properly - ensure proper format conversion
-        const dateValue = value ? 
-          (value instanceof Date ? value.toISOString().split('T')[0] : 
-           typeof value === 'string' && value.includes('T') ? value.split('T')[0] : 
+        const dateValue = value ?
+          (value instanceof Date ? value.toISOString().split('T')[0] :
+           typeof value === 'string' && value.includes('T') ? value.split('T')[0] :
            value) : '';
-        
+
         return (
           <input
             type="date"
             value={dateValue}
             onChange={(e) => {
               const inputDate = e.target.value; // This is in YYYY-MM-DD format
-              console.log('📅 Date field changed:', { 
-                fieldId: field.field_id, 
+              console.log('📅 Date field changed:', {
+                fieldId: field.field_id,
                 inputValue: inputDate,
-                previousValue: value 
+                previousValue: value
               });
               handleResponseChange(field.field_id, inputDate);
             }}
@@ -447,9 +461,14 @@ const ModernChecklistForm = ({
           <DynamicTable
             item={field}
             value={value}
-            onChange={(tableData) => handleResponseChange(field.field_id, tableData)}
+            onChange={(tableData) => {
+              console.log('📊 Table data changed for field:', field.field_id, tableData);
+              handleResponseChange(field.field_id, tableData);
+            }}
             disabled={mode === 'view' || disabled}
             hasError={hasError}
+            // Pass flag to indicate if this is MLC/Biosecurity table for special handling
+            isMlcBiosecurity={isMlcBiosecurityTableField(field)}
           />
         );
 
@@ -477,198 +496,6 @@ const ModernChecklistForm = ({
 
   return (
     <div className="light-form-container">
-      {/* Debug Toggle */}
-      {process.env.NODE_ENV === 'development' && (
-        <button
-          onClick={() => setDebugMode(!debugMode)}
-          style={{
-            position: 'fixed',
-            top: '10px',
-            left: '10px',
-            zIndex: 9999,
-            background: debugMode ? '#dc3545' : '#28a745',
-            color: 'white',
-            border: 'none',
-            padding: '4px 8px',
-            borderRadius: '4px',
-            fontSize: '10px'
-          }}
-        >
-          {debugMode ? 'Hide Debug' : 'Show Debug'}
-        </button>
-      )}
-
-      {/* Debug Panel */}
-      {debugMode && (
-        <div style={{
-          position: 'fixed',
-          top: '50px',
-          left: '10px',
-          width: '300px',
-          maxHeight: '400px',
-          overflow: 'auto',
-          background: '#1a1a1a',
-          color: '#fff',
-          padding: '12px',
-          borderRadius: '6px',
-          zIndex: 9998,
-          fontSize: '11px',
-          fontFamily: 'monospace'
-        }}>
-          <h4 style={{ margin: '0 0 8px', color: '#00ff88' }}>🔍 Form Debug</h4>
-          <div><strong>Template Items:</strong> {template?.processed_items?.length || 0}</div>
-          <div><strong>Form Sections:</strong> {formSections.length}</div>
-          <div><strong>Responses:</strong> {Object.keys(responses).length}</div>
-          <div><strong>Completed:</strong> {completedItems.size}</div>
-          <div><strong>Progress:</strong> {progress.percentage}%</div>
-          <div><strong>Mode:</strong> {mode}</div>
-          <div><strong>Disabled:</strong> {disabled ? 'Yes' : 'No'}</div>
-          <div><strong>Validation Errors:</strong> {Object.keys(validationErrors).length}</div>
-          
-          <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #333' }}>
-            <button
-              onClick={() => {
-                console.log('=== FORM DEBUG INFO ===');
-                console.log('Template:', template);
-                console.log('Form Sections:', formSections);
-                console.log('Responses:', responses);
-                console.log('Completed Items:', Array.from(completedItems));
-                console.log('Validation Errors:', validationErrors);
-                console.log('Progress:', progress);
-                console.log('=======================');
-              }}
-              style={{
-                background: '#007acc',
-                color: '#fff',
-                border: 'none',
-                padding: '4px 8px',
-                borderRadius: '3px',
-                cursor: 'pointer',
-                fontSize: '10px',
-                marginRight: '4px'
-              }}
-            >
-              Log Data
-            </button>
-            <button
-              onClick={() => handleSave(false)}
-              disabled={saving}
-              style={{
-                background: '#28a745',
-                color: '#fff',
-                border: 'none',
-                padding: '4px 8px',
-                borderRadius: '3px',
-                cursor: 'pointer',
-                fontSize: '10px'
-              }}
-            >
-              {saving ? 'Saving...' : 'Test Save'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="light-header">
-        <div className="light-header-left">
-          <button onClick={onCancel} className="light-back-btn" disabled={disabled}>
-            <ArrowLeft size={16} />
-          </button>
-          <div className="light-vessel-info">
-            <div className="light-title">
-              <Ship size={16} />
-              <span>{template?.name || '5 Day Pre-Arrival Checklist'}</span>
-            </div>
-            <div className="light-subtitle">
-              {vessel.vessel_name} • IMO: {vessel.imo_no}
-            </div>
-          </div>
-        </div>
-        
-        <div className="light-header-right">
-          <div className="light-progress">
-            <div className="light-progress-circle">
-              <svg viewBox="0 0 20 20">
-                <circle
-                  cx="10"
-                  cy="10"
-                  r="8"
-                  fill="none"
-                  stroke="#e2e8f0"
-                  strokeWidth="2"
-                />
-                <circle
-                  cx="10"
-                  cy="10"
-                  r="8"
-                  fill="none"
-                  stroke="#007bff"
-                  strokeWidth="2"
-                  strokeDasharray={`${progress.percentage * 0.503}, 50.3`}
-                  strokeLinecap="round"
-                  transform="rotate(-90 10 10)"
-                />
-              </svg>
-              <span className="light-progress-text">{progress.percentage}%</span>
-            </div>
-            <div className="light-progress-info">
-              <span>{progress.completed}/{progress.total}</span>
-              <small>{progress.mandatoryCompleted}/{progress.mandatory} req</small>
-            </div>
-          </div>
-          
-          {mode === 'edit' && !disabled && (
-            <div className="light-actions">
-              <button
-                onClick={() => handleSave(false)}
-                disabled={saving || submitting}
-                className="light-btn save"
-              >
-                {saving ? <RefreshCw size={14} className="spinning" /> : <Save size={14} />}
-                {saving ? 'Saving...' : 'Save'}
-              </button>
-              
-              <button
-                onClick={handleSubmit}
-                disabled={submitting || saving || progress.mandatoryPercentage < 100}
-                className="light-btn submit"
-              >
-                {submitting ? <RefreshCw size={14} className="spinning" /> : <Send size={14} />}
-                {submitting ? 'Submitting...' : 'Submit'}
-              </button>
-            </div>
-          )}
-
-          {lastSaveTime && (
-            <div className="light-save-indicator">
-              <small>Saved at {lastSaveTime.toLocaleTimeString()}</small>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="light-filters">
-        <div className="light-search">
-          <Search size={14} />
-          <input
-            type="text"
-            placeholder="Search items..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        
-        <button
-          onClick={() => setShowOnlyMandatory(!showOnlyMandatory)}
-          className={`light-filter-btn ${showOnlyMandatory ? 'active' : ''}`}
-        >
-          <Filter size={14} />
-          {showOnlyMandatory ? 'Required Only' : 'All Items'}
-        </button>
-      </div>
-
       {/* Form Content */}
       <div className="light-form-content">
         {formSections.length === 0 ? (
@@ -682,6 +509,7 @@ const ModernChecklistForm = ({
                 console.log('Template:', template);
                 console.log('Processed Items:', template?.processed_items);
                 console.log('Form Sections:', formSections);
+                console.log('Current Responses:', responses);
               }}
               className="light-debug-btn"
             >
@@ -694,11 +522,11 @@ const ModernChecklistForm = ({
               if (!searchTerm && !showOnlyMandatory) return true;
               return filteredFields.some(f => f.field_id === field.field_id);
             });
-            
+
             if (sectionFields.length === 0) return null;
-            
+
             const sectionCompleted = sectionFields.filter(field => completedItems.has(field.field_id)).length;
-            
+
             return (
               <div key={section.section_id} className="light-section">
                 <div className="light-section-header">
@@ -715,10 +543,17 @@ const ModernChecklistForm = ({
                   {sectionFields.map((field) => {
                     const hasError = validationErrors[field.field_id];
                     
+                    // Check if field response indicates a problem (reverse logic)
+                    const fieldValue = responses[field.field_id];
+                    const hasProblematicResponse = fieldValue === 'No' || 
+                      (Array.isArray(fieldValue) && fieldValue.some(row => 
+                        Object.values(row).some(val => val === 'No')
+                      ));
+
                     return (
                       <div
                         key={field.field_id}
-                        className={`light-field-item ${field.field_type} ${completedItems.has(field.field_id) ? 'completed' : ''} ${field.is_mandatory ? 'mandatory' : ''} ${hasError ? 'error' : ''}`}
+                        className={`light-field-item ${field.field_type} ${completedItems.has(field.field_id) ? 'completed' : ''} ${field.is_mandatory ? 'mandatory' : ''} ${hasError ? 'error' : ''} ${hasProblematicResponse ? 'problematic-response' : ''}`}
                       >
                         <div className="light-field-header">
                           <label className="light-field-label">
@@ -748,263 +583,16 @@ const ModernChecklistForm = ({
         )}
       </div>
 
-      {/* Status Bar */}
-      {(saving || submitting) && (
-        <div className="light-status-bar">
-          <div className="light-status-content">
-            {saving && (
-              <div className="light-status-item">
-                <RefreshCw size={14} className="spinning" />
-                <span>Saving checklist...</span>
-              </div>
-            )}
-            {submitting && (
-              <div className="light-status-item">
-                <RefreshCw size={14} className="spinning" />
-                <span>Submitting checklist...</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Styles */}
       <style jsx>{`
         .light-form-container {
-          height: 100vh;
+          height: 100%; /* Changed to 100% to fill parent modal body */
           display: flex;
           flex-direction: column;
           background: #f7fafd;
           color: #333333;
           font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
           overflow: hidden;
-        }
-
-        /* Header */
-        .light-header {
-          background: #ffffff;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-          padding: 10px 16px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          min-height: 50px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        .light-header-left {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .light-back-btn {
-          background: #f0f4f8;
-          border: 1px solid rgba(0, 0, 0, 0.1);
-          border-radius: 4px;
-          padding: 6px;
-          cursor: pointer;
-          color: #333333;
-          transition: all 0.2s ease;
-        }
-
-        .light-back-btn:hover:not(:disabled) {
-          background: #eef4f8;
-          transform: translateY(-1px);
-        }
-
-        .light-back-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .light-vessel-info {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-
-        .light-title {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 15px;
-          font-weight: 600;
-          color: #333333;
-        }
-
-        .light-subtitle {
-          font-size: 12px;
-          color: #6c757d;
-        }
-
-        .light-header-right {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-
-        .light-progress {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .light-progress-circle {
-          position: relative;
-          width: 28px;
-          height: 28px;
-        }
-
-        .light-progress-circle svg {
-          width: 100%;
-          height: 100%;
-          transform: rotate(-90deg);
-        }
-
-        .light-progress-text {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          font-size: 9px;
-          font-weight: 600;
-          color: #007bff;
-        }
-
-        .light-progress-info {
-          display: flex;
-          flex-direction: column;
-          font-size: 11px;
-          line-height: 1.2;
-        }
-
-        .light-progress-info small {
-          color: #6c757d;
-          font-size: 9px;
-        }
-
-        .light-actions {
-          display: flex;
-          gap: 6px;
-        }
-
-        .light-btn {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          padding: 6px 10px;
-          border: none;
-          border-radius: 4px;
-          font-size: 12px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .light-btn.save {
-          background: #f0f4f8;
-          color: #333333;
-          border: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
-        .light-btn.save:hover:not(:disabled) {
-          background: #eef4f8;
-          transform: translateY(-1px);
-        }
-
-        .light-btn.submit {
-          background: #28a745;
-          color: white;
-        }
-
-        .light-btn.submit:hover:not(:disabled) {
-          background: #218838;
-          transform: translateY(-1px);
-        }
-
-        .light-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .light-save-indicator {
-          font-size: 10px;
-          color: #6c757d;
-        }
-
-        .spinning {
-          animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        /* Filters */
-        .light-filters {
-          background: #ffffff;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-          padding: 6px 16px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .light-search {
-          position: relative;
-          flex: 1;
-          max-width: 280px;
-        }
-
-        .light-search svg {
-          position: absolute;
-          left: 8px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #6c757d;
-        }
-
-        .light-search input {
-          width: 100%;
-          padding: 5px 8px 5px 26px;
-          background: #f0f4f8;
-          border: 1px solid rgba(0, 0, 0, 0.1);
-          border-radius: 4px;
-          color: #333333;
-          font-size: 12px;
-        }
-
-        .light-search input:focus {
-          outline: none;
-          border-color: #007bff;
-          box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
-        }
-
-        .light-filter-btn {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          padding: 5px 8px;
-          background: #f0f4f8;
-          border: 1px solid rgba(0, 0, 0, 0.1);
-          border-radius: 4px;
-          color: #6c757d;
-          font-size: 11px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .light-filter-btn:hover {
-          background: #eef4f8;
-          color: #333333;
-        }
-
-        .light-filter-btn.active {
-          background: #dc3545;
-          color: white;
-          border-color: #dc3545;
         }
 
         /* Form Content */
@@ -1065,9 +653,9 @@ const ModernChecklistForm = ({
           display: flex;
           align-items: center;
           gap: 6px;
-          font-size: 13px;
-          font-weight: 600;
-          color: #333333;
+          font-size: 16px; /* Increased font size for section titles */
+          font-weight: 700; /* Made bold */
+          color: #1f2937; /* Darker color for prominence */
         }
 
         .light-section-badge {
@@ -1112,6 +700,13 @@ const ModernChecklistForm = ({
           box-shadow: 0 1px 3px rgba(220, 53, 69, 0.2);
         }
 
+        /* New class for problematic responses (e.g., "No" answers) */
+        .light-field-item.problematic-response {
+          border-color: #dc3545;
+          background-color: rgba(220, 53, 69, 0.05);
+          box-shadow: 0 1px 3px rgba(220, 53, 69, 0.3);
+        }
+
         .light-field-item.mandatory::after {
           content: '';
           position: absolute;
@@ -1136,8 +731,8 @@ const ModernChecklistForm = ({
         }
 
         .light-field-label {
-          font-size: 12px;
-          font-weight: 500;
+          font-size: 13px; /* Slightly increased font size for field labels */
+          font-weight: 600; /* Made bolder */
           color: #333333;
           line-height: 1.3;
         }
@@ -1238,57 +833,22 @@ const ModernChecklistForm = ({
           align-items: center;
           justify-content: center;
           gap: 10px;
-          height: 100vh;
+          height: 100%; /* Changed to 100% to fill parent modal body */
           background: #f7fafd;
           color: #333333;
         }
 
-        /* Status Bar */
-        .light-status-bar {
-          background: #f8f9fa;
-          border-top: 1px solid rgba(0, 0, 0, 0.1);
-          padding: 8px 16px;
-          flex-shrink: 0;
+        .spinning {
+          animation: spin 1s linear infinite;
         }
 
-        .light-status-content {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-
-        .light-status-item {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 12px;
-          color: #6c757d;
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
 
         /* Responsive */
         @media (max-width: 768px) {
-          .light-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 8px;
-            padding: 8px 12px;
-          }
-
-          .light-header-right {
-            width: 100%;
-            justify-content: space-between;
-          }
-
-          .light-filters {
-            flex-direction: column;
-            gap: 8px;
-            align-items: stretch;
-          }
-
-          .light-search {
-            max-width: none;
-          }
-
           .light-fields-grid {
             grid-template-columns: 1fr;
           }
@@ -1296,19 +856,12 @@ const ModernChecklistForm = ({
           .light-form-content {
             padding: 8px;
           }
-
-          .light-actions {
-            width: 100%;
-          }
-
-          .light-btn {
-            flex: 1;
-            justify-content: center;
-          }
         }
       `}</style>
     </div>
   );
-};
+});
+
+ModernChecklistForm.displayName = 'ModernChecklistForm';
 
 export default ModernChecklistForm;

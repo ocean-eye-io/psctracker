@@ -1,5 +1,5 @@
-// src/components/dashboard/reporting/ChecklistModal.jsx - FIXED VERSION
-import React, { useState, useEffect, useCallback } from 'react';
+// src/components/dashboard/reporting/ChecklistModal.jsx - COMPLETE FINAL VERSION
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   X,
   Ship,
@@ -11,12 +11,17 @@ import {
   Loader2,
   MapPin,
   User,
-  RefreshCw
+  RefreshCw,
+  Save,
+  Send,
+  Download
 } from 'lucide-react';
 import ModernChecklistForm from './checklist/ModernChecklistForm';
 import checklistService from '../../../services/checklistService';
 import { useAuth } from '../../../context/AuthContext';
 import PropTypes from 'prop-types';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const ChecklistModal = ({
   isOpen,
@@ -33,8 +38,11 @@ const ChecklistModal = ({
   const [checklistStatus, setChecklistStatus] = useState(initialStatus);
   const [debugInfo, setDebugInfo] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaveTime, setLastSaveTime] = useState(null);
 
   const { currentUser } = useAuth();
+  const formRef = useRef();
 
   // Debug logging function
   const logDebug = useCallback((step, data) => {
@@ -167,6 +175,40 @@ const ChecklistModal = ({
           vessel.id,
           { vessel_name: vessel.vessel_name, user_id: userId }
         );
+        
+        // ADD DEBUGGING TO SEE WHAT WE GOT
+        console.log('🔍 API Response - Full Response:', createdChecklists);
+        console.log('🔍 Available Templates:', createdChecklists.map(c => ({
+          id: c.checklist_id,
+          template_name: c.template_name,
+          template_id: c.template_id
+        })));
+        
+        fiveDayChecklist = createdChecklists.find(checklist => {
+          const templateName = (checklist.template_name || '').toLowerCase();
+          console.log('🔍 Checking template name:', templateName); // SEE EACH NAME
+          
+          const matches = templateName.includes('5-day') ||
+                 templateName.includes('5 day') ||
+                 templateName.includes('pre-arrival') ||
+                 templateName.includes('five day');
+                 
+          if (matches) {
+            console.log('✅ Found matching template:', templateName);
+          }
+          
+          return matches;
+        });
+        
+        console.log('🔍 Final fiveDayChecklist result:', fiveDayChecklist);
+        
+        if (fiveDayChecklist) {
+          // Your existing code...
+        } else {
+          // ENHANCED ERROR MESSAGE
+          const availableNames = createdChecklists.map(c => c.template_name).join(', ');
+          throw new Error(`5-day checklist template not found. Available templates: ${availableNames}`);
+        }
 
         fiveDayChecklist = createdChecklists.find(checklist => {
           const templateName = (checklist.template_name || '').toLowerCase();
@@ -201,24 +243,103 @@ const ChecklistModal = ({
     }
   }, [vessel?.id, vessel?.vessel_name, getUserId, determineMode, logDebug]);
 
+  // Convert form responses to API format
+  const convertFormResponsesToAPI = useCallback((formResponses, templateData) => {
+    if (!templateData?.processed_items) {
+      logDebug('convert_error', 'No processed items in template');
+      return [];
+    }
+
+    const apiResponses = [];
+
+    templateData.processed_items.forEach((item, index) => {
+      const value = formResponses[item.item_id];
+
+      // Skip empty values (null, undefined, or empty string)
+      if (value === null || value === undefined || value === '') return;
+
+      const response = {
+        item_id: item.item_id,
+        sr_no: index + 1,
+        section: item.section_name || 'GENERAL',
+        subsection: item.sub_section_name || null,
+        check_description: item.description || item.check_description || '',
+        pic: item.pic || '',
+        response_type: item.response_type || 'text',
+        yes_no_na_value: null,
+        text_value: null,
+        date_value: null,
+        table_data: null,
+        remarks: null,
+        guidance: item.guidance || '',
+        is_mandatory: Boolean(item.is_mandatory),
+        requires_evidence: Boolean(item.requires_evidence)
+      };
+
+      // Set appropriate value based on response type
+      switch (item.response_type) {
+        case 'yes_no_na':
+        case 'yes_no':
+          response.yes_no_na_value = value;
+          break;
+        case 'date':
+          // Enhanced date handling - ensure proper format
+          if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            response.date_value = value; // Already in YYYY-MM-DD format
+          } else if (value) {
+            // Try to parse and format
+            const parsedDate = new Date(value);
+            if (!isNaN(parsedDate.getTime())) {
+              response.date_value = parsedDate.toISOString().split('T')[0];
+            } else {
+              response.date_value = value; // Keep original if parsing fails
+            }
+          }
+          break;
+        case 'table':
+          response.table_data = Array.isArray(value) ? value : [];
+          break;
+        default:
+          response.text_value = String(value);
+          break;
+      }
+
+      apiResponses.push(response);
+    });
+
+    logDebug('convert_result', {
+      inputCount: Object.keys(formResponses).length,
+      outputCount: apiResponses.length
+    });
+
+    return apiResponses;
+  }, [logDebug]);
+
   // Handle save with proper error handling and state updates
-  const handleSave = useCallback(async (responses, isAutoSave = false) => {
-    if (!checklist?.checklist_id) {
-      throw new Error('No checklist available for saving');
+  const handleSave = useCallback(async (_, isAutoSave = false) => {
+    if (!checklist?.checklist_id || !formRef.current) {
+      throw new Error('No checklist or form available for saving');
     }
 
     try {
-      logDebug('save_start', { 
+      if (!isAutoSave) {
+        setIsSaving(true);
+      }
+      
+      // Get current responses from form
+      const currentResponses = formRef.current.getCurrentResponses();
+      
+      logDebug('save_start', {
         checklistId: checklist.checklist_id,
-        responseCount: Object.keys(responses).length,
-        isAutoSave 
+        responseCount: Object.keys(currentResponses).length,
+        isAutoSave
       });
 
       // Convert form responses to API format
-      const apiResponses = convertFormResponsesToAPI(responses, template);
-      logDebug('converted_responses', { 
-        originalCount: Object.keys(responses).length,
-        convertedCount: apiResponses.length 
+      const apiResponses = convertFormResponsesToAPI(currentResponses, template);
+      logDebug('converted_responses', {
+        originalCount: Object.keys(currentResponses).length,
+        convertedCount: apiResponses.length
       });
 
       // Save via API
@@ -233,9 +354,10 @@ const ChecklistModal = ({
       if (!isAutoSave) {
         // Refresh checklist data after manual save
         const updatedChecklist = await checklistService.getChecklistById(checklist.checklist_id);
-        
+
         setChecklist(updatedChecklist);
         setChecklistStatus(updatedChecklist.status || 'in_progress');
+        setLastSaveTime(new Date());
 
         // Notify parent
         if (onChecklistUpdate) {
@@ -257,24 +379,41 @@ const ChecklistModal = ({
       logDebug('save_error', err);
       console.error('❌ ChecklistModal: Save error:', err);
       throw err;
+    } finally {
+      if (!isAutoSave) {
+        setIsSaving(false);
+      }
     }
-  }, [checklist, template, getUserId, vessel, onChecklistUpdate, logDebug]);
+  }, [checklist, template, getUserId, vessel, onChecklistUpdate, logDebug, convertFormResponsesToAPI]);
 
   // Handle submit with enhanced error handling
-  const handleSubmit = useCallback(async (responses) => {
-    if (!checklist?.checklist_id) {
-      throw new Error('No checklist available for submission');
+  const handleSubmit = useCallback(async () => {
+    if (!checklist?.checklist_id || !formRef.current) {
+      throw new Error('No checklist or form available for submission');
     }
 
     try {
       setIsSubmitting(true);
-      logDebug('submit_start', { 
+      
+      // Get current responses from form
+      const currentResponses = formRef.current.getCurrentResponses();
+      
+      logDebug('submit_start', {
         checklistId: checklist.checklist_id,
-        currentStatus: checklistStatus 
+        responseCount: Object.keys(currentResponses).length,
+        currentStatus: checklistStatus
       });
 
+      // Validate form first using form's validation
+      const validation = formRef.current.getFormValidation();
+      if (!validation.isValid) {
+        console.error('❌ ChecklistModal: Validation failed:', validation.errors);
+        alert(`Please complete all required fields:\n${Object.values(validation.errors).join('\n')}`);
+        return;
+      }
+
       // First save the current responses
-      await handleSave(responses, false);
+      await handleSave(null, false);
 
       // Then submit
       const submitResult = await checklistService.submitChecklist(
@@ -286,7 +425,7 @@ const ChecklistModal = ({
       logDebug('submit_api_result', submitResult);
 
       const newStatus = submitResult.checklist?.status || 'submitted';
-      
+
       // Update local state
       setChecklist(prev => ({
         ...prev,
@@ -320,7 +459,7 @@ const ChecklistModal = ({
     } catch (err) {
       logDebug('submit_error', err);
       console.error('❌ ChecklistModal: Submit error:', err);
-      
+
       // Handle already submitted error gracefully
       if (err.message.includes('already submitted')) {
         setChecklistStatus('submitted');
@@ -328,72 +467,12 @@ const ChecklistModal = ({
         setTimeout(() => onClose(), 1000);
         return;
       }
-      
+
       throw err;
     } finally {
       setIsSubmitting(false);
     }
   }, [checklist, checklistStatus, handleSave, getUserId, vessel, onChecklistUpdate, onClose, logDebug]);
-
-  // Convert form responses to API format
-  const convertFormResponsesToAPI = useCallback((formResponses, templateData) => {
-    if (!templateData?.processed_items) {
-      logDebug('convert_error', 'No processed items in template');
-      return [];
-    }
-
-    const apiResponses = [];
-
-    templateData.processed_items.forEach((item, index) => {
-      const value = formResponses[item.item_id];
-      
-      if (value === null || value === undefined) return;
-
-      const response = {
-        item_id: item.item_id,
-        sr_no: index + 1,
-        section: item.section_name || 'GENERAL',
-        subsection: item.sub_section_name || null,
-        check_description: item.description || item.check_description || '',
-        pic: item.pic || '',
-        response_type: item.response_type || 'text',
-        yes_no_na_value: null,
-        text_value: null,
-        date_value: null,
-        table_data: null,
-        remarks: null,
-        guidance: item.guidance || '',
-        is_mandatory: Boolean(item.is_mandatory),
-        requires_evidence: Boolean(item.requires_evidence)
-      };
-
-      // Set appropriate value based on response type
-      switch (item.response_type) {
-        case 'yes_no_na':
-        case 'yes_no':
-          response.yes_no_na_value = value;
-          break;
-        case 'date':
-          response.date_value = value;
-          break;
-        case 'table':
-          response.table_data = Array.isArray(value) ? value : [];
-          break;
-        default:
-          response.text_value = String(value);
-          break;
-      }
-
-      apiResponses.push(response);
-    });
-
-    logDebug('convert_result', { 
-      inputCount: Object.keys(formResponses).length,
-      outputCount: apiResponses.length 
-    });
-
-    return apiResponses;
-  }, [logDebug]);
 
   // Handle mode toggle
   const handleModeToggle = useCallback(() => {
@@ -410,7 +489,7 @@ const ChecklistModal = ({
     }
 
     logDebug('close_modal', 'Cleaning up and closing');
-    
+
     setLoading(true);
     setError(null);
     setChecklist(null);
@@ -419,8 +498,239 @@ const ChecklistModal = ({
     setChecklistStatus('pending');
     setDebugInfo({});
     setIsSubmitting(false);
+    setIsSaving(false);
+    setLastSaveTime(null);
     onClose();
   }, [isSubmitting, onClose, logDebug]);
+
+  // Enhanced PDF Download Functionality - Uses Current Form Data
+  const handleDownloadPdf = useCallback(() => {
+    if (!checklist || !template || !formRef.current) {
+      alert('Checklist data not available for download.');
+      return;
+    }
+
+    try {
+      // Get current responses from form for PDF generation
+      const currentResponses = formRef.current.getCurrentResponses();
+      
+      const doc = new jsPDF('p', 'mm', 'a4');
+      
+      let yPos = 20;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 15;
+      const contentWidth = pageWidth - (margin * 2);
+
+      // Helper function for page breaks
+      const checkPageBreak = (requiredSpace = 15) => {
+        if (yPos + requiredSpace > doc.internal.pageSize.getHeight() - 20) {
+          doc.addPage();
+          yPos = 20;
+          return true;
+        }
+        return false;
+      };
+
+      // Header
+      doc.setFillColor(45, 55, 72);
+      doc.rect(0, 0, pageWidth, 30, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('5-DAY PRE-ARRIVAL CHECKLIST', margin, 15);
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(vessel?.vessel_name || 'Unknown Vessel', margin, 23);
+
+      yPos = 40;
+
+      // Vessel information
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('VESSEL INFORMATION', margin, yPos);
+      yPos += 8;
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Vessel: ${vessel?.vessel_name || 'Unknown'}`, margin, yPos);
+      doc.text(`IMO: ${vessel?.imo_no || 'N/A'}`, margin + 80, yPos);
+      yPos += 6;
+      
+      doc.text(`Port: ${vessel?.arrival_port || 'N/A'}`, margin, yPos);
+      doc.text(`ETA: ${vessel?.eta ? new Date(vessel.eta).toLocaleDateString() : 'N/A'}`, margin + 80, yPos);
+      yPos += 6;
+
+      const statusInfo = getStatusInfo(checklistStatus);
+      doc.text(`Status: ${statusInfo.label}`, margin, yPos);
+      doc.text(`Progress: ${checklist?.progress_percentage || 0}%`, margin + 80, yPos);
+      yPos += 12;
+
+      // Line separator
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.5);
+      doc.line(margin, yPos, pageWidth - margin, yPos);
+      yPos += 10;
+
+      // Checklist items
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('CHECKLIST ITEMS', margin, yPos);
+      yPos += 10;
+
+      // Group items by section
+      const groupedItems = {};
+      template.processed_items.forEach(item => {
+        const sectionKey = item.section_name || 'General';
+        if (!groupedItems[sectionKey]) {
+          groupedItems[sectionKey] = [];
+        }
+        groupedItems[sectionKey].push(item);
+      });
+
+      let itemCounter = 1;
+      Object.entries(groupedItems).forEach(([sectionName, sectionItems]) => {
+        checkPageBreak(12);
+
+        // Section header
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(45, 55, 72);
+        doc.text(`${sectionName.toUpperCase()}`, margin, yPos);
+        yPos += 8;
+
+        // Section items
+        sectionItems.forEach(item => {
+          checkPageBreak(15);
+
+          // Get current response for this item from form
+          const currentValue = currentResponses[item.item_id];
+          
+          // Item number and description
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(30, 41, 59);
+          
+          const itemNum = itemCounter.toString() + (item.is_mandatory ? '*' : '');
+          doc.text(itemNum, margin, yPos);
+          
+          // Description (with word wrapping)
+          doc.setFont('helvetica', 'normal');
+          const description = item.description || item.check_description || '';
+          const descriptionLines = doc.splitTextToSize(description, contentWidth - 60);
+          doc.text(descriptionLines, margin + 12, yPos);
+          
+          const descHeight = descriptionLines.length * 3;
+
+          // Response value - use current form data
+          let responseText = 'Not Answered';
+          if (currentValue !== null && currentValue !== undefined && currentValue !== '') {
+            if (item.response_type === 'yes_no' || item.response_type === 'yes_no_na') {
+              responseText = currentValue;
+              // Set color based on response
+              if (currentValue === 'Yes') {
+                doc.setTextColor(16, 185, 129); // Green
+              } else if (currentValue === 'No') {
+                doc.setTextColor(239, 68, 68); // Red
+              } else {
+                doc.setTextColor(245, 158, 11); // Orange
+              }
+            } else if (item.response_type === 'date') {
+              responseText = currentValue.match(/^\d{4}-\d{2}-\d{2}$/) ? 
+                new Date(currentValue).toLocaleDateString() : 
+                currentValue;
+              doc.setTextColor(30, 41, 59);
+            } else if (Array.isArray(currentValue)) {
+              responseText = `Table data (${currentValue.length} entries)`;
+              doc.setTextColor(30, 41, 59);
+            } else {
+              responseText = currentValue.length > 30 ? 
+                currentValue.substring(0, 30) + '...' : 
+                currentValue;
+              doc.setTextColor(30, 41, 59);
+            }
+          } else {
+            doc.setTextColor(156, 163, 175); // Gray for no response
+          }
+
+          doc.setFont('helvetica', 'bold');
+          doc.text(responseText, pageWidth - margin - 45, yPos);
+
+          // PIC if available
+          if (item.pic) {
+            doc.setTextColor(100, 116, 139);
+            doc.setFontSize(7);
+            doc.setFont('helvetica', 'italic');
+            doc.text(`PIC: ${item.pic}`, margin + 12, yPos + descHeight + 3);
+          }
+
+          yPos += Math.max(descHeight + 8, 12);
+          itemCounter++;
+        });
+
+        yPos += 5; // Space between sections
+      });
+
+      // Footer
+      checkPageBreak(20);
+      yPos += 8;
+
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.3);
+      doc.line(margin, yPos, pageWidth - margin, yPos);
+      yPos += 8;
+
+      // Summary
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('SUMMARY:', margin, yPos);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${checklist?.items_completed || 0}/${checklist?.total_items || 0} items completed (${checklist?.progress_percentage || 0}%)`, margin + 25, yPos);
+      
+      if (checklist.submitted_at) {
+        doc.text(`Submitted: ${new Date(checklist.submitted_at).toLocaleDateString()}`, margin + 100, yPos);
+      }
+
+      yPos += 10;
+
+      // Signature lines
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.text('Officer: _________________________ Date: _________', margin, yPos);
+      yPos += 6;
+      doc.text('Master: __________________________ Date: _________', margin, yPos);
+
+      // Add page numbers
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setTextColor(156, 163, 175);
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        
+        const pageText = `Page ${i} of ${totalPages}`;
+        const textWidth = doc.getTextWidth(pageText);
+        doc.text(pageText, pageWidth - margin - textWidth, doc.internal.pageSize.getHeight() - 8);
+        
+        doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, doc.internal.pageSize.getHeight() - 8);
+      }
+
+      // Generate filename
+      const vesselName = vessel?.vessel_name?.replace(/[^a-zA-Z0-9]/g, '_') || 'Vessel';
+      const date = new Date().toISOString().slice(0, 10);
+      const filename = `${vesselName}_PreArrival_${date}.pdf`;
+      
+      doc.save(filename);
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
+  }, [checklist, template, vessel, checklistStatus, getStatusInfo]);
 
   // Load checklist when modal opens
   useEffect(() => {
@@ -433,12 +743,17 @@ const ChecklistModal = ({
 
   const statusInfo = getStatusInfo(checklistStatus);
 
+  // Calculate progress for header display
+  const progressPercentage = checklist?.progress_percentage || 0;
+  const itemsCompleted = checklist?.items_completed || 0;
+  const totalItems = checklist?.total_items || 0;
+
   return (
     <div className="checklist-modal-overlay" onClick={!isSubmitting ? handleClose : undefined}>
       <div className="checklist-modal-container" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="checklist-modal-header">
-          <div className="checklist-modal-title">
+          <div className="checklist-modal-title-group">
             <div className="title-icon">
               <FileText size={20} />
             </div>
@@ -468,7 +783,39 @@ const ChecklistModal = ({
             </div>
           </div>
 
-          <div className="checklist-modal-status">
+          <div className="checklist-modal-controls">
+            {/* Progress Display */}
+            <div className="checklist-progress-display">
+              <div className="progress-circle">
+                <svg viewBox="0 0 20 20">
+                  <circle
+                    cx="10"
+                    cy="10"
+                    r="8"
+                    fill="none"
+                    stroke="#e2e8f0"
+                    strokeWidth="2"
+                  />
+                  <circle
+                    cx="10"
+                    cy="10"
+                    r="8"
+                    fill="none"
+                    stroke="#007bff"
+                    strokeWidth="2"
+                    strokeDasharray={`${progressPercentage * 0.503}, 50.3`}
+                    strokeLinecap="round"
+                    transform="rotate(-90 10 10)"
+                  />
+                </svg>
+                <span className="progress-text">{progressPercentage}%</span>
+              </div>
+              <div className="progress-info">
+                <span>{itemsCompleted}/{totalItems} items</span>
+              </div>
+            </div>
+
+            {/* Status Badge */}
             {isSubmitting ? (
               <div className="status-badge submitting">
                 <Loader2 size={16} className="spinning" />
@@ -488,6 +835,48 @@ const ChecklistModal = ({
               </div>
             )}
 
+            {/* Download Button */}
+            <button
+              onClick={handleDownloadPdf}
+              disabled={!checklist || !template || isSubmitting || isSaving}
+              className="action-btn download-btn"
+              title="Download Checklist as PDF"
+            >
+              <Download size={14} />
+              Download PDF
+            </button>
+
+            {/* Action Buttons (Save, Submit) */}
+            {mode === 'edit' && !isSubmitting && (
+              <div className="checklist-action-buttons">
+                <button
+                  onClick={() => handleSave(null, false)}
+                  disabled={isSaving || isSubmitting}
+                  className="action-btn save-btn"
+                >
+                  {isSaving ? <RefreshCw size={14} className="spinning" /> : <Save size={14} />}
+                  {isSaving ? 'Saving...' : 'Save'}
+                </button>
+
+                <button
+                  onClick={() => handleSubmit()}
+                  disabled={isSubmitting || isSaving || progressPercentage < 100}
+                  className="action-btn submit-btn"
+                >
+                  {isSubmitting ? <RefreshCw size={14} className="spinning" /> : <Send size={14} />}
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                </button>
+              </div>
+            )}
+
+            {/* Last Save Time */}
+            {lastSaveTime && (
+              <div className="last-save-indicator">
+                <small>Saved at {lastSaveTime.toLocaleTimeString()}</small>
+              </div>
+            )}
+
+            {/* Mode Toggle Button */}
             {['complete', 'submitted'].includes(checklistStatus) && !isSubmitting && (
               <button
                 className="mode-toggle-btn"
@@ -552,6 +941,7 @@ const ChecklistModal = ({
             </div>
           ) : template && checklist ? (
             <ModernChecklistForm
+              ref={formRef}
               vessel={vessel}
               template={template}
               existingChecklist={checklist}
@@ -561,7 +951,7 @@ const ChecklistModal = ({
               loading={false}
               currentUser={currentUser}
               mode={mode}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isSaving}
             />
           ) : (
             <div className="checklist-modal-error">
@@ -577,9 +967,8 @@ const ChecklistModal = ({
         </div>
       </div>
 
-      {/* Styles */}
+      {/* Complete Styles */}
       <style jsx>{`
-        /* Your existing styles remain the same */
         .checklist-modal-overlay {
           position: fixed;
           top: 0;
@@ -614,22 +1003,23 @@ const ChecklistModal = ({
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 16px 20px;
+          padding: 12px 20px;
           background: #f8fafc;
           border-bottom: 1px solid #e2e8f0;
           flex-shrink: 0;
+          gap: 16px;
         }
 
-        .checklist-modal-title {
+        .checklist-modal-title-group {
           display: flex;
           align-items: center;
           gap: 12px;
-          flex: 1;
+          flex-shrink: 0;
         }
 
         .title-icon {
-          width: 40px;
-          height: 40px;
+          width: 36px;
+          height: 36px;
           background: rgba(59, 130, 246, 0.1);
           border-radius: 8px;
           display: flex;
@@ -640,8 +1030,8 @@ const ChecklistModal = ({
         }
 
         .title-content h2 {
-          margin: 0 0 8px 0;
-          font-size: 18px;
+          margin: 0 0 4px 0;
+          font-size: 17px;
           font-weight: 600;
           color: #1f2937;
         }
@@ -649,9 +1039,9 @@ const ChecklistModal = ({
         .vessel-info {
           display: flex;
           align-items: center;
-          gap: 16px;
+          gap: 12px;
           flex-wrap: wrap;
-          font-size: 13px;
+          font-size: 12px;
           color: #6b7280;
         }
 
@@ -667,21 +1057,67 @@ const ChecklistModal = ({
           color: #9ca3af;
         }
 
-        .checklist-modal-status {
+        .checklist-modal-controls {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 16px;
+          flex-grow: 1;
+          justify-content: flex-end;
+          flex-wrap: wrap;
+        }
+
+        .checklist-progress-display {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+
+        .progress-circle {
+          position: relative;
+          width: 28px;
+          height: 28px;
+        }
+
+        .progress-circle svg {
+          width: 100%;
+          height: 100%;
+          transform: rotate(-90deg);
+        }
+
+        .progress-text {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          font-size: 9px;
+          font-weight: 600;
+          color: #007bff;
+        }
+
+        .progress-info {
+          display: flex;
+          flex-direction: column;
+          font-size: 11px;
+          line-height: 1.2;
+          color: #6c757d;
+        }
+
+        .progress-info span {
+          font-weight: 500;
+          color: #333;
         }
 
         .status-badge {
           display: flex;
           align-items: center;
           gap: 6px;
-          padding: 6px 12px;
+          padding: 6px 10px;
           border-radius: 6px;
           border: 1px solid;
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 500;
+          flex-shrink: 0;
         }
 
         .status-badge.submitting {
@@ -689,6 +1125,67 @@ const ChecklistModal = ({
           background-color: rgba(245, 158, 11, 0.1);
           border-color: rgba(245, 158, 11, 0.3);
           animation: pulse 2s ease-in-out infinite;
+        }
+
+        .checklist-action-buttons {
+          display: flex;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+
+        .action-btn {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 6px 12px;
+          border: none;
+          border-radius: 6px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .action-btn.save-btn {
+          background: #e2e8f0;
+          color: #475569;
+          border: 1px solid #cbd5e1;
+        }
+
+        .action-btn.save-btn:hover:not(:disabled) {
+          background: #cbd5e1;
+          transform: translateY(-1px);
+        }
+
+        .action-btn.submit-btn {
+          background: #22c55e;
+          color: white;
+        }
+
+        .action-btn.submit-btn:hover:not(:disabled) {
+          background: #16a34a;
+          transform: translateY(-1px);
+        }
+
+        .action-btn.download-btn {
+          background: #007bff;
+          color: white;
+        }
+
+        .action-btn.download-btn:hover:not(:disabled) {
+          background: #0056b3;
+          transform: translateY(-1px);
+        }
+
+        .action-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .last-save-indicator {
+          font-size: 10px;
+          color: #6c757d;
+          flex-shrink: 0;
         }
 
         .mode-toggle-btn {
@@ -700,16 +1197,17 @@ const ChecklistModal = ({
           font-size: 12px;
           cursor: pointer;
           transition: all 0.2s ease;
+          flex-shrink: 0;
         }
 
-        .mode-toggle-btn:hover {
+        .mode-toggle-btn:hover:not(:disabled) {
           background: rgba(59, 130, 246, 0.2);
           transform: translateY(-1px);
         }
 
         .checklist-modal-close {
-          width: 36px;
-          height: 36px;
+          width: 32px;
+          height: 32px;
           background: #f1f5f9;
           border: 1px solid #e2e8f0;
           border-radius: 8px;
@@ -828,7 +1326,33 @@ const ChecklistModal = ({
           50% { opacity: 0.7; }
         }
 
-        /* Responsive */
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+          .checklist-modal-header {
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 12px 16px;
+          }
+          .checklist-modal-title-group {
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 8px;
+          }
+          .checklist-modal-controls {
+            width: 100%;
+            justify-content: center;
+            gap: 10px;
+          }
+          .checklist-modal-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+          }
+          .vessel-info {
+            justify-content: center;
+          }
+        }
+
         @media (max-width: 768px) {
           .checklist-modal-container {
             margin: 8px;
@@ -837,21 +1361,52 @@ const ChecklistModal = ({
           }
 
           .checklist-modal-header {
-            padding: 16px;
+            padding: 10px 12px;
             flex-direction: column;
-            gap: 16px;
+            gap: 10px;
             align-items: flex-start;
           }
 
+          .checklist-modal-title-group {
+            width: 100%;
+            justify-content: flex-start;
+            margin-bottom: 0;
+          }
+
           .vessel-info {
-            gap: 12px;
+            gap: 8px;
+            font-size: 11px;
+            justify-content: flex-start;
+          }
+
+          .checklist-modal-controls {
+            width: 100%;
+            justify-content: flex-start;
+            gap: 8px;
+            flex-wrap: wrap;
+          }
+
+          .checklist-action-buttons {
+            flex-grow: 1;
+            justify-content: flex-start;
+          }
+
+          .action-btn {
+            flex: 1;
+            padding: 8px 10px;
             font-size: 12px;
           }
 
+          .status-badge, .mode-toggle-btn {
+            padding: 5px 8px;
+            font-size: 11px;
+          }
+
           .checklist-modal-close {
-            position: absolute;
-            top: 16px;
-            right: 16px;
+            top: 10px;
+            right: 10px;
+            width: 28px;
+            height: 28px;
           }
         }
       `}</style>

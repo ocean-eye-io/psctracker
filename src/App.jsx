@@ -345,7 +345,7 @@ const AppContent = () => {
           <ProtectedRoute requiredModule="/files">
             <ProtectedLayout>
               <DocumentsDashboard 
-                apiBaseUrl="https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws/"
+                apiBaseUrl="https://mvowrtmyd4go63badvhkr6rueq0evdzu.lambda-url.ap-south-1.on.aws/"
                 currentUser={{
                   name: currentUser?.name || currentUser?.username || currentUser?.email || 'User',
                   id: currentUser?.userId || currentUser?.sub
@@ -363,7 +363,7 @@ const AppContent = () => {
           <ProtectedRoute requiredModule="/circulars">
             <ProtectedLayout>
               <DocumentsDashboard 
-                apiBaseUrl="https://qescpqp626isx43ab5mnlyvayi0zvvsg.lambda-url.ap-south-1.on.aws/"
+                apiBaseUrl="https://mvowrtmyd4go63badvhkr6rueq0evdzu.lambda-url.ap-south-1.on.aws/"
                 currentUser={{
                   name: currentUser?.name || currentUser?.username || currentUser?.email || 'User',
                   id: currentUser?.userId || currentUser?.sub

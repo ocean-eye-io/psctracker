@@ -1,5 +1,3 @@
-/* Minimal Dynamic Table CSS - Nunito Font & Compact Design - Light Theme Only */
-
 :root {
   /* Light Theme Color Palette */
   --dt-bg-primary: #ffffff;
@@ -10,7 +8,7 @@
   --dt-text-primary: #1e293b;
   --dt-text-secondary: #64748b;
   --dt-text-muted: #94a3b8;
-  
+
   /* Accent Colors */
   --dt-primary: #3b82f6;
   --dt-primary-light: #dbeafe;
@@ -21,45 +19,53 @@
   --dt-danger: #ef4444;
   --dt-danger-light: #fee2e2;
   --dt-danger-dark: #dc2626;
-  
+
+  /* Yes Response Highlighting Colors - Light Red Theme */
+  --dt-yes-highlight-bg: #fef2f2;
+  --dt-yes-highlight-border: #f87171;
+  --dt-yes-highlight-text: #7f1d1d;
+  --dt-yes-glow: 0 0 0 1px rgba(248, 113, 113, 0.3);
+
   /* Shadows & Effects */
   --dt-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --dt-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --dt-radius-sm: 4px;
   --dt-radius-md: 6px;
   --dt-radius-lg: 8px;
-  
+
   /* Transitions */
   --dt-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --dt-transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ===== MAIN CONTAINER ===== */
 .dynamic-table-container {
-  background: var(--dt-bg-primary);
-  border: 1px solid var(--dt-border-light);
-  border-radius: var(--dt-radius-lg);
-  box-shadow: var(--dt-shadow-sm);
-  margin: 16px 0;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
   overflow: hidden;
+  margin: 8px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 13px;
   line-height: 1.4;
   transition: var(--dt-transition);
 }
 
+.dynamic-table-container.has-error {
+  border-color: #dc3545;
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+}
+
 .dynamic-table-container.disabled-table {
-  opacity: 0.6;
+  opacity: 0.7;
   pointer-events: none;
   filter: grayscale(0.3);
 }
 
-.dynamic-table-container.has-error {
-  border-color: var(--dt-danger);
-  box-shadow: 0 0 0 3px var(--dt-danger-light);
+.dynamic-table-container.predefined-table {
+  border-color: #007bff;
 }
 
-/* ===== TABLE WRAPPER ===== */
 .dynamic-table-wrapper {
   overflow-x: auto;
   max-height: 500px;
@@ -74,87 +80,109 @@
 }
 
 .dynamic-table-wrapper::-webkit-scrollbar-track {
-  background: var(--dt-bg-secondary);
+  background: #f1f1f1;
+  border-radius: 3px;
 }
 
 .dynamic-table-wrapper::-webkit-scrollbar-thumb {
-  background: var(--dt-border-medium);
+  background: #c1c1c1;
   border-radius: 3px;
 }
 
 .dynamic-table-wrapper::-webkit-scrollbar-thumb:hover {
-  background: var(--dt-text-muted);
+  background: #a8a8a8;
 }
 
 /* ===== MAIN TABLE ===== */
 .dynamic-table {
   width: 100%;
-  border-collapse: separate;
+  border-collapse: collapse;
   border-spacing: 0;
   background: var(--dt-bg-primary);
   font-size: 12px;
   min-width: 600px;
   font-family: 'Nunito', sans-serif;
-  border: 1px solid var(--dt-border-light);
-  border-radius: var(--dt-radius-md);
-  overflow: hidden;
+  table-layout: fixed; /* This prevents automatic column resizing */
 }
 
-/* ===== TABLE HEAD ===== */
+/* Table Header */
 .dynamic-table thead {
-  background: var(--dt-bg-secondary);
+  background: linear-gradient(180deg, #f8f9fa, #e9ecef);
   position: sticky;
   top: 0;
   z-index: 10;
 }
 
-.dynamic-table th {
-  padding: 6px 8px;
+.dynamic-table-column-header {
+  padding: 8px 10px;
   text-align: left;
+  border-bottom: 2px solid #dee2e6;
+  font-weight: 600;
+  color: #495057;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
   border-right: 1px solid rgba(226, 232, 240, 0.3);
-  border-bottom: 1px solid var(--dt-border-light);
-  font-weight: 500;
-  font-size: 10px;
-  color: var(--dt-text-secondary);
-  white-space: nowrap;
-  background: var(--dt-bg-secondary);
-  position: relative;
+  /* CHANGED: Remove white-space: nowrap and add wrapping */
+  white-space: normal; /* Changed from nowrap */
+  word-break: break-word; /* Added for better word breaking */
+  line-height: 1.2; /* Added for better line spacing */
+  /* CHANGED: Increase min-height to accommodate two lines */
+  min-height: 32px; /* Added minimum height for two-line headers */
+  vertical-align: top; /* Added to align content to top */
   transition: var(--dt-transition);
   font-family: 'Nunito', sans-serif;
 }
-
-.dynamic-table th:last-child {
+.dynamic-table-column-header:last-child {
   border-right: none;
 }
 
-.dynamic-table th:hover {
+.dynamic-table-column-header:hover {
   background: var(--dt-bg-tertiary);
 }
 
 .dynamic-table-column-header-content {
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* Changed from center to flex-start */
   justify-content: flex-start;
-  gap: 2px;
+  gap: 4px;
   min-height: 16px;
+  width: 100%; /* Added to ensure full width usage */
+}
+
+.dynamic-table-column-header.multi-line {
+  height: auto;
+  min-height: 40px; /* Taller for two-line headers */
+  padding: 6px 8px; /* Slightly reduced padding */
+}
+
+.dynamic-table-column-header.multi-line .dynamic-table-column-label {
+  font-size: 9px; /* Slightly smaller font for long headers */
+  line-height: 1.3;
 }
 
 .dynamic-table-column-label {
+  flex: 1;
   font-size: 10px;
   font-weight: 500;
   color: var(--dt-text-primary);
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* Changed from center to flex-start */
   justify-content: flex-start;
   gap: 2px;
   font-family: 'Nunito', sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  /* ADDED: Support for multi-line text */
+  white-space: normal; /* Allow text wrapping */
+  word-break: break-word; /* Break long words */
+  line-height: 1.2; /* Better line spacing */
+  text-align: left; /* Ensure left alignment */
 }
 
 .dynamic-table-mandatory-indicator {
-  color: var(--dt-danger);
-  font-weight: 600;
+  color: #dc3545;
+  font-weight: bold;
   margin-left: 1px;
   font-size: 10px;
 }
@@ -165,7 +193,7 @@
 
 .dynamic-table-actions-column {
   width: 80px;
-  text-align: left;
+  text-align: center;
   font-size: 9px;
   font-weight: 500;
   color: var(--dt-text-muted);
@@ -174,52 +202,172 @@
   letter-spacing: 0.5px;
 }
 
-/* ===== TABLE BODY ===== */
-.dynamic-table tbody tr {
+/* Table Body */
+.dynamic-table-data-row {
+  transition: all 0.2s ease;
+  background: #ffffff;
   border-bottom: 1px solid rgba(226, 232, 240, 0.4);
-  transition: var(--dt-transition-fast);
+  position: relative;
 }
 
-.dynamic-table tbody tr:last-child {
+.dynamic-table-data-row:nth-child(even) {
+  background: #f8f9fa;
+}
+
+.dynamic-table-data-row:last-child {
   border-bottom: none;
 }
 
 .dynamic-table-data-row:hover {
-  background: var(--dt-bg-secondary);
+  background: #e3f2fd;
   transform: translateY(-1px);
-  box-shadow: var(--dt-shadow-sm);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* YES RESPONSE HIGHLIGHTING - Re-enabled with simple styling */
+.dynamic-table-data-row.has-yes-response {
+  background: var(--dt-yes-highlight-bg) !important;
+  border-left: 3px solid var(--dt-yes-highlight-border);
+  position: relative;
+  box-sizing: border-box; /* Ensure border is included in element's total width */
+}
+
+.dynamic-table-data-row.has-yes-response:nth-child(even) {
+  background: var(--dt-yes-highlight-bg) !important;
+}
+
+.dynamic-table-data-row.has-yes-response:hover {
+  background: #fecaca !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Removed ::before pseudo-element for simplicity */
+/* .dynamic-table-data-row.has-yes-response::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--dt-yes-highlight-border), rgba(248, 113, 113, 0.7));
+  border-radius: 0 2px 2px 0;
+} */
+
+/* Enhanced Yes response cell styling - Fixed width to prevent shifting */
+.dynamic-table-data-row.has-yes-response .dynamic-table-cell-yes-no-yes {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: white;
+  border: 1px solid #991b1b;
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
+  position: relative;
+  overflow: hidden;
+  /* Fix: Maintain consistent width */
+  min-width: 80px; /* Adjusted for consistency */
+  width: 80px; /* Adjusted for consistency */
+  max-width: 80px; /* Adjusted for consistency */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  box-sizing: border-box; /* Ensure padding/border are included in width */
+}
+
+/* Removed ::before pseudo-element for simplicity */
+/* .dynamic-table-data-row.has-yes-response .dynamic-table-cell-yes-no-yes::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent);
+  pointer-events: none;
+} */
+
+/* Subtle animation for yes responses - REMOVED as requested */
+/* @keyframes subtle-pulse {
+  0%, 100% {
+    border-left-color: var(--dt-yes-highlight-border);
+  }
+  50% {
+    border-left-color: #ef4444;
+  }
+}
+
+.dynamic-table-data-row.has-yes-response.newly-marked {
+  animation: subtle-pulse 2s ease-in-out;
+} */
+
+.dynamic-table-data-row.predefined-row {
+  background: var(--dt-bg-primary);
+}
+
+.dynamic-table-data-row.predefined-row:nth-child(even) {
+  background: var(--dt-bg-secondary);
+}
+
+.dynamic-table-data-row.predefined-row:hover {
+  background: var(--dt-bg-secondary);
 }
 
 .dynamic-table-new-row {
-  background: linear-gradient(135deg, var(--dt-primary-light) 0%, var(--dt-bg-secondary) 100%);
-  border: 2px dashed var(--dt-primary);
+  background: #e8f5e8;
+  border-top: 2px solid #28a745;
   border-left: none;
   border-right: none;
 }
 
-/* ===== TABLE CELLS ===== */
-.dynamic-table-cell,
-.dynamic-table-new-cell {
-  padding: 6px 8px;
+.dynamic-table-new-row:hover {
+  background: #d4edda;
+}
+
+/* Table Cells */
+.dynamic-table-cell {
+  padding: 6px 10px;
+  border-bottom: 1px solid #dee2e6;
   vertical-align: middle;
+  position: relative;
   text-align: left;
   border-right: 1px solid rgba(226, 232, 240, 0.3);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.4);
   transition: var(--dt-transition-fast);
   font-family: 'Nunito', sans-serif;
   font-size: 12px;
 }
 
-.dynamic-table-cell:last-child,
-.dynamic-table-new-cell:last-child {
+.dynamic-table-cell:last-child {
   border-right: none;
 }
 
 .dynamic-table-new-cell {
+  padding: 6px 10px;
+  border-bottom: 1px solid #28a745;
+  vertical-align: middle;
   background: rgba(59, 130, 246, 0.02);
+  text-align: left;
+  border-right: 1px solid rgba(226, 232, 240, 0.3);
+  transition: var(--dt-transition-fast);
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
 }
 
-/* ===== CELL VALUES ===== */
+.dynamic-table-new-cell:last-child {
+  border-right: none;
+}
+
+.dynamic-table-actions-cell {
+  padding: 4px 6px;
+  text-align: center;
+  border-bottom: 1px solid #dee2e6;
+  white-space: nowrap;
+  text-align: left;
+}
+
+/* Cell Values */
 .dynamic-table-cell-value {
   display: inline-flex;
   align-items: center;
@@ -231,10 +379,12 @@
   transition: var(--dt-transition);
   font-family: 'Nunito', sans-serif;
   text-align: left;
+  word-break: break-word;
+  line-height: 1.3;
 }
 
 .dynamic-table-cell-empty {
-  color: var(--dt-text-muted);
+  color: #6c757d;
   font-style: italic;
   opacity: 0.7;
   text-align: left;
@@ -242,7 +392,7 @@
 
 .dynamic-table-cell-yes-no-yes {
   background: var(--dt-success-light);
-  color: var(--dt-success-dark);
+  color: #28a745;
   border: 1px solid var(--dt-success);
   font-weight: 600;
   font-size: 10px;
@@ -251,11 +401,21 @@
   font-family: 'Nunito', sans-serif;
   text-align: left;
   justify-content: flex-start;
+  transition: all 0.3s ease;
+  /* Fix: Consistent sizing to prevent column shift */
+  min-width: 80px; /* Consistent width */
+  width: 80px; /* Consistent width */
+  max-width: 80px; /* Consistent width */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  box-sizing: border-box; /* Ensure padding/border are included in width */
 }
 
 .dynamic-table-cell-yes-no-no {
   background: var(--dt-danger-light);
-  color: var(--dt-danger-dark);
+  color: #dc3545;
   border: 1px solid var(--dt-danger);
   font-weight: 600;
   font-size: 10px;
@@ -267,17 +427,74 @@
 }
 
 .dynamic-table-cell-number {
-  text-align: left;
+  text-align: right;
   font-variant-numeric: tabular-nums;
   background: var(--dt-bg-secondary);
   border: 1px solid var(--dt-border-light);
-  font-family: 'Nunito', monospace;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
   justify-content: flex-start;
 }
 
-/* ===== FORM INPUTS ===== */
-.dynamic-table-input,
+.dynamic-table-predefined-query {
+  font-weight: 500;
+  color: #495057;
+  background: rgba(0, 123, 255, 0.05);
+  padding: 4px 8px;
+  border-radius: 3px;
+  display: block;
+  line-height: 1.4;
+  transition: var(--dt-transition);
+  /* Ensure text doesn't cause reflow */
+  white-space: normal; /* Allow wrapping */
+  word-break: break-word; /* Break long words */
+}
+
+/* Enhanced query styling for yes responses */
+.dynamic-table-data-row.has-yes-response .dynamic-table-predefined-query {
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--dt-yes-highlight-text);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  font-weight: 600;
+}
+
+/* Form Inputs */
+.dynamic-table-input {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid #ced4da;
+  border-radius: 3px;
+  font-size: 11px;
+  color: #495057;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  outline: none;
+  font-family: 'Nunito', sans-serif;
+  text-align: left;
+  max-width: 100%;
+}
+
+.dynamic-table-input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+  background: var(--dt-bg-primary);
+}
+
+.dynamic-table-input:disabled {
+  background: #e9ecef;
+  color: var(--dt-text-muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .dynamic-table-select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 4px center;
+  background-repeat: no-repeat;
+  background-size: 12px;
+  padding-right: 20px;
+  appearance: none;
   width: 100%;
   padding: 4px 6px;
   border: 1px solid var(--dt-border-light);
@@ -291,37 +508,86 @@
   text-align: left;
 }
 
-.dynamic-table-input:focus,
-.dynamic-table-select:focus {
-  border-color: var(--dt-primary);
-  box-shadow: 0 0 0 2px var(--dt-primary-light);
-  background: var(--dt-bg-primary);
+/* Enhanced select styling for yes responses */
+.dynamic-table-data-row.has-yes-response .dynamic-table-select {
+  border-color: var(--dt-yes-highlight-border);
+  background: var(--dt-yes-highlight-bg);
+  color: var(--dt-yes-highlight-text);
+  width: 80px; /* Maintain fixed width even when highlighted */
+  max-width: 80px;
+  min-width: 80px;
+  box-sizing: border-box; /* Ensure padding/border are included in width */
+}
+.dynamic-table-column-number {
+  width: 80px;
+  text-align: right;
 }
 
-.dynamic-table-input:disabled,
-.dynamic-table-select:disabled {
-  background: var(--dt-bg-tertiary);
-  color: var(--dt-text-muted);
-  cursor: not-allowed;
-  opacity: 0.7;
+.dynamic-table-column-date {
+  width: 120px;
+}
+
+.dynamic-table-cell-text {
+  min-width: 120px;
+  max-width: 300px;
+  text-align: left;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.dynamic-table-cell-number {
+  min-width: 80px;
+  max-width: 80px;
+  text-align: right;
+}
+
+.dynamic-table-cell-date {
+  min-width: 110px;
+  max-width: 120px;
+  text-align: center;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+/* Fixed table layout to prevent column shifting */
+.dynamic-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  background: var(--dt-bg-primary);
+  font-size: 12px;
+  min-width: 600px;
+  font-family: 'Nunito', sans-serif;
+  table-layout: fixed; /* This prevents automatic column resizing */
+}
+
+/* Specific column widths for predefined tables */
+.predefined-table .dynamic-table {
+  table-layout: fixed;
+}
+
+.predefined-table .dynamic-table-column-header:nth-child(1) {
+  width: 50%; /* Query column */
+}
+
+.predefined-table .dynamic-table-column-header:nth-child(2) {
+  width: 100px; /* Response column - fixed width */
+}
+
+.predefined-table .dynamic-table-column-header:nth-child(3) {
+  width: calc(50% - 100px); /* Remarks column - remaining space */
 }
 
 .dynamic-table-input-number {
-  text-align: left;
+  text-align: right;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
   font-variant-numeric: tabular-nums;
 }
 
-/* ===== ACTION BUTTONS ===== */
-.dynamic-table-actions-cell {
-  text-align: left;
-  padding: 6px 4px;
-  white-space: nowrap;
-}
-
+/* Action Buttons */
 .dynamic-table-action-buttons {
   display: flex;
-  gap: 3px;
-  justify-content: flex-start;
+  gap: 2px;
+  justify-content: center;
   align-items: center;
 }
 
@@ -330,19 +596,20 @@
 }
 
 .dynamic-table-action-btn {
-  display: inline-flex;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 3px;
+  cursor: pointer;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 4px 6px;
-  border: 1px solid transparent;
-  border-radius: var(--dt-radius-sm);
-  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #6c757d;
+  min-width: 22px;
+  height: 22px;
   font-size: 10px;
   font-weight: 500;
-  transition: var(--dt-transition);
-  min-width: 24px;
-  height: 24px;
   text-decoration: none;
   outline: none;
   font-family: 'Nunito', sans-serif;
@@ -359,17 +626,21 @@
 
 /* Button Variants */
 .dynamic-table-add-btn {
-  background: var(--dt-primary);
+  background: #28a745;
   color: white;
-  border-color: var(--dt-primary);
+  border-color: #28a745;
+  font-size: 10px;
+  font-weight: 500;
+  gap: 2px;
   padding: 4px 8px;
   min-width: auto;
-  font-weight: 500;
+  height: auto;
 }
 
 .dynamic-table-add-btn:hover {
-  background: var(--dt-primary-dark);
-  border-color: var(--dt-primary-dark);
+  background: #218838;
+  border-color: #1e7e34;
+  transform: translateY(-1px);
 }
 
 .dynamic-table-edit-btn {
@@ -379,9 +650,9 @@
 }
 
 .dynamic-table-edit-btn:hover {
-  background: var(--dt-primary-light);
-  color: var(--dt-primary);
-  border-color: var(--dt-primary);
+  background: #e3f2fd;
+  border-color: #2196f3;
+  color: #1976d2;
 }
 
 .dynamic-table-delete-btn {
@@ -390,10 +661,11 @@
   border-color: var(--dt-danger);
 }
 
-.dynamic-table-delete-btn:hover {
-  background: var(--dt-danger);
-  color: white;
-  border-color: var(--dt-danger-dark);
+.dynamic-table-delete-btn:hover,
+.dynamic-table-clear-btn:hover {
+  background: #ffebee;
+  border-color: #f44336;
+  color: #d32f2f;
 }
 
 .dynamic-table-save-btn {
@@ -403,8 +675,9 @@
 }
 
 .dynamic-table-save-btn:hover {
-  background: var(--dt-success-dark);
-  border-color: var(--dt-success-dark);
+  background: #e8f5e8;
+  border-color: #4caf50;
+  color: #2e7d32;
 }
 
 .dynamic-table-cancel-btn {
@@ -414,28 +687,54 @@
 }
 
 .dynamic-table-cancel-btn:hover {
-  background: var(--dt-text-muted);
-  color: white;
-  border-color: var(--dt-text-secondary);
+  background: #fff3e0;
+  border-color: #ff9800;
+  color: #f57c00;
 }
 
-/* ===== EMPTY STATE ===== */
+/* Empty State */
 .dynamic-table-empty-state {
-  padding: 30px 20px;
-  text-align: center;
-  color: var(--dt-text-muted);
-  background: var(--dt-bg-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  color: #6c757d;
+  background: #f8f9fa;
   border-top: 1px solid var(--dt-border-light);
   font-family: 'Nunito', sans-serif;
 }
 
 .dynamic-table-empty-state p {
-  margin: 0;
-  font-size: 13px;
+  margin: 8px 0 0;
+  font-size: 12px;
   font-style: italic;
 }
 
-/* ===== ERROR STATE ===== */
+/* Instructions for predefined tables */
+.dynamic-table-instructions {
+  background: #e3f2fd;
+  border-top: 1px solid #bbdefb;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #1565c0;
+  text-align: center;
+}
+
+/* Enhanced instructions for tables with yes responses */
+.dynamic-table-container.has-yes-responses .dynamic-table-instructions {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  color: #7f1d1d;
+  border-top: 2px solid #f87171;
+  font-weight: 500;
+}
+
+.dynamic-table-container.has-yes-responses .dynamic-table-instructions::before {
+  content: "⚠️ ";
+  margin-right: 4px;
+}
+
+/* Error State */
 .dynamic-table-error-message {
   padding: 10px 12px;
   background: var(--dt-danger-light);
@@ -453,80 +752,126 @@
   font-size: 14px;
 }
 
-/* ===== COLUMN TYPE SPECIFIC STYLES ===== */
-.dynamic-table-column-text { min-width: 120px; }
-.dynamic-table-column-number { min-width: 80px; }
-.dynamic-table-column-yes_no { min-width: 80px; }
-.dynamic-table-column-date { min-width: 110px; }
-
-.dynamic-table-cell-text { 
-  min-width: 120px; 
-  max-width: 200px; 
-  text-align: left;
-}
-.dynamic-table-cell-number { 
-  min-width: 80px; 
-  text-align: left;
-}
-.dynamic-table-cell-yes_no { 
-  min-width: 80px; 
-  text-align: left;
-}
-.dynamic-table-cell-date { 
-  min-width: 110px;
-  text-align: left;
+/* Column width fixes to prevent shifting */
+.dynamic-table-column-yes_no {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
 }
 
-/* ===== RESPONSIVE DESIGN ===== */
+.dynamic-table-column-text {
+  min-width: 150px;
+}
+
+.dynamic-table-cell-yes_no {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+  text-align: center;
+  padding: 6px 8px;
+}
+
+/* Fixed select dropdown to prevent column expansion */
+.dynamic-table-select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 4px center;
+  background-repeat: no-repeat;
+  background-size: 12px;
+  padding-right: 20px;
+  appearance: none;
+  width: 80px; /* Fixed width to prevent expansion */
+  max-width: 80px;
+  min-width: 80px;
+  padding: 4px 20px 4px 6px;
+  border: 1px solid var(--dt-border-light);
+  border-radius: var(--dt-radius-sm);
+  font-size: 11px;
+  background: var(--dt-bg-primary);
+  color: var(--dt-text-primary);
+  transition: var(--dt-transition);
+  outline: none;
+  font-family: 'Nunito', sans-serif;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+/* Predefined table specific styles */
+.predefined-table .dynamic-table-column-header {
+  background: linear-gradient(180deg, #e3f2fd, #bbdefb);
+  color: #1565c0;
+}
+
+.predefined-table .dynamic-table-cell:first-child {
+  background: rgba(0, 123, 255, 0.03);
+  font-weight: 500;
+}
+
+/* Responsive styles */
 @media (max-width: 768px) {
   .dynamic-table-container {
-    margin: 12px 0;
+    margin: 4px 0;
     border-radius: var(--dt-radius-md);
   }
-  
+
   .dynamic-table-wrapper {
     max-height: 400px;
   }
-  
+
   .dynamic-table {
     font-size: 11px;
     min-width: 500px;
   }
-  
+
   .dynamic-table th,
   .dynamic-table-cell,
   .dynamic-table-new-cell {
     padding: 4px 6px;
   }
-  
-  .dynamic-table th {
-    font-size: 9px;
+
+  .dynamic-table-column-header {
+    padding: 6px 8px;
+    font-size: 10px;
   }
-  
+
   .dynamic-table-column-label {
     font-size: 9px;
   }
-  
+
   .dynamic-table-input,
   .dynamic-table-select {
-    font-size: 10px;
+    font-size: 11px;
     padding: 3px 4px;
   }
-  
+
   .dynamic-table-action-btn {
     min-width: 20px;
     height: 20px;
     padding: 2px 4px;
     font-size: 9px;
   }
-  
+
   .dynamic-table-actions-column {
     width: 60px;
   }
+
+  .dynamic-table-predefined-query {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  /* Mobile responsive yes highlighting */
+  .dynamic-table-data-row.has-yes-response {
+    border-left-width: 2px;
+  }
 }
 
-/* ===== ACCESSIBILITY ===== */
+/* Accessibility */
 @media (prefers-reduced-motion: reduce) {
+  .dynamic-table-data-row.has-yes-response.newly-marked {
+    animation: none;
+  }
+
   * {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
@@ -542,5 +887,1327 @@
 
 .dynamic-table th:focus-visible {
   outline: 2px solid var(--dt-primary);
-  outline-offset: -2px;
+  outline-offset: -2px; /* Enhanced Checklist Styles - Light Theme with Specific Improvements */
+
+/* ===== PRESERVE ALL ORIGINAL LIGHT THEME VARIABLES ===== */
+:root {
+    /* Inherit from existing CSS variables but add checklist-specific ones */
+    --checklist-primary: var(--blue-accent, #007bff);
+    --checklist-success: var(--success-color, #28a745);
+    --checklist-warning: var(--warning-color, #ffc107);
+    --checklist-danger: var(--danger-color, #dc3545);
+    --checklist-info: #17a2b8;
+
+    /* Checklist-specific spacing */
+    --checklist-gap-sm: 0.5rem;
+    --checklist-gap-md: 1rem;
+    --checklist-gap-lg: 1.5rem;
+    --checklist-gap-xl: 2rem;
+
+    /* SPECIFIC FIXES FOR YOUR ISSUES */
+    /* Better card visibility - enhanced but still light theme */
+    --checklist-card-bg-enhanced: rgba(255, 255, 255, 0.95);
+    --checklist-card-border-enhanced: rgba(0, 123, 255, 0.2);
+    --checklist-card-shadow-enhanced: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+    /* Checklist component heights - REDUCED as requested */
+    --checklist-card-height-compact: 240px; /* Reduced from default */
+    --checklist-stat-height: 60px; /* Reduced from 70px */
+    --checklist-item-height: 35px; /* Reduced from 40px */
+    --checklist-button-height: 32px; /* Reduced from 36px */
+    --checklist-header-height-fixed: 65px; /* Fixed height for header */
+
+    /* Checklist borders and shadows */
+    --checklist-border: 1px solid var(--border-light, rgba(0, 0, 0, 0.1));
+    --checklist-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --checklist-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.15);
+
+    /* Checklist Form Specific Variables (from your original inline styles) */
+    --checklist-form-primary-dark: #0d2136;
+    --checklist-form-secondary-dark: #1a3044;
+    --checklist-form-border-subtle: rgba(244, 244, 244, 0.1);
+    --checklist-form-text-light: #f4f4f4;
+    --checklist-form-text-muted: #a0a0a0;
+    --checklist-form-card-bg: #1f3a50;
+    --checklist-form-blue-accent: #3badf5;
+    --checklist-form-success-color: #2ecc71;
+    --checklist-form-danger-color: #e74c3c;
+  }
+
+  /* ===== SPECIFIC FIX #1: HEADER OVERLAP ISSUE ===== */
+  .checklist-page-container {
+    /* FIXED: Account for navigation header overlap */
+    margin-top: 60px; /* Adjust based on your nav header height */
+    min-height: calc(100vh - 60px);
+    /* Keep your original light theme background */
+    background-color: var(--background-light, #f8f9fa);
+    color: var(--text-dark, #333333);
+    padding-bottom: 5px;
+    padding-top: 5px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .checklist-header {
+    /* FIXED: Position below main nav header */
+    background: var(--card-bg-light, #ffffff);
+    border-bottom: 1px solid var(--border-light, rgba(0, 0, 0, 0.1));
+    padding: 16px 24px;
+    position: sticky;
+    top: 60px; /* Position below your main nav */
+    z-index: 20;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    height: var(--checklist-header-height-fixed);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* ===== SPECIFIC FIX #2: ENHANCED CARD VISIBILITY ===== */
+  .checklist-card {
+    /* ENHANCED: Much better visibility while keeping light theme */
+    background: var(--checklist-card-bg-enhanced);
+    border: 2px solid var(--checklist-card-border-enhanced); /* Stronger border */
+    border-radius: 8px;
+    /* REDUCED: Height as requested */
+    min-height: var(--checklist-card-height-compact);
+    position: relative;
+    transition: all 0.2s ease;
+    overflow: hidden;
+    /* ENHANCED: Better shadow for visibility */
+    box-shadow: var(--checklist-card-shadow-enhanced);
+  }
+
+  .checklist-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 123, 255, 0.15); /* Enhanced hover shadow */
+    border-color: var(--checklist-primary);
+  }
+
+  /* Add subtle background pattern for better visibility */
+  .checklist-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--checklist-primary), var(--checklist-info));
+    opacity: 0.7;
+  }
+
+  /* ===== SPECIFIC FIX #3: COMPACT DESIGN WITH REDUCED HEIGHTS ===== */
+  .checklist-card-compact {
+    min-height: var(--checklist-card-height-compact); /* 240px instead of 280px+ */
+    display: flex;
+    flex-direction: column;
+  }
+
+  .checklist-card-compact .checklist-card-body {
+    padding: 12px 16px; /* Reduced padding */
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .checklist-card-compact .checklist-card-header {
+    margin-bottom: 8px; /* Reduced margin */
+  }
+
+  .checklist-card-compact .checklist-metadata {
+    font-size: 11px; /* Smaller font */
+    gap: 6px; /* Reduced gap */
+    margin: 8px 0; /* Reduced margin */
+  }
+
+  .checklist-card-compact .checklist-progress-section {
+    margin: 8px 0; /* Reduced margin */
+  }
+
+  .checklist-card-compact .checklist-actions {
+    margin-top: 8px; /* Reduced margin */
+  }
+
+  /* ===== MODERN ALTERNATIVE: ROW-BASED LAYOUT ===== */
+  /* This provides the "modern table alternative" you requested */
+  .checklist-view-toggle {
+    display: flex;
+    background: var(--filter-bg-light, #e9ecef);
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border-light, rgba(0, 0, 0, 0.1));
+    margin-bottom: 16px;
+  }
+
+  .checklist-view-toggle-btn {
+    padding: 8px 16px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted-light, #6c757d);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+  }
+
+  .checklist-view-toggle-btn.active {
+    background: var(--checklist-primary);
+    color: white;
+  }
+
+  .checklist-view-toggle-btn:hover:not(.active) {
+    background: var(--filter-hover-light, #dee2e6);
+    color: var(--text-dark, #333333);
+  }
+
+  .checklist-rows-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Compact spacing */
+  }
+
+  .checklist-row {
+    background: var(--checklist-card-bg-enhanced);
+    border: 1px solid var(--checklist-card-border-enhanced);
+    border-radius: 6px;
+    height: 55px; /* Compact height */
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 16px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--checklist-shadow);
+  }
+
+  .checklist-row::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--checklist-primary);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .checklist-row:hover {
+    background: var(--filter-hover-light, #f8f9fa);
+    transform: translateX(2px);
+    box-shadow: var(--checklist-shadow-hover);
+    border-color: var(--checklist-primary);
+  }
+
+  .checklist-row:hover::before {
+    opacity: 1;
+  }
+
+  .checklist-row-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--checklist-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+  }
+
+  .checklist-row-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 0;
+  }
+
+  .checklist-row-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .checklist-row-title {
+    font-weight: 600;
+    color: var(--text-dark, #333333);
+    margin: 0 0 2px 0;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .checklist-row-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 11px;
+    color: var(--text-muted-light, #6c757d);
+  }
+
+  .checklist-row-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 16px;
+  }
+
+  .checklist-row-progress-bar {
+    width: 50px;
+    height: 4px;
+    background: var(--border-light, rgba(0, 0, 0, 0.1));
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .checklist-row-progress-fill {
+    height: 100%;
+    background: var(--checklist-primary);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  .checklist-row-status {
+    margin-right: 12px;
+    min-width: 70px;
+  }
+
+  .checklist-row-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .checklist-row:hover .checklist-row-actions {
+    opacity: 1;
+  }
+
+  /* ===== PRESERVE ALL YOUR ORIGINAL STYLES BELOW ===== */
+
+  /* Equipment Defects Section */
+  .checklist-header {
+    /* Uses dashboard-header */
+  }
+
+  .checklist-header-title {
+    display: flex;
+    align-items: center;
+    gap: var(--checklist-gap-md);
+  }
+
+  .checklist-header-icon {
+    /* Uses stat-card-icon as base */
+  }
+
+  .checklist-header-info {
+    /* Uses fleet-stats as base but with checklist spacing */
+  }
+
+  .checklist-header-info .checklist-info-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85rem;
+    color: var(--text-muted-light, #6c757d);
+  }
+
+  .checklist-header-controls {
+    /* Uses dashboard-controls as base */
+  }
+
+  /* ===== CHECKLIST CONTENT AREAS ===== */
+  .checklist-content-area {
+    /* Uses content-area as base */
+    padding: 0 24px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--checklist-gap-lg);
+  }
+
+  .checklist-info-card {
+    /* Uses notification-item as base but ENHANCED for visibility */
+    display: flex;
+    align-items: flex-start;
+    gap: var(--checklist-gap-md);
+    padding: var(--checklist-gap-md);
+    background: var(--checklist-card-bg-enhanced);
+    border: 2px solid var(--checklist-card-border-enhanced);
+    border-radius: 8px;
+    box-shadow: var(--checklist-card-shadow-enhanced);
+  }
+
+  .checklist-info-card-icon {
+    /* Uses stat-card-icon as base */
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--checklist-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .checklist-info-card-content h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--checklist-primary);
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  .checklist-info-card-content p {
+    margin: 0;
+    color: var(--text-muted-light, #6c757d);
+    line-height: 1.4;
+  }
+
+  /* ===== CHECKLIST CARDS GRID ===== */
+  .checklist-cards-container {
+    /* Uses dashboard-card as base */
+  }
+
+  .checklist-cards-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--checklist-gap-lg);
+  }
+
+  .checklist-cards-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .checklist-cards-count {
+    color: var(--text-muted-light, #6c757d);
+    font-size: 0.9rem;
+  }
+
+  .checklist-cards-grid {
+    /* Uses dashboard-charts as base but IMPROVED */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px; /* Reduced gap for more compact layout */
+  }
+
+  /* ===== INDIVIDUAL CHECKLIST CARD ===== */
+  .checklist-card.checklist-urgent {
+    border-left: 4px solid var(--checklist-warning);
+  }
+
+  .checklist-card.checklist-critical {
+    border-left: 4px solid var(--checklist-danger);
+  }
+
+  .checklist-card.checklist-overdue {
+    border-left: 4px solid var(--checklist-danger);
+    background-color: rgba(220, 53, 69, 0.02);
+  }
+
+  .checklist-urgency-badge {
+    position: absolute;
+    top: 8px; /* Reduced from 12px */
+    right: 8px; /* Reduced from 12px */
+    z-index: 10;
+    /* Uses badge classes as base */
+  }
+
+  .checklist-card-body {
+    /* Uses dashboard-card-body as base */
+    padding: var(--checklist-gap-lg);
+  }
+
+  .checklist-card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--checklist-gap-md);
+    margin-bottom: var(--checklist-gap-md);
+  }
+
+  .checklist-card-header-icon {
+    /* Uses stat-card-icon as base */
+    flex-shrink: 0;
+  }
+
+  .checklist-card-header-content {
+    flex: 1;
+  }
+
+  .checklist-card-title {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .checklist-card-status {
+    /* Uses badge as base */
+  }
+
+  /* ===== CHECKLIST PROGRESS ===== */
+  .checklist-progress-section {
+    margin-bottom: var(--checklist-gap-md);
+  }
+
+  .checklist-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--checklist-gap-sm);
+    font-size: 0.9rem;
+  }
+
+  .checklist-progress-label {
+    color: var(--text-muted-light, #6c757d);
+  }
+
+  .checklist-progress-value {
+    font-weight: 600;
+  }
+
+  .checklist-progress-bar-container {
+    width: 100%;
+    background-color: var(--border-light, rgba(0, 0, 0, 0.1));
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+  }
+
+  .checklist-progress-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  .checklist-progress-bar.checklist-complete {
+    background-color: var(--checklist-success);
+  }
+
+  .checklist-progress-bar.checklist-high {
+    background-color: var(--checklist-warning);
+  }
+
+  .checklist-progress-bar.checklist-normal {
+    background-color: var(--checklist-primary);
+  }
+
+  /* ===== CHECKLIST METADATA ===== */
+  .checklist-metadata {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--checklist-gap-sm);
+    margin-bottom: var(--checklist-gap-md);
+    font-size: 0.85rem;
+  }
+
+  .checklist-metadata-item {
+    display: flex;
+    align-items: center;
+    gap: var(--checklist-gap-sm);
+  }
+
+  .checklist-metadata-icon {
+    color: var(--checklist-primary);
+    flex-shrink: 0;
+  }
+
+  .checklist-metadata-label {
+    color: var(--text-muted-light, #6c757d);
+  }
+
+  .checklist-metadata-value {
+    font-weight: 500;
+  }
+
+  .checklist-metadata-submitted {
+    grid-column: 1 / -1;
+  }
+
+  .checklist-metadata-submitted .checklist-metadata-value {
+    color: var(--checklist-success);
+  }
+
+  /* ===== CHECKLIST CARD ACTIONS ===== */
+  .checklist-actions {
+    display: flex;
+    gap: var(--checklist-gap-sm);
+  }
+
+  .checklist-action-btn {
+    /* Uses control-btn as base but ENHANCED */
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--checklist-gap-sm);
+    height: var(--checklist-button-height); /* Reduced height */
+    border-radius: 4px;
+    font-size: 0.85rem; /* Slightly smaller font */
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    background: var(--card-bg-light, #ffffff);
+    border: 1px solid var(--border-light, rgba(0, 0, 0, 0.1));
+    color: var(--text-dark, #333333);
+  }
+
+  .checklist-action-btn:hover {
+    transform: translateY(-1px);
+    background: var(--filter-hover-light, #f8f9fa);
+    border-color: var(--checklist-primary);
+  }
+
+  .checklist-action-btn.checklist-btn-view {
+    /* Uses control-btn as base */
+  }
+
+  .checklist-action-btn.checklist-btn-edit {
+    /* Uses control-btn export-btn as base */
+  }
+
+  .checklist-action-btn.checklist-btn-delete {
+    color: var(--checklist-danger);
+    border-color: rgba(220, 53, 69, 0.3);
+    background-color: rgba(220, 53, 69, 0.1);
+  }
+
+  .checklist-action-btn.checklist-btn-delete:hover {
+    background-color: rgba(220, 53, 69, 0.2);
+  }
+
+  /* ===== LOADING STATES ===== */
+  .checklist-loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    text-align: center;
+  }
+
+  .checklist-loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border-light, rgba(0, 0, 0, 0.1));
+    border-top: 3px solid var(--checklist-primary);
+    border-radius: 50%;
+    animation: checklist-spin 1s linear infinite;
+    margin-bottom: var(--checklist-gap-md);
+  }
+
+  @keyframes checklist-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .checklist-loading-text {
+    color: var(--text-muted-light, #6c757d);
+    font-size: 1rem;
+  }
+
+  /* ===== CHECKLIST EMPTY STATES ===== */
+  .checklist-empty-state {
+    /* Uses no-results as base but ENHANCED */
+    background: var(--checklist-card-bg-enhanced);
+    border: 2px solid var(--checklist-card-border-enhanced);
+    border-radius: 8px;
+    padding: 3rem;
+    text-align: center;
+    color: var(--text-muted-light, #6c757d);
+    box-shadow: var(--checklist-card-shadow-enhanced);
+  }
+
+  .checklist-empty-icon {
+    margin-bottom: var(--checklist-gap-md);
+    color: var(--text-muted-light, #6c757d);
+  }
+
+  .checklist-empty-title {
+    color: var(--text-dark, #333333);
+    margin: var(--checklist-gap-md) 0 var(--checklist-gap-sm) 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+
+  .checklist-empty-description {
+    margin: 0;
+    line-height: 1.5;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ===== CHECKLIST ERROR STATES ===== */
+  .checklist-error-message {
+    /* Uses error-message as base */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(220, 53, 69, 0.1);
+    border-left: 3px solid var(--checklist-danger);
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin-bottom: var(--checklist-gap-lg);
+    color: var(--checklist-danger);
+  }
+
+  .checklist-error-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--checklist-danger);
+    cursor: pointer;
+    padding: 0;
+    font-size: 1.2rem;
+    line-height: 1;
+  }
+
+  /* ===== CHECKLIST BADGES ===== */
+  .checklist-badge {
+    /* Uses badge as base but with checklist prefix */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    border-radius: 4px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    gap: 4px;
+  }
+
+  .checklist-badge-success {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: var(--checklist-success);
+    border: 1px solid rgba(40, 167, 69, 0.2);
+  }
+
+  .checklist-badge-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: var(--checklist-warning);
+    border: 1px solid rgba(255, 193, 7, 0.2);
+  }
+
+  .checklist-badge-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: var(--checklist-danger);
+    border: 1px solid rgba(220, 53, 69, 0.2);
+  }
+
+  .checklist-badge-info {
+    background-color: rgba(0, 123, 255, 0.1);
+    color: var(--checklist-primary);
+    border: 1px solid rgba(0, 123, 255, 0.2);
+  }
+
+  .checklist-badge-default {
+    background-color: var(--filter-bg-light, #e9ecef);
+    color: var(--text-dark, #333333);
+    border: 1px solid var(--border-light, rgba(0, 0, 0, 0.1));
+  }
+
+  /* ===== VIEW CONTROLS ===== */
+  .checklist-view-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  /* ===== RESPONSIVE DESIGN ===== */
+  @media (max-width: 1200px) {
+    .checklist-cards-grid {
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+  }
+
+  @media (max-width: 768px) {
+    .checklist-page-container {
+      margin-top: 50px; /* Adjust for mobile nav height */
+    }
+
+    .checklist-header {
+      top: 50px;
+      padding: 12px 16px;
+      height: auto;
+      min-height: 60px;
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .checklist-content-area {
+      padding: 0 16px;
+    }
+
+    .checklist-cards-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .checklist-rows-container {
+      gap: 8px;
+    }
+
+    .checklist-row {
+      height: auto;
+      min-height: 50px;
+      padding: 12px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .checklist-row-content {
+      width: 100%;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .checklist-row-actions {
+      opacity: 1;
+    }
+
+    .checklist-actions {
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .checklist-action-btn {
+      height: 36px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .checklist-view-controls {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+
+    .checklist-view-toggle {
+      width: 100%;
+    }
+
+    .checklist-view-toggle-btn {
+      flex: 1;
+      justify-content: center;
+    }
+  }
+
+  /* ===== ANIMATIONS ===== */
+  .checklist-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  .checklist-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* ===== UTILITY CLASSES ===== */
+  .checklist-spinning {
+    animation: checklist-spin 1s linear infinite;
+  }
+
+  .checklist-text-primary { color: var(--checklist-primary) !important; }
+  .checklist-text-success { color: var(--checklist-success) !important; }
+  .checklist-text-warning { color: var(--checklist-warning) !important; }
+  .checklist-text-danger { color: var(--checklist-danger) !important; }
+  .checklist-text-muted { color: var(--text-muted-light, #6c757d) !important; }
+
+  /* ===== ALL YOUR ORIGINAL CHECKLIST FORM STYLES PRESERVED ===== */
+  .checklist-form {
+    background: var(--checklist-form-primary-dark);
+    min-height: calc(100vh - 100px);
+    color: var(--checklist-form-text-light);
+  }
+
+  .checklist-form.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .checklist-form .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .checklist-form .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(244, 244, 244, 0.1);
+    border-radius: 50%;
+    border-top: 3px solid var(--checklist-form-blue-accent);
+    animation: checklist-spin 1s linear infinite;
+  }
+
+  .checklist-form-header-section {
+    background: var(--checklist-form-secondary-dark);
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--checklist-form-border-subtle);
+    position: sticky;
+    top: 50px;
+    z-index: 10;
+  }
+
+  .checklist-form-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .checklist-form-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .checklist-form-back-button {
+    background: rgba(244, 244, 244, 0.1);
+    border: none;
+    color: var(--checklist-form-text-light);
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .checklist-form-back-button:hover {
+    background: rgba(244, 244, 244, 0.2);
+    transform: translateX(-2px);
+  }
+
+  .checklist-form-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .checklist-form-mode-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+
+  .checklist-form-mode-badge.view {
+    background: rgba(46, 204, 113, 0.2);
+    color: var(--checklist-form-success-color);
+  }
+
+  .checklist-form-mode-badge.edit {
+    background: rgba(52, 152, 219, 0.2);
+    color: #3498DB;
+  }
+
+  .checklist-form-action-buttons {
+    display: flex;
+    gap: 12px;
+  }
+
+  .checklist-form-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    font-size: 14px;
+  }
+
+  .checklist-form-action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .checklist-form-action-btn.secondary {
+    background: rgba(244, 244, 244, 0.1);
+    color: var(--checklist-form-text-light);
+  }
+
+  .checklist-form-action-btn.secondary:hover:not(:disabled) {
+    background: rgba(244, 244, 244, 0.2);
+  }
+
+  .checklist-form-action-btn.primary {
+    background: var(--checklist-form-blue-accent);
+    color: white;
+  }
+
+  .checklist-form-action-btn.primary:hover:not(:disabled) {
+    background: var(--secondary-accent, #2A95C5);
+    transform: translateY(-1px);
+  }
+
+  .checklist-form-action-btn.success {
+    background: var(--checklist-form-success-color);
+    color: white;
+  }
+
+  .checklist-form-action-btn.success:hover:not(:disabled) {
+    background: #27AE60;
+    transform: translateY(-1px);
+  }
+
+  .checklist-form-progress-bar {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    height: 8px;
+    overflow: hidden;
+    flex: 1;
+    margin: 0 16px;
+  }
+
+  .checklist-form-progress-fill {
+    background: linear-gradient(90deg, var(--checklist-form-blue-accent), var(--checklist-form-success-color));
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+
+  .checklist-form-progress-text {
+    font-size: 14px;
+    color: var(--checklist-form-text-muted);
+  }
+
+  .checklist-form-content {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .checklist-form-section {
+    background: var(--checklist-form-card-bg);
+    border-radius: 8px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    border: 1px solid var(--checklist-form-border-subtle);
+  }
+
+  .checklist-form-section-header {
+    background: linear-gradient(180deg, #0a1725, #112032);
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--checklist-form-border-subtle);
+  }
+
+  .checklist-form-section-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--checklist-form-text-light);
+  }
+
+  .checklist-form-sub-section {
+    border-bottom: 1px solid var(--checklist-form-border-subtle);
+  }
+
+  .checklist-form-sub-section:last-child {
+    border-bottom: none;
+  }
+
+  .checklist-form-sub-section-header {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--checklist-form-border-subtle);
+  }
+
+  .checklist-form-sub-section-title {
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+    color: var(--checklist-form-text-light);
+  }
+
+  .checklist-form-item {
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(244, 244, 244, 0.05);
+    transition: background-color 0.2s ease;
+  }
+
+  .checklist-form-item:last-child {
+    border-bottom: none;
+  }
+
+  .checklist-form-item:hover {
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  .checklist-form-item.mandatory {
+    border-left: 3px solid var(--checklist-form-blue-accent);
+  }
+
+  .checklist-form-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 16px;
+  }
+
+  .checklist-form-item-question {
+    flex: 1;
+  }
+
+  .checklist-form-question-text {
+    font-weight: 500;
+    margin-bottom: 4px;
+    line-height: 1.4;
+  }
+
+  .checklist-form-question-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--checklist-form-text-muted);
+  }
+
+  .checklist-form-mandatory-indicator {
+    color: var(--checklist-form-blue-accent);
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  .checklist-form-response-field {
+    margin-top: 12px;
+  }
+
+  .checklist-form-radio-group {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+
+  .checklist-form-radio-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .checklist-form-radio-option input[type="radio"] {
+    accent-color: var(--checklist-form-blue-accent);
+    cursor: pointer;
+  }
+
+  .checklist-form-response-field input,
+  .checklist-form-response-field textarea {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--checklist-form-border-subtle);
+    border-radius: 4px;
+    padding: 8px 12px;
+    color: var(--checklist-form-text-light);
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+  }
+
+  .checklist-form-response-field input:focus,
+  .checklist-form-response-field textarea:focus {
+    outline: none;
+    border-color: var(--checklist-form-blue-accent);
+    box-shadow: 0 0 0 2px rgba(59, 173, 229, 0.2);
+  }
+
+  .checklist-form-response-field input.error,
+  .checklist-form-response-field textarea.error {
+    border-color: var(--checklist-form-danger-color);
+  }
+
+  .checklist-form-response-field input:disabled,
+  .checklist-form-response-field textarea:disabled {
+    background: rgba(0, 0, 0, 0.1);
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  .checklist-form-error-text {
+    color: var(--checklist-form-danger-color);
+    font-size: 12px;
+    margin-top: 4px;
+    display: block;
+  }
+
+  .checklist-form-comments-section {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(244, 244, 244, 0.1);
+  }
+
+  .checklist-form-comments-label {
+    font-size: 14px;
+    color: var(--checklist-form-text-muted);
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .checklist-form-comments-textarea {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--checklist-form-border-subtle);
+    border-radius: 4px;
+    padding: 8px 12px;
+    color: var(--checklist-form-text-light);
+    font-size: 13px;
+    min-height: 60px;
+    resize: vertical;
+  }
+
+  .checklist-form-comments-textarea:focus {
+    outline: none;
+    border-color: var(--checklist-form-blue-accent);
+  }
+
+  .checklist-form-comments-textarea:disabled {
+    background: rgba(0, 0, 0, 0.1);
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  .checklist-form-evidence-section {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(244, 244, 244, 0.1);
+  }
+
+  .checklist-form-evidence-label {
+    font-size: 14px;
+    color: var(--checklist-form-text-muted);
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .checklist-form-evidence-upload {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .checklist-form-upload-btn {
+    background: rgba(59, 173, 229, 0.1);
+    border: 1px solid rgba(59, 173, 229, 0.3);
+    color: var(--checklist-form-blue-accent);
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .checklist-form-upload-btn:hover:not(:disabled) {
+    background: rgba(59, 173, 229, 0.2);
+  }
+
+  .checklist-form-upload-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .checklist-form-evidence-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .checklist-form-evidence-item {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .checklist-form-evidence-item button {
+    background: none;
+    border: none;
+    color: var(--checklist-form-danger-color);
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+  }
+
+  .checklist-form-empty-state-container {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--checklist-form-text-muted);
+  }
+
+  .checklist-form-empty-icon {
+    margin-bottom: 16px;
+  }
+
+  /* Additional responsive adjustments for form */
+  @media (max-width: 768px) {
+    .checklist-form-header-top {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .checklist-form-action-buttons {
+      width: 100%;
+      justify-content: flex-end;
+    }
+
+    .checklist-form-radio-group {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .checklist-form-item-header {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .checklist-form-evidence-upload {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
 }

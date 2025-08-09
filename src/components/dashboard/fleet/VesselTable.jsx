@@ -1400,7 +1400,7 @@ const VesselTable = ({
         // Use percentage-based widths on mobile to ensure better scaling
         switch (fieldId) {
           case 'vessel_name':
-            columnWidth = '140px';
+            columnWidth = '190px';
             break;
           case 'vessel_type':
           case 'doc_type':
@@ -1423,7 +1423,7 @@ const VesselTable = ({
       } else if (windowWidth >= 768 && windowWidth < 1024) { // Tablet
         switch (fieldId) {
           case 'vessel_name':
-            columnWidth = '160px';
+            columnWidth = '200px';
             break;
           case 'vessel_type':
             columnWidth = '120px';
@@ -1452,7 +1452,7 @@ const VesselTable = ({
         // Keep most original widths but adjust a few
         switch (fieldId) {
           case 'vessel_name':
-            columnWidth = '180px';
+            columnWidth = '250px';
             break;
           default:
             columnWidth = field.width; // Use original width
