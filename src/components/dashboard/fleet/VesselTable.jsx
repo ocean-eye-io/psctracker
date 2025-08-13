@@ -1552,6 +1552,31 @@ const VesselTable = ({
             }
           }
 
+          if (fieldId === 'etd') {
+            const etdDate = displayValue ? new Date(displayValue) : null;
+            
+            // Get ETB from either user_etb or original etb
+            const etbValueForComparison = rowData.user_etb !== null && rowData.user_etb !== undefined ? rowData.user_etb : rowData.etb;
+            const etbDate = etbValueForComparison ? new Date(etbValueForComparison) : null;
+            
+            // Get ETA from either user_eta or original eta
+            const etaValueForComparison = rowData.user_eta !== null && rowData.user_eta !== undefined ? rowData.user_eta : rowData.eta;
+            const etaDate = etaValueForComparison ? new Date(etaValueForComparison) : null;
+          
+            if (etdDate) {
+              // Priority 1: Check ETD vs ETB (if ETB exists)
+              if (etbDate && etdDate.getTime() < etbDate.getTime()) {
+                isInvalidDate = true;
+                validationMessage = `ETD cannot be before ETB. ETB is ${formatDateTime(etbValueForComparison, true)}`;
+              }
+              // Priority 2: Check ETD vs ETA (if ETB doesn't exist or ETD passes ETB check)
+              else if (etaDate && etdDate.getTime() < etaDate.getTime()) {
+                isInvalidDate = true;
+                validationMessage = `ETD cannot be before ETA. ETA is ${formatDateTime(etaValueForComparison, true)}`;
+              }
+            }
+          }  
+
           // NEW: Check if ETA is in the past
           if (fieldId === 'eta') {
             const isPastEta = isDateInPast(displayValue);
